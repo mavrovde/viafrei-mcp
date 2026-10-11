@@ -203,8 +203,8 @@ it exposes twenty-one tools, nineteen of them read-only. The round left out
 routine: Tankerkönig limits how often its interface may be asked, and its terms
 say plainly that bulk retrieval is blocked and the key deactivated. A full
 re-check would now mean **seventeen** live calls (the read-only tools minus the
-two fuel tools). The round called sixteen of those tools. It also left out `find_sharing`, because shared bikes are not
-what the round was testing. Fuel prices still appear in the table, because
+two fuel tools). The round called sixteen of those tools. It also left out
+`find_sharing`, because shared bikes are not what the round was testing. Fuel prices still appear in the table, because
 "what is nearby" answers include stored prices, and 22 answers named them.
 
 - **live (n)** — at least one answer in the round named it; *n* is how many of
@@ -347,7 +347,7 @@ What the table cannot say in a cell:
 - **München's car parks and P+R sites** (the three `muc_parken_*` rows) are
   licensed and wired into `find_parking`, but the city's open-data portal refuses
   requests from our server's network. So no München facility has been loaded yet,
-  and no answer can name one. A request to unblock our server is with the city.
+  and no answer can name one.
 - **The DWD road-surface forecast** (`dwd_road`) comes with a condition of use,
   which the register quotes in German as binding: the road-weather stations are
   unverified point measurements, they do not describe a whole road section, and
@@ -361,7 +361,7 @@ What the table cannot say in a cell:
   beaten track** (Christophorus Parking, Trucklounge, Autohof Thiersheim,
   Schleswig-Holstein's lorry parks) answer only questions asked near them, and
   the round asked none there. For the remaining `in the service` rows (Volkswagen's
-  availability feed, Köln's and Wuppertal's car-park occupancy and seven of the
+  availability feed, Köln's and Wuppertal's car-park occupancy and six of the
   MobiData BW car-park publishers) this page knows nothing beyond the zero.
 - **Shared bikes** (`gbfs_nextbike`, `gbfs_donkey`) read `in the service` only
   because the round did not ask about them; they answered 32 and 6 times in the

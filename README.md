@@ -16,7 +16,7 @@
 [![no API key](https://img.shields.io/badge/API%20key-none-brightgreen)](#-connect-in-one-minute)
 [![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-6f42c1)](https://modelcontextprotocol.io)
 
-**[viafrei.de](https://viafrei.de/en)** · [Connect your assistant](https://viafrei.de/en/connect) · [For developers](https://viafrei.de/en/developers) · [For businesses](https://viafrei.de/en/business) · [All tools](#-everything-it-can-do) · [Sources](#-where-the-data-comes-from) · [Test results](#-tested-in-public) · [API reference](API.md)
+**[viafrei.de](https://viafrei.de/en)** · [Connect your assistant](https://viafrei.de/en/connect) · [For developers](https://viafrei.de/en/developers) · [For businesses](https://viafrei.de/en/business) · [All tools](#-everything-it-can-do) · [Sources](#where-the-data-comes-from) · [Test results](#-tested-in-public) · [API reference](API.md)
 
 </div>
 
@@ -35,7 +35,7 @@ answer names its source.
 
 <div align="center">
 
-**100 open-data sources** · **21 tools** · **all 16 Länder** · **German and English** · **tested in public on 2,995 questions**
+**80+ open-data sources** · **21 tools** · **motorways, trains and weather in all 16 Länder** · **German and English** · **tested in public on 2,995 questions**
 
 </div>
 
@@ -63,7 +63,7 @@ answer names its source.
   Bahn, DELFI, the DWD, the Bundesnetzagentur, the national access point
   Mobilithek, MobiData BW, a dozen cities and the Länder police reporting offices
   all publish in their own formats, on their own schedules, under their own
-  licences. ViaFrei reads them all and gives your assistant one protocol.
+  licences. ViaFrei reads them and gives your assistant one protocol.
 - **Answers you can read aloud.** Every tool replies in plain sentences in the
   language you asked in, dated to the minute, with the platform, delay, free
   spaces or road temperature wherever the publisher gives them.
@@ -74,7 +74,7 @@ answer names its source.
   sources require and any condition attached to them, such as share-alike or the
   fuel-price purpose limit.
 - **Tested in public.** Before and during the beta we ask the production server
-  thousands of real questions and publish every finding. In the latest round, 2,995
+  thousands of real questions and publish what each round found. In the latest round, 2,995
   new questions in German and English, it picked the right tool **98.9 %** of the
   time and carried the credit line on **100 %** of answers with data, at a median
   of **413 ms** per call. [The results](#-tested-in-public) are below.
@@ -102,9 +102,9 @@ comes back in the language you asked in.
 **What the answers cover, honestly.** Live traffic is the motorways, plus the
 jams and police traffic reports the Länder publish and the reports of some
 cities (Berlin, Köln and Hannover among them). Closures and roadworks cover the
-motorways, federal roads, Land roads in Niedersachsen, Sachsen, Thüringen and
-Baden-Württemberg, and the city streets of Berlin and Hamburg; other cities'
-streets are not covered yet. Places and addresses come from OpenStreetMap, so
+motorways, the federal and Land roads of Niedersachsen, Sachsen, Thüringen and
+Baden-Württemberg, and the city streets of Berlin and Hamburg; other roads and
+other cities' streets are not covered yet. Places and addresses come from OpenStreetMap, so
 what is not mapped there cannot be found, and opening hours and ratings are not
 part of it. A **watch** lives in the conversation that opened it: the server
 keeps every change there, and your assistant shows it when you ask, or on its own
@@ -115,7 +115,7 @@ road is watched as a whole, not one section of it.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`
-(server **1.9.17**) on **Sunday 2026-10-11, between 23:20 and 23:30 Berlin
+(server **1.9.17**) on **Sunday 2026-10-11, between 23:23 and 23:31 Berlin
 time**. They are not mock-ups. Each one shows the first lines of what the tool
 returned and the source line as it was sent, shortened where marked. Ids that
 are only useful for the next tool call were removed.
@@ -130,10 +130,12 @@ Berlin: 1 Staumeldung, 19 Sperrungen, 477 Einschränkungen, 16 geplante Arbeitss
 • Baustelle: Leipziger Straße (Mitte) — in beiden Richtungen zwischen Charlottenstraße und Friedrichstraße Kraneinsatz, Fahrbahn auf einen Fahrstreifen je Richtung verengt… (12.10.2026–15.10.2026)
 …
 Geantwortet haben: Autobahn GmbH, BASt (Arbeitsstellen), VIZ.NRW / NMS, Senatsverwaltung Berlin (Verkehrsmeldungen).
+…
+Stand 23:15 · Quelle: Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de) · Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen (BASt) via Mobilithek, CC BY 4.0, bearbeitet (…) · …
 ```
 The motorway jam and the city's own street works in one answer, and the list of
 sources that answered.
-*Edited: seven of ten entries omitted, a municipality key removed from the heading, and the source lines cut.*
+*Edited: seven of ten entries and the notes after the list omitted, a municipality key removed from the heading, and the sources cut to `…`.*
 </details>
 
 <details>
@@ -148,7 +150,7 @@ As of 23:20 · Source: Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.
 ```
 Asked in English, answered in English. The provider's own wording is quoted in
 German and labelled as such, so nothing is lost in translation.
-*Edited: five of seven closures and all roadworks omitted.*
+*Edited: five of seven closures and all roadworks omitted; the two closures shown are the fourth and sixth of the list.*
 </details>
 
 <details>
@@ -157,10 +159,10 @@ German and labelled as such, so nothing is lost in translation.
 ```text
 Hamburg: 18 Stadtbaustellen zwischen 11.10.2026 und 18.10.2026 im Umkreis von 3 km. Weitere 8 nicht abgerufen — limit erhöhen.
 • Steinstraße, Speersort / Straßenumbau — Autoverkehr: Die Steinstraße bleibt bis auf die Vollsperrung (voraussichtlich im Frühjahr 2027) durchgehend a… (laufend, 31.08.2026–31.05.2028; 0,6 km)
-• Reimarusstraße, Karpfangerstraße / Sanierung Asphaltdecke (Deckschicht) — Für die oben genannten Arbeiten wird die Reimarusstraße im Abschnitt zwischen Eichholz und Karpfangerstraße v… (laufend, 05.10.2026–19.10.2026; 1,3 km)
+• Reimarusstraße, Karpfangerstraße  / Sanierung Asphaltdecke (Deckschicht) — Für die oben genannten Arbeiten wird die Reimarusstraße im Abschnitt zwischen Eichholz und Karpfangerstraße v… (laufend, 05.10.2026–19.10.2026; 1,3 km)
 • Hamburger Berg, Seilerstraße / Erneuerung der Asphaltdecke — … (laufend, 05.10.2026–16.10.2026; 2,1 km)
 …
-Stand 23:09, unverändert seit 16:42 · Quelle: Baustellen (Bauweiser): Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet (…)
+Stand 23:09, unverändert seit 16:42 · Quelle: Baustellen (Bauweiser): Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet (…) · …
 ```
 Hamburg's city roadworks, the ones the city itself has released, nearest first.
 *Edited: seven of ten entries omitted, one description shortened, and the source line cut to `…`.*
@@ -178,11 +180,11 @@ Parking around Hamburg (within 10 km), nearest first:
 73 further site(s) are not listed because they publish no occupancy — not because they are full.
 Free spaces of the Hamburg car parks: the publisher states „Diese Echtzeitdaten sind ungeprüft.“ — these real-time figures are unverified.
 
-As of 23:22 · Source: Parkhäuser: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, Datenlizenz Deutschland – Namensnennung – Version 2.0 (…), Daten geändert (bearbeitet) · …
+As of 23:22 · Source: Parkhäuser: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, Datenlizenz Deutschland – Namensnennung – Version 2.0 (…), Daten geändert (bearbeitet) (…) · …
 ```
 Free spaces now, each reading dated, and the publisher's own caveat passed on.
 The same question about Stuttgart answers from MobiData BW: *Schillerplatz — Parkhaus, 0,2 km, 136 Plätze, 121 frei (Stand 23:24)*.
-*Edited: one line omitted, and the sources cut to `…`.*
+*Edited: one line and the closing note omitted, and the sources cut to `…`.*
 </details>
 
 <details>
@@ -196,12 +198,12 @@ Charging around Stuttgart (within 10 km, ≥ 150 kW), nearest first:
 …
 Only a few operators publish live occupancy; "no status data" means unknown, not free.
 Price per kWh: published for 3 of 5 only; for the others we hold no price.
-
+…
 As of 23:23 · Source: Ladepunkte: EnBW AG via Mobilithek, CC BY 4.0, bearbeitet (…) · … · Ladesäulenregister: Bundesnetzagentur.de, CC BY 4.0, bearbeitet (…) · …
 ```
 Operator, connector, power and price per kWh. A charger that is out of order says
 so before you drive there, and a status that may be stale is flagged as stale.
-*Edited: entries 4–5 and the site ids for watches omitted, a municipality key removed from the heading, and the sources cut to `…`.*
+*Edited: entries 4–5, the site ids for watches and the register note omitted, a municipality key removed from the heading, and the sources cut to `…`.*
 </details>
 
 <details>
@@ -236,7 +238,7 @@ Departures from Berlin Hauptbahnhof (next 60 minutes):
 
 As of 23:23 · Source: Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · …
 ```
-Platform, delay and the estimated real departure, one line each.
+Platform and punctuality, one line each; a late train shows its delay and the expected departure.
 *Edited: five of ten departures omitted, and the sources cut to `…`.*
 </details>
 
@@ -253,7 +255,7 @@ Abfahrten ab Marienplatz — Plandaten, 23:23 bis 12.10. 00:23:
 … und 61 weitere im Fenster.
 
 Stand 23:23 · Quelle: Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet (…) · …
-Plandaten ohne Echtzeit: Verspätungen, Ausfälle und Gleiswechsel sind hier nicht enthalten.
+Plandaten ohne Echtzeit: Verspätungen, Ausfälle und Gleiswechsel sind hier nicht enthalten. …
 ```
 Any stop in Germany, every mode: S-Bahn, U-Bahn, tram and bus on one board. It
 says plainly that this board is the timetable, not realtime.
@@ -298,12 +300,14 @@ below it, the KVB's own lift list is in the same answer.
 **Why the source line matters.** Every answer ends with one, and it is the
 licence speaking: show it to whoever reads the answer. Copy the line the server
 sends you, not the ones on this page, which are shortened. See
-[Using the data you get back](#-using-the-data-you-get-back).
+[Using the data you get back](#using-the-data-you-get-back).
 
+<a id="where-the-data-comes-from"></a>
 ## 🗂️ Where the data comes from
 
-**100 sources, every one official or openly licensed, and every one credited in
-the answer it helped with.** In the latest test round, **66** of them answered at
+**100 sources in the register: 98 official or openly licensed datasets, plus
+our own rules compilation and watch service, and every one credited in the
+answer it helped with.** In the latest test round, **66** of them answered at
 least one question. **21** more are loaded but no question in that round needed
 them, and **13** have their licence read and their data not loaded yet.
 [SOURCES.md](SOURCES.md) lists all 100 with the exact credit line, the licence,
@@ -317,20 +321,20 @@ and how often each one answered.
 | ♿ | **Station lifts and escalators** | Deutsche Bahn and DB InfraGO (FaSta, OpenStation); Kölner Verkehrs-Betriebe | CC BY 4.0, CC0, dl-de/zero |
 | ⚡ | **EV charging** | the Bundesnetzagentur's charging register; charge points and live status from EnBW, Tesla, Volkswagen, Eco-Movement and e-clearing.net via Mobilithek; chargecloud and Taubert via MobiData BW | CC BY 4.0, CC0, dl-de/by |
 | ⛽ | **Fuel** | Tankerkönig, from the Bundeskartellamt's MTS-K | CC BY 4.0, **consumer information only** |
-| 🅿️ | **Parking** | motorway lorry parks (BMV, Bosch, Christophorus, Trucklounge, LBV.SH); car parks and P+R in Hamburg, Köln, NRW, Münster, Dortmund, Wuppertal and Kiel; 15 publishers across Baden-Württemberg via MobiData BW | GeoNutzV, CC BY 4.0, dl-de, **ODbL**, **CC BY-SA** |
+| 🅿️ | **Parking** | motorway lorry parks (BMV, Bosch, Christophorus, Trucklounge); car parks and P+R in Hamburg, Köln, NRW, Münster, Dortmund and Wuppertal; 15 publishers across Baden-Württemberg via MobiData BW | GeoNutzV, CC BY 4.0, dl-de, **ODbL**, **CC BY-SA** |
 | 🌦️ | **Weather** | Deutscher Wetterdienst (official warnings, road-surface forecast) | CC BY 4.0 |
 | 📍 | **Places and addresses** | BKG (administrative areas); GeoNames; OpenStreetMap (addresses, points of interest) | dl-de/by, CC BY 4.0, **ODbL** |
 | 🚲 | **Shared bikes** | nextbike, Donkey Republic | CC0 |
 | 📘 | **Driving rules** | our own compilation from the StVO, StVZO, the emission-zone rules and AFIR, every statement sourced and dated | informational, not legal advice |
 
 Licences in **bold** put a condition on you, not only a credit line. See
-[Using the data you get back](#-using-the-data-you-get-back).
+[Using the data you get back](#using-the-data-you-get-back).
 
 ## 📊 Tested in public
 
 We ask the **production** server large batches of real questions, the way
-people ask an assistant, and read every answer. Every round and every finding is
-published in the [wiki](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds).
+people ask an assistant, and read every answer. Every round, and the cause of
+every server finding, is published in the [wiki](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds).
 
 | round | server | questions | right tool | correct and complete answer | credit line | median per call |
 |---|---|---:|---:|---:|---:|---:|
@@ -343,14 +347,15 @@ published in the [wiki](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds
 | [**2026-10-11**](https://github.com/mavrovde/viafrei-mcp/wiki/Test-round-2026-10-11-v1.9.17) | **1.9.17** | **2,995 new** | **98.9 %** | **94.8 %** | **100 %** | **413 ms** |
 
 - **The latest round was built to be hard.** It asked 2,995 new questions over
-  every tool and all 16 Länder, half in German and half in English, full of the
+  every tool except fuel and shared bikes, and over all 16 Länder, half in
+  German and half in English, full of the
   cases that break place lookup: typos, missing umlauts, villages, landmarks,
   street addresses and border points. One model asked and a different model
   graded. Its 94.8 % does not compare with 1.9.13's 99.6 %, which re-asked
   questions already known.
-- **The live data is strong.** Traffic, weather, station lifts, driving rules,
-  chargers and trains answered correctly in 97–100 % of their questions.
-- **The weak spot is free text.** Most findings are about points of interest
+- **The live data is strong.** Motorway traffic, weather, station lifts, driving
+  rules, chargers and trains answered correctly in 97–100 % of their questions.
+- **The weak spot is free text.** The largest causes are points of interest
   asked by kind ("a vet near me"), house numbers OpenStreetMap does not hold, and
   landmarks with a namesake elsewhere. Every cause is published, and each is
   planned for 2.0.
@@ -680,6 +685,7 @@ client that started it finds out.
 - **Read the business page:** [viafrei.de/en/business](https://viafrei.de/en/business).
   It covers six use cases and how to work with us.
 
+<a id="using-the-data-you-get-back"></a>
 ## ⚖️ Using the data you get back
 
 Every result carries an attribution line. **Show it to the person reading the
