@@ -55,6 +55,11 @@ answer names its source.
 > open by name ("tell me when a warning comes for Kiel"). English questions get
 > English answers. Every source is listed in [SOURCES.md](SOURCES.md).
 
+> **Coming in 2.0: a redesign around where you are.** Better place lookup first,
+> then a viafrei.de home that shows everything we hold for your own place, a news
+> section, and a public status page with a page per source. The address you
+> connect to stays the same. [Read the announcement](https://github.com/mavrovde/viafrei-mcp/discussions/88).
+
 ---
 
 ## ✨ Why ViaFrei
@@ -295,6 +300,42 @@ For anyone with a wheelchair, a pram or a heavy suitcase, this is the difference
 between a station being usable and not. Where a Köln station has a Stadtbahn stop
 below it, the KVB's own lift list is in the same answer.
 *Edited: most facilities omitted, a unit number removed, and the sources cut to `…`.*
+</details>
+
+Two more from an earlier capture, server **1.8.18** on **2026-10-06, 23:00 Berlin time**:
+
+<details>
+<summary><b>⚡ "Where can I charge with Type 2 near Leipzig?"</b> — <code>find_charging_station</code></summary>
+
+```text
+Charging around Leipzig (within 10 km, Type 2), nearest first:
+1. Parkhaus Neumarkt, Neumarkt 30, 04109 Leipzig (Parkhaus Neumarkt) — 0.2 km, Type 2, up to 22 kW, no status data, per charging point register
+2. Motel One Leipzig Nikolaikirche, Schuhmachergäßchen 5, 04109 Leipzig (Wirelane GmbH) — 0.3 km, Type 2, up to 11 kW, no status data, per charging point register
+…
+Only a few operators publish live occupancy; "no status data" means unknown, not free.
+Charging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness.
+
+As of 23:00 · Source: Ladesäulenregister: Bundesnetzagentur.de, CC BY 4.0, bearbeitet (…) · …
+```
+It says what it does not know: "no status data" is unknown, never free.
+*Edited: entries 3–5 omitted, a municipality key removed from the heading, and the sources cut to `…`.*
+</details>
+
+<details>
+<summary><b>📍 "What is at 52.5163, 13.3777?"</b> — <code>describe_location</code></summary>
+
+```text
+Description of 52.5163, 13.3777:
+- Nearest address: Pariser Platz 1, 10117 Berlin (3 m)
+- Settlement: Unter den Linden (0.7 km)
+- District: Berlin (1.9 km)
+- Administrative area: Berlin (2.3 km)
+- Junction: AS Sachsendamm (A100) (5.0 km)
+
+Address data as of 2026-10-04
+As of 23:00 · Source: Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (…) · … · OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 (https://www.openstreetmap.org/copyright; …)
+```
+That's the Brandenburg Gate. *Edited: two of four sources cut to `…`.*
 </details>
 
 **Why the source line matters.** Every answer ends with one, and it is the
