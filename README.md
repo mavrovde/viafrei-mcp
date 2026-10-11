@@ -238,7 +238,7 @@ Departures from Berlin Hauptbahnhof (next 60 minutes):
 
 As of 23:23 · Source: Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · …
 ```
-Platform and punctuality, one line each; a late train shows its delay and the expected departure.
+Platform and punctuality, one line each; a late train shows its delay.
 *Edited: five of ten departures omitted, and the sources cut to `…`.*
 </details>
 

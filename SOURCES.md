@@ -204,8 +204,9 @@ routine: Tankerkönig limits how often its interface may be asked, and its terms
 say plainly that bulk retrieval is blocked and the key deactivated. A full
 re-check would now mean **seventeen** live calls (the read-only tools minus the
 two fuel tools). The round called sixteen of those tools. It also left out
-`find_sharing`, because shared bikes are not what the round was testing. Fuel prices still appear in the table, because
-"what is nearby" answers include stored prices, and 22 answers named them.
+`find_sharing`, because shared bikes are not what the round was testing.
+Fuel prices still appear in the table, because "what is nearby" answers
+include stored prices, and 22 answers named them.
 
 - **live (n)** — at least one answer in the round named it; *n* is how many of
   the 3,232 did. A count is per answer, not per question, so a source that
