@@ -16,7 +16,7 @@
 [![no API key](https://img.shields.io/badge/API%20key-none-brightgreen)](#-connect-in-one-minute)
 [![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-6f42c1)](https://modelcontextprotocol.io)
 
-**[viafrei.de](https://viafrei.de/en)** · [Connect your assistant](https://viafrei.de/en/connect) · [For developers](https://viafrei.de/en/developers) · [For businesses](https://viafrei.de/en/business) · [All tools](#-everything-it-can-do) · [API reference](API.md)
+**[viafrei.de](https://viafrei.de/en)** · [Connect your assistant](https://viafrei.de/en/connect) · [For developers](https://viafrei.de/en/developers) · [For businesses](https://viafrei.de/en/business) · [All tools](#-everything-it-can-do) · [Sources](#-where-the-data-comes-from) · [Test results](#-tested-in-public) · [API reference](API.md)
 
 </div>
 
@@ -26,27 +26,58 @@
 claude mcp add --transport http viafrei https://mcp.viafrei.de/mcp
 ```
 
-**Free. No account, no API key, no sign-up.** One line and your assistant knows
-whether the A8 is jammed, whether your train is late, where the nearest
-Type 2 charger is (and whether it is free, where the operator publishes that)
-and whether the lift at your station works — from official
-German open data, live, with the source named in every answer.
+**Free. No account, no API key, no sign-up.** One line, and your assistant can
+tell you whether the A8 is closed tonight, which Hamburg car park still has
+space, whether the 23:29 ICE to München is on time, where the nearest 150 kW
+charger is, whether the road over the pass will be icy, and whether the lift at
+your station works. It all comes from official German open data, live, and every
+answer names its source.
+
+<div align="center">
+
+**100 open-data sources** · **21 tools** · **all 16 Länder** · **German and English** · **tested in public on 2,995 questions**
+
+</div>
 
 > **Beta.** ViaFrei is being stabilised: sources are still being added, and
 > answers and coverage can change. The answers are written by an AI assistant
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in 1.8:** a twenty-first tool, **`find_sharing`**, for shared bikes
-> (nextbike and Donkey Republic). **Berlin and Brandenburg** punctuality now
-> comes from VBB's own realtime feed. Road answers now include police and city
-> traffic reports from Baden-Württemberg, Schleswig-Holstein and Berlin (and
-> from Köln and Hannover whenever those cities publish one), and roadworks on
-> Bundes- and Landesstraßen in Niedersachsen, Sachsen and Thüringen. **Charging** gains the Bundesnetzagentur register and
-> more live status, and **parking** gains Hamburg, Münster and NRW car parks.
-> Every source is listed in [SOURCES.md](SOURCES.md).
+> **New in 1.9: city traffic.** Ask about a town and you get the jams around it,
+> the police traffic reports of its Land and, in Berlin and Hamburg, the works on
+> its streets. **Hamburg's city roadworks** are listed by district, street or
+> bridge. **Baden-Württemberg** adds roadworks on Bundes- and Landesstraßen and its
+> signed motorway detours. **Icy roads:** weather answers now carry the DWD
+> road-surface forecast, from dry to black ice, with the road temperature.
+> **Parking** adds live free spaces across Baden-Württemberg, Dortmund and
+> Wuppertal. **Fuel** prices are fetched fresh the moment someone asks. **Watches**
+> open by name ("tell me when a warning comes for Kiel"). English questions get
+> English answers. Every source is listed in [SOURCES.md](SOURCES.md).
 
 ---
+
+## ✨ Why ViaFrei
+
+- **One connection instead of a hundred integrations.** Autobahn GmbH, Deutsche
+  Bahn, DELFI, the DWD, the Bundesnetzagentur, the national access point
+  Mobilithek, MobiData BW, a dozen cities and the Länder police reporting offices
+  all publish in their own formats, on their own schedules, under their own
+  licences. ViaFrei reads them all and gives your assistant one protocol.
+- **Answers you can read aloud.** Every tool replies in plain sentences in the
+  language you asked in, dated to the minute, with the platform, delay, free
+  spaces or road temperature wherever the publisher gives them.
+- **Honest about what it does not know.** "No status data" means unknown, never
+  free. A car park that publishes no occupancy is not called full. A forecast is
+  called a forecast. When a source did not answer, the answer says which one.
+- **The licence work is done for you.** Each answer carries the credit line its
+  sources require and any condition attached to them, such as share-alike or the
+  fuel-price purpose limit.
+- **Tested in public.** Before and during the beta we ask the production server
+  thousands of real questions and publish every finding. In the latest round, 2,995
+  new questions in German and English, it picked the right tool **98.9 %** of the
+  time and carried the credit line on **100 %** of answers with data, at a median
+  of **413 ms** per call. [The results](#-tested-in-public) are below.
 
 ## 🧳 What you can ask
 
@@ -56,157 +87,275 @@ comes back in the language you asked in.
 
 | when you're… | ask |
 |---|---|
-| 🌅 **about to commute** | *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* |
+| 🌅 **about to commute** | *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* · *Was fährt als Nächstes ab Marienplatz?* |
 | 🚗 **about to drive** | *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* |
-| 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Is traffic backed up on the Cologne motorway ring — A1, A3 or A4?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
-| ⚡ **driving electric** | *Where can I charge with Type 2 near Leipzig?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* |
-| 🅿️ **driving a lorry** | *Find a rest area with lorry parking on the A9* · *Wo ist der nächste Lkw-Parkplatz an der A7?* |
-| ♿ **travelling step-free** | *Funktioniert der Aufzug am Bahnhof Köln Messe/Deutz?* |
-| 🌦️ **watching the weather** | *Gibt es eine Unwetterwarnung für Freiburg?* |
+| 🏙️ **driving into a city** | *Wie ist der Verkehr in Berlin gerade?* · *Which roadworks are there in Hamburg-Altona this week?* · *Is anything closed in Stuttgart tonight?* |
+| 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
+| ❄️ **watching the weather** | *Will the roads be icy near Garmisch tonight?* · *Gibt es eine Unwetterwarnung für Freiburg?* |
+| 🅿️ **looking for a space** | *Where can I park in Hamburg right now?* · *Welches Parkhaus in Stuttgart hat noch Plätze frei?* · *Find lorry parking on the A9* |
+| ⚡ **driving electric** | *Where is a 150 kW charger near Stuttgart?* · *Wo kann ich mit Typ 2 in Leipzig laden?* |
+| ♿ **travelling step-free** | *Funktioniert der Aufzug am Bahnhof Köln Messe/Deutz?* · *Are the escalators at Hamburg Hbf working?* |
 | 📍 **looking for a place** | *What is the address of the Elbphilharmonie in Hamburg?* · *Welche Apotheken gibt es in Fulda?* · *My satnav shows 50.1109, 8.6821 — what address is that?* |
 | 🇩🇪 **new to German roads** | *Do I need an emission sticker for Stuttgart?* · *Is there a speed limit on the Autobahn?* |
-| ⏳ **waiting for news** | *Tell me as soon as the closure on the A7 is lifted.* · *Sag mir Bescheid, wenn in Köln ein Viertel oder mehr der Bus- und Bahnfahrten verspätet ist.* · *Warn me when a DWD severe-weather warning comes into force for Cologne.* |
+| ⏳ **waiting for news** | *Tell me as soon as the closure on the A7 is lifted.* · *Sag mir Bescheid, wenn in Köln ein Viertel oder mehr der Bus- und Bahnfahrten verspätet ist.* · *Warn me when a severe-weather warning comes into force for Kiel.* |
 
-**What the answers cover, honestly.** Live traffic is the motorways. Closures
-and roadworks also cover federal roads, Land roads in Niedersachsen, Sachsen and
-Thüringen, and the traffic reports some Länder and cities publish (Baden-Württemberg,
-Schleswig-Holstein, Berlin, Köln, Hannover); other city streets are not covered.
-Places and addresses come from OpenStreetMap, so what is not mapped there cannot
-be found, and opening hours and ratings are not part of it. A **watch** lives in
-the conversation that opened it: the server keeps every change there, and your
-assistant shows it when you ask, or on its own if your client supports MCP
-notifications. Nothing is sent by e-mail or SMS. Up to 10 watches per
-conversation, each for up to 24 hours (3 by default), and a road is watched as a
-whole, not one section of it.
+**What the answers cover, honestly.** Live traffic is the motorways, plus the
+jams and police traffic reports the Länder publish and the reports of some
+cities (Berlin, Köln and Hannover among them). Closures and roadworks cover the
+motorways, federal roads, Land roads in Niedersachsen, Sachsen, Thüringen and
+Baden-Württemberg, and the city streets of Berlin and Hamburg; other cities'
+streets are not covered yet. Places and addresses come from OpenStreetMap, so
+what is not mapped there cannot be found, and opening hours and ratings are not
+part of it. A **watch** lives in the conversation that opened it: the server
+keeps every change there, and your assistant shows it when you ask, or on its own
+if your client supports MCP notifications. Nothing is sent by e-mail or SMS. Up
+to 10 watches per conversation, each for up to 24 hours (3 by default), and a
+road is watched as a whole, not one section of it.
 
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`
-(server 1.8.18) on **2026-10-06, 23:00 Berlin time**. They are not mock-ups. Each
-one shows the first lines of what the tool returned, and the source line exactly
-as it was sent, shortened where marked.
+(server **1.9.17**) on **Sunday 2026-10-11, between 23:20 and 23:30 Berlin
+time**. They are not mock-ups. Each one shows the first lines of what the tool
+returned and the source line as it was sent, shortened where marked. Ids that
+are only useful for the next tool call were removed.
 
 <details open>
-<summary><b>🚆 "Welche Züge fahren als Nächstes ab Hamburg Hbf?"</b> — <code>get_train_departures</code></summary>
+<summary><b>🏙️ "Wie ist der Verkehr in Berlin gerade?"</b> — <code>check_road_status</code></summary>
 
 ```text
-Abfahrten ab Hamburg Hbf (nächste 60 Minuten):
-23:00 S S5 → Hamburg Elbgaustraße, ab Hamburg Hbf (S-Bahn), Gleis 2, pünktlich
-23:00 S S7 → Hamburg-Altona(S), ab Hamburg Hbf (S-Bahn), Gleis 1, pünktlich
-23:02 S S5 → Hamburg-Neugraben, ab Hamburg Hbf (S-Bahn), Gleis 4, pünktlich
-23:06 RE RE5 → Cuxhaven, ab Hamburg Hbf, Gleis 14A-C, pünktlich
-
-Stand 22:59 · Quelle: Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (https://developers.deutschebahn.com; …) · …
-```
-Platform, delay and the estimated real departure, in one line each.
-*Edited: six of ten departures omitted. The board listed the first two S-Bahn rows twice; that is a known defect being fixed, and the repeats are among the omitted rows.*
-</details>
-
-<details>
-<summary><b>♿ "Funktioniert der Aufzug am Bahnhof Köln Messe/Deutz?"</b> — <code>check_station_facilities</code></summary>
-
-```text
-In Köln Messe/Deutz ist 1 von 10 gemeldeten Anlagen außer Betrieb.
-Fahrtreppe zu Gleis 4/5: außer Betrieb
-Aufzug Aufzug Gl. 12 KVB Tunnel: in Betrieb
-Aufzug zu Gleis 11: in Betrieb
+Berlin: 1 Staumeldung, 19 Sperrungen, 477 Einschränkungen, 16 geplante Arbeitsstellen — Zeitraum bis 14.10.2026.
+• Stockender Verkehr: A100 Stadtring Berlin, Wilmersdorf Richtung Neukölln, zwischen Gradestraße und Tunnel Ortsteil Britz, 0,8 km stockender Verkehr (seit 16:41; 6,6 km entfernt)
+• Baustelle: Rosenthaler Straße (Mitte) — in beiden Richtungen zwischen Hackescher Markt und Sophienstraße Gleisbauarbeiten, Vollsperrung für Kfz-Verkehr (18.09.2026–20.10.2026)
+• Baustelle: Leipziger Straße (Mitte) — in beiden Richtungen zwischen Charlottenstraße und Friedrichstraße Kraneinsatz, Fahrbahn auf einen Fahrstreifen je Richtung verengt… (12.10.2026–15.10.2026)
 …
-Stadtbahn Köln Bf Deutz/Messe LANXESS arena (Störungsliste Stand 22:59): 1 von 17 gemeldeten Anlagen ist außer Betrieb. …
-Fahrtreppe 60 - HÜ 083 (Bf. Deutz/Messe): außer Betrieb, gemeldet seit 17:32
+Geantwortet haben: Autobahn GmbH, BASt (Arbeitsstellen), VIZ.NRW / NMS, Senatsverwaltung Berlin (Verkehrsmeldungen).
 ```
-The railway station and the Stadtbahn stop below it, from two operators, in one
-answer. For anyone with a wheelchair, a pram or a heavy suitcase, this is the
-difference between a station being usable and not.
-*Edited: most facilities of both lists omitted, and the source lines cut.*
+The motorway jam and the city's own street works in one answer, and the list of
+sources that answered.
+*Edited: seven of ten entries omitted, a municipality key removed from the heading, and the source lines cut.*
 </details>
 
 <details>
-<summary><b>⚡ "Where can I charge with Type 2 near Leipzig?"</b> — <code>find_charging_station</code></summary>
+<summary><b>🛣️ "Is the A8 closed anywhere?"</b> — <code>check_autobahn_traffic</code></summary>
 
 ```text
-Charging around Leipzig (within 10 km, Type 2), nearest first:
-1. Parkhaus Neumarkt, Neumarkt 30, 04109 Leipzig (Parkhaus Neumarkt) — 0.2 km, Type 2, up to 22 kW, no status data, per charging point register
-2. Motel One Leipzig Nikolaikirche, Schuhmachergäßchen 5, 04109 Leipzig (Wirelane GmbH) — 0.3 km, Type 2, up to 11 kW, no status data, per charging point register
+A8: 0 jams/incidents, 7 closures, 63 roadworks sites; announced from 2026-10-12 00:00: 8 closures, 58 roadworks sites — As of 23:20.
+• Closure (Sperrung): A8, since 00:00, reported as 4 sections — Provider text (German): "A8 Vollsperrung AS Flughafen-Messe FR München - Sanierung Rampen — Die Baustelle ist zu folgenden Zeiträumen gültig: 11.10.26 00:00 bis zum 12.10.26 05:00 Uhr. …"
+• Closure (Sperrung): A8, since 2026-09-21 08:00 — Provider text (German): "A8 Ost Sickerschacht bei Piding und Kabelhaus Bad Reichenhall · AS Bad Reichenhall (aus Richtung Bad Reichenhall) nach A8 — Zeitraum dieser Bauphase: […] Ende: 19.10.26 um 08:00 Uhr …"
+…
+As of 23:20 · Source: Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de)
+```
+Asked in English, answered in English. The provider's own wording is quoted in
+German and labelled as such, so nothing is lost in translation.
+*Edited: five of seven closures and all roadworks omitted.*
+</details>
+
+<details>
+<summary><b>🚧 "Welche Baustellen gibt es diese Woche in Hamburg?"</b> — <code>find_roadworks_ahead</code></summary>
+
+```text
+Hamburg: 18 Stadtbaustellen zwischen 11.10.2026 und 18.10.2026 im Umkreis von 3 km. Weitere 8 nicht abgerufen — limit erhöhen.
+• Steinstraße, Speersort / Straßenumbau — Autoverkehr: Die Steinstraße bleibt bis auf die Vollsperrung (voraussichtlich im Frühjahr 2027) durchgehend a… (laufend, 31.08.2026–31.05.2028; 0,6 km)
+• Reimarusstraße, Karpfangerstraße / Sanierung Asphaltdecke (Deckschicht) — Für die oben genannten Arbeiten wird die Reimarusstraße im Abschnitt zwischen Eichholz und Karpfangerstraße v… (laufend, 05.10.2026–19.10.2026; 1,3 km)
+• Hamburger Berg, Seilerstraße / Erneuerung der Asphaltdecke — … (laufend, 05.10.2026–16.10.2026; 2,1 km)
+…
+Stand 23:09, unverändert seit 16:42 · Quelle: Baustellen (Bauweiser): Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet (…)
+```
+Hamburg's city roadworks, the ones the city itself has released, nearest first.
+*Edited: seven of ten entries omitted, one description shortened, and the source line cut to `…`.*
+</details>
+
+<details>
+<summary><b>🅿️ "Where can I park in Hamburg right now?"</b> — <code>find_parking</code></summary>
+
+```text
+Parking around Hamburg (within 10 km), nearest first:
+1. Alter Wall / BUCERIUS-Passage — Car park (Parkhaus), 0.1 km, 210 spaces, 90 free (as of 23:22)
+2. Alsterhaus — Car park (Parkhaus), 0.2 km, 87 spaces, 83 free (as of 23:22)
+3. Große Reichenstraße — Car park (Parkhaus), 0.3 km, 850 spaces, 488 free (as of 23:22)
+4. Hanse-Viertel — Car park (Parkhaus), 0.5 km, 421 spaces, 361 free (as of 23:22)
+73 further site(s) are not listed because they publish no occupancy — not because they are full.
+Free spaces of the Hamburg car parks: the publisher states „Diese Echtzeitdaten sind ungeprüft.“ — these real-time figures are unverified.
+
+As of 23:22 · Source: Parkhäuser: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, Datenlizenz Deutschland – Namensnennung – Version 2.0 (…), Daten geändert (bearbeitet) · …
+```
+Free spaces now, each reading dated, and the publisher's own caveat passed on.
+The same question about Stuttgart answers from MobiData BW: *Schillerplatz — Parkhaus, 0,2 km, 136 Plätze, 121 frei (Stand 23:24)*.
+*Edited: one line omitted, and the sources cut to `…`.*
+</details>
+
+<details>
+<summary><b>⚡ "Where is a 150 kW charger near Stuttgart?"</b> — <code>find_charging_station</code></summary>
+
+```text
+Charging around Stuttgart (within 10 km, ≥ 150 kW), nearest first:
+1. Rotebühlstr. 30, 70178 Stuttgart (ENBW) — 0.7 km, CCS2, up to 300 kW, 0.79 €/kWh, status from 01:05 — possibly out of date, 11 without status
+2. Keplerstraße 7, 70174 Stuttgart (ENBW) — 0.7 km, CCS2, up to 300 kW, 0.79 €/kWh, no status data
+3. Schloßstr 112 / LADE / DC, 70176 Stuttgart (Stadtwerke Stuttgart GmbH) — 1.4 km, CCS2, up to 200 kW, out of order (as of 23:23)
 …
 Only a few operators publish live occupancy; "no status data" means unknown, not free.
-Charging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness.
+Price per kWh: published for 3 of 5 only; for the others we hold no price.
 
-As of 23:00 · Source: Ladesäulenregister: Bundesnetzagentur.de, CC BY 4.0, bearbeitet (…) · …
+As of 23:23 · Source: Ladepunkte: EnBW AG via Mobilithek, CC BY 4.0, bearbeitet (…) · … · Ladesäulenregister: Bundesnetzagentur.de, CC BY 4.0, bearbeitet (…) · …
 ```
-It says what it does not know: "no status data" is unknown, never free.
-*Edited: entries 3–5 omitted, a municipality key removed from the heading, and the sources cut to `…`.*
+Operator, connector, power and price per kWh. A charger that is out of order says
+so before you drive there, and a status that may be stale is flagged as stale.
+*Edited: entries 4–5 and the site ids for watches omitted, a municipality key removed from the heading, and the sources cut to `…`.*
 </details>
 
 <details>
-<summary><b>🚦 "Is public transport in North Rhine-Westphalia running on time?"</b> — <code>check_transit_disruption</code></summary>
+<summary><b>❄️ "Will the roads be icy near Garmisch tonight?"</b> — <code>check_weather_warnings</code></summary>
 
 ```text
-North Rhine-Westphalia: 8% of observed trips more than 5 minutes late (324 of 4,088 trips
-in the last 60 minutes, from 60,858 reports at 18,923 stops), 90 trips with cancelled stops.
-…
-Trend: about the same as the 60 minutes before (9%).
-…
-Published service alerts for North Rhine-Westphalia, in force now (1):
-- Line 515: Straßensperrung Liebigstraße / Haltestellenentfall (valid 2026-05-18 to 2026-11-12)
+No official DWD weather warning is currently in force for Garmisch-Partenkirchen (checked for now and the next 24 hours). That is not an all-clear for the rest of the route: warnings are issued per area and can be published at short notice.
 
-As of 22:58 · Source: Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet (…) · …
+DWD road-surface forecast for the nearest road-weather stations (SWSMOS/METRo model forecast, run 22:00 — not a measurement and not an official warning):
+- Station Farchant-Tunnel (open road, 5.3 km) — forecast 23:00: dry (Trocken), road surface 11.2 °C; no slippery class forecast until 2026-10-12 23:30.
+- Station Griesen (open road, 10.8 km) — forecast 23:00: dry (Trocken), road surface 10.7 °C; no slippery class forecast until 2026-10-12 23:30.
+…
+As of 23:30 · Datenbasis: Deutscher Wetterdienst, zusammengefasst (…) · Quelle: Deutscher Wetterdienst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder (…) · …
+The road-weather station data are unverified point measurements and do not reflect conditions on a road section; …
 ```
-Region-wide, with the method stated, and the operators' own service alerts
-beside the figure. The share-alike condition arrives as part of the answer,
-because it is part of the data.
-*Edited: the method paragraphs between the figure and the alerts omitted, and the sources cut to `…`.*
+New in 1.9: the official warnings and the forecast for the DWD's road-weather
+stations in one answer, each labelled for what it is.
+*Edited: a warn-cell id, a municipality key and one station omitted, and the sources cut to `…`.*
 </details>
 
 <details>
-<summary><b>📍 "What is at 52.5163, 13.3777?"</b> — <code>describe_location</code></summary>
+<summary><b>🚆 "When does the next train leave Berlin Hbf?"</b> — <code>get_train_departures</code></summary>
 
 ```text
-Description of 52.5163, 13.3777:
-- Nearest address: Pariser Platz 1, 10117 Berlin (3 m)
-- Settlement: Unter den Linden (0.7 km)
-- District: Berlin (1.9 km)
-- Administrative area: Berlin (2.3 km)
-- Junction: AS Sachsendamm (A100) (5.0 km)
+Departures from Berlin Hauptbahnhof (next 60 minutes):
+23:24 RE RE3 → Eberswalde Hbf, from Berlin Hbf, platform 6, on time
+23:26 S S3 → Erkner (S), from Berlin Hbf (S-Bahn), platform 15, on time
+23:28 ICE 945 → Berlin Südkreuz, from Berlin Hbf, platform 1, on time
+23:29 ICE 905 → München Hbf, from Berlin Hbf, platform 2, on time
+23:36 S S9 → Flughafen BER (S-Bahn), from Berlin Hbf (S-Bahn), platform 15, on time
+… and 24 more until 2026-10-12 00:23 — the board shows the first 10; raise limit up to 15 for more, or set when to a later time.
 
-Address data as of 2026-10-04
-As of 23:00 · Source: Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (…) · … · OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 (https://www.openstreetmap.org/copyright; …)
+As of 23:23 · Source: Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · …
 ```
-That's the Brandenburg Gate. *Edited: two of four sources cut to `…`.*
+Platform, delay and the estimated real departure, one line each.
+*Edited: five of ten departures omitted, and the sources cut to `…`.*
 </details>
 
 <details>
-<summary><b>🇩🇪 "Do I need an emission sticker for Stuttgart?"</b> — <code>get_driving_rules</code></summary>
+<summary><b>🚋 "Was fährt als Nächstes ab Marienplatz?"</b> — <code>get_departures</code></summary>
 
 ```text
-Low-emission zone Stuttgart: yes, you need the green Feinstaubplakette.
-• Stuttgart: Zone covering the entire city area — it starts at the city boundary, not at the centre.
-  Required: the green plaque (emission group 4). …
-  [to verify: Stuttgart's additional diesel restrictions have changed repeatedly; check the city's current position]
-  (Umweltbundesamt, Umweltzonen in Deutschland)
-…
+Abfahrten ab Marienplatz — Plandaten, 23:23 bis 12.10. 00:23:
+23:24 S2 → Petershausen
+23:24 U3 → Sendlinger Tor, Gleis 52
+23:27 Bus 132 → Forstenrieder Park, Steig 4
+23:27 Tram 19 → Berg am Laim Bf. S, Gleis 2, ab Marienplatz (Theatinerstraße)
+23:27 S6 → Tutzing
+… und 61 weitere im Fenster.
+
+Stand 23:23 · Quelle: Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet (…) · …
+Plandaten ohne Echtzeit: Verspätungen, Ausfälle und Gleiswechsel sind hier nicht enthalten.
 ```
-Every statement carries its source, and says *[to verify]* where we could not
-confirm it. *Edited: most points omitted.*
+Any stop in Germany, every mode: S-Bahn, U-Bahn, tram and bus on one board. It
+says plainly that this board is the timetable, not realtime.
+*Edited: five of ten departures and the stop ids for watches omitted, and the sources cut to `…`.*
 </details>
 
 <details>
-<summary><b>🅿️ "Find lorry parking on the A9"</b> — <code>find_parking</code></summary>
+<summary><b>🚦 "Fahren Busse und Bahnen in Bayern gerade pünktlich?"</b> — <code>check_transit_disruption</code></summary>
 
 ```text
-Parking along the A9:
-1. Aster Moos O — Lorry parking (Lkw-Parkplatz), 14 lorry spaces, no occupancy published
-2. Baarer Weiher O — Lorry parking (Lkw-Parkplatz), 45 lorry spaces, no occupancy published
+Bayern: 4 % der beobachteten Fahrten mehr als 5 Minuten zu spät (108 von 2.424 Fahrten in den letzten 60 Minuten, gestützt auf 16.869 Meldungen an 5.958 Haltestellen); außerdem 19 Fahrten mit mindestens einem ausgefallenen Halt.
 …
-As of 23:00 · Source: Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de)
-Where no "free" count is shown the operator publishes no occupancy — it does not mean the site is full.
+Trend: etwa wie in den 60 Minuten davor (5 %).
+…
+Stand 23:20 · Quelle: Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet (…) · …
+Diese Angaben stehen unter CC BY-SA / CC BY-SA 4.0 (Share-alike), so lizenziert sie die Quelle; …
 ```
-*Edited: three of five sites omitted.*
+A whole Land's punctuality in one figure, with the method stated and the trend
+beside it. The share-alike condition arrives as part of the answer, because it is
+part of the data.
+*Edited: the method paragraphs and the service-alert block omitted, and the sources cut to `…`.*
+</details>
+
+<details>
+<summary><b>♿ "Are the escalators at Hamburg Hbf working?"</b> — <code>check_station_facilities</code></summary>
+
+```text
+8 of 28 reported facilities at Hamburg Hbf are out of service. DB reports no status for 1 facility. Counted are the facilities DB reports for this station.
+Escalator Gleis 3/4 (S-Bahn) - Südsteg: out of service
+Escalator von Gleis 5/6 zu Wandelhalle: out of service — under construction
+Escalator von Gleis 13/14 zu Südsteg: status unknown — monitoring disrupted
+Lift DB Lounge: in service
+…
+As of 23:23 · Source: Aufzüge und Fahrtreppen: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · …
+```
+For anyone with a wheelchair, a pram or a heavy suitcase, this is the difference
+between a station being usable and not. Where a Köln station has a Stadtbahn stop
+below it, the KVB's own lift list is in the same answer.
+*Edited: most facilities omitted, a unit number removed, and the sources cut to `…`.*
 </details>
 
 **Why the source line matters.** Every answer ends with one, and it is the
 licence speaking: show it to whoever reads the answer. Copy the line the server
 sends you, not the ones on this page, which are shortened. See
 [Using the data you get back](#-using-the-data-you-get-back).
+
+## 🗂️ Where the data comes from
+
+**100 sources, every one official or openly licensed, and every one credited in
+the answer it helped with.** In the latest test round, **66** of them answered at
+least one question. **21** more are loaded but no question in that round needed
+them, and **13** have their licence read and their data not loaded yet.
+[SOURCES.md](SOURCES.md) lists all 100 with the exact credit line, the licence,
+and how often each one answered.
+
+| | domain | who publishes it | licences |
+|---|---|---|---|
+| 🛣️ | **Motorways** | Autobahn GmbH des Bundes (traffic, closures, roadworks, lorry parks); BASt (roadworks) | open data, CC BY 4.0 |
+| 🏙️ | **Land roads and cities** | the road authorities of Niedersachsen, Sachsen, Thüringen and Baden-Württemberg; the Länder police reporting offices via VIZ.NRW; traffic reports from Baden-Württemberg, Schleswig-Holstein, Berlin, Köln and Hannover; Hamburg's city roadworks and traffic-camera locations; Baden-Württemberg's signed detours | dl-de/zero, dl-de/by, CC BY 4.0, GeoNutzV |
+| 🚆 | **Trains and public transport** | Deutsche Bahn (timetables, stations); DELFI (the national timetable, realtime, service alerts, stop directory); VBB (Berlin-Brandenburg realtime) | CC BY 4.0, **CC BY-SA** |
+| ♿ | **Station lifts and escalators** | Deutsche Bahn and DB InfraGO (FaSta, OpenStation); Kölner Verkehrs-Betriebe | CC BY 4.0, CC0, dl-de/zero |
+| ⚡ | **EV charging** | the Bundesnetzagentur's charging register; charge points and live status from EnBW, Tesla, Volkswagen, Eco-Movement and e-clearing.net via Mobilithek; chargecloud and Taubert via MobiData BW | CC BY 4.0, CC0, dl-de/by |
+| ⛽ | **Fuel** | Tankerkönig, from the Bundeskartellamt's MTS-K | CC BY 4.0, **consumer information only** |
+| 🅿️ | **Parking** | motorway lorry parks (BMV, Bosch, Christophorus, Trucklounge, LBV.SH); car parks and P+R in Hamburg, Köln, NRW, Münster, Dortmund, Wuppertal and Kiel; 15 publishers across Baden-Württemberg via MobiData BW | GeoNutzV, CC BY 4.0, dl-de, **ODbL**, **CC BY-SA** |
+| 🌦️ | **Weather** | Deutscher Wetterdienst (official warnings, road-surface forecast) | CC BY 4.0 |
+| 📍 | **Places and addresses** | BKG (administrative areas); GeoNames; OpenStreetMap (addresses, points of interest) | dl-de/by, CC BY 4.0, **ODbL** |
+| 🚲 | **Shared bikes** | nextbike, Donkey Republic | CC0 |
+| 📘 | **Driving rules** | our own compilation from the StVO, StVZO, the emission-zone rules and AFIR, every statement sourced and dated | informational, not legal advice |
+
+Licences in **bold** put a condition on you, not only a credit line. See
+[Using the data you get back](#-using-the-data-you-get-back).
+
+## 📊 Tested in public
+
+We ask the **production** server large batches of real questions, the way
+people ask an assistant, and read every answer. Every round and every finding is
+published in the [wiki](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds).
+
+| round | server | questions | right tool | correct and complete answer | credit line | median per call |
+|---|---|---:|---:|---:|---:|---:|
+| [2026-09-21](https://github.com/mavrovde/viafrei-mcp/wiki/Test-round-2026-09-21-v0.1.1) | 0.1.1 | 1,266 | – | – | 94.0 % | 149 ms |
+| [2026-10-04](https://github.com/mavrovde/viafrei-mcp/wiki/Test-round-2026-10-04-v1.7.0) | 1.7.0 | 3,000 | 99.9 % | – | 99.2 % | 332 ms |
+| [2026-10-06](https://github.com/mavrovde/viafrei-mcp/wiki/Test-round-2026-10-06-v1.8.17) | 1.8.17 | 1,000 | 99.1 % | 73.9 % | 99.9 % | 394 ms |
+| [2026-10-07](https://github.com/mavrovde/viafrei-mcp/wiki/Test-round-2026-10-07-v1.8.29) | 1.8.29 | the same 1,000 | 99.6 % | 91.6 % | 100 % | 455 ms |
+| [2026-10-09](https://github.com/mavrovde/viafrei-mcp/wiki/Test-round-2026-10-09-v1.9.6) | 1.9.6 | 300 of them | 99.7 % | 96.1 % | 100 % | 529 ms |
+| [2026-10-11](https://github.com/mavrovde/viafrei-mcp/wiki/Test-round-2026-10-11-v1.9.13) | 1.9.13 | 300 | 99.0 % | 99.6 % | 100 % | 447 ms |
+| [**2026-10-11**](https://github.com/mavrovde/viafrei-mcp/wiki/Test-round-2026-10-11-v1.9.17) | **1.9.17** | **2,995 new** | **98.9 %** | **94.8 %** | **100 %** | **413 ms** |
+
+- **The latest round was built to be hard.** It asked 2,995 new questions over
+  every tool and all 16 Länder, half in German and half in English, full of the
+  cases that break place lookup: typos, missing umlauts, villages, landmarks,
+  street addresses and border points. One model asked and a different model
+  graded. Its 94.8 % does not compare with 1.9.13's 99.6 %, which re-asked
+  questions already known.
+- **The live data is strong.** Traffic, weather, station lifts, driving rules,
+  chargers and trains answered correctly in 97–100 % of their questions.
+- **The weak spot is free text.** Most findings are about points of interest
+  asked by kind ("a vet near me"), house numbers OpenStreetMap does not hold, and
+  landmarks with a namesake elsewhere. Every cause is published, and each is
+  planned for 2.0.
+- **No server error and no crash** in any round. In the latest round 95 % of
+  calls answered within 1.77 s.
 
 ## 🔌 Connect in one minute
 
@@ -267,8 +416,8 @@ Restart the client and ask one of the questions above.
   The directory listing for this repository, with the tool list.
 - **Official MCP Registry — `de.viafrei/mcp`.** The hosted endpoint, as MCP
   clients and directories that read the [registry](https://registry.modelcontextprotocol.io)
-  find it; [`server.json`](server.json) is the entry. It is the registry's own record,
-  republished by hand when the listing changes, so its version may differ from this package's.
+  find it; [`server.json`](server.json) is the entry. It is republished with every
+  release, after the live server is seen to report the new version.
 - **For AI tools — [viafrei.de/llms.txt](https://viafrei.de/llms.txt)** and
   [llms-full.txt](https://viafrei.de/llms-full.txt): what ViaFrei is, how to
   connect, and every tool in one line each.
@@ -384,7 +533,7 @@ Walkthroughs that chain several tools, each naming what comes back:
 - 🚚 [Fleet and logistics briefings](https://github.com/mavrovde/viafrei-mcp/wiki/Use-case-Fleet-and-logistics-briefings): a dispatcher's morning brief, and watches that report a change instead of being polled.
 - 🗺️ [Building a local guide agent](https://github.com/mavrovde/viafrei-mcp/wiki/Use-case-Building-a-local-guide-agent): a vague place to coordinates and back, and what OpenStreetMap's licence asks of you.
 
-How well it answers, measured: [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds), 1000 questions in German and English against production, with every finding published.
+How well it answers, measured: [Tested in public](#-tested-in-public) above, and every round in full in the [wiki](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds).
 
 ## 🛠️ For developers
 
@@ -411,10 +560,11 @@ curl -s https://mcp.viafrei.de/mcp \
 ```
 
 - **One endpoint instead of a stack of integrations.** [SOURCES.md](SOURCES.md)
-  lists the publishers behind it, among them Autobahn GmbH, Deutsche Bahn, DWD,
-  DELFI, the national access point Mobilithek, BKG, GeoNames, OpenStreetMap and
-  MTS-K. Each has its own format, release rhythm and licence, and they arrive
-  here as one protocol.
+  lists the 100 sources behind it, among them Autobahn GmbH, Deutsche Bahn, DWD,
+  DELFI, the national access point Mobilithek, MobiData BW, BKG, GeoNames,
+  OpenStreetMap and MTS-K. They come in GTFS, GTFS-RT, DATEX II, SIRI, NeTEx,
+  GBFS and a dozen home-grown formats, each with its own release rhythm and
+  licence, and they arrive here as one protocol.
 - **Results are written to be read aloud.** A tool answers in sentences an
   assistant can pass on, says what it does not know ("no status data means
   unknown, not free"), and ends with the source line.
@@ -519,7 +669,14 @@ client that started it finds out.
   limit arrives as a sentence you are meant to show.
 - **Built for answering people.** Live figures, sourced and dated, in the
   language of the question. Good for travel and mobility assistants,
-  dispatchers' briefings, customer service and step-free station checks.
+  dispatchers' briefings, fleet and logistics, customer service and step-free
+  station checks.
+- **Germany in one place.** Motorways, Land roads and city streets, trains and
+  every bus and tram stop, chargers, car parks and lorry parks, weather and road
+  ice, across all 16 Länder, from 100 official and open sources that you would
+  otherwise contract, parse and keep alive one by one.
+- **Quality you can check.** Every test round against production is published
+  with its findings, so you can judge the answers before you build on them.
 - **Read the business page:** [viafrei.de/en/business](https://viafrei.de/en/business).
   It covers six use cases and how to work with us.
 

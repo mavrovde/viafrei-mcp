@@ -15,7 +15,7 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. Every row of the catalogue below was compared
-with that resource as served by server 1.8.18 on 2026-10-06, and none disagrees.
+with that resource as served by server 1.9.17 on 2026-10-11, and none disagrees.
 Whatever the surfaces say, the answer you hold is the thing to read:
 `_meta.sources` and the attribution lines on it are produced from the same result
 you are looking at.
@@ -126,11 +126,12 @@ source that is not BY-SA, or keep the two apart.
 Some answers are built from **OpenStreetMap**, under the **ODbL 1.0**. Address
 and point-of-interest lookups always are; so is any other answer whose place our
 own gazetteer could not resolve, because place resolution falls through to the
-OSM tables. The public service gives such answers: in the 2026-10-06
-measurement below, **97** answers from eight different tools named `osm` —
-`find_address`, `find_poi`, `describe_location`, `find_nearby`, `find_parking`,
-`check_weather_warnings` and both fuel tools. So **this binds you** as soon as
-one of those tables answered you.
+OSM tables. The public service gives such answers: in the 2026-10-11
+measurement below, **548** answers from nine different tools named `osm` —
+`find_poi`, `find_parking`, `describe_location`, `find_address`, `find_nearby`,
+`check_weather_warnings`, `find_roadworks_ahead`, `check_road_status` and
+`find_charging_station`. So **this binds you** as soon as one of those tables
+answered you.
 
 You can tell which answers are affected without guessing, and the test is the
 answer rather than the question: the result carries
@@ -188,34 +189,26 @@ CC BY-SA 4.0 — not an ODbL duty, the register says, but the same channel.
 ## The catalogue
 
 **Status is not a promise, it is a measurement.** Every status below was measured
-on **2026-10-06, between 19:52 and 20:17 UTC** (21:52–22:17 Berlin time), against
-the production server, which was then at **1.8.17**. A round of 1,000 questions —
-500 in German, 500 in English, worded the way people ask — produced **1,081 tool
+on **2026-10-11, between 19:58 and 21:03 UTC** (21:58–23:03 Berlin time), against
+the production server at **1.9.17**. A round of 2,995 new questions (1,498 in
+German, 1,497 in English, worded the way people ask) produced **3,232 tool
 answers**, and each source's status is read off one field of those answers: how
 many of them named it in `_meta.sources`. Not the code, not whether a feed was
 running, not the register's opinion of itself. A source can be licensed, cleared
 and loaded and still not answer a question; where that is so, the row says so.
 
-As of the capture shipped alongside this page (2026-10-06, server 1.8.18),
-it exposes twenty-one tools, nineteen of them read-only, and the round called
-every one of them — **including both fuel tools, `find_cheapest_fuel` and
-`find_fuel_station`.** That was a one-off decision, taken before the round, and
-it is not the routine. Tankerkönig limits how often its interface may be asked,
-and its terms say plainly that bulk retrieval is blocked and the key deactivated,
-so a routine re-check leaves both fuel tools out.
-That would now mean **seventeen** live calls — the read-only tools minus the two fuel tools — and it
-would measure less than this round did, which is why the round is the measurement
-and this paragraph is dated rather than refreshed on a schedule.
-
-**One difference between the round and this page matters.** On 1.8.17,
-`check_transit_disruption` timed out on 33 of its 64 calls, almost all of them
-questions about a whole region; 1.8.18 fixed that, and a whole-Land question for
-Bayern answered on 1.8.18 at 21:09 UTC the same evening. So the public-transport
-counts below are lower than the same questions would produce today: a small count
-there is undercounted, not marginal.
+As of the capture shipped alongside this page (2026-10-11, server 1.9.17),
+it exposes twenty-one tools, nineteen of them read-only. The round left out
+**both fuel tools, `find_cheapest_fuel` and `find_fuel_station`**, which is the
+routine: Tankerkönig limits how often its interface may be asked, and its terms
+say plainly that bulk retrieval is blocked and the key deactivated. A full
+re-check would now mean **seventeen** live calls (the read-only tools minus the
+two fuel tools). The round called sixteen of those tools. It also left out `find_sharing`, because shared bikes are not
+what the round was testing. Fuel prices still appear in the table, because
+"what is nearby" answers include stored prices, and 22 answers named them.
 
 - **live (n)** — at least one answer in the round named it; *n* is how many of
-  the 1,081 did. A count is per answer, not per question, so a source that
+  the 3,232 did. A count is per answer, not per question, so a source that
   resolves places counts every answer it helped with.
 - **in the service** — the server's register lists the source as held, and no
   answer in the round named it. It is reported as unconfirmed rather than as
@@ -224,8 +217,8 @@ there is undercounted, not marginal.
   can name it today; the row is here because a licence that has been read is
   part of the record.
 
-Of the 69 rows — the register in full, one row per id it lists — **47 are live, 13
-in the service and 9 read.** The id in the first column is the one that appears in
+Of the 100 rows — the register in full, one row per id it lists — **66 are live, 21
+in the service and 13 read.** The id in the first column is the one that appears in
 `_meta.sources`; the line in the second is the attribution line the answer
 carries, without the URI that follows it in parentheses (why is explained
 [below](#the-sources-in-detail)). Publication rhythm and freshness are not in the
@@ -235,117 +228,154 @@ table: the server reports them per feed, live, in the resource
 | Source id | Attribution line | Licence | Status |
 |---|---|---|---|
 | **Roads** | | | |
-| `autobahn` | Verkehrsdaten: Autobahn GmbH des Bundes | open, no licence text published | live (206) |
-| `mobilithek_roadworks_bast` | Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen (BASt) via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (59) |
-| `mobilithek_roadworks_ald_ni` | Arbeitsstellen Niedersachsen: Niedersächsische Landesbehörde für Straßenbau und Verkehr via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | live (5) |
-| `mobilithek_roadworks_ald_sn` | Arbeitsstellen Sachsen: Landesamt für Straßenbau und Verkehr des Freistaates Sachsen (LASuV) via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (7) |
-| `mobilithek_roadworks_ald_th` | Arbeitsstellen Thüringen: © Thüringer Landesamt für Bau und Verkehr (TLBV) 2026 — GeoNutzV, Daten verändert | GeoNutzV | live (2) |
-| `mobilithek_nms_events` | Verkehrsmeldungen der Polizei: Landesbetrieb Straßenbau NRW (VIZ.NRW) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | live (2) |
-| `mobilithek_traffic_bw` | Verkehrsmeldungen Baden-Württemberg: Landesmeldestelle für den Verkehrswarndienst Baden-Württemberg (Innenministerium Baden-Württemberg) via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 **plus a condition of use** | live (4) |
-| `mobilithek_traffic_berlin` | Verkehrsmeldungen Berlin: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt Berlin via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | in the service |
+| `autobahn` | Verkehrsdaten: Autobahn GmbH des Bundes | open, no licence text published | live (590) |
+| `mobilithek_roadworks_bast` | Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen (BASt) via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (374) |
+| `mobilithek_roadworks_ald_ni` | Arbeitsstellen Niedersachsen: Niedersächsische Landesbehörde für Straßenbau und Verkehr via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | live (33) |
+| `mobilithek_roadworks_ald_sn` | Arbeitsstellen Sachsen: Landesamt für Straßenbau und Verkehr des Freistaates Sachsen (LASuV) via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (31) |
+| `mobilithek_roadworks_ald_th` | Arbeitsstellen Thüringen: © Thüringer Landesamt für Bau und Verkehr (TLBV) 2026 — GeoNutzV, Daten verändert | GeoNutzV | live (19) |
+| `bemas_bw` | Baustellen: Verkehrsministerium Baden-Württemberg (BEMaS) via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | live (25) |
+| `bw_bedarfsumleitungen` | Bedarfsumleitungen: Verkehrsministerium Baden-Württemberg via MobiData BW, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | live (4) |
+| `hh_bauweiser` | Baustellen (Bauweiser): Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | live (30) |
+| `hh_verkehrskameras` | Verkehrskameras: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, (BVM), Datenlizenz Deutschland – Namensnennung – Version 2.0 | dl-de/by-2-0 | live (6) |
+| `mobilithek_nms_events` | Verkehrsmeldungen der Polizei: Landesbetrieb Straßenbau NRW (VIZ.NRW) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | live (94) |
+| `polizei_hamburg_lms` | Verkehrsmeldungen Hamburg: Polizei Hamburg – Landesmeldestelle, übermittelt im NMS-Gesamtdatensatz der VIZ.NRW via Mobilithek | dl-de/zero-2-0 | live (6) |
+| `mobilithek_traffic_bw` | Verkehrsmeldungen Baden-Württemberg: Landesmeldestelle für den Verkehrswarndienst Baden-Württemberg (Innenministerium Baden-Württemberg) via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 **plus a condition of use** | live (17) |
+| `mobilithek_traffic_berlin` | Verkehrsmeldungen Berlin: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt Berlin via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | live (4) |
+| `mobilithek_traffic_sh` | Verkehrsmeldungen Schleswig-Holstein: Landesmeldestelle Polizei Schleswig-Holstein via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | live (16) |
 | `mobilithek_traffic_koeln_events` | Verkehrsereignisse Köln: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | in the service |
-| `mobilithek_traffic_sh` | Verkehrsmeldungen Schleswig-Holstein: Landesmeldestelle Polizei Schleswig-Holstein via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | live (4) |
 | `mobilithek_traffic_hannover` | Verkehrsmeldungen Hannover: Landeshauptstadt Hannover – Fachbereich Tiefbau via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | in the service |
+| `mobilithek_traffic_hamburg` | Verkehrsmeldungen Hamburg: Polizei Hamburg – Landesmeldestelle via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | read |
+| `mobilithek_traffic_nrw` | Verkehrsinformationen NRW: Landesbetrieb Straßenbau NRW (VIZ.NRW) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | read |
+| `mobilithek_traffic_nrw_einzel` | Verkehrsinformationen NRW (Einzelmeldungen): Landesbetrieb Straßenbau NRW (VIZ.NRW) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | read |
 | `mobilithek_traffic_koeln_static` | Verkehrslage Köln (Streckenabschnitte): Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | read |
 | `mobilithek_traffic_koeln_dyn` | Verkehrslage Köln: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | read |
 | `mobilithek_roadweather_sh_static` | Straßenwetter Schleswig-Holstein (Messstellen): Landesbetrieb Straßenbau und Verkehr Schleswig-Holstein (LBV.SH) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | read |
 | `mobilithek_roadweather_sh_dyn` | Straßenwetter Schleswig-Holstein: Landesbetrieb Straßenbau und Verkehr Schleswig-Holstein (LBV.SH) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | read |
 | **Rail and public transport** | | | |
-| `db_timetables` | Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | live (78) |
-| `delfi_rt_tu` | Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | live (16) |
-| `vbb_rt` | Echtzeitdaten: VBB Verkehrsverbund Berlin-Brandenburg GmbH, CC BY 4.0, bearbeitet | CC BY 4.0 | live (13) |
+| `db_timetables` | Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | live (229) |
+| `delfi_rt_tu` | Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | live (165) |
+| `vbb_rt` | Echtzeitdaten: VBB Verkehrsverbund Berlin-Brandenburg GmbH, CC BY 4.0, bearbeitet | CC BY 4.0 | live (10) |
 | `delfi_siri_et` | Echtzeitdaten Schiene: DELFI e.V. via Mobilithek, Datensatz „DELFI-Realtime SIRI ET Bahndaten“, CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | in the service |
-| `delfi_rt_sa` | Störungsmeldungen: DELFI e.V. via Mobilithek, Datensatz „DELFI-Datensatz GTFS-RT Service Alerts“, CC BY-SA 4.0, bearbeitet | **CC BY-SA 4.0** | live (3) |
-| `delfi_siri_sx` | Störungsmeldungen: DELFI e.V. via Mobilithek, Datensatz „DELFI-Datensatz SIRI SX“, CC BY-SA 4.0, bearbeitet | **CC BY-SA 4.0** | live (1) |
-| `delfi_static` | Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet | CC BY 4.0 | live (84) |
-| `delfi_zhv` | Haltestellendaten: DELFI e.V. (zentrales Haltestellenverzeichnis), CC BY 4.0, bearbeitet | CC BY 4.0 | live (160) |
-| `db_stada` | Bahnhofsdaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | live (329) |
+| `delfi_rt_sa` | Störungsmeldungen: DELFI e.V. via Mobilithek, Datensatz „DELFI-Datensatz GTFS-RT Service Alerts“, CC BY-SA 4.0, bearbeitet | **CC BY-SA 4.0** | live (51) |
+| `delfi_siri_sx` | Störungsmeldungen: DELFI e.V. via Mobilithek, Datensatz „DELFI-Datensatz SIRI SX“, CC BY-SA 4.0, bearbeitet | **CC BY-SA 4.0** | live (11) |
+| `delfi_static` | Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet | CC BY 4.0 | live (410) |
+| `delfi_zhv` | Haltestellendaten: DELFI e.V. (zentrales Haltestellenverzeichnis), CC BY 4.0, bearbeitet | CC BY 4.0 | live (461) |
+| `db_stada` | Bahnhofsdaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | live (923) |
 | **Station lifts and escalators** | | | |
-| `db_fasta` | Aufzüge und Fahrtreppen: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | live (2) |
-| `mobilithek_openstation_netex` | Aufzüge und Fahrtreppen (Bestand): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 | CC0 1.0 | live (29) |
-| `mobilithek_openstation_siri_fm` | Aufzüge und Fahrtreppen (Status): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 | CC0 1.0 | live (29) |
-| `kvb_lifts` | Aufzugsdaten: Kölner Verkehrs-Betriebe AG, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0, no warranty | live (7) |
+| `db_fasta` | Aufzüge und Fahrtreppen: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | live (84) |
+| `mobilithek_openstation_netex` | Aufzüge und Fahrtreppen (Bestand): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 | CC0 1.0 | live (97) |
+| `mobilithek_openstation_siri_fm` | Aufzüge und Fahrtreppen (Status): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 | CC0 1.0 | live (97) |
+| `kvb_lifts` | Aufzugsdaten: Kölner Verkehrs-Betriebe AG, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0, no warranty | live (10) |
 | **Fuel** | | | |
-| `tankerkoenig` | Tankstellenpreise: Tankerkönig.de — MTS-K, CC BY 4.0, bearbeitet | CC BY 4.0 **plus the MTS-K purpose limit** | live (149) |
+| `tankerkoenig` | Tankstellenpreise: Tankerkönig.de — MTS-K, CC BY 4.0, bearbeitet | CC BY 4.0 **plus the MTS-K purpose limit** | live (22) |
 | **Charging** | | | |
-| `bnetza_lsr` | Ladesäulenregister: Bundesnetzagentur.de, CC BY 4.0, bearbeitet | CC BY 4.0 | live (79) |
-| `mobilithek_afir_ecomovement` | Ladepunkte: Eco-Movement via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (45) |
-| `mobilithek_afir_ecomovement_dyn` | Ladepunkt-Verfügbarkeit: Eco-Movement via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | in the service |
-| `mobilithek_afir_enbw_stat` | Ladepunkte: EnBW AG via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (6) |
-| `mobilithek_afir_enbw_dyn` | Ladepunkt-Verfügbarkeit: EnBW AG via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (2) |
-| `mobilithek_afir_tesla_stat` | Ladepunkte: Tesla Germany GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | live (6) |
+| `bnetza_lsr` | Ladesäulenregister: Bundesnetzagentur.de, CC BY 4.0, bearbeitet | CC BY 4.0 | live (187) |
+| `mobilithek_afir_ecomovement` | Ladepunkte: Eco-Movement via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (95) |
+| `mobilithek_afir_ecomovement_dyn` | Ladepunkt-Verfügbarkeit: Eco-Movement via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (80) |
+| `mobilithek_afir_enbw_stat` | Ladepunkte: EnBW AG via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (15) |
+| `mobilithek_afir_enbw_dyn` | Ladepunkt-Verfügbarkeit: EnBW AG via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (9) |
+| `mobilithek_afir_tesla_stat` | Ladepunkte: Tesla Germany GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | live (3) |
 | `mobilithek_afir_tesla_dyn` | Ladepunkt-Verfügbarkeit: Tesla Germany GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | live (7) |
-| `mobilithek_afir_vw_stat` | Ladepunkte: Volkswagen Group Charging GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | live (1) |
+| `mobilithek_afir_vw_stat` | Ladepunkte: Volkswagen Group Charging GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | live (6) |
 | `mobilithek_afir_vw_dyn` | Ladepunkt-Verfügbarkeit: Volkswagen Group Charging GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | in the service |
-| `mobilithek_afir_eclearing_stat` | Ladepunkte: e-clearing.net (smartlab Innovationsgesellschaft mbH) via Mobilithek, CC0 1.0 | CC0 1.0 | live (14) |
-| `mobilithek_afir_eclearing_dyn` | Ladepunkt-Verfügbarkeit: e-clearing.net (smartlab Innovationsgesellschaft mbH) via Mobilithek, CC0 1.0 | CC0 1.0 | live (5) |
-| `ocpdb_chargecloud` | Ladepunkte und Verfügbarkeit: chargecloud (CC0 1.0) via MobiData BW (NVBW), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert | dl-de/by-2-0 | live (40) |
-| `ocpdb_taubert` | Ladepunkte und Verfügbarkeit: Taubert Consulting (CC0 1.0) via MobiData BW (NVBW), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert | dl-de/by-2-0 | in the service |
+| `mobilithek_afir_eclearing_stat` | Ladepunkte: e-clearing.net (smartlab Innovationsgesellschaft mbH) via Mobilithek, CC0 1.0 | CC0 1.0 | live (22) |
+| `mobilithek_afir_eclearing_dyn` | Ladepunkt-Verfügbarkeit: e-clearing.net (smartlab Innovationsgesellschaft mbH) via Mobilithek, CC0 1.0 | CC0 1.0 | live (13) |
+| `ocpdb_chargecloud` | Ladepunkte und Verfügbarkeit: chargecloud (CC0 1.0) via MobiData BW (NVBW), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert | dl-de/by-2-0 | live (70) |
+| `ocpdb_taubert` | Ladepunkte und Verfügbarkeit: Taubert Consulting (CC0 1.0) via MobiData BW (NVBW), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert | dl-de/by-2-0 | live (1) |
 | **Parking** | | | |
-| `mobilithek_truckpark_static_geonutzv` | LKW-Parken: © Lkw-Parken BAB Deutschland / Bundesministerium für Verkehr (BMV) 2026 — GeoNutzV, Daten verändert | GeoNutzV | live (62) |
-| `mobilithek_park_bosch_static` | Lkw-Parken: Bosch Service Solutions via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (5) |
-| `mobilithek_park_bosch_dyn` | Lkw-Parken (Belegung): Bosch Service Solutions via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (1) |
+| `mobilithek_truckpark_static_geonutzv` | LKW-Parken: © Lkw-Parken BAB Deutschland / Bundesministerium für Verkehr (BMV) 2026 — GeoNutzV, Daten verändert | GeoNutzV | live (112) |
+| `mobilithek_park_bosch_static` | Lkw-Parken: Bosch Service Solutions via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (6) |
+| `mobilithek_park_bosch_dyn` | Lkw-Parken (Belegung): Bosch Service Solutions via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | live (4) |
 | `mobilithek_park_christophorus` | Lkw-Parken: Florence Knuellwald GmbH (Christophorus Parking) via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | in the service |
 | `mobilithek_park_christophorus_occ` | Lkw-Parken (Belegung): Florence Knuellwald GmbH (Christophorus Parking) via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | in the service |
 | `mobilithek_park_trucklounge` | Lkw-Parken: ENMO GmbH & Co.KG (Trucklounge Ecopark) via Mobilithek — enthält Daten aus „Trucklounge Ecopark“, Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/), bearbeitet | **ODbL 1.0** | in the service |
 | `mobilithek_park_trucklounge_occ` | Lkw-Parken (Belegung): ENMO GmbH & Co.KG (Trucklounge Ecopark) via Mobilithek — enthält Daten aus „Trucklounge Ecopark (dynamisch)“, Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/), bearbeitet | **ODbL 1.0** | in the service |
-| `mobilithek_park_koeln_static` | Parkhäuser: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | live (2) |
-| `mobilithek_park_koeln_dyn` | Parkhaus-Belegung: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | live (2) |
+| `mobilithek_park_koeln_static` | Parkhäuser: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | live (6) |
+| `mobilithek_park_koeln_dyn` | Parkhaus-Belegung: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | in the service |
 | `mobilithek_park_nrw_parken` | Parkhäuser NRW: NRW.Mobidrom via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | live (3) |
-| `mobilithek_park_nrw_pr` | P+R NRW: NRW.Mobidrom via Mobilithek, Datensatz „Gebündelte Daten Park+Ride NRW“, CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | live (2) |
-| `hamburg_parkhaeuser` | Parkhäuser: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert (bearbeitet) | dl-de/by-2-0 | live (3) |
-| `hamburg_park_ride` | P+R-Anlagen: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, (BVM), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert (bearbeitet) | dl-de/by-2-0 | in the service |
-| `muenster_pls` | Parkhausbelegung Münster — Datenquelle: Stadt Münster, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | in the service |
+| `mobilithek_park_nrw_pr` | P+R NRW: NRW.Mobidrom via Mobilithek, Datensatz „Gebündelte Daten Park+Ride NRW“, CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | live (13) |
+| `hamburg_parkhaeuser` | Parkhäuser: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert (bearbeitet) | dl-de/by-2-0 | live (11) |
+| `hamburg_park_ride` | P+R-Anlagen: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, (BVM), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert (bearbeitet) | dl-de/by-2-0 | live (2) |
+| `muenster_pls` | Parkhausbelegung Münster — Datenquelle: Stadt Münster, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | live (1) |
 | `mobilithek_park_thiersheim_dyn` | Lkw-Parken (Belegung): Bosch Service Solutions (Autohof Thiersheim) via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | read |
 | `mobilithek_park_sh_truck` | Lkw-Parken: Landesbetrieb Straßenbau und Verkehr Schleswig-Holstein (LBV.SH) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | read |
 | `mobilithek_park_sh_truck_dyn` | Lkw-Parken (Belegung): Landesbetrieb Straßenbau und Verkehr Schleswig-Holstein (LBV.SH) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | read |
 | `mobilithek_park_kiel_dyn` | Parkplätze Kieler Altstadt (Belegung): KielRegion GmbH via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | read |
 | `mobilithek_db_bahnpark` | Parking Information Daten der DB BahnPark – API über den DB API Marketplace | dl-de/by-2-0 | read |
+| `dortmund_parkhauser` | Parkhaus-Belegung Dortmund: Stadt Dortmund (Tiefbauamt), Open Data Dortmund, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | live (2) |
+| `mobilithek_park_dortmund_dyn` | Parkhaus-Belegung: Stadt Dortmund via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | read |
+| `mobilithek_park_dortmund_static` | Parkhäuser: Stadt Dortmund via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | live (2) |
+| `mobilithek_park_wuppertal_dyn` | Parkhaus-Belegung: Stadt Wuppertal via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | in the service |
+| `muc_parken_parkhaeuser` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | in the service |
+| `muc_parken_pr` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | in the service |
+| `muc_parken_prognosen` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | in the service |
+| `parkapi_bw_aalen` | Parkdaten: Stadt Aalen via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | in the service |
+| `parkapi_bw_buchen` | Parkdaten: Stadt Buchen via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | in the service |
+| `parkapi_bw_freiburg` | Parkdaten: Stadt Freiburg via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | live (2) |
+| `parkapi_bw_friedrichshafen` | Parkdaten: Stadt Friedrichshafen via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | in the service |
+| `parkapi_bw_heidelberg` | Parkdaten: Stadt Heidelberg via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | live (5) |
+| `parkapi_bw_herrenberg` | Parkdaten: Stadt Herrenberg via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | in the service |
+| `parkapi_bw_karlsruhe` | Parkdaten: Stadt Karlsruhe via MobiData BW, CC BY 4.0, bearbeitet | CC BY 4.0 | live (1) |
+| `parkapi_bw_konstanz` | Parkdaten: Stadt Konstanz via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | live (2) |
+| `parkapi_bw_mannheim` | Parkdaten: Stadt Mannheim via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | live (1) |
+| `parkapi_bw_p_m_bw` | Parkdaten: Parken und Mitfahren via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | in the service |
+| `parkapi_bw_pbw` | Parkdaten: Parkraumgesellschaft Baden-Württemberg mbh (PBW) via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | live (7) |
+| `parkapi_bw_stuttgart` | Parkdaten: Stadt Stuttgart via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | live (5) |
+| `parkapi_bw_ulm` | Parkdaten: Stadt Ulm via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | live (3) |
+| `parkapi_bw_vrn` | Parkdaten: Verkehrsverbund Rhein-Neckar via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | live (1) |
+| `parkapi_bw_vrs` | Parkdaten: Verband Region Stuttgart via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | in the service |
 | **Sharing** | | | |
-| `gbfs_nextbike` | Bikesharing: nextbike GmbH (GBFS), CC0 1.0 | CC0 1.0 | live (32) |
-| `gbfs_donkey` | Bikesharing: Donkey Republic (GBFS), CC0 1.0 | CC0 1.0 | live (6) |
+| `gbfs_nextbike` | Bikesharing: nextbike GmbH (GBFS), CC0 1.0 | CC0 1.0 | in the service |
+| `gbfs_donkey` | Bikesharing: Donkey Republic (GBFS), CC0 1.0 | CC0 1.0 | in the service |
 | **Weather** | | | |
-| `dwd` | Quelle: Deutscher Wetterdienst | CC BY 4.0 | live (54) |
+| `dwd` | Quelle: Deutscher Wetterdienst | CC BY 4.0 | live (224) |
+| `dwd_road` | Quelle: Deutscher Wetterdienst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder | CC BY 4.0 | live (181) |
 | **Places and addresses** | | | |
-| `bkg_gvisys` | Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0, Datenquellen: https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_gn250.pdf (Daten verändert) | dl-de/by-2-0 | live (494) |
-| `geonames` | Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet | CC BY 4.0 | live (244) |
-| `osm` | OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | live (97) |
+| `bkg_gvisys` | Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0, Datenquellen: https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_gn250.pdf (Daten verändert) | dl-de/by-2-0 | live (1330) |
+| `geonames` | Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet | CC BY 4.0 | live (630) |
+| `osm` | OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | live (548) |
 | **Our own** | | | |
-| `viafrei_rules` | Verkehrsregeln: ViaFrei, eigene Zusammenstellung aus amtlichen Quellen (StVO, StVZO, 35. BImSchV, StVG, EmoG, AFIR); jede Aussage mit Quelle und Prüfdatum — informativ, keine Rechtsberatung / Road rules: ViaFrei, our own compilation from official sources; every statement carries its source and the date it was read — informational, not legal advice | our own text | live (35) |
-| `viafrei_watch` | Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben / Watch: ViaFrei, our own service — every report names the source of the data behind it | no provider data | live (41) |
+| `viafrei_rules` | Verkehrsregeln: ViaFrei, eigene Zusammenstellung aus amtlichen Quellen (StVO, StVZO, 35. BImSchV, StVG, EmoG, AFIR); jede Aussage mit Quelle und Prüfdatum — informativ, keine Rechtsberatung / Road rules: ViaFrei, our own compilation from official sources; every statement carries its source and the date it was read — informational, not legal advice | our own text | live (160) |
+| `viafrei_watch` | Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben / Watch: ViaFrei, our own service — every report names the source of the data behind it | no provider data | live (120) |
 
 What the table cannot say in a cell:
 
 - **Fuel coverage is not nationwide.** We watch a limited set of stations, on
   the terms the publisher sets, and we ask for a station's details only when
   somebody actually asks a question. Outside that set you may get nothing back.
-  That is a consequence of the MTS-K rules, not a gap we are hiding. Fuel is
-  measured this time — 149 answers named it — for the one-off reason given above.
+  That is a consequence of the MTS-K rules, not a gap we are hiding.
+- **München's car parks and P+R sites** (the three `muc_parken_*` rows) are
+  licensed and wired into `find_parking`, but the city's open-data portal refuses
+  requests from our server's network. So no München facility has been loaded yet,
+  and no answer can name one. A request to unblock our server is with the city.
+- **The DWD road-surface forecast** (`dwd_road`) comes with a condition of use,
+  which the register quotes in German as binding: the road-weather stations are
+  unverified point measurements, they do not describe a whole road section, and
+  there is no right to regular or complete deliveries. Answers label the forecast
+  as a model forecast, not as a measurement or an official warning.
 - **SIRI ET is shown only as a fallback.** `get_train_departures` adds it only when
-  DB Timetables has no realtime for the station; in the round's 79 rail-departure
-  answers that never happened, so it reads `in the service`.
-- **Berlin traffic messages** were named by no answer in the round. One spot check
-  after it — `check_road_status` for Berlin, 21:09 UTC the same evening, server
-  1.8.18 — named `mobilithek_traffic_berlin`. That is one call, reported as one
-  call; the table keeps the round's status.
-- **Köln traffic events and Hannover** carry an entry only when the city publishes
-  one; none was named. **Christophorus Parking and Trucklounge** were named on
-  2026-10-05 by lorry-parking questions near Knüllwald and Emstek, and no question
-  in the round asked there. For the rest of the `in the service` rows — the
-  Eco-Movement and Volkswagen availability feeds, Taubert, Hamburg's P+R sites and
-  Münster's car parks — this page knows nothing beyond the zero.
+  DB Timetables has no realtime for the station. In the round that never happened,
+  so it reads `in the service`.
+- **City reports that appear only when a city publishes one**: Köln's traffic
+  events and Hannover's reports were named by no answer. **Lorry parks off the
+  beaten track** (Christophorus Parking, Trucklounge, Autohof Thiersheim,
+  Schleswig-Holstein's lorry parks) answer only questions asked near them, and
+  the round asked none there. For the remaining `in the service` rows (Volkswagen's
+  availability feed, Köln's and Wuppertal's car-park occupancy and seven of the
+  MobiData BW car-park publishers) this page knows nothing beyond the zero.
+- **Shared bikes** (`gbfs_nextbike`, `gbfs_donkey`) read `in the service` only
+  because the round did not ask about them; they answered 32 and 6 times in the
+  1.8.17 round.
 
-**What this measurement corrected.** Until 2026-10-06 this page was dated
-2026-09-27 and said five things that are no longer true: that the DELFI static
-timetable and stop directory were not answering (84 and 160 answers named them);
-that the police traffic events were stored but never named (2 answers did); that
-Bosch's lorry parks had not been seen (its master data was named 5 times, its
-occupancy once); that the register
-called the BKG gazetteer "not ingested yet" (it no longer does, and 494 answers
-named it); and that DB BahnPark was a source this page lists as read for a product
-we use (the register now carries it as planned, licence read and nothing
-ingested). If you read an earlier version and concluded something was or was not
-available, re-check it here — and better, in the answer.
+**What this measurement changed.** The page was last measured on 2026-10-06
+against 1.8.17, with 69 rows. Since then the register has gained 31: Hamburg's
+city roadworks and traffic-camera locations, roadworks and signed detours in
+Baden-Württemberg, Hamburg's police traffic reports, the DWD road-surface
+forecast, car parks from MobiData BW, Dortmund, Wuppertal and München, and three
+NRW and Hamburg feeds whose licence is read and whose data is not loaded yet.
+Rows that read `in the service` on 2026-10-06 and are live now include Hamburg's
+P+R sites, Münster's car parks, Eco-Movement's availability feed, Taubert, and
+Berlin's traffic messages.
 
 **What settles any of this for you is the answer in your hand**: read
 `_meta.sources` and the attribution lines on the result, never a status cell on a
@@ -417,7 +447,10 @@ the table. Three things about them are not:
 - **Schleswig-Holstein and Hannover** are published under the access point's term
   "Open Data (freie Nutzung)", and the register names no licence text behind it.
   We name the publisher on every answer, as for the motorway interface, and claim
-  no more than the label says.
+  no more than the label says. Hamburg's own police feed carries the same label
+  and is not loaded (`mobilithek_traffic_hamburg`, read). The Hamburg police
+  messages that do answer (`polizei_hamburg_lms`) arrive inside VIZ.NRW's national
+  message set, under that set's Datenlizenz Deutschland – Zero.
 - **A record its publisher marks confidential is never shown.** In DATEX II, the
   format these feeds use, a publisher marks each record with a confidentiality
   level; a record marked anything other than `noRestriction` is stored and never
@@ -699,7 +732,7 @@ ODbL attribution nor the obligation."*
 Read the qualifier. The predicate is **which table answered**, and it is not a
 list of tools. Place resolution falls through the gazetteer to the OSM tables, so
 a tool that takes a `place` returns an OSM-derived answer whenever the gazetteer
-did not know the name — in the 2026-10-06 round that happened in eight tools, from
+did not know the name — in the 2026-10-11 round that happened in nine tools, from
 weather warnings to car parks. Measured on 2026-09-27: a weather warning for
 `Zeiss-Großplanetarium` named `["dwd","osm"]` and carried this line; one for
 `Allianz Arena` named `["osm"]` alone.
@@ -840,8 +873,8 @@ Leaving a dataset out is as much a part of "we use all legal ways" as using one:
   **quarterly** and whenever a provider announces a change.
 - The dates in this page are the dates the relevant page was read, not the dates
   it was written.
-- **The statuses are measured, not declared**: on 2026-10-06, from 1,081 answers,
-  by reading which sources each answer named. That is why **thirteen** rows say a
+- **The statuses are measured, not declared**: on 2026-10-11, from 3,232 answers,
+  by reading which sources each answer named. That is why **twenty-one** rows say a
   source is held but not confirmed by an answer: held is not live, and a page that
   blurred the two would be the one thing this page exists not to be. The number
   is written here because it is small enough to count; if it stops matching the
