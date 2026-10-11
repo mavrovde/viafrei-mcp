@@ -412,6 +412,14 @@ console.log('version-sync.yml wiring');
     const page = publishJob.indexOf('gh workflow run release-page.yml');
     check('npm is dispatched, waited for by the merge commit, and only then Smithery and the page',
         npm > 0 && npmWait > npm && smithery > npmWait && page > npmWait, `${npm} ${npmWait} ${smithery} ${page}`);
+    {
+        // An automatic release's npm run is DISPATCHED, which mcp-registry.yml's
+        // workflow_run filter skips, so this dispatch is the only way it runs.
+        const registry = publishJob.indexOf('gh workflow run mcp-registry.yml --ref main -f version="$VERSION"');
+        const registryWait = publishJob.indexOf('wait-run --workflow mcp-registry.yml --sha "$main_sha"');
+        check('the MCP Registry is dispatched after the npm wait, and then waited for',
+            registry > npmWait && npmWait > 0 && registryWait > registry, `${npmWait} ${registry} ${registryWait}`);
+    }
     check('the npm dispatch publishes for real (dry_run=false) on the tag ref', /gh workflow run publish\.yml --ref "\$TAG" -f dry_run=false/u.test(publishJob));
     {
         const deadlines = [...publishJob.matchAll(/--deadline-s "\$\(\((\d+) \* 60\)\)"/gu)].reduce((sum, m) => sum + Number(m[1]), 0);
