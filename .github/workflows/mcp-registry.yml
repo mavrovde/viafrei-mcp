@@ -1,0 +1,170 @@
+name: MCP Registry
+
+# Publishes the remote server entry `de.viafrei/mcp` to the Official MCP
+# Registry (registry.modelcontextprotocol.io) after every successful npm
+# release, the same way the Smithery workflow follows npm.
+#
+# The entry describes the REMOTE endpoints (Streamable HTTP and SSE), not the
+# npm package, so what it must agree with is the live server. Its version is
+# the release's version, written into registry/server.json at run time - the
+# committed file carries 0.0.0 on purpose, so nobody reads a stale number from
+# it. The run refuses unless the live server reports that same version.
+#
+# Credential: `de.viafrei` is a domain namespace, proved by HTTP authentication
+# against https://viafrei.de/.well-known/mcp-registry-auth. The matching
+# Ed25519 private key (64 hex characters) is the secret
+# MCP_REGISTRY_PRIVATE_KEY in the `mcp-registry` environment and nowhere else.
+# GitHub OIDC cannot be used: the registry grants it only `io.github.*` names.
+#
+# Idempotent: a version the registry already holds is reported and the job
+# succeeds without publishing, so a re-run after a later failure is safe.
+
+on:
+  workflow_run:
+    workflows: [npm]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version the live server must report (X.Y.Z, no v)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  # Pinned with its checksum from the release's registry_1.8.1_checksums.txt.
+  # Bump both together, after `mcp-publisher validate` passes on the new one.
+  PUBLISHER_VERSION: '1.8.1'
+  PUBLISHER_SHA256: 'a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc'
+  REGISTRY: 'https://registry.modelcontextprotocol.io'
+  SERVER_NAME: 'de.viafrei/mcp'
+  AUTH_DOMAIN: 'viafrei.de'
+  MCP_URL: 'https://mcp.viafrei.de/mcp'
+
+jobs:
+  publish:
+    # Only after a SUCCESSFUL npm run that was started by a tag push, or by hand.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       startsWith(github.event.workflow_run.head_branch, 'v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: mcp-registry
+    steps:
+      # The default branch, never the tag: workflow_run runs in main's context,
+      # and registry/server.json is not part of the npm release.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Which version this run releases
+        id: version
+        env:
+          RUN_TAG: ${{ github.event.workflow_run.head_branch }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -eu
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then v="${INPUT_VERSION}"; else v="${RUN_TAG#v}"; fi
+          if ! printf '%s' "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Not a version: '$v'" >&2
+            exit 2
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "releasing $v"
+
+      - name: The live server reports this version
+        env:
+          WANT: ${{ steps.version.outputs.version }}
+        run: |
+          set -eu
+          body='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"mcp-registry-release-check","version":"1"}}}'
+          hdrs="$(mktemp)"
+          out="$(curl -sS --max-time 20 -D "$hdrs" -X POST "$MCP_URL" \
+            -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' \
+            --data "$body")"
+          sid="$(grep -i '^mcp-session-id:' "$hdrs" | cut -d: -f2- | tr -d ' \r' || true)"
+          if [ -n "$sid" ]; then
+            curl -sS --max-time 10 -X DELETE "$MCP_URL" -H "mcp-session-id: $sid" -o /dev/null || true
+          fi
+          got="$(printf '%s' "$out" | sed -n 's/^data: //p' | head -1)"
+          [ -n "$got" ] || got="$out"
+          live="$(printf '%s' "$got" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).result.serverInfo.version))}catch{process.stdout.write("")}})')"
+          echo "live server: '${live}', this release: '${WANT}'"
+          if [ -z "$live" ]; then
+            echo "Could not read serverInfo.version from the live server - refusing to list an unknown server." >&2
+            exit 2
+          fi
+          if [ "$live" != "$WANT" ]; then
+            echo "The live server is ${live}, not ${WANT}. Refusing." >&2
+            exit 1
+          fi
+
+      - name: Already in the registry?
+        id: existing
+        env:
+          WANT: ${{ steps.version.outputs.version }}
+        run: |
+          set -eu
+          url="${REGISTRY}/v0/servers?search=$(node -p 'encodeURIComponent(process.env.SERVER_NAME)')&version=${WANT}"
+          json="$(curl -sS --fail --max-time 20 "$url")"
+          found="$(printf '%s' "$json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const d=JSON.parse(s);const hit=(d.servers||[]).some(x=>x.server&&x.server.name===process.env.SERVER_NAME&&x.server.version===process.env.WANT);process.stdout.write(hit?"yes":"no")})')"
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+          echo "${SERVER_NAME} ${WANT} already listed: $found"
+
+      - name: Install mcp-publisher (pinned, checksum verified)
+        if: steps.existing.outputs.found == 'no'
+        run: |
+          set -eu
+          f=mcp-publisher_linux_amd64.tar.gz
+          curl -sSL --fail --max-time 60 -o "$f" \
+            "https://github.com/modelcontextprotocol/registry/releases/download/v${PUBLISHER_VERSION}/$f"
+          echo "${PUBLISHER_SHA256}  $f" | sha256sum -c -
+          tar -xzf "$f" mcp-publisher
+          ./mcp-publisher --help >/dev/null
+
+      - name: Write the version into server.json and validate it
+        if: steps.existing.outputs.found == 'no'
+        env:
+          WANT: ${{ steps.version.outputs.version }}
+        run: |
+          set -eu
+          node -e 'const fs=require("fs");const p="registry/server.json";const j=JSON.parse(fs.readFileSync(p,"utf8"));if(j.name!==process.env.SERVER_NAME){console.error("server.json names "+j.name);process.exit(2)}j.version=process.env.WANT;fs.writeFileSync("server.json",JSON.stringify(j,null,2)+"\n")'
+          ./mcp-publisher validate
+
+      - name: Publish
+        if: steps.existing.outputs.found == 'no'
+        env:
+          MCP_REGISTRY_PRIVATE_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
+        run: |
+          set -eu
+          if [ "${#MCP_REGISTRY_PRIVATE_KEY}" -ne 64 ]; then
+            echo "MCP_REGISTRY_PRIVATE_KEY in the 'mcp-registry' environment is not 64 hex characters (length ${#MCP_REGISTRY_PRIVATE_KEY}). Refusing." >&2
+            exit 2
+          fi
+          ./mcp-publisher login http --domain "${AUTH_DOMAIN}" --private-key "${MCP_REGISTRY_PRIVATE_KEY}"
+          rc=0
+          ./mcp-publisher publish || rc=$?
+          ./mcp-publisher logout || true
+          exit $rc
+
+      # "publish" exiting 0 is checked against what the registry serves.
+      - name: Verify the entry is listed as latest
+        env:
+          WANT: ${{ steps.version.outputs.version }}
+        run: |
+          set -eu
+          url="${REGISTRY}/v0/servers?search=$(node -p 'encodeURIComponent(process.env.SERVER_NAME)')&version=latest"
+          for i in 1 2 3 4 5 6; do
+            got="$(curl -sS --fail --max-time 20 "$url" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const d=JSON.parse(s);const x=(d.servers||[]).find(x=>x.server&&x.server.name===process.env.SERVER_NAME);process.stdout.write(x?x.server.version:"")})' || true)"
+            echo "attempt $i: latest listed version '${got}'"
+            if [ "$got" = "$WANT" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "The registry does not list ${SERVER_NAME} ${WANT} as latest." >&2
+          exit 1

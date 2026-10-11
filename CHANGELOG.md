@@ -5,6 +5,17 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+- **The MCP Registry entry follows every release.** A new `MCP Registry` workflow
+  runs after each successful npm release, the same way the Smithery workflow does.
+  It checks that the live server reports the release's version, writes that
+  version into `registry/server.json` (the remote entry `de.viafrei/mcp`, with the
+  Streamable HTTP and SSE endpoints), validates it with a pinned, checksum-verified
+  `mcp-publisher`, publishes it with the domain key held in the `mcp-registry`
+  environment, and reads the registry back until the version is listed as latest.
+  A version the registry already holds is reported and not published again, so a
+  re-run is safe.
+
 ## [1.9.13] - 2026-10-11
 
 **Fuel prices fetched when you ask, Hamburg police messages, and live car parks in
