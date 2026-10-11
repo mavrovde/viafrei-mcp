@@ -194,9 +194,10 @@ export function remedy(stage, { version = 'X.Y.Z' } = {}) {
     if (stage === 'checks') return 'Nothing was merged or tagged. The pull request is left for a person: fix what is red, then merge and tag by hand (CONTRIBUTING, "How a release happens").';
     if (stage === 'publish.yml') {
         return `The pull request is MERGED and ${tag} is TAGGED, but npm did not publish it. Re-run the failed job of this run, or dispatch publish.yml on ${tag} with dry_run=false; ` +
-            `once npm serves ${version}, dispatch smithery.yml (version ${version}) and release-page.yml (tag ${tag}) by hand — their workflow_run trigger skips a dispatched npm run.`;
+            `once npm serves ${version}, dispatch smithery.yml (version ${version}), mcp-registry.yml (version ${version}) and release-page.yml (tag ${tag}) by hand — their workflow_run trigger skips a dispatched npm run.`;
     }
     if (stage === 'smithery.yml') return `npm serves ${version}. Only the Smithery listing is behind: dispatch smithery.yml with version ${version} once the cause is gone.`;
+    if (stage === 'mcp-registry.yml') return `npm serves ${version}. Only the MCP Registry entry is behind: dispatch mcp-registry.yml with version ${version} once the cause is gone.`;
     if (stage === 'release-page.yml') return `npm serves ${version}. Only the release page is missing: dispatch release-page.yml with tag ${tag} once the cause is gone.`;
     return 'See CONTRIBUTING, "How a release happens".';
 }

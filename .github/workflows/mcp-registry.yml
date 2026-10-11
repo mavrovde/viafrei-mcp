@@ -2,7 +2,10 @@ name: MCP Registry
 
 # Publishes the remote server entry `de.viafrei/mcp` to the Official MCP
 # Registry (registry.modelcontextprotocol.io) after every successful npm
-# release, the same way the Smithery workflow follows npm.
+# release, the same way the Smithery workflow follows npm: through workflow_run
+# after a tag PUSH (a person's release), and by dispatch from Version sync's
+# publish job after an automatic release, whose npm run is itself dispatched
+# and therefore skipped by the workflow_run filter below.
 #
 # The entry describes the REMOTE endpoints (Streamable HTTP and SSE), not the
 # npm package, so what it must agree with is the live server. Its version is

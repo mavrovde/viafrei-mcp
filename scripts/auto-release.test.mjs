@@ -251,6 +251,7 @@ check('a red CHECK says nothing was merged and the PR is a person\'s', /Nothing 
 }
 check('a failed Smithery run says npm already serves the version', /npm serves 9\.9\.9/u.test(remedy('smithery.yml', { version: '9.9.9' })));
 check('a failed release-page run says npm already serves the version', /npm serves 9\.9\.9/u.test(remedy('release-page.yml', { version: '9.9.9' })));
+check('a failed MCP Registry run says npm already serves the version and names the dispatch', /npm serves 9\.9\.9/u.test(remedy('mcp-registry.yml', { version: '9.9.9' })) && /dispatch mcp-registry\.yml with version 9\.9\.9/u.test(remedy('mcp-registry.yml', { version: '9.9.9' })));
 
 // --- a stuck release behind an awaiting-tag reading ------------------------------------------
 

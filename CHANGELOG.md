@@ -7,7 +7,9 @@ a Changelog and the versions follow Semantic Versioning.
 
 ### Added
 - **The MCP Registry entry follows every release.** A new `MCP Registry` workflow
-  runs after each successful npm release, the same way the Smithery workflow does.
+  runs after each successful npm release, the same way the Smithery workflow does:
+  after a tag pushed by a person, and dispatched by `Version sync` after an
+  automatic release, which now waits for it beside Smithery and the release page.
   It checks that the live server reports the release's version, writes that
   version into `registry/server.json` (the remote entry `de.viafrei/mcp`, with the
   Streamable HTTP and SSE endpoints), validates it with a pinned, checksum-verified
