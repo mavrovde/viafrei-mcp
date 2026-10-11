@@ -5,7 +5,46 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [1.9.17] - 2026-10-11
+
+**English answers, watches by name, and new roadworks, road-weather and parking data.**
+The package now matches the server's 1.9.17 and covers the server releases 1.9.14 to
+1.9.17. 1.9.14 to 1.9.16 were never published as
+packages; their changes are described here. No tool, prompt or resource was added or
+removed. `find_roadworks_ahead` gained a `place` argument, and `road` is no longer
+required there. Every tool's `language` description and the server instructions were
+reworded, and the descriptions of `check_road_status`, `find_roadworks_ahead`,
+`check_weather_warnings`, `watch_situation`, `stop_watch` and `find_parking` changed.
+The bridge itself gained one release workflow; its code is unchanged apart from its
+version and the re-captured reference.
+
 ### Added
+- **Hamburg city roadworks by place.** `find_roadworks_ahead` takes a new `place`
+  argument: a district, street or address in Hamburg ("Hamburg-Altona",
+  "Wilhelmsburg", "Köhlbrandbrücke") lists the city's own released roadworks
+  (Bauweiser) within 3 km of it, current or planned. Give `road` or `place`; `road` is
+  no longer required. Outside Hamburg, city roadworks are not held and the answer says
+  so. `check_road_status` by place lists them too, with up to two nearby Hamburg
+  traffic camera locations (locations only, never an image).
+- **Roadworks in Baden-Württemberg.** `find_roadworks_ahead` and `check_road_status`
+  now include current and planned roadworks on Baden-Württemberg's Bundes- and
+  Landesstraßen, from MobiData BW. The `check_road_status` description lists BW beside
+  NI, SN and TH as a Land whose Land roads it answers when the Land or a town is
+  passed as `place`.
+- **Signed motorway detours in Baden-Württemberg.** When a BW Autobahn closure matches a
+  published Bedarfsumleitung, `check_road_status` names the U-route, quoted as a note
+  on the signage and not as a route recommendation.
+- **The DWD road-surface forecast.** At a town or coordinate, `check_weather_warnings`
+  adds the DWD Straßenwetter-Prognose for the nearest road-weather stations: the
+  forecast road condition, from dry to black ice, and the road temperature. It is
+  labelled as a model forecast, not a measurement and not an official warning. The
+  tool's title is now "Weather warnings and road-surface forecast", it names icy roads
+  (Glätte, Glatteis) among the questions it is for, and its description was shortened.
+- **Car parks across Baden-Württemberg and in München.** `find_parking` answers from
+  MobiData BW's ParkAPI, for licensed sources only, each facility credited to its own
+  source; a reading older than 30 minutes is not shown as occupancy. München's car
+  parks and P+R sites are listed too. A P+R site with no live reading shows the city's
+  forecast class for the current hour, dated, and never as free spaces.
 - **The MCP Registry entry follows every release.** A new `MCP Registry` workflow
   runs after each successful npm release, the same way the Smithery workflow does:
   after a tag pushed by a person, and dispatched by `Version sync` after an
@@ -17,6 +56,40 @@ a Changelog and the versions follow Semantic Versioning.
   environment, and reads the registry back until the version is listed as latest.
   A version the registry already holds is reported and not published again, so a
   re-run is safe.
+
+### Changed
+- **`watch_situation` takes a name as the key.** "Tell me when a warning comes for
+  Kiel", "watch Köln Hbf" or "a charger in Würzburg" now open the watch directly, with
+  no read tool first. A place resolves to the DWD warn cell it lies in, a stop or
+  station name to its DHID (the way `get_departures` resolves a stop), and a place for
+  a charger watch to the nearest charging site that reports live occupancy. The answer
+  names the key it resolved to. A name that fits several places or stops gets a
+  which-one list and opens no watch. Ids work as before. The `kind` and `key`
+  descriptions say this.
+- **`stop_watch` finds a watch by the person's words.** With `kind` and a place or stop
+  name ("Kiel", "Köln Hbf"), a weather, charger or station watch is found the way
+  `watch_situation` resolved it; the id the watch carries works too.
+- **`find_parking` and a direction of travel.** The `road` description now says that a
+  road list is in name order and cannot follow a direction such as "A4 Richtung
+  Görlitz"; ask with `place` for the destination or the next town instead, which
+  answers nearest first.
+
+### Fixed
+- **English questions get English answers.** Every tool's `language` description and
+  the server instructions now say plainly that the default is German, and that the
+  field must be set to the language the user writes in, or an English question is
+  answered in German. When a client leaves it out anyway, the server now infers
+  English from clear English evidence in the person's own words, such as "Cologne",
+  "Munich" or "main station". An explicit value is never overridden, and German input
+  stays German.
+- **`find_charging_station` no longer times out around Ulm** when only free chargers
+  are asked for.
+- **Answer details.** `check_transit_disruption` answers a town whose official name
+  carries a qualifier ("Fürstenwalde" for "Fürstenwalde/Spree"). `check_weather_warnings`
+  dates every validity time when the result is from another day. A place that is one
+  town plus its own stations ("St. Peter-Ording") is answered as the town.
+  `check_road_status` says when it holds no current motorway reading, so "no closures"
+  never rests on planned works alone.
 
 ## [1.9.13] - 2026-10-11
 
@@ -2327,6 +2400,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[1.9.17]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.17
 [1.9.13]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.13
 [1.9.9]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.9
 [1.9.8]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.8
