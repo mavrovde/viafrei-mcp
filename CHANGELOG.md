@@ -7,18 +7,63 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [1.9.13] - 2026-10-11
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 1.9.13 while the registry's latest is 1.9.9, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**CHANGED** — the automation knows what moved, not what it means:
+**Fuel prices fetched when you ask, Hamburg police messages, and live car parks in
+Wuppertal and Dortmund.** The package now matches the server's 1.9.13 and covers the
+server releases 1.9.10 to 1.9.13. 1.9.10 to 1.9.12 were never published as packages;
+their changes are described here. No tool, prompt or resource was added or removed,
+and no argument was added. Two tool descriptions changed (`find_parking` and
+`check_road_status`). The bridge itself is unchanged apart from its version and the
+re-captured reference.
 
-- tools: find_parking differs between the server and the snapshot
-- tools: check_road_status differs between the server and the snapshot
+### Added
+- **Fuel prices are fetched when someone asks.** When `find_cheapest_fuel` or
+  `find_fuel_station` names one clear place (a resolved town or a coordinate), the
+  server first asks Tankerkönig for the current prices of up to ten of the nearest
+  stations whose price is older than five minutes. The answer waits up to 4 s, and
+  otherwise says that a request is still running. This is the pattern Tankerkönig
+  asks apps to use, requests on demand on a user's action. It is rate-limited per
+  area, per station and per hour, and makes one attempt, never a retry.
+- **Fuel for towns just outside coverage.** When no station is held within 5 km of a
+  place, `find_cheapest_fuel` asks which stations exist there. Towns such as Unna or
+  Hilden used to get only a station several kilometres away.
+- **Police traffic messages of every Land in place answers.** `check_road_status`
+  with a `place` lists the traffic messages of the Länder police reporting offices,
+  Polizei Hamburg included. A message carried by several feeds is shown once and
+  credits every one of them.
+- **Wuppertal and Dortmund car parks with live occupancy** in `find_parking`. Each
+  count is dated by the publisher's own timestamp, and the cities' note about
+  faults is shown.
 
-**A person must describe the change above before this merges.** A release note that
-lists a tool name without saying what it does misleads the reader it exists for.
+### Changed
+- **`check_road_status` answers a Land road for the Land asked.** When no Land-road
+  source is held for that Land, the answer says so first, and says that no report
+  does not mean the road is open. Matches in other Länder follow, labelled as a
+  different road with the same number. The description now says to pass the Land
+  or a town as `place`.
+- **Rest areas in `find_parking`.** No source we hold classifies rest areas, so
+  `kind` no longer offers `rest_area` as a filter. The value is still accepted: it is
+  answered as `any`, with a sentence saying why. The description now says
+  "motorway lorry parks" instead of "rest areas with lorry spaces".
+- **Fuel prices outside the cities are fresher.** The background refresh is split
+  more evenly, so every station's stated maximum age is now under a day.
+- **Warning-vest rules are advice.** `get_driving_rules` gives the place and number
+  of warning vests as advice, not law, in German and English.
+
+### Fixed
+- **Faster answers.** Disruption questions about a Kreis read the Kreis instead of the
+  whole Land (Aachen over 120 minutes: 9.4 s to 0.44 s in a load test). Charger
+  availability and the stop-name lookup are faster too.
+- **`describe_location`** shows an administrative area only when it contains the
+  point, never a neighbouring Land.
+- **`check_transit_disruption`** reports cancelled stops as their own figure, not as
+  part of the late trips.
+- **Departure boards.** One departure listed under several stop points or line names,
+  or one train under two labels, is one row.
+- **Answer details.** Closure lines no longer carry internal work-order codes.
+  "Frankfurt" names which Frankfurt was taken. `find_fuel_station` dates its answer
+  by the newest price shown. An OpenStreetMap row across the border carries no German
+  Land. A town is listed before the station named after it. A charger watch that can
+  never fire says so.
 
 ## [1.9.9] - 2026-10-09
 
