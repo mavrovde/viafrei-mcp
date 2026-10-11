@@ -5,6 +5,41 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [1.9.14] - 2026-10-11
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 1.9.14 while the registry's latest is 1.9.13, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**CHANGED** — the automation knows what moved, not what it means:
+
+- tools: check_autobahn_traffic differs between the server and the snapshot
+- tools: find_cheapest_fuel differs between the server and the snapshot
+- tools: find_fuel_station differs between the server and the snapshot
+- tools: find_parking differs between the server and the snapshot
+- tools: check_road_status differs between the server and the snapshot
+- tools: find_roadworks_ahead differs between the server and the snapshot
+- tools: find_charging_station differs between the server and the snapshot
+- tools: find_place differs between the server and the snapshot
+- tools: find_poi differs between the server and the snapshot
+- tools: find_address differs between the server and the snapshot
+- tools: describe_location differs between the server and the snapshot
+- tools: find_nearby differs between the server and the snapshot
+- tools: find_sharing differs between the server and the snapshot
+- tools: get_driving_rules differs between the server and the snapshot
+- tools: check_transit_disruption differs between the server and the snapshot
+- tools: check_weather_warnings differs between the server and the snapshot
+- tools: get_train_departures differs between the server and the snapshot
+- tools: get_departures differs between the server and the snapshot
+- tools: check_station_facilities differs between the server and the snapshot
+- tools: watch_situation differs between the server and the snapshot
+- tools: stop_watch differs between the server and the snapshot
+- instructions: the server's initialize answer differs from the snapshot's
+
+**A person must describe the change above before this merges.** A release note that
+lists a tool name without saying what it does misleads the reader it exists for.
+
 ### Added
 - **The MCP Registry entry follows every release.** A new `MCP Registry` workflow
   runs after each successful npm release, the same way the Smithery workflow does:
@@ -2327,6 +2362,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[1.9.14]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.14
 [1.9.13]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.13
 [1.9.9]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.9
 [1.9.8]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.8

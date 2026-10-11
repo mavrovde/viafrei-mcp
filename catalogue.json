@@ -5,7 +5,7 @@
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "1.9.13"
+    "version": "1.9.14"
   },
   "capabilities": {
     "tools": {
@@ -20,7 +20,7 @@
     },
     "logging": {}
   },
-  "instructions": "ViaFrei answers from German open transport data, live: motorway traffic, closures and roadworks (plus Land and city traffic messages where a feed carries them), fuel prices, EV charging, parking, train and public-transport departures, regional public-transport punctuality and service alerts, station lifts and escalators, DWD weather warnings, places and addresses, and the curated German driving rules. Always show the attribution line of a result to the user, and when a result carries `_meta.purposeNote` or `_meta.conditionNote`, show that sentence verbatim as well — it is a legal condition of the data, not a caption. Times are Europe/Berlin; the rules answers carry a review date and are informational, not legal advice. ViaFrei is in beta: sources are still being added and answers and coverage can change, so when a decision depends on a closure, a departure or a price, tell the user to confirm it with the source the attribution line names.",
+  "instructions": "ViaFrei answers from German open transport data, live: motorway traffic, closures and roadworks (plus Land and city traffic messages where a feed carries them), fuel prices, EV charging, parking, train and public-transport departures, regional public-transport punctuality and service alerts, station lifts and escalators, DWD weather warnings, places and addresses, and the curated German driving rules. Every tool takes a `language` argument that defaults to German (\"de\"): set it on every call to the language the user writes in — \"en\" for English — or an English question is answered in German. Always show the attribution line of a result to the user, and when a result carries `_meta.purposeNote` or `_meta.conditionNote`, show that sentence verbatim as well — it is a legal condition of the data, not a caption. Times are Europe/Berlin; the rules answers carry a review date and are informational, not legal advice. ViaFrei is in beta: sources are still being added and answers and coverage can change, so when a decision depends on a closure, a departure or a price, tell the user to confirm it with the source the attribution line names.",
   "tools": [
     {
       "name": "check_autobahn_traffic",
@@ -40,7 +40,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -119,7 +119,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -189,7 +189,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -295,7 +295,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -303,7 +303,7 @@
             ]
           },
           "road": {
-            "description": "A single motorway number to list parking along, e.g. \"A3\" (\"A 3\" and \"a3\" are the same road). Use this when the person named a road and no town — \"Rastplatz auf der A7\". Give road OR place OR lat+lon, never two of them: a road is a 900 km line and a place is a point, so the two answer different questions. When the question names BOTH — \"Parkhaus in Köln an der A3\" — use the place: a person parks at a point, and the radius already covers the motorway beside it.",
+            "description": "A single motorway number to list parking along, e.g. \"A3\" (\"A 3\" and \"a3\" are the same road). Use this when the person named a road and no town — \"Rastplatz auf der A7\". Give road OR place OR lat+lon, never two of them: a road is a 900 km line and a place is a point, so the two answer different questions. When the question names BOTH — \"Parkhaus in Köln an der A3\" — use the place: a person parks at a point, and the radius already covers the motorway beside it. A road list is in name order and cannot follow a direction of travel: for \"A4 Richtung Görlitz\" ask with place for the destination or the next town on the way instead, which answers nearest first.",
             "type": "string",
             "maxLength": 16
           },
@@ -396,7 +396,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -439,7 +439,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -495,7 +495,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -557,7 +557,7 @@
         "properties": {
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -637,7 +637,7 @@
         "properties": {
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -726,7 +726,7 @@
         "properties": {
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -770,7 +770,7 @@
         "properties": {
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -832,7 +832,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -900,7 +900,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -968,7 +968,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -1014,7 +1014,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -1067,7 +1067,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -1149,7 +1149,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -1224,7 +1224,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -1280,7 +1280,7 @@
           },
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -1302,13 +1302,13 @@
     },
     {
       "name": "watch_situation",
-      "description": "Opens a watch so THIS conversation is told when something changes: a road reopening, a stop running late, a weather warning starting, a charge point turning free. Use when the person asks to be told later: \"sag mir Bescheid, wenn die A8 wieder frei ist\", \"tell me when a charger is free\". Do NOT use to look something up now (call check_road_status, check_autobahn_traffic or find_charging_station), and do NOT use when an e-mail, SMS or any alert outside this chat was asked for — we cannot send one; say so. Session-scoped. At most 10 watches, 24 h each. Results carry their attribution line.",
+      "description": "Opens a watch so THIS conversation is told when something changes: a road reopening, a stop running late, a weather warning starting, a charge point turning free. Use when the person asks to be told later: \"sag mir Bescheid, wenn die A8 wieder frei ist\", \"tell me when a warning comes for Kiel\". A name is enough as the key (a road, place or stop); no read tool is needed first. Do NOT use to look something up now, nor for an e-mail, SMS or any alert outside this chat — we cannot send one; say so. Session-scoped. At most 10 watches, 24 h each. Results carry their attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -1325,13 +1325,13 @@
               "weather",
               "charger"
             ],
-            "description": "What kind of thing to watch. `road` = one motorway or federal road (key: \"A8\", \"B27\") — reports a closure or restriction appearing or clearing; `station` = one public-transport stop by its DHID (key: \"de:14612:28\") — reports departures running late past the threshold; `region` = a city or district by AGS prefix (key: \"14612\") — reports the share of late trips crossing the threshold; `place` = a town or address (key: \"Fulda\") — reports road restrictions appearing within the radius; `weather` = a DWD warncell (key: \"105315000\") — reports an official warning coming into force; `charger` = one charging site (key: the site id from find_charging_station) — reports a point turning free."
+            "description": "What kind of thing to watch. `road` = one motorway or federal road (key: \"A8\", \"B27\") — reports a closure or restriction appearing or clearing; `station` = one public-transport stop (key: its name, \"Köln Hbf\", or its DHID) — reports departures running late past the threshold; `region` = a city or district by AGS prefix (key: \"14612\") — reports the share of late trips crossing the threshold; `place` = a town or address (key: \"Fulda\") — reports road restrictions appearing within the radius; `weather` = one DWD warn cell (key: a place name, \"Kiel\", or the cell id) — reports an official warning coming into force; `charger` = one charging site (key: a place, \"Würzburg\", or the site id) — reports a point turning free."
           },
           "key": {
             "type": "string",
             "minLength": 1,
             "maxLength": 200,
-            "description": "The thing being watched, in the vocabulary of `kind`: a road number, a stop DHID, an AGS prefix, a place name, a DWD warncell, a charging site id. For `road` and `place` it is the person's own words — \"A8\", \"B27\", \"Fulda\" — and needs no lookup. For `station`, `region`, `weather` and `charger` it is an identifier the matching read tool returned — look it up first: `station` = one of `stop.stopIds` from get_departures (\"de:14612:28\"); an EVA number from get_train_departures (\"8000207\") is NOT a stop id and is refused, as is any id no known stop carries; `region` from check_transit_disruption, `weather` from check_weather_warnings, `charger` from find_charging_station — a key nothing matches there produces a watch that is simply never triggered."
+            "description": "The thing to watch, in the person's own words — a name is enough and no read tool is needed first; the server resolves it and the answer names the key it resolved to. `road`: a road number (\"A8\", \"B27\"). `place`: a town or address (\"Fulda\"). `weather`: a place name (\"Kiel\"), resolved to the DWD warn cell it lies in — or a warn cell id (\"801002000\"); a Land or Kreis is an area and takes no single cell. `station`: a stop or station name (\"Köln Hbf\", \"München, Marienplatz\"), resolved to its DHID the way get_departures resolves a stop — or a DHID (\"de:14612:28\"); an EVA number from get_train_departures (\"8000207\") is not a DHID and is refused. `charger`: a place (\"Würzburg\"), resolved to the nearest charging site that reports live occupancy — or a site id from find_charging_station. `region`: an AGS prefix (\"14612\") from check_transit_disruption. A name that fits several places or stops gets a which-one list and opens no watch; call again with the chosen line."
           },
           "hours": {
             "description": "How long to watch, in hours (default 3, maximum 24). Prefer this over `until`: it needs no knowledge of the current time. Give one of `hours` or `until`, never both.",
@@ -1414,13 +1414,13 @@
     },
     {
       "name": "stop_watch",
-      "description": "Ends a watch this conversation opened with watch_situation, so no further notifications arrive for it. Use when the person no longer needs to be told — \"du musst mir nichts mehr zur A8 sagen\", \"stop watching that charger\". No id at hand: pass kind (\"charger\") and, for a road or place, key (\"A8\", \"Bamberg\"); one match is stopped, several are listed. Do NOT use to look a situation up (call check_road_status), to list what is running (read viafrei://watches), or to cancel anything outside this chat. Another session's watch is never found. Results carry their attribution line.",
+      "description": "Ends a watch this conversation opened with watch_situation, so no further notifications arrive for it. Use when the person no longer needs to be told — \"du musst mir nichts mehr zur A8 sagen\", \"stop watching that charger\". No id at hand: pass kind (\"weather\") and key in the person's words (\"A8\", \"Bamberg\", \"Kiel\"); one match is stopped, several are listed. Do NOT use to look a situation up (call check_road_status), to list what is running (read viafrei://watches), or to cancel anything outside this chat. Another session's watch is never found. Results carry their attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "language": {
             "default": "de",
-            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out because it has a default — the default is only the fallback when the language is genuinely unclear, and an English question answered in German is a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
             "type": "string",
             "enum": [
               "de",
@@ -1451,7 +1451,7 @@
             ]
           },
           "key": {
-            "description": "Instead of an id: the watched subject in the person's words, as watch_situation took it — works for road and place watches (\"A8\", \"Bamberg\"). For station, region, weather and charger watches `kind` alone is enough when one is open, and a key that matches none of them falls back to the kind alone. Matched against this session's open watches, case and spaces ignored. One match is stopped; several are listed and none is stopped.",
+            "description": "Instead of an id: the watched subject in the person's words, as it was given to watch_situation — a road or place (\"A8\", \"Bamberg\"), and with `kind` a place for a weather or charger watch or a stop name for a station watch (\"Kiel\", \"Köln Hbf\"), which is resolved the way watch_situation resolved it. The id the watch carries works too. For a station, region, weather or charger watch a key that matches none of them falls back to `kind` alone. Matched against this session's open watches, case and spaces ignored. One match is stopped; several are listed and none is stopped.",
             "type": "string",
             "minLength": 1,
             "maxLength": 200
