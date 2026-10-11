@@ -19,7 +19,8 @@ name: Version sync
 #   required checks (CI and SonarCloud) with a deadline, merges it with a merge
 #   commit pinned to the head it checked, and pushes an annotated tag on the
 #   merge commit; the `publish` job then dispatches npm, waits for it to
-#   conclude success, and dispatches Smithery and the release page. Anything not
+#   conclude success, and dispatches Smithery, the MCP Registry entry and the
+#   release page. Anything not
 #   green ends the run red with the reason and leaves the pull request for a
 #   person. Nothing merges on red, on pending, or on a read that failed.
 # - ANYTHING ELSE — a changed surface, a probe report that could not be
@@ -32,8 +33,8 @@ name: Version sync
 # WHY THE DISPATCHES. A tag pushed with GITHUB_TOKEN does not start publish.yml:
 # events caused by GITHUB_TOKEN create no new workflow runs, except
 # workflow_dispatch and repository_dispatch. So npm is dispatched explicitly on
-# the tag ref. Smithery and the release page normally follow npm through
-# workflow_run, and each of them only acts on an npm run whose event was a tag
+# the tag ref. Smithery, the MCP Registry entry and the release page normally
+# follow npm through workflow_run, and each of them only acts on an npm run whose event was a tag
 # PUSH, so a dispatched npm run never starts them twice: they are dispatched
 # explicitly too, once npm has concluded success.
 
@@ -463,18 +464,20 @@ jobs:
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "tagged ${tag} on ${MERGE_SHA}"
 
-  # THE AUTOMATIC PATH, part 2: npm, then Smithery and the release page. Each is
+  # THE AUTOMATIC PATH, part 2: npm, then Smithery, the MCP Registry entry and the
+  # release page. Each is
   # DISPATCHED, because the tag above was pushed with GITHUB_TOKEN and therefore
   # started nothing. Each is waited for, so this run's colour is the release's.
   publish:
     needs: [sync, release]
     runs-on: ubuntu-24.04
-    # The step deadlines are 20 min (npm) + 20 min (Smithery) + 10 min (the page,
-    # waited after Smithery) = 50, plus checkout and dispatch; 60 keeps every
-    # deadline reachable, so a slow stage fails with its own message and remedy
-    # rather than being killed by the job timeout without one. Observed: npm ~2 min,
-    # Smithery up to ~11, the page ~1.
-    timeout-minutes: 60
+    # The step deadlines are 20 min (npm) + 20 min (Smithery) + 10 min (the MCP
+    # Registry, waited after Smithery) + 10 min (the page, waited after that) = 60,
+    # plus checkout and dispatch; 70 keeps every deadline reachable, so a slow stage
+    # fails with its own message and remedy rather than being killed by the job
+    # timeout without one. Observed: npm ~2 min, Smithery up to ~11, the page ~1;
+    # the registry run is expected near 1 (unmeasured on this path).
+    timeout-minutes: 70
     # `actions: write` to dispatch and read the runs. Publishing itself happens in
     # the dispatched workflows, under their own permissions and environments.
     permissions:
@@ -504,9 +507,9 @@ jobs:
           # Matched by the tagged COMMIT and the dispatch time, not by the ref's name.
           node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$since" --deadline-s "$((20 * 60))" --interval-s 15
 
-      # Both dispatched before either is waited for; both are waited for even when
-      # the first fails, so the log names every failure, and the step fails if any did.
-      - name: Smithery and the release page — dispatch and wait
+      # All three dispatched before any is waited for; each is waited for even when
+      # an earlier one fails, so the log names every failure, and the step fails if any did.
+      - name: Smithery, the MCP Registry and the release page — dispatch and wait
         run: |
           set -eu
           # Both run on main; a dispatched run's head is main's head at that moment,
@@ -515,12 +518,14 @@ jobs:
           printf '%s' "$main_sha" | grep -Eq '^[0-9a-f]{40}$' || { echo "Could not read main's head ('${main_sha}')." >&2; exit 2; }
           since="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           gh workflow run smithery.yml --ref main -f version="$VERSION"
+          gh workflow run mcp-registry.yml --ref main -f version="$VERSION"
           gh workflow run release-page.yml --ref main -f tag="$TAG"
           failed=0
           node scripts/auto-release.mjs wait-run --workflow smithery.yml --sha "$main_sha" --version "$VERSION" --since "$since" --deadline-s "$((20 * 60))" --interval-s 15 || failed=1
+          node scripts/auto-release.mjs wait-run --workflow mcp-registry.yml --sha "$main_sha" --version "$VERSION" --since "$since" --deadline-s "$((10 * 60))" --interval-s 15 || failed=1
           node scripts/auto-release.mjs wait-run --workflow release-page.yml --sha "$main_sha" --version "$VERSION" --since "$since" --deadline-s "$((10 * 60))" --interval-s 15 || failed=1
           if [ "$failed" != 0 ]; then
             echo "npm published ${TAG}; at least one follow-up did not conclude success (named above with its remedy)." >&2
             exit 1
           fi
-          echo "${TAG}: npm, Smithery and the release page all concluded success."
+          echo "${TAG}: npm, Smithery, the MCP Registry and the release page all concluded success."
