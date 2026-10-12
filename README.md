@@ -37,14 +37,14 @@ German open data, live, with the source named in every answer.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in 1.8:** a twenty-first tool, **`find_sharing`**, for shared bikes
-> (nextbike and Donkey Republic). **Berlin and Brandenburg** punctuality now
-> comes from VBB's own realtime feed. Road answers now include police and city
-> traffic reports from Baden-Württemberg, Schleswig-Holstein and Berlin (and
-> from Köln and Hannover whenever those cities publish one), and roadworks on
-> Bundes- and Landesstraßen in Niedersachsen, Sachsen and Thüringen. **Charging** gains the Bundesnetzagentur register and
-> more live status, and **parking** gains Hamburg, Münster and NRW car parks.
-> Every source is listed in [SOURCES.md](SOURCES.md).
+> **New in 2.0:** **live delays for buses, trams and the U-Bahn** in
+> `get_departures`, one figure per departure from DELFI's realtime feeds. The fuel
+> tools list the nearest **OpenStreetMap fuel stations** we hold no price for,
+> apart from the priced ones and only inside Germany. `find_poi` finds a kind of
+> place ("a hotel in Weimar"), `describe_location` names the Gemeinde, Kreis and
+> Land a point lies in, and `watch_situation` refuses a condition key it does not
+> know instead of ignoring it. The [CHANGELOG](CHANGELOG.md) has the whole list,
+> and every source is listed in [SOURCES.md](SOURCES.md).
 
 ---
 

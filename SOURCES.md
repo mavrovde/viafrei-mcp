@@ -111,10 +111,14 @@ version. Share-alike means the obligation travels:
 - the attribution line stays with it, either way.
 
 **Our side.** The server keeps the SIRI ET calls and the service alerts as two
-separate share-alike databases, joined to nothing else, and shows each in a
-block of its own: SIRI ET only in `get_train_departures`, when DB Timetables has
-no realtime for the station, and alerts only in `check_transit_disruption`,
-beside the delay figures. Its register offers both, as CSV with a note of our
+separate share-alike databases, joined to nothing else. SIRI ET calls are shown
+by `get_train_departures`, in a block of their own when DB Timetables has no
+realtime for the station, and, since server 2.0.9, as the live figure of a
+departure in `get_departures`. The GTFS-RT Trip Updates are shown per departure in
+the same two places. A departure carries one figure, SIRI ET before Trip Updates,
+and the timetable decides which departure a figure is about: a figure and the plan
+meet in the answer and are never stored together. Alerts are shown only by
+`check_transit_disruption`, beside the delay figures. Its register offers both, as CSV with a note of our
 alterations, under CC BY-SA 4.0 and free of charge, on request to the contact
 address in the Impressum on viafrei.de.
 
@@ -321,9 +325,11 @@ What the table cannot say in a cell:
   somebody actually asks a question. Outside that set you may get nothing back.
   That is a consequence of the MTS-K rules, not a gap we are hiding. Fuel is
   measured this time — 149 answers named it — for the one-off reason given above.
-- **SIRI ET is shown only as a fallback.** `get_train_departures` adds it only when
-  DB Timetables has no realtime for the station; in the round's 79 rail-departure
-  answers that never happened, so it reads `in the service`.
+- **SIRI ET was shown only as a fallback in this round.** `get_train_departures`
+  added it only when DB Timetables had no realtime for the station; in the round's
+  79 rail-departure answers that never happened, so it reads `in the service`.
+  Since server 2.0.9 `get_departures` also shows it as a departure's live figure,
+  which this measurement predates.
 - **Berlin traffic messages** were named by no answer in the round. One spot check
   after it — `check_road_status` for Berlin, 21:09 UTC the same evening, server
   1.8.18 — named `mobilithek_traffic_berlin`. That is one call, reported as one
@@ -485,8 +491,9 @@ assume the share-alike applies; do not rely on a specific version for a
 derivative.** What you may do with it is set out
 [at the top of this page](#public-transport-realtime-is-share-alike).
 
-What it answers is a **region**, not a line: see the scope note in the README — no
-tool here answers "is the S1 on time".
+It answers for a **region** in the punctuality figures, and since server 2.0.9 also
+for one departure: `get_departures` shows a departure's live delay or cancellation
+from it when no SIRI ET call covers that departure.
 
 The **SIRI ET** rail realtime feed is in the same position — CC BY-SA, version
 unstated, the same unversioned term in the register — and the same reading
@@ -691,10 +698,19 @@ one. If you copied the old string, change it.
 
 **Which answers carry it**, in the platform's own words — verbatim, with the
 qualifier emphasised here because it is the part two earlier versions of this
-page dropped: *"Only results whose input resolved through one of these two OSM
-tables carry this line. A result about a place **from our own gazetteer**, a
-station or a motorway is not built from OpenStreetMap and carries neither the
-ODbL attribution nor the obligation."*
+page dropped. As of server 2.0.9: *"Only results that contain a row of one of these
+two OSM tables carry this line — an input that resolved through them, a landmark
+offered beside a town of the same name, an OpenStreetMap car park listed in an
+answer, an OpenStreetMap motorway junction named in one, a charging site placed at
+its OpenStreetMap address, a Bundesland decided by an OpenStreetMap address, or an
+OpenStreetMap fuel station listed without a price. A result about a place **from
+our own gazetteer**, a station or a motorway as a whole, or a parking answer from
+our other parking sources alone, is not built from OpenStreetMap and carries
+neither the ODbL attribution nor the obligation."*
+
+The two tables are the addresses and the points of interest. The offer covers a
+third, Germany's national boundary from the same extracts: it decides that an
+unpriced fuel station is inside Germany and is never itself part of an answer.
 
 Read the qualifier. The predicate is **which table answered**, and it is not a
 list of tools. Place resolution falls through the gazetteer to the OSM tables, so
