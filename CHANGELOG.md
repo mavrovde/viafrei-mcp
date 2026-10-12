@@ -5,6 +5,105 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.0.9] - 2026-10-13
+
+**Live delays for buses, trams and the U-Bahn, and OpenStreetMap fuel stations beside the priced ones.**
+The package now matches the server's 2.0.9 and covers the server releases 2.0.0 to
+2.0.9. None of them was published as a package before, so their changes for a user
+of the connector are described here. No tool, prompt or resource was added, removed
+or renamed. One input became stricter: `watch_situation`'s `condition` now refuses a
+key it does not know (see Changed). The descriptions of `get_departures`,
+`watch_situation`, `check_road_status`, `find_parking`, `find_poi` and
+`describe_location`, and of the `explain_this_coordinate` prompt, were reworded. The
+bridge's own code is unchanged apart from its version and the re-captured reference.
+
+### Added
+- **Live departures in `get_departures`.** Each departure now carries one live
+  figure where a live feed holds one: a delay, "on time" or a cancellation. It comes
+  from DELFI's SIRI ET first, then DELFI's GTFS-RT Trip Updates, and otherwise the
+  row shows the timetable time, labelled as the plan. Buses, trams and the U-Bahn get
+  live delays for the first time. In the structured result each row carries a `live`
+  object (`source`, `delayMin`, `cancelled`, `noForecast`), and a board with at least
+  one live figure reports `dataKind: "timetable_with_realtime"`. Every feed that
+  carried a shown row is credited, and both are share-alike (see
+  [SOURCES.md](SOURCES.md)). `get_train_departures`' DELFI block adds the Trip
+  Updates beside the SIRI ET calls.
+- **OpenStreetMap fuel stations we hold no price for.** `find_fuel_station`,
+  `find_cheapest_fuel` and `find_nearby` list the nearest fuel stations OpenStreetMap
+  maps where we hold no priced station within 300 m. They come as a list of their own
+  (`osmFuelStations` in the structured result) and never with a price. They are
+  credited to OpenStreetMap under the ODbL 1.0, with the copy offer, and only stations
+  inside Germany's national boundary are listed.
+- **`find_cheapest_fuel` answers a town we held nothing for in the same call.** When
+  a question starts a station lookup, the tool waits up to eight seconds for it and
+  lists the stations with the prices the lookup returned. After that wait, the answer
+  says prices follow within about a minute. The structured result gains
+  `askedProvider`, `discovery` and `areaState: "discovering"`.
+- **Live P+R occupancy in Leipzig.** `find_parking` lists Stadt Leipzig's P+R sites
+  with their live free spaces.
+- **nextbike's German systems from nextbike's own index.** `find_sharing` no longer
+  depends on a hand-kept list of nextbike systems.
+
+### Changed
+- **`watch_situation`'s `condition` is strict.** An unknown key, or a key of another
+  kind, used to be dropped silently, and the watch opened with the defaults. It is now
+  refused by name, in the caller's language, with the keys that kind takes. The schema
+  says so (`additionalProperties: false`), the description lists each kind's keys with
+  an example, and the confirmation repeats the condition it applies with the defaults
+  filled in. A client that sent extra keys must drop them. The description also asks
+  for `hours` (default 3, at most 24) to be set to cover the time asked about.
+- **A session keeps its language.** When a call leaves out `language`, the answer uses
+  the language this session last asked for, or last showed English evidence for,
+  before falling back to German.
+- **`find_parking` reads every car source and lists them nearest first.** OpenStreetMap
+  car parks are read for every car question at a place, not only where no city car
+  park is held.
+- **Departure boards name what actually runs.** A rail replacement bus is "SEV-Bus
+  RE7", and a letter-only line gets its mode word ("Bus K").
+- **`describe_location` names the Gemeinde, Kreis and Land the point lies in**, read
+  from the municipality's official key rather than from the nearest gazetteer point,
+  with a note near the national border. The `explain_this_coordinate` prompt says the
+  same.
+- **`find_poi` finds a kind, not only names that contain the word**: doctors,
+  dentists, vets, toilets, ATMs and banks, post offices, supermarkets, bakeries,
+  hotels, hostels, restaurants and more ("a hotel in Weimar").
+- **`check_road_status`'s description** names the Hamburg traffic camera locations it
+  shows, and no longer says "one road or place per call".
+
+### Fixed
+- **Places resolve to what was asked.** A landmark, station or airport resolves to
+  that object ("Nuremberg Airport", "Worms station"), not to the town centre. One place
+  is no longer offered as several. A named stop is the stop asked, or the answer says
+  it is not. `find_place` finds motorways ("A7", "BAB 9") and junctions by name.
+  `find_address` gives the street and its nearest mapped house numbers when the number
+  is not mapped. Every Hamburg district is Hamburg.
+- **Road answers count what they list.** A message whose own words close the road is
+  counted as a closure. An item filed under one motorway but naming another is listed
+  under the road it names. Roadworks count only inside the time windows the publisher
+  states.
+- **Transit alerts stay in their network's Länder**, instead of appearing under a
+  neighbouring Land.
+- **Answers carry their data's own time.** A weather warning fetched minutes ago no
+  longer reads as a day old. Double-encoded provider text is repaired exactly and never
+  guessed.
+
+### On viafrei.de
+The site runs on the same server and data. These changes are not part of the
+connector:
+
+- **The home finds your area.** It shows the cards of one place: one you choose, the
+  browser's position rounded on your device, or an approximate place from your IP
+  address, which is never stored. Every location choice is remembered for the next
+  visit, and towns have pages of their own.
+- **The cards show what the tools know.** Departures carry the same live figures. Each
+  station lists its lifts and escalators, with every one that is out of service and
+  since when. A roadworks site shows its position between the junctions, with length,
+  speed limit and width left. Unpriced OpenStreetMap fuel stations appear beside the
+  priced ones.
+- **A News page** in seven languages, with an Atom feed.
+- **A public status page** at status.viafrei.de, in seven languages, per source and
+  per domain, with a JSON summary and an Atom feed.
+
 ## [1.9.17] - 2026-10-11
 
 **English answers, watches by name, and new roadworks, road-weather and parking data.**
@@ -2400,6 +2499,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.0.9]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.0.9
 [1.9.17]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.17
 [1.9.13]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.13
 [1.9.9]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v1.9.9

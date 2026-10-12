@@ -9,7 +9,7 @@ the server's own text, reproduced verbatim, because that text is what an
 assistant reads when it decides which tool to call; paraphrasing it here would
 document a different server.
 
-**It is a dated snapshot, taken on 2026-10-11.** Generating this file makes
+**It is a dated snapshot, taken on 2026-10-12.** Generating this file makes
 it impossible for the document and the snapshot to disagree — CI regenerates and
 compares — but it cannot keep the snapshot from ageing against the live server,
 because a capture is a point in time. **The source of truth is the running
@@ -17,11 +17,11 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 1.9.17 |
+| Server | `viafrei` 2.0.9 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
-| Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-11 |
+| Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-12 |
 | Surface | 21 tools, 10 resources, 2 resource templates, 9 prompts |
 | Parameter schemas | JSON Schema draft-07 |
 | Capabilities | `tools`, `resources`, `prompts`, `logging` |
@@ -146,7 +146,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Returns parking near a place, a coordinate or along one motorway: motorway lorry parks, car parks and P+R sites, with total spaces and, where published, free spaces now and the reading's age. Use when asked where to park or leave the car for the train ("Parkhaus in Köln", "Rastplatz A3", "P+R"). Do NOT use for fuel (find_cheapest_fuel) or EV charging (find_charging_station). Radius ≤ 25 km, ≤ 10 sites per list; ODbL and CC BY-SA sources are separate lists (up to three). No "free now" means no published count, not full. No prices: for "was kostet" say so. Show each source's attribution.
+> Parking near a place, a coordinate or along one motorway: motorway lorry parks, car parks and P+R sites, with total spaces and, where published, free spaces now and the reading's age. Use when asked where to park or leave the car for the train ("Parkhaus in Köln", "Rastplatz A3", "P+R"). Do NOT use for fuel (find_cheapest_fuel) or EV charging (find_charging_station). Radius ≤ 25 km, ≤ 10 sites per list; ODbL and CC BY-SA sources are separate lists (up to three). No "free now" means no published count, not full. No prices: for "was kostet" say so, no call. Show each source's attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -174,7 +174,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Whether a motorway, B road or Land road (NI, SN, TH, BW: pass the Land/town as place) is open, closed, restricted, now or coming days; by place, jams and city/Land messages. Use when asked if a road is open/passable — "ist die A8 in diesem Moment gesperrt", "komme ich durch", at any clock, closures tonight/weekend — or Stau in a city: "Stau in Köln?". Do NOT use for jams/delays on a named motorway or multi-motorway route — check_autobahn_traffic; roadworks in a date window — find_roadworks_ahead; city street: not held, say so. One road/place per call, ≤ 14 days, ≤ 11 entries. Show attribution.
+> Whether a motorway, B or Land road (NI, SN, TH, BW: pass the Land/town as place) is open, closed, restricted, now or coming days; by place, jams, city/Land messages, Hamburg traffic cameras. Use when asked if a road is open/passable — "ist die A8 in diesem Moment gesperrt", "komme ich durch", at any clock, closures tonight/weekend — or city Stau: "Stau in Köln?". Do NOT use for jams/delays on a named motorway or multi-motorway route — check_autobahn_traffic; roadworks in a date window — find_roadworks_ahead; city street: not held, say so. ≤ 14 days, ≤ 11 entries. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -274,7 +274,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Finds a named business or landmark — company, shop, clinic, hotel — and returns its address, category and coordinate. Use when the person names a THING rather than a town: "the adesso office in Dortmund", "the nearest Aldi". The coordinate it returns passes to any other tool as lat/lon. Do NOT use for a town, district or station (every tool's `place` resolves those), nor for fuel, charging or parking, which have their own tools. Give "in" (a town) when you can: far faster than searching nationwide. At most 10 results, radius <= 50 km. OpenStreetMap under ODbL 1.0; show the attribution line.
+> Finds a business or landmark by name or kind — company, shop, clinic, hotel, hostel — and returns address, category and coordinate. Use when the person names a THING rather than a town: "the adesso office in Dortmund", "the nearest Aldi", "a hotel in Weimar". The coordinate passes to any other tool as lat/lon. Do NOT use for a town, district or station (every tool's `place` resolves those), nor for fuel, charging or parking (own tools). Give "in" (a town) when you can: far faster than nationwide. At most 10 results, radius <= 50 km. OpenStreetMap under ODbL 1.0; show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -318,7 +318,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Turns a coordinate into words: the nearest address, settlement, Kreis, administrative area and motorway junction, each with its own distance. Use when you already HAVE a lat/lon and need to say where that is. Do NOT use to look up a place or address BY NAME — that is find_place, find_poi or find_address; this only goes coordinate to words. The gazetteer facts are the NEAREST point, not a boundary lookup — near a border it can differ, and the admin point can be a Regierungsbezirk, not a Land. OpenStreetMap ODbL 1.0 for the address; show the attribution line.
+> Turns a coordinate into words: the nearest address, settlement and motorway junction with their distances, and the Gemeinde, Kreis and Land the point lies in. Use when you already HAVE a lat/lon and need to say where that is. Do NOT use to look up a place or address BY NAME — that is find_place, find_poi or find_address; this only goes coordinate to words. Those three come from the municipality the point lies in (by its official key), not from the nearest Kreis point; near the national border the answer says so. OpenStreetMap ODbL 1.0 for the address; show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -460,7 +460,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Scheduled departures from any German stop — bus, tram, U-Bahn, S-Bahn, train, ferry — with line, destination, platform. Use when asked when a bus, tram, U-Bahn or ferry goes, or for another DAY or a clock time over 2 h away: "Wann fährt der nächste Bus ab Fulda Bahnhof?" Do NOT use for a railway station's trains now or later today — get_train_departures. Planned times only: for "is my bus late?" give the plan and say so; regional punctuality check_transit_disruption. No A-to-B journeys: say so, no call. Holds ≥ 48 h ahead, ≤ 3 days; further out, say so. 15 per call. Show the attribution line.
+> Scheduled departures from any German stop — bus, tram, U-Bahn, S-Bahn, train, ferry. Use when asked when a bus, tram, U-/Stadtbahn or ferry goes ("welche Bahnen" at a Hbf too), or for another DAY or a time over 2 h away: "Wann fährt der nächste Bus ab Fulda Bahnhof?" Do NOT use for a railway station's trains now or later today — get_train_departures. Plan times, with a live delay or cancellation per row where held; regional punctuality check_transit_disruption. No A-to-B journeys: say so, no call. Holds ≥ 48 h ahead, ≤ 3 days; further out, say so. 15 per call. Show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -504,20 +504,20 @@ The server's own instructions to a connecting client, verbatim:
 
 **Not read-only** — it creates or removes state. Answers from data this service already holds (closed world). Idempotent: false. Destructive: false.
 
-> Opens a watch so THIS conversation is told when something changes: a road reopening, a stop running late, a weather warning starting, a charge point turning free. Use when the person asks to be told later: "sag mir Bescheid, wenn die A8 wieder frei ist", "tell me when a warning comes for Kiel". A name is enough as the key (a road, place or stop); no read tool is needed first. Do NOT use to look something up now, nor for an e-mail, SMS or any alert outside this chat — we cannot send one; say so. Session-scoped. At most 10 watches, 24 h each. Results carry their attribution line.
+> Opens a watch so THIS conversation is told when something changes: a road reopening, a stop running late, a weather warning, a charge point turning free. Use when asked to be told later: "sag mir Bescheid, wenn die A8 wieder frei ist", "tell me when a warning comes for Kiel". A name is enough as the key; no lookup first. Do NOT use to look up now, nor for e-mail, SMS or any alert outside this chat — we cannot send one; say so. Set hours (≤ 24, default 3) to cover the time asked about; condition narrows it (only the reopening, one charge point). Session-scoped, ≤ 10 watches. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
 | `key` | string | **yes** | — | min length 1; max length 200 |
 | `kind` | string | **yes** | — | one of `"road"`, `"station"`, `"region"`, `"place"`, `"weather"`, `"charger"` |
-| `condition` | object | no | — | keys: `delay_min`, `late_share`, `min_trips`, `radius_km`, `min_level`, `event`, `point_id` (each described below) |
+| `condition` | object | no | — | keys: `delay_min`, `late_share`, `min_trips`, `radius_km`, `min_level`, `event`, `point_id` (each described below); `additionalProperties` |
 | `hours` | number | no | — | min 0.25; max 24 |
 | `language` | string | no | `"de"` | one of `"de"`, `"en"` |
 | `until` | string | no | — | format `date-time`; pattern (288 characters — see the description; the `format` above is the short answer) |
 
 - **`key`** — The thing to watch, in the person's own words — a name is enough and no read tool is needed first; the server resolves it and the answer names the key it resolved to. `road`: a road number ("A8", "B27"). `place`: a town or address ("Fulda"). `weather`: a place name ("Kiel"), resolved to the DWD warn cell it lies in — or a warn cell id ("801002000"); a Land or Kreis is an area and takes no single cell. `station`: a stop or station name ("Köln Hbf", "München, Marienplatz"), resolved to its DHID the way get_departures resolves a stop — or a DHID ("de:14612:28"); an EVA number from get_train_departures ("8000207") is not a DHID and is refused. `charger`: a place ("Würzburg"), resolved to the nearest charging site that reports live occupancy — or a site id from find_charging_station. `region`: an AGS prefix ("14612") from check_transit_disruption. A name that fits several places or stops gets a which-one list and opens no watch; call again with the chosen line.
 - **`kind`** — What kind of thing to watch. `road` = one motorway or federal road (key: "A8", "B27") — reports a closure or restriction appearing or clearing; `station` = one public-transport stop (key: its name, "Köln Hbf", or its DHID) — reports departures running late past the threshold; `region` = a city or district by AGS prefix (key: "14612") — reports the share of late trips crossing the threshold; `place` = a town or address (key: "Fulda") — reports road restrictions appearing within the radius; `weather` = one DWD warn cell (key: a place name, "Kiel", or the cell id) — reports an official warning coming into force; `charger` = one charging site (key: a place, "Würzburg", or the site id) — reports a point turning free.
-- **`condition`** — Optional threshold. Each key belongs to ONE kind and a key that does not belong to the chosen kind is refused by name; leave it out to use that kind's default.
+- **`condition`** — Optional threshold; the keys of each kind, with an example: road {"event": "reopen"} (only the reopening); station {"delay_min": 20}; region {"late_share": 0.3, "delay_min": 5, "min_trips": 20}; place {"radius_km": 10}; weather {"min_level": 3}; charger {"point_id": "2"} (one charge point). Any other key, or a key of another kind, is refused by name; leave it out for the default. The answer repeats the condition it applies.
   - `delay_min` (integer, min 1; max 600) — station: minutes of delay that count as a disruption (default 10).
   - `late_share` (number, min 0.01; max 1) — region: share of observed trips running late that trips the watch (default 0.25).
   - `min_trips` (integer, min 1; max 10000) — region: below this many observed trips the share is noise (default 10).
@@ -700,7 +700,7 @@ single call.
 
 *Say where a coordinate is — Sagen, wo eine Koordinate liegt*
 
-> Turns a bare lat/lon into a sentence a traveller understands: the nearest address, settlement, Kreis, administrative area and motorway junction, each with its own distance. Use whenever you already hold a coordinate — from the traveller, or from another tool's result — and need to say where it is. Do NOT use to look a place up BY NAME: that is find_a_place, find_place, find_poi or find_address. The Kreis/admin-area facts are the nearest gazetteer POINT, not a boundary lookup — admin can be a Regierungsbezirk, not a Land. OpenStreetMap ODbL 1.0 for the address; show the attribution line.
+> Turns a bare lat/lon into a sentence a traveller understands: the nearest address, settlement and motorway junction with their distances, and the Gemeinde, Kreis and Land the point lies in. Use whenever you already hold a coordinate — from the traveller, or from another tool's result — and need to say where it is. Do NOT use to look a place up BY NAME: that is find_a_place, find_place, find_poi or find_address. The Gemeinde, Kreis and Land are read off the municipality's official key (#683), not the nearest gazetteer point. OpenStreetMap ODbL 1.0 for the address; show the attribution line.
 
 | argument | required | description |
 | --- | --- | --- |
@@ -711,5 +711,5 @@ single call.
 ---
 
 Generated from `catalogue.json` by `scripts/gen-api-doc.mjs`. The snapshot was
-read from `https://mcp.viafrei.de/mcp` on 2026-10-11; no tool was invoked to
+read from `https://mcp.viafrei.de/mcp` on 2026-10-12; no tool was invoked to
 produce it, so no data provider was contacted.
