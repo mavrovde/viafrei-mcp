@@ -5,6 +5,20 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.1.5] - 2026-10-13
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.1.5 while the registry's latest is 2.1.1, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**CHANGED** — the automation knows what moved, not what it means:
+
+- tools: the server has find_hydrogen_station, the snapshot does not
+
+**A person must describe the change above before this merges.** A release note that
+lists a tool name without saying what it does misleads the reader it exists for.
+
 ## [2.1.1] - 2026-10-13
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
@@ -2543,6 +2557,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.1.5]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.5
 [2.1.1]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.1
 [2.0.10]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.0.10
 [2.0.9]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.0.9
