@@ -17,12 +17,12 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.1.1 |
+| Server | `viafrei` 2.1.5 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
 | Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-13 |
-| Surface | 21 tools, 10 resources, 2 resource templates, 9 prompts |
+| Surface | 22 tools, 10 resources, 2 resource templates, 9 prompts |
 | Parameter schemas | JSON Schema draft-07 |
 | Capabilities | `tools`, `resources`, `prompts`, `logging` |
 
@@ -31,7 +31,7 @@ No API key. No account. No sign-up.
 ## Contents
 
 - [How to read a result](#how-to-read-a-result)
-- [Tools](#tools) — 21
+- [Tools](#tools) — 22
 - [Resources](#resources) — 10
 - [Resource templates](#resource-templates) — 2
 - [Prompts](#prompts) — 9
@@ -243,6 +243,30 @@ The server's own instructions to a connecting client, verbatim:
 - **`only_available`** — When true, return only sites with at least one point reported FREE right now. Default false. Use it when the person asks what is free at this moment. Note that only some operators publish live status: the result always says how many nearby sites were dropped because their status is unknown, so the filter never silently hides a charger that may well be free.
 - **`place`** — Where to look, as free text: a city ("München", "Munich"), a district or Kreis ("Kreis Fulda"), a Bundesland, a station or stop ("Hamburg Hbf"), a motorway junction ("AK Neufahrn"), or a street address with a house number ("Bahnhofstraße 12, 36037 Fulda"). A motorway number alone ("A7") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.
 - **`radius_km`** — Search radius around the place in kilometres (1–25, default 10). A charging stop is worth a detour, so this is wider than the fuel radius — but 25 km is the cap, and a larger circle is a dataset request rather than a driver's question.
+
+### `find_hydrogen_station` — Hydrogen stations nearby
+
+**Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
+
+> Returns hydrogen (H2) filling stations near a place or coordinate, nearest first, with operator, address, pumps (700 bar car, 350 bar truck/bus), opening hours where published and the age of the record. Use when someone asks where to refuel a fuel-cell car, lorry or bus ("Wasserstofftankstelle", "H2 tanken", "hydrogen station near me"). Do NOT use for petrol, diesel or LPG (call find_fuel_station) or EV charging (call find_charging_station). Radius ≤ 150 km, ≤ 10 stations; no live availability or price is published. Shows the attribution line.
+
+| parameter | type | required | default | constraints |
+| --- | --- | --- | --- | --- |
+| `language` | string | no | `"de"` | one of `"de"`, `"en"` |
+| `lat` | number | no | — | min -90; max 90 |
+| `limit` | integer | no | `5` | min 1; max 10 |
+| `lon` | number | no | — | min -180; max 180 |
+| `place` | string | no | — | min length 1; max length 120 |
+| `radius_km` | number | no | `50` | min 1; max 150 |
+| `vehicle` | string | no | — | one of `"car"`, `"truck"` |
+
+- **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
+- **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.
+- **`limit`** — How many stations to list, nearest first (1–10, default 5).
+- **`lon`** — Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use place.
+- **`place`** — Where to look, as free text: a city ("München", "Munich"), a district or Kreis ("Kreis Fulda"), a Bundesland, a station or stop ("Hamburg Hbf"), a motorway junction ("AK Neufahrn"), or a street address with a house number ("Bahnhofstraße 12, 36037 Fulda"). A motorway number alone ("A7") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.
+- **`radius_km`** — Search radius around place or lat+lon in kilometres (1–150, default 50). Hydrogen stations are few, so the default is wide; when none is inside, the answer still names the nearest one beyond. Example: 50
+- **`vehicle`** — Which pump the vehicle needs: "car" (Pkw — 700 bar, e.g. Toyota Mirai, Hyundai Nexo; a few sites also offer 350 bar for cars) or "truck" (Lkw or bus — 350 bar). Omit unless the person said what they drive.
 
 ### `find_place` — Look up a place
 

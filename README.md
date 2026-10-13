@@ -29,8 +29,8 @@ claude mcp add --transport http viafrei https://mcp.viafrei.de/mcp
 **Free. No account, no API key, no sign-up.** One line and your assistant knows
 whether the A8 is jammed, whether your train, bus or tram is late, where the
 nearest fast charger is (and whether it is free, where the operator publishes
-that), whether the lift at your station works and whether the road ahead is
-forecast to freeze — from official German open data, live, with the source named
+that), which hydrogen station takes a lorry, whether the lift at your station
+works and whether the road ahead is forecast to freeze — from official German open data, live, with the source named
 in every answer.
 
 > **Beta.** ViaFrei is being stabilised: sources are still being added, and
@@ -38,18 +38,19 @@ in every answer.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in 2.0:** **live delays for buses, trams and the U-Bahn.** `get_departures`
-> gives every German stop one live figure per departure (a delay, "on time" or a
-> cancellation) from DELFI's realtime feeds, and says when a time is only the plan.
-> **Fuel answers no longer go blank** where we hold no price: they list the nearest
-> OpenStreetMap filling stations, clearly without a price and only inside Germany.
-> Weather answers add the **DWD road-surface forecast** for the nearest road-weather
-> stations; road answers add **Hamburg's city roadworks** and Baden-Württemberg's
-> **signed detours**; `find_parking` adds **München's P+R occupancy forecast** and
-> live P+R spaces in **Leipzig**. Station answers cover lifts and escalators from
-> DB, DB InfraGO's OpenStation and the Köln Stadtbahn. Every source is listed, with
-> what it feeds and what we hold back, in [SOURCES.md](SOURCES.md); the
-> [CHANGELOG](CHANGELOG.md) has the whole list.
+> **New in 2.1:** **hydrogen stations.** A new tool, `find_hydrogen_station`, lists
+> H2 Mobility's stations near a place, nearest first, with their pumps (700 bar for
+> cars, 350 bar for lorries and buses) and opening hours where published. The
+> publisher gives no availability and no price, and the answer says so.
+> **More roads in the city:** `check_road_status` now reads the works and building
+> sites of Bremen, the traffic messages of Kassel, Leipzig and Rüsselsheim am Main,
+> and the state of Schleswig-Holstein's large bridges (a wind warning, a closure);
+> Niedersachsen's works and closures off the motorways are answered by road.
+> `find_parking` adds **Kassel's car parks with live free spaces**, and
+> `find_charging_station` reads **23 more charge-point operators** directly from
+> their own publications. Every source is listed, with what it feeds and what we
+> hold back, in [SOURCES.md](SOURCES.md); the [CHANGELOG](CHANGELOG.md) has the
+> whole list.
 
 ---
 
@@ -62,10 +63,10 @@ comes back in the language you asked in.
 | when you're… | ask |
 |---|---|
 | 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* |
-| 🚗 **about to drive** | *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Baustellen gibt es in Hamburg-Altona?* |
+| 🚗 **about to drive** | *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Baustellen gibt es in Bremen?* · *Ist die Fehmarnsundbrücke wegen Wind gesperrt?* |
 | 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Is traffic backed up on the Cologne motorway ring — A1, A3 or A4?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
-| ⚡ **driving electric** | *Where can I charge with Type 2 near Leipzig?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* |
-| 🅿️ **parking** | *Is the P+R at Fröttmaning usually full in the morning?* · *Freie Plätze im P+R in Leipzig?* · *Find a rest area with lorry parking on the A9* |
+| ⚡ **driving electric or on hydrogen** | *Where can I charge with Type 2 near Leipzig?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* · *Where can I fill up a hydrogen lorry near Hamburg?* |
+| 🅿️ **parking** | *Is the P+R at Fröttmaning usually full in the morning?* · *Wie viele Plätze sind in den Kasseler Parkhäusern frei?* · *Find a rest area with lorry parking on the A9* |
 | ⛽ **filling up** | *Where is diesel cheapest near Kassel?* · *Welche Tankstellen gibt es in Weimar?* |
 | ♿ **travelling step-free** | *Funktioniert der Aufzug am Bahnhof Köln Messe/Deutz?* |
 | 🌦️ **watching the weather** | *Gibt es eine Unwetterwarnung für Freiburg?* · *Is the road near Garmisch going to be icy this morning?* |
@@ -75,14 +76,18 @@ comes back in the language you asked in.
 
 **What the answers cover, honestly.** Live traffic is the motorways. Closures
 and roadworks also cover federal roads, Land roads in Niedersachsen, Sachsen,
-Thüringen and Baden-Württemberg, Hamburg's city streets, and the traffic reports
-some Länder and cities publish (Baden-Württemberg, Schleswig-Holstein, Berlin,
-Hamburg, Köln, Hannover); other city streets are not covered. Departures cover
+Thüringen and Baden-Württemberg, the city streets of Hamburg and Bremen, the
+traffic reports some Länder and cities publish (Baden-Württemberg,
+Schleswig-Holstein, Berlin, Hamburg, Köln, Hannover, Kassel, Leipzig, Rüsselsheim
+am Main), and the state of Schleswig-Holstein's large bridges; other city streets
+are not covered. Departures cover
 every German stop from the timetable; a live delay appears where a realtime feed
 carries that trip, and otherwise the answer says the time is the plan. Live
 parking and charging occupancy exist only where the operator publishes them, and
 an answer never reads "no data" as free. Fuel prices cover the stations we watch,
-not all of Germany. Places and addresses come from OpenStreetMap, so what is not
+not all of Germany. Hydrogen stations are H2 Mobility's published list: pumps and
+opening hours, but no availability, price or working state, so check before you
+drive. Places and addresses come from OpenStreetMap, so what is not
 mapped there cannot be found, and ratings are not part of it. A **watch** lives in
 the conversation that opened it: the server keeps every change there, and your
 assistant shows it when you ask, or on its own if your client supports MCP
@@ -92,12 +97,65 @@ whole, not one section of it.
 
 ## 💬 Real answers
 
-These came back from the production server at `https://mcp.viafrei.de/mcp`
-(server 2.0.10) on **2026-10-13, around 06:41 Berlin time**. They are not mock-ups.
-Each one shows the first lines of what the tool returned, and the source line as it
-was sent, shortened where marked.
+These came back from the production server at `https://mcp.viafrei.de/mcp`. They
+are not mock-ups. The first three were asked of **server 2.1.5 on 2026-10-13,
+around 16:20 Berlin time**; the others of server 2.0.10 the same morning, around
+06:41, and they answer the same way at 2.1.5. Each one shows the first lines of
+what the tool returned, and the source line as it was sent, shortened where marked.
 
 <details open>
+<summary><b>💧 "Where can I fill up a hydrogen lorry near Hamburg?"</b> — <code>find_hydrogen_station</code></summary>
+
+```text
+Hydrogen stations for trucks/buses near Hamburg (within 50 km), nearest first:
+1. Hamburg - Schnackenburgallee — 5.5 km · Schnackenburgallee 12, 22525 Hamburg · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (today)
+2. Hamburg - Flughafen — 7.9 km · Weg beim Jäger 193, 22335 Hamburg · 700 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (today)
+3. Hamburg - Großmoorbogen — 10.0 km · Großmoorbogen 1, 21079 Hamburg · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (today)
+No live availability, price or operating status is published — check that the station is working before you drive.
+
+As of 14:50 · Source: Wasserstofftankstellen: H2 Mobility Deutschland GmbH & Co. KG via Mobilithek, CC BY 4.0, bearbeitet (…) · Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (…)
+```
+Only the stations with a 350 bar pump for lorries and buses, because the question
+was about a lorry. It names what the publisher does not say, opening hours
+included, and never guesses that a station is working.
+*Edited: the two source URIs cut to `…`.*
+</details>
+
+<details>
+<summary><b>🚧 "Welche Baustellen gibt es in Bremen?"</b> — <code>check_road_status</code></summary>
+
+```text
+Bremen: 4 jam reports, 151 closures, 119 restrictions, 8 planned roadworks sites — window until 2026-10-16.
+• Slow traffic (Stockender Verkehr): Provider text (German): "A1 Osnabrück Richtung Bremen, zwischen Dreieck Stuhr und Bremen-Arsten, 4 km stockender Verkehr im Baustellenbereich" (since 12:46; +16 min per Autobahn GmbH; 6.2 km away)
+• Traffic restriction (Verkehrseinschränkung) (Bremen): Provider text (German): "Einengung der Fahrbahn; Einengung des Geh-/Radweges; Halteverbot;" (2026-06-01–2026-10-31)
+• Closure (Sperrung) (Bremen): Provider text (German): "Vollsperrung; Einengung des Geh-/Radweges; Halteverbot;" (2026-08-17–2026-10-16)
+…
+Sources that answered: Autobahn GmbH, BASt (roadworks), VIZ.NRW / NMS, Bremen traffic management centre (roadworks).
+
+As of 16:14, unchanged since 13:15 · Source: Verkehrsdaten: Autobahn GmbH des Bundes (…) · … · Baustellen Bremen: Verkehrsmanagementzentrale Bremen via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert (…) · …
+```
+The motorway jam and the city's own building sites in one answer, each in its
+publisher's words and with its dates, and a line naming every source that answered.
+*Edited: asked in English; a place key, seven of ten entries, the radius notes and three of five sources omitted.*
+</details>
+
+<details>
+<summary><b>🅿️ "Wie viele Plätze sind in den Kasseler Parkhäusern frei?"</b> — <code>find_parking</code></summary>
+
+```text
+Parking around Kassel (within 10 km), nearest first:
+1. Galeria — Car park (Parkhaus), 0.2 km, 210 spaces, 102 free (as of 16:06)
+2. Friedrichsplatz — Car park (Parkhaus), 0.2 km, 980 spaces, 579 free (as of 16:06)
+3. Kurfürsten Galerie — Car park (Parkhaus), 0.3 km, 560 spaces, 456 free (as of 16:06)
+…
+As of 16:06 · Source: Parkhäuser Kassel: Stadt Kassel, Straßenverkehrs- und Tiefbauamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert (…) · Parkhaus-Belegung Kassel: Stadt Kassel, Straßenverkehrs- und Tiefbauamt via Mobilithek, … (…) · …
+Where no "free" count is shown the operator publishes no occupancy — it does not mean the site is full.
+```
+The city's live counts, each with the time of its reading.
+*Edited: asked in English; a place key, two car parks, the separate OpenStreetMap list and two of four sources omitted.*
+</details>
+
+<details>
 <summary><b>🚋 "Wann fährt die nächste Bahn ab Köln Neumarkt?"</b> — <code>get_departures</code></summary>
 
 ```text
@@ -248,9 +306,17 @@ surface itself, with what that forecast is not.
 </details>
 
 On **[viafrei.de](https://viafrei.de/en)** the same data is on the page: the home
-shows cards for one place (departures, roads, charging, parking, fuel, weather),
-and German towns and cities have place pages under their full names, where each
-card row with its own point links to OpenStreetMap's map.
+shows cards for one place, public transport first, then fuel, parking, roads,
+charging, weather and what is nearby, and German towns and cities have place pages
+under their full names, where each card row with its own point links to
+OpenStreetMap's map. Since 2.1 each station on the transit card has a line of its
+own: how many of its lifts and escalators run, each one out of service by name,
+the platforms the timetable marks step-free, and the car parks and P+R sites
+within 300 m. The punctuality share is the district's (Kreis) where a place lies
+in one; the weather card shows the nearest road-weather station's next six hours
+(air and road-surface temperature, rain or snow); the road card adds the city
+messages above; and the fuel card names the two nearest hydrogen stations within
+25 km.
 
 **Why the source line matters.** Every answer ends with one, and it is the
 licence speaking: show it to whoever reads the answer. Copy the line the server
@@ -327,7 +393,7 @@ Restart the client and ask one of the questions above.
 
 <!-- catalogue:begin — generated by scripts/gen-readme-catalogue.mjs from catalogue.json; do not edit by hand -->
 
-**21 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.1.1, snapshot of 2026-10-13. Each line is the server's own words; the full parameters are in [API.md](API.md).
+**22 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.1.5, snapshot of 2026-10-13. Each line is the server's own words; the full parameters are in [API.md](API.md).
 
 #### 🚗 On the road
 
@@ -354,6 +420,7 @@ Restart the client and ask one of the questions above.
 | [`find_charging_station`](API.md#find_charging_station--ev-charging-nearby) — EV charging nearby | Returns EV charging sites near a place or coordinate with operator, connector types, maximum power, price per kWh where published, and how many points are free right now where the operator publishes live status. |
 | [`find_cheapest_fuel`](API.md#find_cheapest_fuel--cheapest-fuel-nearby) — Cheapest fuel nearby | Returns the cheapest stations for one fuel grade near a place or coordinate: price per litre, brand, address, distance, open state. |
 | [`find_fuel_station`](API.md#find_fuel_station--find-a-filling-station) — Find a filling station | Finds filling stations around a place or coordinate under any combination of filters — grade, brand, name, open now, open at a time you name, open 24 h — sorted by distance, price or name. |
+| [`find_hydrogen_station`](API.md#find_hydrogen_station--hydrogen-stations-nearby) — Hydrogen stations nearby | Returns hydrogen (H2) filling stations near a place or coordinate, nearest first, with operator, address, pumps (700 bar car, 350 bar truck/bus), opening hours where published and the age of the record. |
 
 #### 📍 Places and addresses
 
@@ -461,15 +528,15 @@ curl -s https://mcp.viafrei.de/mcp \
 ```
 
 - **One endpoint instead of a stack of integrations.** [SOURCES.md](SOURCES.md)
-  lists the more than ninety sources behind it, among them Autobahn GmbH, Deutsche
+  lists the more than 140 sources behind it, among them Autobahn GmbH, Deutsche
   Bahn, DWD, DELFI, VBB, the national access point Mobilithek, MobiData BW, the
-  Bundesnetzagentur, city open-data portals, BKG, GeoNames, OpenStreetMap and
+  Bundesnetzagentur, dozens of charge-point operators, H2 Mobility, city open-data portals, BKG, GeoNames, OpenStreetMap and
   MTS-K. Each has its own format, release rhythm and licence, and they arrive
   here as one protocol.
 - **Results are written to be read aloud.** A tool answers in sentences an
   assistant can pass on, says what it does not know ("no status data means
   unknown, not free"), and ends with the source line.
-- **Annotated honestly.** Nineteen of the twenty-one tools are read-only and
+- **Annotated honestly.** Twenty of the twenty-two tools are read-only and
   idempotent (`readOnlyHint`, `idempotentHint`), so a client can call them
   without a confirmation prompt. The two watch tools are not, because opening
   or stopping a watch changes what the server will tell you later, and their

@@ -5,7 +5,7 @@
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.1.1"
+    "version": "2.1.5"
   },
   "capabilities": {
     "tools": {
@@ -543,6 +543,74 @@
       },
       "annotations": {
         "title": "EV charging nearby",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "find_hydrogen_station",
+      "description": "Returns hydrogen (H2) filling stations near a place or coordinate, nearest first, with operator, address, pumps (700 bar car, 350 bar truck/bus), opening hours where published and the age of the record. Use when someone asks where to refuel a fuel-cell car, lorry or bus (\"Wasserstofftankstelle\", \"H2 tanken\", \"hydrogen station near me\"). Do NOT use for petrol, diesel or LPG (call find_fuel_station) or EV charging (call find_charging_station). Radius ≤ 150 km, ≤ 10 stations; no live availability or price is published. Shows the attribution line.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "lat": {
+            "description": "Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.",
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lon": {
+            "description": "Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use place.",
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "language": {
+            "default": "de",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "type": "string",
+            "enum": [
+              "de",
+              "en"
+            ]
+          },
+          "radius_km": {
+            "default": 50,
+            "description": "Search radius around place or lat+lon in kilometres (1–150, default 50). Hydrogen stations are few, so the default is wide; when none is inside, the answer still names the nearest one beyond. Example: 50",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 150
+          },
+          "vehicle": {
+            "description": "Which pump the vehicle needs: \"car\" (Pkw — 700 bar, e.g. Toyota Mirai, Hyundai Nexo; a few sites also offer 350 bar for cars) or \"truck\" (Lkw or bus — 350 bar). Omit unless the person said what they drive.",
+            "type": "string",
+            "enum": [
+              "car",
+              "truck"
+            ]
+          },
+          "limit": {
+            "default": 5,
+            "description": "How many stations to list, nearest first (1–10, default 5).",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          }
+        }
+      },
+      "annotations": {
+        "title": "Hydrogen stations nearby",
         "readOnlyHint": true,
         "idempotentHint": true,
         "openWorldHint": false,

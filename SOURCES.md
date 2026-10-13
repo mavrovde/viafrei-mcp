@@ -15,8 +15,8 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was generated
-from that resource as served by server 2.0.10 on 2026-10-13**: 104 sources, of which
-91 are held, 12 are planned (licence read, nothing ingested yet) and one is
+from that resource as served by server 2.1.5 on 2026-10-13**: 156 sources, of which
+143 are held, 12 are planned (licence read, nothing ingested yet) and one is
 discontinued. Whatever the surfaces say, the answer you hold is the thing to read:
 `_meta.sources` and the attribution lines on it are produced from the same result
 you are looking at.
@@ -200,12 +200,12 @@ that every answer carries it.
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.0.10,
-2026-10-13), it exposes twenty-one tools, nineteen of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.1.5,
+2026-10-13), it exposes twenty-two tools, twenty of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
-deactivated. That would now mean **seventeen** live calls, the read-only tools
+deactivated. That would now mean **eighteen** live calls, the read-only tools
 minus the two fuel tools, and it would measure less than a full round does.
 
 Publication rhythm and freshness are not in the table: the server reports them per
@@ -213,7 +213,7 @@ feed, live, in the resource `viafrei://coverage`.
 
 | Source id | Attribution line | Licence | Status |
 |---|---|---|---|
-| **Roads, traffic messages and roadworks** — feeds `check_autobahn_traffic`, `check_road_status`, `find_roadworks_ahead`, `watch_situation`; site: the road card (closures, jams, Hamburg roadworks, BW detours) and long closures on the News page | | | |
+| **Roads, traffic messages and roadworks** — feeds `check_autobahn_traffic`, `check_road_status`, `find_roadworks_ahead`, `watch_situation`; site: the road card (closures, jams, city messages and works, Hamburg roadworks, BW detours) and long closures on the News page | | | |
 | `autobahn` | Verkehrsdaten: Autobahn GmbH des Bundes | open, no licence text published | held |
 | `mobilithek_bab_messages` | Verkehrsmeldungen: Die Autobahn GmbH des Bundes (Mobilithek), Nutzungsbestimmungen nach GeoNutzV, Daten verändert; Ortsangaben: TMC Location Code List der Bundesanstalt für Straßenwesen (BASt), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), bearbeitet | GeoNutzV | held |
 | `bast_lcl` | TMC Location Code List (LCL 22.0): Bundesanstalt für Straßenwesen (BASt), CC BY 4.0, bearbeitet | CC BY 4.0 | held |
@@ -232,6 +232,12 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_traffic_koeln_events` | Verkehrsereignisse Köln: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `mobilithek_traffic_sh` | Verkehrsmeldungen Schleswig-Holstein: Landesmeldestelle Polizei Schleswig-Holstein via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
 | `mobilithek_traffic_hannover` | Verkehrsmeldungen Hannover: Landeshauptstadt Hannover – Fachbereich Tiefbau via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
+| `mobilithek_roadworks_nlstbv` | Arbeitsstellen und Sperrungen Niedersachsen (außerhalb der Autobahnen): Niedersächsische Landesbehörde für Straßenbau und Verkehr via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `mobilithek_roadworks_bremen` | Baustellen Bremen: Verkehrsmanagementzentrale Bremen via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `mobilithek_traffic_kassel` | Verkehrsmeldungen Kassel: Stadt Kassel, Straßenverkehrs- und Tiefbauamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0, by the city's terms of use — see below | held |
+| `mobilithek_traffic_leipzig` | Verkehrsmeldungen Leipzig: Stadt Leipzig, Verkehrs- und Tiefbauamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0, by the city's terms of use — see below | held |
+| `mobilithek_traffic_ruesselsheim` | Verkehrsmeldungen Rüsselsheim am Main: © Stadt Rüsselsheim am Main 2026 — GeoNutzV, Daten verändert | GeoNutzV | held |
+| `mobilithek_bridges_sh` | Brückenzustände Schleswig-Holstein: Landesbetrieb Straßenbau und Verkehr Schleswig-Holstein (LBV.SH) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `mobilithek_traffic_koeln_static` | Verkehrslage Köln (Streckenabschnitte): Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
 | `mobilithek_traffic_koeln_dyn` | Verkehrslage Köln: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
 | `mobilithek_traffic_nrw` | Verkehrsinformationen NRW: Landesbetrieb Straßenbau NRW (VIZ.NRW) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
@@ -256,6 +262,8 @@ feed, live, in the resource `viafrei://coverage`.
 | `kvb_lifts` | Aufzugsdaten: Kölner Verkehrs-Betriebe AG, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0, no warranty | held |
 | **Fuel** — feeds `find_cheapest_fuel`, `find_fuel_station`, `find_nearby`; site: the fuel card and the fuel page | | | |
 | `tankerkoenig` | Tankstellenpreise: Tankerkönig.de — MTS-K, CC BY 4.0, bearbeitet | CC BY 4.0 **plus the MTS-K purpose limit** | held |
+| **Hydrogen** — feeds `find_hydrogen_station`; site: the fuel card (the two nearest hydrogen stations within 25 km) | | | |
+| `mobilithek_h2_stations` | Wasserstofftankstellen: H2 Mobility Deutschland GmbH & Co. KG via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | **Charging** — feeds `find_charging_station`, `find_nearby`, `watch_situation`; site: the charging card | | | |
 | `bnetza_lsr` | Ladesäulenregister: Bundesnetzagentur.de, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_afir_ecomovement` | Ladepunkte: Eco-Movement via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
@@ -268,6 +276,49 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_afir_vw_dyn` | Ladepunkt-Verfügbarkeit: Volkswagen Group Charging GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
 | `mobilithek_afir_eclearing_stat` | Ladepunkte: e-clearing.net (smartlab Innovationsgesellschaft mbH) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
 | `mobilithek_afir_eclearing_dyn` | Ladepunkt-Verfügbarkeit: e-clearing.net (smartlab Innovationsgesellschaft mbH) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_pump_stat` | Ladepunkte: 800 Volt Technologies GmbH (PUMP) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_edri_stat` | Ladepunkte: Ampeco Ltd. (EDRI) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_edri_dyn` | Ladepunkt-Verfügbarkeit: Ampeco Ltd. (EDRI) via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
+| `mobilithek_afir_audi_stat` | Ladepunkte: Audi AG (Audi charging hub) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_audi_dyn` | Ladepunkt-Verfügbarkeit: Audi AG (Audi charging hub) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_enerando_dyn` | Ladepunkt-Verfügbarkeit: ENERANDO Technologies GmbH via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
+| `mobilithek_afir_enio_stat` | Ladepunkte: ENIO GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_enio_dyn` | Ladepunkt-Verfügbarkeit: ENIO GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_evprice_stat` | Ladepunkte: EW Pricing GmbH (EV Price) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_evprice_dyn` | Ladepunkt-Verfügbarkeit: EW Pricing GmbH (EV Price) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_ewe_stat` | Ladepunkte: EWE via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_ewe_dyn` | Ladepunkt-Verfügbarkeit: EWE via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_gls_stat` | Ladepunkte: GLS Mobility GmbH via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `mobilithek_afir_gls_dyn` | Ladepunkt-Verfügbarkeit: GLS Mobility GmbH via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `mobilithek_afir_gpjoule_stat` | Ladepunkte: GP JOULE Connect GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_gpjoule_dyn` | Ladepunkt-Verfügbarkeit: GP JOULE Connect GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_gridco_stat` | Ladepunkte: Grid & Co. GmbH via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
+| `mobilithek_afir_gridco_dyn` | Ladepunkt-Verfügbarkeit: Grid & Co. GmbH via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
+| `mobilithek_afir_eround_stat` | Ladepunkte: Hamburger Energienetze GmbH (eRound) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_eround_dyn` | Ladepunkt-Verfügbarkeit: Hamburger Energienetze GmbH (eRound) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_inergia_stat` | Ladepunkte: INERGIA GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_inergia_dyn` | Ladepunkt-Verfügbarkeit: INERGIA GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_rudnick_stat` | Ladepunkte: K.u.L. Rudnick Bau und Bauträger GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_lichtblick_stat` | Ladepunkte: LichtBlick eMobility GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_lichtblick_dyn` | Ladepunkt-Verfügbarkeit: LichtBlick eMobility GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_monta_stat` | Ladepunkte: Monta ApS via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
+| `mobilithek_afir_monta_dyn` | Ladepunkt-Verfügbarkeit: Monta ApS via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_qwello_stat` | Ladepunkte: Qwello Deutschland GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_qwello_dyn` | Ladepunkt-Verfügbarkeit: Qwello Deutschland GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_road_stat` | Ladepunkte: Road B.V. (Road Public Network) via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
+| `mobilithek_afir_road_dyn` | Ladepunkt-Verfügbarkeit: Road B.V. (Road Public Network) via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
+| `mobilithek_afir_smatrics_stat` | Ladepunkte: SMATRICS GmbH & Co KG via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_smatrics_dyn` | Ladepunkt-Verfügbarkeit: SMATRICS GmbH & Co KG via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_wirelane_stat` | Ladepunkte: Wirelane GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_wirelane_dyn` | Ladepunkt-Verfügbarkeit: Wirelane GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_chargecloud_stat` | Ladepunkte: chargecloud GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_chargecloud_dyn` | Ladepunkt-Verfügbarkeit: chargecloud GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_vaylens_stat` | Ladepunkte: vaylens GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_vaylens_dyn` | Ladepunkt-Verfügbarkeit: vaylens GmbH via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_ladenetz_stat` | Ladepunkte: Smartlab Innovationsgesellschaft mbH (ladenetz.de) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_ladenetz_dyn` | Ladepunkt-Verfügbarkeit: Smartlab Innovationsgesellschaft mbH (ladenetz.de) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_ladebusiness_stat` | Ladepunkte: Smartlab Innovationsgesellschaft mbH (ladebusiness) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
+| `mobilithek_afir_ladebusiness_dyn` | Ladepunkt-Verfügbarkeit: Smartlab Innovationsgesellschaft mbH (ladebusiness) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
 | `ocpdb_chargecloud` | Ladepunkte und Verfügbarkeit: chargecloud (CC0 1.0) via MobiData BW (NVBW), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert | dl-de/by-2-0 | held |
 | `ocpdb_taubert` | Ladepunkte und Verfügbarkeit: Taubert Consulting (CC0 1.0) via MobiData BW (NVBW), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert | dl-de/by-2-0 | held |
 | **Parking** — feeds `find_parking`, `find_nearby`; site: the parking card, München forecast included | | | |
@@ -290,6 +341,8 @@ feed, live, in the resource `viafrei://coverage`.
 | `muenster_pls` | Parkhausbelegung Münster — Datenquelle: Stadt Münster, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
 | `leipzig_pr_standorte` | Park+Ride-Standorte Leipzig — Parkdaten: Stadt Leipzig, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
 | `leipzig_pr_belegung` | Park+Ride-Belegung Leipzig — Parkdaten: Stadt Leipzig, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `mobilithek_park_kassel_static` | Parkhäuser Kassel: Stadt Kassel, Straßenverkehrs- und Tiefbauamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0, by the city's terms of use — see below | held |
+| `mobilithek_park_kassel_dyn` | Parkhaus-Belegung Kassel: Stadt Kassel, Straßenverkehrs- und Tiefbauamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0, by the city's terms of use — see below | held |
 | `muc_parken_parkhaeuser` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | held |
 | `muc_parken_pr` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | held |
 | `muc_parken_prognosen` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | held |
@@ -408,22 +461,36 @@ Publisher: <https://www.autobahn.de>
 - **Roadworks.** BASt for the Bundesautobahnen; the Land authorities of
   Niedersachsen, Sachsen and Thüringen for federal and state roads; the
   Baden-Württemberg transport ministry's roadworks register (BEMaS) through
-  MobiData BW; and **Hamburg's Bauweiser** for the city's own streets, answered by
-  `check_road_status` and `find_roadworks_ahead` when you name a place in Hamburg.
+  MobiData BW; **Hamburg's Bauweiser** for the city's own streets, answered by
+  `check_road_status` and `find_roadworks_ahead` when you name a place in Hamburg;
+  since server 2.1, the **works and building sites of the Verkehrsmanagementzentrale
+  Bremen**, answered by place, and the NLStBV's second publication, **works and
+  closures in Niedersachsen outside the motorways** (DL-DE Zero), answered by road,
+  since it locates a site by its road reference only. A site both Niedersachsen
+  publications carry is one item with both lines.
   From the Bauweiser only sites the city has released for publication are ever
   shown, and "planned" means a start after today in Berlin time.
 - **Detours.** Baden-Württemberg's signed demand detours (Bedarfsumleitungen,
   dl-de/zero-2-0) are quoted in a road answer as the signed route ("signed detour
   U …"), never as a route recommendation.
 - **Traffic messages.** The police reports relayed by VIZ.NRW (including those of
-  the Hamburg Landesmeldestelle), and the messages of Baden-Württemberg, Berlin,
-  Schleswig-Holstein, Köln and Hannover.
+  the Hamburg Landesmeldestelle), the messages of Baden-Württemberg, Berlin,
+  Schleswig-Holstein, Köln and Hannover, and since server 2.1 those of the cities of
+  **Kassel**, **Leipzig** and **Rüsselsheim am Main**, answered by place. On viafrei.de a place card's road
+  section reads the city feeds too, never the Land police relays, which the NRW
+  bundle already carries.
+- **Bridges.** Since server 2.1, the state of Schleswig-Holstein's large bridges
+  from the LBV.SH (DL-DE Zero), answered by place in `check_road_status`, one item
+  per bridge in the publisher's words. The publisher types every record as a
+  closure; we do not take that type, so only words that close the bridge make a
+  closure. A suspended record, and one whose state is "undefiniert", is shown as
+  nothing.
 - **Hamburg traffic cameras** (dl-de/by-2-0) appear in `check_road_status`. The
   register carries the publisher's condition: the Verkehrsleitzentrale stops the
   internet transmission from time to time for data-protection reasons, so the
   images are not reliably available around the clock.
 
-Four things about them are not in the table:
+Five things about them are not in the table:
 
 - **Baden-Württemberg's messages carry a condition of use.** They are official
   traffic-warning-service (Verkehrswarndienst) messages, published under the
@@ -433,18 +500,29 @@ Four things about them are not in the table:
 - **Schleswig-Holstein and Hannover** are published under the access point's term
   "Open Data (freie Nutzung)", and the register names no licence text behind it.
   We name the publisher on every answer and claim no more than the label says.
+- **Kassel and Leipzig: the licence is in the city's terms of use.** On the access
+  point both cities' offers carry the label "restricted use, free of charge" and no
+  standard licence. Unlike the motorway datasets [we leave out](#what-we-hold-back-and-why),
+  they have terms behind the label: each city attaches its own terms of use for its
+  open data on that portal, and those name Datenlizenz Deutschland – Namensnennung
+  2.0 for the datasets they cover; Kassel's offer description says the same, and
+  that subscribing accepts those terms. Both terms exclude the city's coat of arms,
+  and Kassel's excludes personal data, so no contact person is kept. The line is the
+  dl-de/by-2-0 line with the source note each city asks for.
 - **A record its publisher marks confidential is never shown.** In DATEX II, the
   format most of these feeds use, a publisher marks each record with a
   confidentiality level; a record marked anything other than `noRestriction` is
   stored and never returned — not in a tool answer, a watch notice, a site card or
   an export.
-- **GeoNutzV lines carry a year.** The motorway lorry-parking file and the
-  Thüringen roadworks require a source note *and* a note that the data was
-  changed; the year in the line is the year of the last download:
+- **GeoNutzV lines carry a year.** The motorway lorry-parking file, the
+  Thüringen roadworks and the Rüsselsheim messages require a source note *and* a
+  note that the data was changed; the year in the line is the year of the last
+  download:
 
 ```
 LKW-Parken: © Lkw-Parken BAB Deutschland / Bundesministerium für Verkehr (BMV) <Jahr des letzten Datenbezugs> — GeoNutzV, Daten verändert
 Arbeitsstellen Thüringen: © Thüringer Landesamt für Bau und Verkehr (TLBV) <Jahr des letzten Datenbezugs> — GeoNutzV, Daten verändert
+Verkehrsmeldungen Rüsselsheim am Main: © Stadt Rüsselsheim am Main <Jahr des letzten Datenbezugs> — GeoNutzV, Daten verändert
 ```
 
 Datenlizenz Deutschland – Zero – 2.0, the licence of several rows in the table,
@@ -568,7 +646,12 @@ state. Three publishers stand behind it:
   jede Gewähr bereit").
 
 A railway station and the Stadtbahn stop below it can come back in one answer, each
-with its own line. The lookup depends on the station directory, so a station
+with its own line. On viafrei.de, since server 2.1, each station on the transit
+card has a line of its own from the same feeds: how many lifts and escalators run,
+each unit out of service by name (a Köln Stadtbahn unit by its number, the only
+name its publisher gives), the platforms the timetable marks step-free (DELFI's
+static timetable, CC BY 4.0; only a marked platform is a statement), and the car
+parks and P+R sites within 300 m under their own lines. The lookup depends on the station directory, so a station
 missing from it produces "I cannot resolve that station" rather than an empty
 facility list — the distinction matters if you are deciding whether to retry.
 
@@ -614,7 +697,10 @@ binding original: *"Die Daten der Glättemeldeanlagen stellen ungeprüfte
 Punktmessungen dar und spiegeln nicht die Verhältnisse auf einem Straßenabschnitt
 wider. Es besteht kein Anspruch auf regelmäßige und vollständige
 Datenlieferungen."* It is a forecast for a station's own location, not a
-measurement and not an official warning, and the answer says so.
+measurement and not an official warning, and the answer says so. Since server 2.1
+the site's weather card shows the nearest station's next six hours as the DWD
+publishes them, hour by hour and never averaged: air temperature, road-surface
+temperature and class, and the hour's rain or snow where forecast.
 
 Licence: <https://www.dwd.de/copyright>
 
@@ -623,14 +709,31 @@ Licence: <https://www.dwd.de/copyright>
 Charge points reach us from three kinds of publisher, and the licences are **not
 uniform**, so they are listed one by one in the table: the AFIR publications of
 operators and platforms on the national access point (Eco-Movement, EnBW, Tesla,
-Volkswagen, e-clearing.net), the Bundesnetzagentur's Ladesäulenregister, and two
-operators' data passed on by MobiData BW. **The licence follows the publisher, not
+Volkswagen, e-clearing.net, and since server 2.1 twenty-three more: PUMP, EDRI,
+Audi charging hub, ENERANDO, ENIO, EV Price, EWE, GLS Mobility, GP JOULE, Grid & Co.,
+eRound, INERGIA, K.u.L. Rudnick, LichtBlick, Monta, Qwello, Road, SMATRICS,
+Wirelane, chargecloud, vaylens, and smartlab's roaming hubs ladenetz.de and
+ladebusiness), the Bundesnetzagentur's Ladesäulenregister, and two operators' data
+passed on by MobiData BW. Most operators publish a master file and a separate
+availability feed, and the two can carry different licences: Monta's master file
+is "Open Data (freie Nutzung)" and its availability CC0. **The licence follows the publisher, not
 the kind of data**: Tesla's and Volkswagen's master data are CC0, while EnBW's and
 Eco-Movement's availability feeds are CC BY 4.0.
 
 - **Bundesnetzagentur** asks for a specific name: *"Als Namensnennung für Daten
   dieser Internetseite ist Bundesnetzagentur.de zu verwenden"*, and the line uses
   exactly that.
+- **"Open Data (freie Nutzung)"** is the access point's label on some operators'
+  feeds (EDRI's and ENERANDO's availability, Grid & Co.'s and Road's both feeds,
+  Monta's master file), with no licence text behind it, as for the two message
+  feeds above. We name the operator on every answer and claim no more than that.
+- **A frozen availability feed is not shown as current.** ladenetz.de's and
+  ladebusiness's availability publications had stopped updating when we read
+  them; they are still read, and a status is judged by its own time, so an old one
+  never reads as "free now".
+- **One site, one row.** When an operator's own feed and the Ladesäulenregister
+  describe the same site, the answer and the site's charging card list it once,
+  from the operator.
 - **chargecloud and Taubert Consulting** come through MobiData BW, which publishes
   the dataset under dl-de/by-2-0; the register records the operators' own data as
   CC0 1.0 and names both in the line, with the dl-de/by-2-0 note of change.
@@ -645,13 +748,32 @@ operators publish it. A result marks every such site "no status data" and says
 that this means unknown, not free. A price per kWh is shown where the operator
 publishes one, and the answer says for how many sites it holds none.
 
+### H2 Mobility — hydrogen stations · CC BY 4.0
+
+```
+Wasserstofftankstellen: H2 Mobility Deutschland GmbH & Co. KG via Mobilithek, CC BY 4.0, bearbeitet
+```
+
+New in server 2.1. H2 Mobility's list of hydrogen filling stations on the national
+access point, under CC BY 4.0, answered by `find_hydrogen_station` and named on the
+site's fuel card (the two nearest within 25 km). Each station carries its pumps —
+700 bar for cars, 350 bar for lorries and buses, and at a few sites 350 bar for
+cars — its address and, where published, its opening hours. A site in the
+publication with no refill point is not shown as a station.
+
+**What it does not say.** The publication has no availability, no price and no
+working state, and every answer says so: check that a station is working before
+you drive. The publisher's free-text comment, which carries technical contacts'
+phone numbers and e-mail addresses, is never stored, because CC BY 4.0 licenses no
+privacy rights (§ 2(b)(1)); neither are its photo links.
+
 ### OpenStreetMap — addresses, points of interest, the national boundary · ODbL 1.0
 
 ```
 OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0
 ```
 
-**Which answers carry it**, in the platform's own words as of server 2.0.10:
+**Which answers carry it**, in the platform's own words as of server 2.1.5:
 *"Only results that contain a row of one of these two OSM tables carry this line —
 an input that resolved through them, a landmark offered beside a town of the same
 name, an OpenStreetMap car park listed in an answer, an OpenStreetMap motorway
@@ -725,7 +847,10 @@ carries the line of every publisher it lists.
   Service Solutions (CC BY 4.0, with occupancy), Christophorus Parking
   (dl-de/by-2-0) and Trucklounge Ecopark (ODbL, see the top of the page).
 - **City car parks with live occupancy**: Köln, Dortmund and Wuppertal (DL-DE
-  Zero), the NRW bundle, Hamburg and Münster (dl-de/by-2-0), and fifteen cities and
+  Zero), the NRW bundle, Hamburg and Münster (dl-de/by-2-0), since server 2.1
+  **Kassel**'s ten car parks (dl-de/by-2-0 by the city's terms of use, as for its
+  traffic messages; the city's area totals, the sum of several car parks, are not
+  listed as a car park), and fifteen cities and
   operators in Baden-Württemberg through MobiData BW's ParkAPI (Karlsruhe CC BY 4.0,
   the others dl-de/by-2-0). A Wuppertal answer carries two lines, because its live
   counts are matched to the NRW bundle's facility rows.
@@ -801,6 +926,8 @@ at the Thiersheim truck stop, and Kiel's old-town car parks.
   nothing is ingested or shown from them, even if a contract is approved. The
   lorry parks along the motorways are still listed, from the lorry-parking file
   and the operators above.
+- **Two charge-point offers the access point marks non-public**: not polled,
+  stored or shown, although the same operator's public offers are read.
 - **A charge-point operator republished by MobiData BW** whose origin offer could
   not be read when we checked: held back until the origin's licence can be read
   again.
