@@ -38,6 +38,16 @@ in every answer.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
+> **New in 2.1.8:** **company offices and what stands at an address.** `find_poi`
+> now finds a company's offices by name, even when the name is spelled a little
+> differently, keeps motoring results out of a question that is not about
+> driving, and says "more than 50" when a search stopped at its reach instead of
+> giving a count that is not complete. `find_address` lists the companies,
+> shops and buildings OpenStreetMap maps at an address. **A lane narrowing is no
+> longer called a jam:** a police message counts as a jam only when it still
+> describes queuing traffic, so a months-long lane closure for a building site
+> is answered as roadworks.
+>
 > **New in 2.1:** **hydrogen stations.** A new tool, `find_hydrogen_station`, lists
 > H2 Mobility's stations near a place, nearest first, with their pumps (700 bar for
 > cars, 350 bar for lorries and buses) and opening hours where published. The
@@ -98,12 +108,79 @@ whole, not one section of it.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first three were asked of **server 2.1.5 on 2026-10-13,
-around 16:20 Berlin time**; the others of server 2.0.10 the same morning, around
-06:41, and they answer the same way at 2.1.5. Each one shows the first lines of
+are not mock-ups. The first three were asked of **server 2.1.8 on 2026-10-13,
+around 22:40 Berlin time**, the next three of server 2.1.5 the same afternoon,
+around 16:20, and the others of server 2.0.10 that morning, around 06:41; they
+answer in the same shape at 2.1.8. Each one shows the first lines of
 what the tool returned, and the source line as it was sent, shortened where marked.
 
 <details open>
+<summary><b>🏢 "Where are SAP's offices in Walldorf?"</b> — <code>find_poi</code></summary>
+
+```text
+"SAP" in Walldorf:
+1. SAP SE — company, Hasso-Plattner-Ring 7, 69190 Walldorf, Baden-Württemberg, 49.29442, 8.63995
+2. SAP WDF01 — commercial building, Dietmar-Hopp-Allee 16, 69190 Walldorf, Baden-Württemberg, 49.29368, 8.64166
+3. SAP WDF02 — office building, Dietmar-Hopp-Allee 14, 69190 Walldorf, Baden-Württemberg, 49.29461, 8.64274
+4. SAP WDF03 — office building, Robert-Bosch-Straße 34, 69190 Walldorf, Baden-Württemberg, 49.29296, 8.64373
+5. SAP WDF04 — office building, Dietmar-Hopp-Allee 15a, 69190 Walldorf, Baden-Württemberg, 49.29421, 8.64443
+…
+
+23 matches, 1–10 shown — the next with cursor="10".
+
+OpenStreetMap data as of 2026-10-06
+
+As of 22:44 · Source: OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 (…)
+```
+A company's buildings, each with its address and point, from OpenStreetMap,
+which is also why the answer carries the ODbL line.
+The answer says how many matched and how to fetch the next page.
+*Edited: five of ten entries and the source URIs cut to `…`.*
+</details>
+
+<details>
+<summary><b>📫 "What is at Hasso-Plattner-Ring 7 in Walldorf?"</b> — <code>find_address</code></summary>
+
+```text
+"Hasso-Plattner-Ring 7, Walldorf" — 2 mapped objects at this address:
+1. Hasso-Plattner-Ring 7, 69190 Walldorf, Baden-Württemberg — 49.29448, 8.63670
+   (2 OpenStreetMap objects of this address, up to 145 m apart, shown as one point: outline, usually the building (OSM way; point = its centre))
+2. Hasso-Plattner-Ring 7, 69190 Walldorf, Baden-Württemberg — 49.29438, 8.63978 — outline, usually the building (OSM way; point = its centre) — 224 m from point 1
+The 2 points lie up to 224 m apart — further than 150 m, so not one door mapped twice; probably several buildings under this house number.
+
+Mapped at this address in OpenStreetMap:
+- SAP WDF21 — office building
+- SAP WDF19 — office building
+- SAP SE — company
+
+As of 22:44 · Source: OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 (…)
+```
+The address, the buildings mapped under it (and how far apart they are, so
+"two buildings" is not mistaken for "one door mapped twice"), and the companies
+and buildings OpenStreetMap places there.
+*Edited: the note on another Walldorf, the data date and the source URIs cut.*
+</details>
+
+<details>
+<summary><b>🚦 "Is there a jam in Berlin right now?"</b> — <code>check_road_status</code></summary>
+
+```text
+Berlin (11000000): 1 jam report, 247 closures, 267 restrictions, 10 planned roadworks sites — window until 2026-10-16.
+• Slow traffic (Stockender Verkehr): Provider text (German): "A100 Stadtring Berlin, Wilmersdorf Richtung Neukölln, zwischen Gradestraße und Tunnel Ortsteil Britz, 0,8 km stockender Verkehr" (since 12:35; 6.6 km away)
+• Roadworks (Baustelle): Provider text (German): "Karl-Liebknecht-Straße (Mitte) — Richtung Brandenburger Tor in Höhe Spandauer Straße Baustellenfläche für eine Hochbaustelle, Fahrbahn auf einen verschwenkten…" (2026-03-26–2027-09-30)
+• Roadworks (Baustelle): Provider text (German): "Gertraudenstraße (Mitte) — in beiden Richtungen zwischen Spittelmarkt und Fischerinsel Brückenprüfung, Fahrbahn auf zwei Fahrstreifen verengt, Gewichtsbeschrän…" (2023-04-27–2028-03-31)
+• Closure (Sperrung): Provider text (German): "Rosenthaler Straße (Mitte) — in beiden Richtungen zwischen Hackescher Markt und Sophienstraße Gleisbauarbeiten, Vollsperrung für Kfz-Verkehr" (2026-09-18–2026-10-20)
+…
+Sources that answered: Autobahn GmbH, BASt (roadworks), VIZ.NRW / NMS, Senatsverwaltung Berlin (traffic messages).
+
+As of 22:34 · Source: Verkehrsdaten: Autobahn GmbH des Bundes (…) · … · Verkehrsmeldungen Berlin: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt Berlin via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert (…) · …
+```
+One jam, not dozens: a lane narrowed for a building site is roadworks, however
+the police message is filed, and the one queue on the A100 is the jam.
+*Edited: six of ten entries, the radius notes, the other sources of the source line and its URIs omitted.*
+</details>
+
+<details>
 <summary><b>💧 "Where can I fill up a hydrogen lorry near Hamburg?"</b> — <code>find_hydrogen_station</code></summary>
 
 ```text
@@ -393,7 +470,7 @@ Restart the client and ask one of the questions above.
 
 <!-- catalogue:begin — generated by scripts/gen-readme-catalogue.mjs from catalogue.json; do not edit by hand -->
 
-**22 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.1.5, snapshot of 2026-10-13. Each line is the server's own words; the full parameters are in [API.md](API.md).
+**22 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.1.8, snapshot of 2026-10-13. Each line is the server's own words; the full parameters are in [API.md](API.md).
 
 #### 🚗 On the road
 
@@ -427,8 +504,8 @@ Restart the client and ask one of the questions above.
 | tool | what it answers |
 |---|---|
 | [`find_place`](API.md#find_place--look-up-a-place) — Look up a place | Looks up a place name and returns every place that matches, each with its kind, official key (AGS/RS), population, English name and coordinate. |
-| [`find_poi`](API.md#find_poi--find-a-named-place) — Find a named place | Finds a business or landmark by name or kind — company, shop, clinic, hotel, hostel — and returns address, category and coordinate. |
-| [`find_address`](API.md#find_address--look-up-a-street-address) — Look up a street address | Looks up a street address and returns its coordinate, plus what OpenStreetMap holds under it. |
+| [`find_poi`](API.md#find_poi--find-a-named-place) — Find a named place | Finds a business or landmark by name or kind — company, shop, clinic, hotel, hostel — with address, category and coordinate. |
+| [`find_address`](API.md#find_address--look-up-a-street-address) — Look up a street address | Looks up a street address: its coordinate, and the named OpenStreetMap objects at it (company, shop, office) or that none are. |
 | [`describe_location`](API.md#describe_location--describe-a-coordinate) — Describe a coordinate | Turns a coordinate into words: the nearest address, settlement and motorway junction with their distances, and the Gemeinde, Kreis and Land the point lies in. |
 | [`find_nearby`](API.md#find_nearby--what-is-nearby) — What is nearby | Overview of what is around a place or coordinate: nearby fuel stations, EV charging, parking, the nearest railway station and motorway junction, each with its distance. |
 

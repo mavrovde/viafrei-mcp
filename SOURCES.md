@@ -773,7 +773,7 @@ privacy rights (§ 2(b)(1)); neither are its photo links.
 OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0
 ```
 
-**Which answers carry it**, in the platform's own words as of server 2.1.5:
+**Which answers carry it**, in the platform's own words as of server 2.1.8 (unchanged since 2.1.5):
 *"Only results that contain a row of one of these two OSM tables carry this line —
 an input that resolved through them, a landmark offered beside a town of the same
 name, an OpenStreetMap car park listed in an answer, an OpenStreetMap motorway
@@ -796,6 +796,11 @@ about its Land: it may simply not be in OpenStreetMap under the spelling asked
 for. On viafrei.de the place bar's name for a chosen point ("Köln Hbf, Köln") is
 derived on our server from the same tables, and the map links on the site's cards
 point to openstreetmap.org — a link, not data.
+
+Since server 2.1.7 the same points of interest also answer **company offices**
+in `find_poi` and **what is mapped at an address** in `find_address`, and the
+site's parking card lists up to five named OpenStreetMap car parks beside the
+car parks whose operators publish free spaces, under the same ODbL line.
 
 Our ODbL § 4.6 offer is [above](#and-one-that-applies-if-you-get-an-openstreetmap-derived-result-back).
 

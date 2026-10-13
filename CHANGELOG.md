@@ -5,6 +5,31 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.1.8] - 2026-10-13
+
+**Company offices, what stands at an address, and fewer false jams.** The bridge
+itself is unchanged; this release follows the server from 2.1.5 to 2.1.8.
+
+### Changed (server 2.1.6 – 2.1.8)
+
+- **`find_poi` finds company offices.** A name spelled a little differently
+  still finds the company; a question that is not about driving gets no filling
+  stations or car parks; `limit` now defaults to 10 and goes up to 25 a page
+  (it was 5, at most 10), the answer carries a `total` and a cursor for the next
+  page, up to 50 in all, and says "more than 50" when a search stopped at its reach instead of a
+  count that is not complete. It leads to `find_address` for the address itself.
+- **`find_address` lists what is mapped at an address** — the companies, shops
+  and buildings OpenStreetMap places there — and says when the address's points
+  are several buildings rather than one door mapped twice.
+- **A lane narrowing is no longer a jam.** A police traffic message counts as a
+  jam only while it still describes queuing traffic, by the same four rules
+  everywhere; a months-long lane closure for a building site is answered as
+  roadworks, and the home page and the place cards count the same jams.
+- **On viafrei.de:** live free spaces on the parking card wherever the operator
+  publishes them, OpenStreetMap's named car parks beside them, one road site
+  shown once with where it is, a road-weather station at a motorway junction
+  named in the page's language, and the status page is no longer public.
+
 ## [2.1.5] - 2026-10-13
 
 **Hydrogen stations, more city roads, Kassel's car parks and 23 more charge-point operators.**
@@ -2603,6 +2628,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.1.8]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.8
 [2.1.5]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.5
 [2.1.1]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.1
 [2.0.10]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.0.10
