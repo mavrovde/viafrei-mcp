@@ -7,12 +7,38 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.0.10] - 2026-10-13
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.0.10 while the registry's latest is 2.0.9, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string and the capture date moved.
+**The same connector, with a README and a source list that say what 2.0 can do.**
+The package now matches the server's 2.0.10. **Nothing a connector sees has
+changed since 2.0.9**: no tool, prompt or resource was added, removed or renamed,
+and no description, schema or result shape moved. The re-captured reference
+differs from 2.0.9 only in the version string and the capture date. Server 2.0.10
+changed the website, not the tools: on viafrei.de your place is now named in full
+("Köln Hbf, Köln"), the browser remembers a place only after you choose one, and
+every card row with its own point links to OpenStreetMap's map.
+
+### Changed
+- **The README describes 2.0.** The "Real answers" are new, captured from the
+  production server at 2.0.10: live tram and bus delays from `get_departures`, a
+  station's lifts and escalators, roadworks between two junctions, a fuel answer
+  that lists OpenStreetMap stations where no price is held, the München P+R
+  occupancy forecast, Type 2 charging in Leipzig, a coordinate described in words,
+  and a frost warning beside the DWD road-surface forecast. The "New in 2.0" box, the example questions and the
+  coverage paragraph were rewritten to match. Read it in the
+  [README](https://github.com/mavrovde/viafrei-mcp#readme).
+- **SOURCES.md is rebuilt from the server's register.** Every one of the 104
+  sources the server's `viafrei://attribution` lists at 2.0.10 has a row: its
+  attribution line, its licence, what it feeds (which tools, and which cards on
+  viafrei.de), and whether it is held (91), planned (12) or discontinued (one).
+  New since the last version of the page: the Autobahn GmbH traffic messages with
+  BASt's location list, Hamburg's roadworks and traffic cameras, the
+  Baden-Württemberg roadworks register and signed detours, the DWD road-surface
+  forecast, Leipzig's P+R, München's car parks, P+R sites and P+R forecast,
+  Dortmund and Wuppertal, fifteen Baden-Württemberg parking publishers, and the
+  OpenStreetMap national boundary as an alteration of OpenStreetMap. A new section
+  says what we hold back and why (among them DB BahnPark, discontinued, and the
+  motorway lorry-park occupancy, not ingested), and one names the website's own
+  extra source. Read it in
+  [SOURCES.md](https://github.com/mavrovde/viafrei-mcp/blob/main/SOURCES.md).
 
 ## [2.0.9] - 2026-10-13
 
