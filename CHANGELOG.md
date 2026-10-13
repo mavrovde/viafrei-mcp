@@ -7,18 +7,27 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.1.8] - 2026-10-13
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.8 while the registry's latest is 2.1.5, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**CHANGED** — the automation knows what moved, not what it means:
+Company offices, what stands at an address, and fewer false jams. The bridge
+itself is unchanged; this release follows the server from 2.1.5 to 2.1.8.
 
-- tools: find_poi differs between the server and the snapshot
-- tools: find_address differs between the server and the snapshot
+### Changed (server 2.1.6 – 2.1.8)
 
-**A person must describe the change above before this merges.** A release note that
-lists a tool name without saying what it does misleads the reader it exists for.
+- **`find_poi` finds company offices.** A name spelled a little differently
+  still finds the company; a question that is not about driving gets no filling
+  stations or car parks; the answer carries a `total` and a cursor for the next
+  page, and says "more than 50" when a search stopped at its reach instead of a
+  count that is not complete. It leads to `find_address` for the address itself.
+- **`find_address` lists what is mapped at an address** — the companies, shops
+  and buildings OpenStreetMap places there — and says when the address's points
+  are several buildings rather than one door mapped twice.
+- **A lane narrowing is no longer a jam.** A police traffic message counts as a
+  jam only while it still describes queuing traffic, by the same four rules
+  everywhere; a months-long lane closure for a building site is answered as
+  roadworks, and the home page and the place cards count the same jams.
+- **On viafrei.de:** live free spaces on the parking card wherever the operator
+  publishes them, OpenStreetMap's named car parks beside them, one road site
+  shown once with where it is, a road-weather station at a motorway junction
+  named in the page's language, and the status page is no longer public.
 
 ## [2.1.5] - 2026-10-13
 

@@ -38,6 +38,16 @@ in every answer.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
+> **New in 2.1.8:** **company offices and what stands at an address.** `find_poi`
+> now finds a company's offices by name, even when the name is spelled a little
+> differently, keeps motoring results out of a question that is not about
+> driving, and says "more than 50" when a search stopped at its reach instead of
+> giving a count that is not complete. `find_address` lists the companies,
+> shops and buildings OpenStreetMap maps at an address. **A lane narrowing is no
+> longer called a jam:** a police message counts as a jam only when it still
+> describes queuing traffic, so a months-long lane closure for a building site
+> is answered as roadworks.
+>
 > **New in 2.1:** **hydrogen stations.** A new tool, `find_hydrogen_station`, lists
 > H2 Mobility's stations near a place, nearest first, with their pumps (700 bar for
 > cars, 350 bar for lorries and buses) and opening hours where published. The
@@ -98,12 +108,68 @@ whole, not one section of it.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first three were asked of **server 2.1.5 on 2026-10-13,
-around 16:20 Berlin time**; the others of server 2.0.10 the same morning, around
-06:41, and they answer the same way at 2.1.5. Each one shows the first lines of
+are not mock-ups. The first three were asked of **server 2.1.8 on 2026-10-13,
+around 22:40 Berlin time**, the next three of server 2.1.5 the same afternoon,
+around 16:20, and the others of server 2.0.10 that morning, around 06:41; they
+answer the same way at 2.1.8. Each one shows the first lines of
 what the tool returned, and the source line as it was sent, shortened where marked.
 
 <details open>
+<summary><b>🏢 "Where are SAP's offices in Walldorf?"</b> — <code>find_poi</code></summary>
+
+```text
+"SAP" in Walldorf:
+1. SAP SE — company, Hasso-Plattner-Ring 7, 69190 Walldorf, Baden-Württemberg, 49.29442, 8.63995
+2. SAP WDF01 — commercial building, Dietmar-Hopp-Allee 16, 69190 Walldorf, Baden-Württemberg, 49.29368, 8.64166
+3. SAP WDF02 — office building, Dietmar-Hopp-Allee 14, 69190 Walldorf, Baden-Württemberg, 49.29461, 8.64274
+4. SAP WDF03 — office building, Robert-Bosch-Straße 34, 69190 Walldorf, Baden-Württemberg, 49.29296, 8.64373
+5. SAP WDF04 — office building, Dietmar-Hopp-Allee 15a, 69190 Walldorf, Baden-Württemberg, 49.29421, 8.64443
+…
+As of 22:44 · Source: OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 (…)
+```
+A company's buildings, each with its address and point, from OpenStreetMap,
+which is also why the answer carries the ODbL line.
+*Edited: five of ten entries and the source URIs cut to `…`.*
+</details>
+
+<details>
+<summary><b>📫 "What is at Hasso-Plattner-Ring 7 in Walldorf?"</b> — <code>find_address</code></summary>
+
+```text
+"Hasso-Plattner-Ring 7, Walldorf" — 2 mapped objects at this address:
+1. Hasso-Plattner-Ring 7, 69190 Walldorf, Baden-Württemberg — 49.29448, 8.63670
+   (2 OpenStreetMap objects of this address, up to 145 m apart, shown as one point: outline, usually the building (OSM way; point = its centre))
+
+Mapped at this address in OpenStreetMap:
+- SAP WDF21 — office building
+- SAP WDF19 — office building
+- SAP SE — company
+
+As of 22:44 · Source: OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 (…)
+```
+The address, the buildings mapped under it (and how far apart they are, so
+"two buildings" is not mistaken for "one door mapped twice"), and the companies
+and buildings OpenStreetMap places there.
+*Edited: the note on another Walldorf and the source URIs cut.*
+</details>
+
+<details>
+<summary><b>🚦 "Is there a jam in Berlin right now?"</b> — <code>check_road_status</code></summary>
+
+```text
+Berlin (11000000): 1 jam report, 247 closures, 267 restrictions, 10 planned roadworks sites — window until 2026-10-16.
+• Slow traffic (Stockender Verkehr): Provider text (German): "A100 Stadtring Berlin, Wilmersdorf Richtung Neukölln, zwischen Gradestraße und Tunnel Ortsteil Britz, 0,8 km stockender Verkehr" (since 12:35; 6.6 km away)
+• Roadworks (Baustelle): Provider text (German): "Alexanderstraße (Mitte) — Richtung Otto-Braun-Straße vor Bernhard-Weiß-Straße Hochbauarbeiten, Fahrbahn auf einen Fahrstreifen verengt" (2026-03-09–2027-07-31)
+• Closure (Sperrung): Provider text (German): "Rosenthaler Straße (Mitte) — in beiden Richtungen zwischen Hackescher Markt und Sophienstraße Gleisbauarbeiten, Vollsperrung für Kfz-Verkehr" (2026-09-18–2026-10-20)
+…
+Sources that answered: Autobahn GmbH, BASt (roadworks), VIZ.NRW / NMS, Senatsverwaltung Berlin (traffic messages).
+```
+One jam, not dozens: a lane narrowed for a building site is roadworks, however
+the police message is filed, and the one queue on the A100 is the jam.
+*Edited: seven of ten entries, the radius notes and the source line omitted.*
+</details>
+
+<details>
 <summary><b>💧 "Where can I fill up a hydrogen lorry near Hamburg?"</b> — <code>find_hydrogen_station</code></summary>
 
 ```text
