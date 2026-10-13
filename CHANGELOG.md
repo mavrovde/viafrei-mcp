@@ -7,15 +7,16 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.1.8] - 2026-10-13
 
-Company offices, what stands at an address, and fewer false jams. The bridge
+**Company offices, what stands at an address, and fewer false jams.** The bridge
 itself is unchanged; this release follows the server from 2.1.5 to 2.1.8.
 
 ### Changed (server 2.1.6 – 2.1.8)
 
 - **`find_poi` finds company offices.** A name spelled a little differently
   still finds the company; a question that is not about driving gets no filling
-  stations or car parks; the answer carries a `total` and a cursor for the next
-  page, and says "more than 50" when a search stopped at its reach instead of a
+  stations or car parks; `limit` now defaults to 10 and goes up to 25 a page
+  (it was 5, at most 10), the answer carries a `total` and a cursor for the next
+  page, up to 50 in all, and says "more than 50" when a search stopped at its reach instead of a
   count that is not complete. It leads to `find_address` for the address itself.
 - **`find_address` lists what is mapped at an address** — the companies, shops
   and buildings OpenStreetMap places there — and says when the address's points

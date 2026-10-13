@@ -111,7 +111,7 @@ These came back from the production server at `https://mcp.viafrei.de/mcp`. They
 are not mock-ups. The first three were asked of **server 2.1.8 on 2026-10-13,
 around 22:40 Berlin time**, the next three of server 2.1.5 the same afternoon,
 around 16:20, and the others of server 2.0.10 that morning, around 06:41; they
-answer the same way at 2.1.8. Each one shows the first lines of
+answer in the same shape at 2.1.8. Each one shows the first lines of
 what the tool returned, and the source line as it was sent, shortened where marked.
 
 <details open>
@@ -125,10 +125,16 @@ what the tool returned, and the source line as it was sent, shortened where mark
 4. SAP WDF03 — office building, Robert-Bosch-Straße 34, 69190 Walldorf, Baden-Württemberg, 49.29296, 8.64373
 5. SAP WDF04 — office building, Dietmar-Hopp-Allee 15a, 69190 Walldorf, Baden-Württemberg, 49.29421, 8.64443
 …
+
+23 matches, 1–10 shown — the next with cursor="10".
+
+OpenStreetMap data as of 2026-10-06
+
 As of 22:44 · Source: OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 (…)
 ```
 A company's buildings, each with its address and point, from OpenStreetMap,
 which is also why the answer carries the ODbL line.
+The answer says how many matched and how to fetch the next page.
 *Edited: five of ten entries and the source URIs cut to `…`.*
 </details>
 
@@ -139,6 +145,8 @@ which is also why the answer carries the ODbL line.
 "Hasso-Plattner-Ring 7, Walldorf" — 2 mapped objects at this address:
 1. Hasso-Plattner-Ring 7, 69190 Walldorf, Baden-Württemberg — 49.29448, 8.63670
    (2 OpenStreetMap objects of this address, up to 145 m apart, shown as one point: outline, usually the building (OSM way; point = its centre))
+2. Hasso-Plattner-Ring 7, 69190 Walldorf, Baden-Württemberg — 49.29438, 8.63978 — outline, usually the building (OSM way; point = its centre) — 224 m from point 1
+The 2 points lie up to 224 m apart — further than 150 m, so not one door mapped twice; probably several buildings under this house number.
 
 Mapped at this address in OpenStreetMap:
 - SAP WDF21 — office building
@@ -150,7 +158,7 @@ As of 22:44 · Source: OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0
 The address, the buildings mapped under it (and how far apart they are, so
 "two buildings" is not mistaken for "one door mapped twice"), and the companies
 and buildings OpenStreetMap places there.
-*Edited: the note on another Walldorf and the source URIs cut.*
+*Edited: the note on another Walldorf, the data date and the source URIs cut.*
 </details>
 
 <details>
@@ -159,14 +167,17 @@ and buildings OpenStreetMap places there.
 ```text
 Berlin (11000000): 1 jam report, 247 closures, 267 restrictions, 10 planned roadworks sites — window until 2026-10-16.
 • Slow traffic (Stockender Verkehr): Provider text (German): "A100 Stadtring Berlin, Wilmersdorf Richtung Neukölln, zwischen Gradestraße und Tunnel Ortsteil Britz, 0,8 km stockender Verkehr" (since 12:35; 6.6 km away)
-• Roadworks (Baustelle): Provider text (German): "Alexanderstraße (Mitte) — Richtung Otto-Braun-Straße vor Bernhard-Weiß-Straße Hochbauarbeiten, Fahrbahn auf einen Fahrstreifen verengt" (2026-03-09–2027-07-31)
+• Roadworks (Baustelle): Provider text (German): "Karl-Liebknecht-Straße (Mitte) — Richtung Brandenburger Tor in Höhe Spandauer Straße Baustellenfläche für eine Hochbaustelle, Fahrbahn auf einen verschwenkten…" (2026-03-26–2027-09-30)
+• Roadworks (Baustelle): Provider text (German): "Gertraudenstraße (Mitte) — in beiden Richtungen zwischen Spittelmarkt und Fischerinsel Brückenprüfung, Fahrbahn auf zwei Fahrstreifen verengt, Gewichtsbeschrän…" (2023-04-27–2028-03-31)
 • Closure (Sperrung): Provider text (German): "Rosenthaler Straße (Mitte) — in beiden Richtungen zwischen Hackescher Markt und Sophienstraße Gleisbauarbeiten, Vollsperrung für Kfz-Verkehr" (2026-09-18–2026-10-20)
 …
 Sources that answered: Autobahn GmbH, BASt (roadworks), VIZ.NRW / NMS, Senatsverwaltung Berlin (traffic messages).
+
+As of 22:34 · Source: Verkehrsdaten: Autobahn GmbH des Bundes (…) · … · Verkehrsmeldungen Berlin: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt Berlin via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert (…) · …
 ```
 One jam, not dozens: a lane narrowed for a building site is roadworks, however
 the police message is filed, and the one queue on the A100 is the jam.
-*Edited: seven of ten entries, the radius notes and the source line omitted.*
+*Edited: six of ten entries, the radius notes, the other sources of the source line and its URIs omitted.*
 </details>
 
 <details>
