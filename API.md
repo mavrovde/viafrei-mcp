@@ -17,7 +17,7 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.1.5 |
+| Server | `viafrei` 2.1.7 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
@@ -298,26 +298,28 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Finds a business or landmark by name or kind — company, shop, clinic, hotel, hostel — and returns address, category and coordinate. Use when the person names a THING rather than a town: "the adesso office in Dortmund", "the nearest Aldi", "a hotel in Weimar". The coordinate passes to any other tool as lat/lon. Do NOT use for a town, district or station (every tool's `place` resolves those), nor for fuel, charging or parking (own tools). Give "in" (a town) when you can: far faster than nationwide. At most 10 results, radius <= 50 km. OpenStreetMap under ODbL 1.0; show the attribution line.
+> Finds a business or landmark by name or kind — company, shop, clinic, hotel, hostel — with address, category and coordinate. Use when the person names a THING rather than a town: "the adesso office in Dortmund", "the nearest Aldi", "a hotel in Weimar". The coordinate passes to any other tool as lat/lon. Do NOT use for a town, district or station (every tool's `place` resolves those), nor for fuel, charging or parking (own tools). Give "in" (a town) when you can: far faster than nationwide. 25 per page, 50 via cursor; radius <= 50 km. OpenStreetMap under ODbL 1.0; show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
 | `name` | string | **yes** | — | min length 2; max length 120 |
 | `category` | string | no | — | one of `"office"`, `"amenity"`, `"shop"`, `"tourism"`, `"healthcare"`, `"leisure"`, `"industrial"`, `"historic"`, `"natural"`, `"building"` |
+| `cursor` | string | no | — | max length 256 |
 | `in` | string | no | — | max length 120 |
 | `language` | string | no | `"de"` | one of `"de"`, `"en"` |
 | `lat` | number | no | — | min -90; max 90 |
-| `limit` | integer | no | `5` | min 1; max 10 |
+| `limit` | integer | no | `10` | min 1; max 25 |
 | `lon` | number | no | — | min -180; max 180 |
 | `near` | string | no | — | max length 120 |
 | `radius_km` | number | no | `10` | min 1; max 50 |
 
 - **`name`** — The name of the thing to find — a company, shop, clinic, hotel, office or landmark. Part of the name is enough: "adesso" finds "adesso SE". A chain name works too, because brands are matched as well as names. A kind word alone, German or English ("Apotheke", "pharmacy", "trade fair"), lists that kind nearest first. When the person names a company AND a type ("the Bosch office"), put the company here and the type in category. Never for fuel, charging or parking, even near a named company or landmark ("a charger by the Allianz Arena"): those have their own tools, asked with the place.
 - **`category`** — Narrow to one OpenStreetMap family: "office" (companies, agencies), "shop", "amenity" (fuel, pharmacy, school, restaurant, town hall), "healthcare" (hospitals, clinics, doctors, pharmacies), "tourism" (hotels, attractions), "leisure", "industrial" (factories, plants), "historic" (castles, monuments, city gates), "natural" (mountain peaks) or "building". Set it whenever the person names the type ("Bosch office" → office, "Hotel Adler" → tourism); omit it when they name no type.
+- **`cursor`** — Pagination cursor from a previous result's _meta.nextCursor. Omit for the first page.
 - **`in`** — A town to search in — "Dortmund", "Fulda". Strongly preferred: it is both far faster and far less ambiguous than a nationwide search. Use this OR near/lat+lon, not both.
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`lat`** — Latitude of the point to search around, when the caller already holds a coordinate.
-- **`limit`** — How many to return, best match first (1–10, default 5).
+- **`limit`** — How many to return per page, best match first (1–25, default 10). The answer says when more matched; fetch them with cursor, up to 50 in all.
 - **`lon`** — Longitude of the point to search around.
 - **`near`** — A place to search around, when the question is "the nearest X" rather than "X in Y". Use with radius_km.
 - **`radius_km`** — Search radius in kilometres around near/lat+lon (1–50, default 10). Ignored when "in" is used.
@@ -326,7 +328,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Looks up a street address and returns its coordinate, plus what OpenStreetMap holds under it. Use when the person gives a STREET AND NUMBER — "Bahnhofstraße 12, Fulda" — for the point, or to see what is mapped there. The coordinate passes to any other tool as lat/lon. Do NOT use for a town/district/station name alone (find_place) or a company/shop/landmark by name (find_poi) — needs a street and a number. At most 5 results; more than one in ONE town means the door is mapped twice, and results in several towns are a question to ask the person. OpenStreetMap ODbL 1.0; show the attribution line.
+> Looks up a street address: its coordinate, and the named OpenStreetMap objects at it (company, shop, office) or that none are. Use when the person gives a STREET AND NUMBER — "Bahnhofstraße 12, Fulda" — for the point, or for who or what is there. The coordinate passes to any other tool as lat/lon. Do NOT use for a town/district/station name alone (find_place) or a company/shop/landmark by name (find_poi) — needs a street and a number. At most 5 points; a door mapped twice is folded, points far apart say how far; several towns are a question. OpenStreetMap ODbL 1.0; show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
