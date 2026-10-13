@@ -5,7 +5,7 @@
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.1.5"
+    "version": "2.1.8"
   },
   "capabilities": {
     "tools": {
@@ -702,7 +702,7 @@
     },
     {
       "name": "find_poi",
-      "description": "Finds a business or landmark by name or kind — company, shop, clinic, hotel, hostel — and returns address, category and coordinate. Use when the person names a THING rather than a town: \"the adesso office in Dortmund\", \"the nearest Aldi\", \"a hotel in Weimar\". The coordinate passes to any other tool as lat/lon. Do NOT use for a town, district or station (every tool's `place` resolves those), nor for fuel, charging or parking (own tools). Give \"in\" (a town) when you can: far faster than nationwide. At most 10 results, radius <= 50 km. OpenStreetMap under ODbL 1.0; show the attribution line.",
+      "description": "Finds a business or landmark by name or kind — company, shop, clinic, hotel, hostel — with address, category and coordinate. Use when the person names a THING rather than a town: \"the adesso office in Dortmund\", \"the nearest Aldi\", \"a hotel in Weimar\". The coordinate passes to any other tool as lat/lon. Do NOT use for a town, district or station (every tool's `place` resolves those), nor for fuel, charging or parking (own tools). Give \"in\" (a town) when you can: far faster than nationwide. 25 per page, 50 via cursor; radius <= 50 km. OpenStreetMap under ODbL 1.0; show the attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -767,11 +767,16 @@
             "maximum": 50
           },
           "limit": {
-            "default": 5,
-            "description": "How many to return, best match first (1–10, default 5).",
+            "default": 10,
+            "description": "How many to return per page, best match first (1–25, default 10). The answer says when more matched; fetch them with cursor, up to 50 in all.",
             "type": "integer",
             "minimum": 1,
-            "maximum": 10
+            "maximum": 25
+          },
+          "cursor": {
+            "description": "Pagination cursor from a previous result's _meta.nextCursor. Omit for the first page.",
+            "type": "string",
+            "maxLength": 256
           }
         },
         "required": [
@@ -791,7 +796,7 @@
     },
     {
       "name": "find_address",
-      "description": "Looks up a street address and returns its coordinate, plus what OpenStreetMap holds under it. Use when the person gives a STREET AND NUMBER — \"Bahnhofstraße 12, Fulda\" — for the point, or to see what is mapped there. The coordinate passes to any other tool as lat/lon. Do NOT use for a town/district/station name alone (find_place) or a company/shop/landmark by name (find_poi) — needs a street and a number. At most 5 results; more than one in ONE town means the door is mapped twice, and results in several towns are a question to ask the person. OpenStreetMap ODbL 1.0; show the attribution line.",
+      "description": "Looks up a street address: its coordinate, and the named OpenStreetMap objects at it (company, shop, office) or that none are. Use when the person gives a STREET AND NUMBER — \"Bahnhofstraße 12, Fulda\" — for the point, or for who or what is there. The coordinate passes to any other tool as lat/lon. Do NOT use for a town/district/station name alone (find_place) or a company/shop/landmark by name (find_poi) — needs a street and a number. At most 5 points; a door mapped twice is folded, points far apart say how far; several towns are a question. OpenStreetMap ODbL 1.0; show the attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
