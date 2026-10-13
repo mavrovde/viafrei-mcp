@@ -7,17 +7,63 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.1.5] - 2026-10-13
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.5 while the registry's latest is 2.1.1, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**CHANGED** — the automation knows what moved, not what it means:
+**Hydrogen stations, more city roads, Kassel's car parks and 23 more charge-point operators.**
+The package now matches the server's 2.1.5 and covers the server releases 2.1.0 to
+2.1.5 for a user of the connector. One tool was added, `find_hydrogen_station`; no
+tool, prompt or resource was removed or renamed, and no other description, schema
+or result shape moved. The bridge's own code is unchanged apart from its version and
+the re-captured reference.
 
-- tools: the server has find_hydrogen_station, the snapshot does not
+### Added
+- **`find_hydrogen_station`.** Hydrogen (H2) filling stations near a place or a
+  coordinate, nearest first: the station's name, address and distance, its pumps
+  (700 bar for cars, 350 bar for lorries and buses), its opening hours where
+  published and the age of the record. `vehicle` keeps the stations with the right
+  pump (`car` or `truck`); the radius is up to 150 km, 50 by default, because the
+  stations are few, and an answer with none inside still names the nearest one
+  beyond. The data is H2 Mobility's publication on the national access point, under
+  CC BY 4.0. It carries **no availability, no price and no working state**, and every
+  answer says so.
 
-**A person must describe the change above before this merges.** A release note that
-lists a tool name without saying what it does misleads the reader it exists for.
+### Changed
+- **More of the city in `check_road_status`.** The works and building sites of
+  Bremen, the traffic messages of Kassel, Leipzig and Rüsselsheim am Main, and the
+  state of Schleswig-Holstein's large bridges (a wind warning in force, a closure)
+  are answered by place. Niedersachsen's works and closures outside the motorways
+  are answered by road in `check_road_status` and `find_roadworks_ahead`, which now
+  also names each Land once when two feeds of one Land answered.
+- **Kassel's car parks in `find_parking`**, ten of them, each with its live free
+  spaces and the time of the reading.
+- **23 more charge-point operators in `find_charging_station` and `find_nearby`**,
+  read from their own publications on the national access point, among them EWE,
+  GP JOULE, LichtBlick, Monta, Qwello, SMATRICS, Wirelane, vaylens and the roaming
+  hubs ladenetz.de and ladebusiness. An availability feed that has stopped updating
+  is never shown as current.
+- **Departures at a busy stop, and no other city's trams.** In
+  `get_train_departures` and on the site's transit card, a stop with more than ten
+  departures in ten minutes no longer reads as having nothing in the next hour. In
+  `get_departures` and on the card, a live figure is only matched to a departure
+  that goes to the same destination, so a stop in Köln no longer lists a Hannover
+  tram.
+- **On viafrei.de**: the place cards in a new order, public transport first, then
+  fuel, parking, roads, charging, weather and what is nearby; each station's own
+  line with its lifts and escalators, the platforms marked step-free and the car
+  parks within 300 m; punctuality per district (Kreis); the nearest road-weather
+  station's next six hours on the weather card; city messages on the road card; and
+  the two nearest hydrogen stations on the fuel card.
+- **The README describes 2.1.** A "New in 2.1" box, new example questions, the
+  coverage paragraph, and three new real answers captured from the production server
+  at 2.1.5: hydrogen stations for a lorry near Hamburg, Bremen's building sites beside
+  the motorway jams, and Kassel's car parks with their free spaces. Read it in the
+  [README](https://github.com/mavrovde/viafrei-mcp#readme).
+- **SOURCES.md follows the register at 2.1.5**: 156 sources, of which 143 are held,
+  12 planned and one discontinued. New rows: H2 Mobility's hydrogen stations
+  (CC BY 4.0), the LBV.SH bridge states (DL-DE Zero 2.0), Stadt Kassel's car parks
+  and occupancy and its traffic messages, Leipzig's traffic messages (both
+  dl-de/by-2-0 by each city's terms of use, explained on the page), Bremen's works
+  (dl-de/by-2-0), Rüsselsheim am Main's messages (GeoNutzV), the NLStBV's works off
+  the motorways (DL-DE Zero 2.0) and the 23 charge-point operators' 43 feeds. Read it
+  in [SOURCES.md](https://github.com/mavrovde/viafrei-mcp/blob/main/SOURCES.md).
 
 ## [2.1.1] - 2026-10-13
 

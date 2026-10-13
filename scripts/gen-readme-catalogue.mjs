@@ -33,7 +33,7 @@ export const END = '<!-- catalogue:end -->';
 export const GROUPS = [
   ['🚗 On the road', ['check_autobahn_traffic', 'check_road_status', 'find_roadworks_ahead', 'find_parking']],
   ['🚆 Public transport', ['get_train_departures', 'get_departures', 'check_transit_disruption', 'check_station_facilities']],
-  ['⚡ Charging and fuel', ['find_charging_station', 'find_cheapest_fuel', 'find_fuel_station']],
+  ['⚡ Charging and fuel', ['find_charging_station', 'find_cheapest_fuel', 'find_fuel_station', 'find_hydrogen_station']],
   ['📍 Places and addresses', ['find_place', 'find_poi', 'find_address', 'describe_location', 'find_nearby']],
   ['🚲 Sharing', ['find_sharing']],
   ['🌦️ Weather and rules', ['check_weather_warnings', 'get_driving_rules']],
