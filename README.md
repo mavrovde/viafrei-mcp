@@ -627,8 +627,9 @@ Restart the client and ask one of the questions above.
 - **For AI tools — [viafrei.de/llms.txt](https://viafrei.de/llms.txt)** and
   [llms-full.txt](https://viafrei.de/llms-full.txt): what ViaFrei is, how to
   connect, every tool in one line each, the example questions with the tool that
-  answers each, and the live pages (the motorway index, every motorway page in
-  English and German, the place pages).
+  answers each, and the live pages (the motorway index, an example motorway page,
+  the place pages); llms-full.txt also lists every motorway page in English and
+  German.
 
 ## 🧰 Everything it can do
 
