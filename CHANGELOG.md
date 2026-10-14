@@ -5,6 +5,15 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.1.17] - 2026-10-14
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.1.17 while the registry's latest is 2.1.16, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**unchanged** — only the version string moved; the capture date is the same day.
+
 **The motorway pages are written to be found, by a search engine and by an AI assistant, and the home page shows its motorway catalogue reliably.**
 The package matches the server's 2.1.17. No tool, prompt or resource was added,
 removed or renamed, and no tool description or input schema changed; this release is
@@ -2842,6 +2851,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.1.17]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.17
 [2.1.16]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.16
 [2.1.14]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.14
 [2.1.12]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.12
