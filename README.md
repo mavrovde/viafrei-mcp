@@ -39,7 +39,7 @@ on viafrei.de, with a map.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in 2.1.17: a live page for every German motorway.** All 122 of them, in
+> **New since 2.1.13: a live page for every German motorway.** All 122 of them, in
 > seven languages, at [viafrei.de/en/motorway](https://viafrei.de/en/motorway) and
 > [viafrei.de/de/autobahn](https://viafrei.de/de/autobahn). Each page has a map of
 > the road with its closures, jams and roadworks, a strip of its junctions you can
@@ -49,7 +49,10 @@ on viafrei.de, with a map.
 > traffic cameras, the dated lorry ban, and the interchanges with the motorways
 > each one meets. Fuel prices load only when you click. The home page lists the
 > ten worst motorways right now, and every place page has an **Autobahn card**
-> with the motorways nearby. More in [Motorway pages](#-motorway-pages).
+> with the motorways nearby. **2.1.17** made the pages easy to find: a search title
+> and description per page in every language, an opening sentence an AI answer can
+> quote, a redesigned motorway catalogue on the home page, and a robots.txt that
+> names the AI training crawlers. More in [Motorway pages](#-motorway-pages).
 >
 > **The site's cards now say what the tools say.** The charging, transit, road and
 > parking cards on viafrei.de answer from the same rules as `find_charging_station`,
@@ -120,7 +123,7 @@ These came back from the production server at `https://mcp.viafrei.de/mcp`. They
 are not mock-ups. The first three were asked of **server 2.1.17 on 2026-10-14,
 around 22:40 Berlin time**, minutes after it went live. The next three were asked
 of server 2.1.8 on 2026-10-13 around 22:40, three more of server 2.1.5 that
-afternoon around 16:20, and the others of server 2.0.10 that morning around
+afternoon, between about 14:50 and 16:20, and the others of server 2.0.10 that morning around
 06:41. Those were asked again of server 2.1.17 on 2026-10-14 around 22:43 and
 answer in the same shape; their figures, and the frost warning, belong to the
 moment they were captured.
@@ -553,8 +556,8 @@ near the place, nearest junction first, each linked to its page.
 description in every language ("A7 Germany: traffic jams, roadworks, map"), the
 motorway sitemaps list every page in every language, and
 [llms.txt](https://viafrei.de/llms.txt) and
-[llms-full.txt](https://viafrei.de/llms-full.txt) describe the pages and list
-every one. [robots.txt](https://viafrei.de/robots.txt) keeps the AI training and
+[llms-full.txt](https://viafrei.de/llms-full.txt) describe the pages;
+llms-full.txt also lists every motorway page in English and German. [robots.txt](https://viafrei.de/robots.txt) keeps the AI training and
 corpus crawlers off the fuel and place pages, names them one by one, and leaves
 the motorway pages open to every crawler. The fuel prices are a click no crawler
 follows.

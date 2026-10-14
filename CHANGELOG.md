@@ -33,7 +33,7 @@ about the website and the documentation.
   longer get an empty block.
 - **Accessibility**: the map's credit links are spaced so each is easy to tap; the
   motorway pages measured score 100 for accessibility in Lighthouse.
-- **Documentation.** The README has a "New in 2.1.17" box, a section on the motorway
+- **Documentation.** The README has a "New since 2.1.13" box (the motorway pages, with what 2.1.17 added for search), a section on the motorway
   pages, new example questions and new real answers captured from production at
   2.1.17. SOURCES.md names, for every source, the cards and motorway pages it feeds,
   and adds the website's own sources: the BKG VG2500 map base with its source note
