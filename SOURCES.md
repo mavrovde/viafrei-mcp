@@ -15,8 +15,8 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.1.16 on 2026-10-14** (TODO-LIVE: re-read
-at 2.1.17): 156 sources, of which 143 are held, 12 are planned (licence read,
+with that resource as served by server 2.1.17 on 2026-10-14**, minutes after it
+went live (it reads the same as at 2.1.16): 156 sources, of which 143 are held, 12 are planned (licence read,
 nothing ingested yet) and one is discontinued. No line, licence or status has
 changed since server 2.1.5; what has changed is **where** the sources appear,
 because since 2.1.9 the cards on viafrei.de answer by the tools' own rules and
@@ -1072,8 +1072,8 @@ at the Thiersheim truck stop, and Kiel's old-town car parks.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register as served on
-  2026-10-13 and **compared** line by line with it as served on 2026-10-14 (server
-  2.1.16), not typed: every id it lists is here, once, with its line and licence
+  2026-10-13 and **compared** line by line with it as served on 2026-10-14 (servers
+  2.1.16 and 2.1.17), not typed: every id it lists is here, once, with its line and licence
   as served.
 - Every row in our internal register records the licence, the operative sentence,
   the date it was read and who may do what with the data. Rows are re-verified

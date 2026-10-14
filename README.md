@@ -80,7 +80,7 @@ comes back in the language you asked in.
 |---|---|
 | 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* |
 | 🚗 **about to drive** | *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Vollsperrungen sind auf der A7 in den nächsten sieben Tagen geplant?* · *Welche Baustellen gibt es in Bremen?* · *Ist die Fehmarnsundbrücke wegen Wind gesperrt?* |
-| 🚚 **driving a lorry** | *Wann ist der nächste Lkw-Fahrverbotstag?* · *Where can I find a free lorry parking space on the A7 right now?* |
+| 🚚 **driving a lorry** | *Wann ist der nächste Lkw-Fahrverbotstag?* · *Gilt am 31. Oktober in Niedersachsen Lkw-Fahrverbot?* |
 | 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Is traffic backed up on the Cologne motorway ring — A1, A3 or A4?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
 | ⚡ **driving electric or on hydrogen** | *Where can I charge with Type 2 near Leipzig?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* · *Where can I fill up a hydrogen lorry near Hamburg?* |
 | 🅿️ **parking** | *Is the P+R at Fröttmaning usually full in the morning?* · *Wie viele Plätze sind in den Kasseler Parkhäusern frei?* · *Find a rest area with lorry parking on the A9* |
@@ -117,11 +117,13 @@ whole, not one section of it.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first three were asked of **server 2.1.17 on
-TODO-LIVE(date), around TODO-LIVE(time) Berlin time**. The next three were asked
+are not mock-ups. The first three were asked of **server 2.1.17 on 2026-10-14,
+around 22:40 Berlin time**, minutes after it went live. The next three were asked
 of server 2.1.8 on 2026-10-13 around 22:40, three more of server 2.1.5 that
 afternoon around 16:20, and the others of server 2.0.10 that morning around
-06:41; TODO-LIVE(confirm by re-asking: they answer in the same shape at 2.1.17).
+06:41. Those were asked again of server 2.1.17 on 2026-10-14 around 22:43 and
+answer in the same shape; their figures, and the frost warning, belong to the
+moment they were captured.
 Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
@@ -129,41 +131,58 @@ it was sent, shortened where marked.
 <summary><b>🛣️ "Which full closures are planned on the A7 in the next seven days?"</b> — <code>check_road_status</code></summary>
 
 ```text
-TODO-LIVE: check_road_status {"road": "A7", "horizon_days": 7, "language": "en"}
-— the head line with its counts and window, the first planned full closures with
-their dates and any signed detour, and the source line.
+A7: 27 closures, 188 restrictions, 1 planned roadworks site, 44 current roadworks sites per BASt — window until 2026-10-21.
+• Closure (Sperrung): Provider text (German): "A7 | Langenau - Lonetal · Ulm -> Würzburg — Die Baustelle ist zu folgenden Zeiträumen gültig: 20.10.26 21:00 bis zum 21.10.26 05:30 Uhr., (Ende der Gesamtmaßnahme:…"
+• Closure (Sperrung): Provider text (German): "A7 | Aalen/Westhausen - Aalen/Oberkochen · Würzburg -> Ulm — Die Baustelle ist zu folgenden Zeiträumen gültig: 14.10.26 22:00 bis zum 15.10.26 05:30 Uhr., 15.10.26 22:00 bis zum 16…" — signed detour (U 12) for AS Aalen/Westhausen – AS Aalen/Oberkochen, route as published by the Verkehrsministerium BW (German): "AS Aalen/Westhausen - B 29 - B 19 - L 1084 - AS Aalen/Oberkochen" — signage context, not a route recommendation
+• Closure (Sperrung): Provider text (German): "A7 Hamburg-Marmstorf (AS) Sperrung wg. erforderlicher Gehölzarbeiten · Hamburg -> Hannover — Die Baustelle ist zu folgenden Zeiträumen gültig: 19.10.26 von 09:00 bis 15:00 Uhr, (Ende der Gesamtmaßnahme: 21.10.26)"
+…
+Sources that answered: Autobahn GmbH, BASt (roadworks), BAB traffic messages, Landesmeldestelle Schleswig-Holstein (police traffic messages), Verkehrsministerium BW (signed detours).
+
+As of 22:38 · Source: Verkehrsdaten: Autobahn GmbH des Bundes (…) · Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen (BASt) via Mobilithek, CC BY 4.0, bearbeitet (…) · …
 ```
-The same rows as the "Planned full closures, next 7 days" list on the
-[A7 page](https://viafrei.de/en/motorway/a7): the page asks the tool's own
-question, so the two cannot disagree.
-*Edited: TODO-LIVE.*
+Each closure in its publisher's words with its night-time windows, and the signed
+detour where Baden-Württemberg publishes one. The planned full closures on the
+[A7 page](https://viafrei.de/en/motorway/a7) are the same question asked by the
+page itself, so the two cannot disagree.
+*Edited: seven of ten entries, the count of further entries, two notes and most of the source line omitted.*
 </details>
 
 <details>
 <summary><b>🚚 "Wann ist der nächste Lkw-Fahrverbotstag?"</b> — <code>get_driving_rules</code></summary>
 
 ```text
-TODO-LIVE: get_driving_rules {"topic": "truck_ban", "language": "de"}
-— the opening dated line ("Nächster Fahrverbotstag: …"), the rule with its
-legal source and review date, and the source line.
+Regeln in Deutschland — Sonntags- und Feiertagsfahrverbot für Lkw:
+• Nächster Fahrverbotstag: Sonntag, 18. Oktober, 0–22 Uhr, bundesweit. (Kalender nach § 30 Abs. 3 und 4 StVO, Feiertage geprüft am 2026-10-08)
+• Sonntags und an Feiertagen dürfen Lkw über 7,5 t sowie Lkw mit Anhänger von 0 bis 22 Uhr nicht fahren. (§ 30 Abs. 3 StVO)
+• Für Pkw, Wohnmobile und Transporter unter 7,5 t gilt das Verbot nicht — der Sonntag ist für sie ein normaler Fahrtag. (§ 30 Abs. 3 StVO)
+…
+• Ein Feiertag nur einzelner Länder ist nur dort ein Fahrverbotstag: Am 31. Oktober gilt das Lkw-Verbot von 0 bis 22 Uhr in den neun genannten Ländern; in Baden-Württemberg, Bayern, Berlin, Hessen, Nordrhein-Westfalen, Rheinland-Pfalz und im Saarland ist der Tag kein Feiertag nach § 30 Abs. 4 — außer er fällt auf einen Sonntag. (§ 30 Abs. 3 und 4 StVO)
+…
+Stand 19.09.2026 · Quelle: Verkehrsregeln: ViaFrei, eigene Zusammenstellung aus amtlichen Quellen (StVO, StVZO, 35. BImSchV, StVG, EmoG, AFIR); jede Aussage mit Quelle und Prüfdatum — informativ, keine Rechtsberatung / … (…)
 ```
-The answer now opens with the next ban day, dated, before the rule itself. The
-motorway pages print the same calendar, and a holiday kept only in some Länder
-names them.
-*Edited: TODO-LIVE.*
+The answer now opens with the next ban day, dated, before the rule itself, and a
+holiday kept only in some Länder names them. The motorway pages print the same
+calendar for the Länder each motorway crosses.
+*Edited: the list of holidays and four further rules omitted, and the English half of the source line cut.*
 </details>
 
 <details>
-<summary><b>🅿️ "Where can I find a free lorry parking space on the A7 right now?"</b> — <code>find_parking</code></summary>
+<summary><b>⚡ "Where is a charger with 150 kW or more in Kassel?"</b> — <code>find_charging_station</code></summary>
 
 ```text
-TODO-LIVE: find_parking {"road": "A7", "kind": "truck", "only_with_free_spaces": true, "language": "en"}
-— lorry parks along the road with live free spaces and the time of each reading,
-and the separate share-alike block if one answered.
+Charging around Kassel (within 10 km, ≥ 150 kW), nearest first:
+2. Kassel, Germany - Zentrum, Neue Fahrt 9, 34117 Kassel (Tesla, Inc.) — 0.2 km, CCS2, up to 250 kW, 0.48 €/kWh net, status from 10:01 — possibly out of date, 10 without status
+4. Circle K I Kassel Leipziger Strasse 22, 34125 Kassel (Spirii) — 1.2 km, CCS2, up to 400 kW, 0.83 €/kWh, status from 09:30 — possibly out of date
+…
+Only a few operators publish live occupancy; "no status data" means unknown, not free.
+Price per kWh: published for 3 of 5 only; for the others we hold no price.
+
+As of 22:43 · Source: Ladesäulenregister: Bundesnetzagentur.de, CC BY 4.0, bearbeitet (…) · Ladepunkte: Tesla Germany GmbH via Mobilithek, CC0 1.0 (…) · …
 ```
-Live counts where the operator publishes them, each with the time of its reading;
-a lorry park from a share-alike database comes back in a list of its own.
-*Edited: TODO-LIVE.*
+A status is judged by its feed's own window: one read this morning is shown with
+its time as possibly out of date, never as free now. The charging card and the
+motorway pages use the same rule.
+*Edited: a place key, three of five sites, the watch ids, the register note and most of the source line omitted.*
 </details>
 
 <details>
@@ -485,8 +504,12 @@ What the A7's page holds, from top to bottom:
 - **One sentence about the road**, built from its own data: from Füssen to
   Flensburg/Harrislee, about 928 km on the schematic line, the Länder it crosses in
   road order and how many junctions and interchanges it has, followed by what is
-  reported now, with its time. TODO-LIVE(quote the A7's sentence as the live page
-  prints it at 2.1.17, and confirm the 928 km).
+  reported now, with its time. On 2026-10-14 the English page read: "The A7 runs
+  from Füssen junction to Flensburg/Harrislee junction, about 928 km long
+  (schematic), through Bavaria, Baden-Württemberg, Hesse, Lower Saxony, Hamburg
+  and Schleswig-Holstein, with 141 junctions and interchanges (24 of them
+  interchanges). Reported on the A7 now: 21 closures, 0 jams, 118 roadworks (as
+  of 22:37)."
 - **A map**, drawn on the server: Germany's outline and the Länder from the BKG's
   VG2500, the motorway as a schematic line through the junctions of BASt's Location
   Code List, closures solid, roadworks hatched, jams with their delay. Where the

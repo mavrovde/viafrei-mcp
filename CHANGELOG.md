@@ -50,7 +50,7 @@ dates the lorry ban.
 ### Changed (server 2.1.15 – 2.1.16)
 
 - **`get_driving_rules` dates the lorry ban (2.1.16).** Asked about the Sunday and
-  holiday lorry ban (`topic: "truck_ban"`), it now opens with the next ban day, from
+  holiday lorry ban (`topic: "truck_ban"`), it now opens with the next ban day — asked on 2026-10-14, "Nächster Fahrverbotstag: Sonntag, 18. Oktober, 0–22 Uhr, bundesweit." — from
   a calendar of § 30 Abs. 3 and 4 StVO with the holidays per Land and the summer
   Saturdays of the Ferienreiseverordnung; a holiday kept only in some Länder names
   them. Its description, schema and prompts are unchanged.
