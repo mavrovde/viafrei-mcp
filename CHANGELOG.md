@@ -5,6 +5,68 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+**A live page for every German motorway, and site cards that say what the tools
+say.** The bridge itself is unchanged; this release follows the server from 2.1.8
+to 2.1.17 for a user of the connector and of viafrei.de. No tool, prompt or
+resource was added, removed or renamed, and no description or input schema moved
+(the package's versions 2.1.9 to 2.1.16 mirrored those server releases with the
+surface unchanged). One answer changed shape, and most of the rest happened on the
+website.
+
+### Changed (server 2.1.9 – 2.1.17)
+
+- **`get_driving_rules` dates the lorry ban.** Asked about the Sunday and holiday
+  lorry ban (`topic: "truck_ban"`), it now opens with the next ban day ("Nächster
+  Fahrverbotstag: Sonntag, 18. Oktober, 0–22 Uhr, bundesweit …"), from a calendar
+  of § 30 Abs. 3 and 4 StVO with the holidays per Land and the summer Saturdays of
+  the Ferienreiseverordnung. A holiday kept only in some Länder names them.
+- **A motorway page for each of the 122 German motorways**, in seven languages, at
+  `viafrei.de/<lang>/motorway/<road>` (German `viafrei.de/de/autobahn/<road>`): a
+  map over the BKG's VG2500 base with the closures, roadworks and jams drawn on a
+  schematic line through the junctions of BASt's Location Code List; a junction
+  strip with a stretch, direction and layer filter that works without JavaScript;
+  the interchanges with the motorways each meets; the full closures planned for
+  the next seven days with their signed detours (the rows `check_road_status`
+  returns for the road with `horizon_days: 7`); parking with live free spaces, the
+  share-alike lorry parks and P+R sites in blocks of their own; chargers by power
+  class and the longest stretch without a fast charger; DWD warnings and the
+  road-surface forecast; traffic cameras as links; the dated lorry ban, the
+  advisory speed, the rescue lane and the emergency numbers in the tool's own
+  words; fuel prices only on a click; and two or three questions to ask your
+  assistant, answered from the page's own rows. Each page opens with one factual
+  sentence about the road and has its own title and description for search.
+- **The motorway index** at `viafrei.de/en/motorway` and `viafrei.de/de/autobahn`,
+  with a search that takes a number in any spelling, a "worst right now" order and
+  an overview map of Germany. **The home page** lists the ten worst motorways right
+  now as cards, directly under the live tiles, and **every place has an Autobahn
+  card** with the motorways nearby, nearest junction first.
+- **The site's cards answer by the tools' own rules.** The charging card lists a
+  charger once and judges its status by the same per-feed windows as
+  `find_charging_station`; the transit card takes Berlin and Brandenburg
+  punctuality from VBB's live feed as `check_transit_disruption` does, matches a
+  railway station's realtime calls through the national stop directory, and shows
+  shared bikes within 1 km; the road card reads the Land traffic feeds and
+  roadworks registers by `check_road_status`'s rule, names Hamburg's traffic
+  cameras, says where every row is and credits every source behind a row or a
+  count; the parking card shows Trucklounge's lorry parks (ODbL) and the P+R NRW
+  sites (CC BY-SA) in blocks of their own; and a place page shows the
+  low-emission-zone sentence `get_driving_rules` states for that Gemeinde.
+- **Search, classic and AI.** `llms.txt` and `llms-full.txt` describe the motorway
+  pages and list every one; the motorway sitemaps list every page in every
+  language; robots.txt names the AI training and corpus crawlers it used to miss,
+  keeps them off the fuel and place pages, and leaves the motorway pages open to
+  every crawler.
+- **The README describes 2.1.17**: a "New in 2.1.17" box, a new section on the
+  motorway pages, new example questions, and new real answers captured from the
+  production server at 2.1.17. Read it in the
+  [README](https://github.com/mavrovde/viafrei-mcp#readme).
+- **SOURCES.md follows the register at 2.1.17**: the same 156 sources, 143 held,
+  12 planned and one discontinued, with no line, licence or status changed; every
+  group now names the cards and motorway pages it feeds, and a section names the
+  website's own two sources, the BKG's VG2500 map base with its Quellenvermerk
+  verbatim and DB-IP. Read it in
+  [SOURCES.md](https://github.com/mavrovde/viafrei-mcp/blob/main/SOURCES.md).
+
 ## [2.1.16] - 2026-10-14
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
