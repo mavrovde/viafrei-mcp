@@ -5,112 +5,219 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
-**A live page for every German motorway, and site cards that say what the tools
-say.** The bridge itself is unchanged; this release follows the server from 2.1.8
-to 2.1.17 for a user of the connector and of viafrei.de. No tool, prompt or
-resource was added, removed or renamed, and no description or input schema moved
-(the package's versions 2.1.9 to 2.1.16 mirrored those server releases with the
-surface unchanged). One answer changed shape, and most of the rest happened on the
-website.
+**The motorway pages are written to be found, by a search engine and by an AI assistant, and the home page shows its motorway catalogue reliably.**
+The package matches the server's 2.1.17. No tool, prompt or resource was added,
+removed or renamed, and no tool description or input schema changed; this release is
+about the website and the documentation.
 
-### Changed (server 2.1.9 – 2.1.17)
+### Changed (server 2.1.17)
 
-- **`get_driving_rules` dates the lorry ban.** Asked about the Sunday and holiday
-  lorry ban (`topic: "truck_ban"`), it now opens with the next ban day ("Nächster
-  Fahrverbotstag: Sonntag, 18. Oktober, 0–22 Uhr, bundesweit …"), from a calendar
-  of § 30 Abs. 3 and 4 StVO with the holidays per Land and the summer Saturdays of
-  the Ferienreiseverordnung. A holiday kept only in some Länder names them.
-- **A motorway page for each of the 122 German motorways**, in seven languages, at
-  `viafrei.de/<lang>/motorway/<road>` (German `viafrei.de/de/autobahn/<road>`): a
-  map over the BKG's VG2500 base with the closures, roadworks and jams drawn on a
-  schematic line through the junctions of BASt's Location Code List; a junction
-  strip with a stretch, direction and layer filter that works without JavaScript;
-  the interchanges with the motorways each meets; the full closures planned for
-  the next seven days with their signed detours (the rows `check_road_status`
-  returns for the road with `horizon_days: 7`); parking with live free spaces, the
-  share-alike lorry parks and P+R sites in blocks of their own; chargers by power
-  class and the longest stretch without a fast charger; DWD warnings and the
-  road-surface forecast; traffic cameras as links; the dated lorry ban, the
-  advisory speed, the rescue lane and the emergency numbers in the tool's own
-  words; fuel prices only on a click; and two or three questions to ask your
-  assistant, answered from the page's own rows. Each page opens with one factual
-  sentence about the road and has its own title and description for search.
-- **The motorway index** at `viafrei.de/en/motorway` and `viafrei.de/de/autobahn`,
-  with a search that takes a number in any spelling, a "worst right now" order and
-  an overview map of Germany. **The home page** lists the ten worst motorways right
-  now as cards, directly under the live tiles, and **every place has an Autobahn
-  card** with the motorways nearby, nearest junction first.
-- **The site's cards answer by the tools' own rules.** The charging card lists a
-  charger once and judges its status by the same per-feed windows as
-  `find_charging_station`; the transit card takes Berlin and Brandenburg
-  punctuality from VBB's live feed as `check_transit_disruption` does, matches a
-  railway station's realtime calls through the national stop directory, and shows
-  shared bikes within 1 km; the road card reads the Land traffic feeds and
-  roadworks registers by `check_road_status`'s rule, names Hamburg's traffic
-  cameras, says where every row is and credits every source behind a row or a
-  count; the parking card shows Trucklounge's lorry parks (ODbL) and the P+R NRW
-  sites (CC BY-SA) in blocks of their own; and a place page shows the
-  low-emission-zone sentence `get_driving_rules` states for that Gemeinde.
-- **Search, classic and AI.** `llms.txt` and `llms-full.txt` describe the motorway
-  pages and list every one; the motorway sitemaps list every page in every
-  language; robots.txt names the AI training and corpus crawlers it used to miss,
-  keeps them off the fuel and place pages, and leaves the motorway pages open to
-  every crawler.
-- **The README describes 2.1.17**: a "New in 2.1.17" box, a new section on the
-  motorway pages, new example questions, and new real answers captured from the
-  production server at 2.1.17. Read it in the
-  [README](https://github.com/mavrovde/viafrei-mcp#readme).
-- **SOURCES.md follows the register at 2.1.17**: the same 156 sources, 143 held,
-  12 planned and one discontinued, with no line, licence or status changed; every
-  group now names the cards and motorway pages it feeds, and a section names the
-  website's own two sources, the BKG's VG2500 map base with its Quellenvermerk
-  verbatim and DB-IP. Read it in
-  [SOURCES.md](https://github.com/mavrovde/viafrei-mcp/blob/main/SOURCES.md).
+- **Titles and descriptions per motorway**, in every language. A translated
+  description names no German place, and a motorway whose course the Location Code
+  List does not record promises no map.
+- **A factual opening sentence** under each page's heading, quotable as it stands:
+  every clause appears only when its fact is held, and a stale or failed live
+  reading says nothing about the counts.
+- **A clearer outline.** The live lists sit under their own heading after the map,
+  the planned full closures are a section of their own, and every page has one main
+  heading with no level skipped.
+- **`llms.txt` and `llms-full.txt`** describe a motorway page as it is now, and the
+  full file lists every motorway page in English and German.
+- **robots.txt names the AI training and corpus crawlers it used to miss** and keeps
+  them off the fuel and place pages, as it already did for the best-known ones; the
+  motorway pages stay open to every crawler.
+- **The home's motorway catalogue**: each of the ten most affected motorways is a
+  card with its route ends and its counts in words, closures and jams in the map's
+  colours; a button leads to all 122 motorways. It is answered from its last good
+  reading while a new one is prepared, so the first visitors after a refresh no
+  longer get an empty block.
+- **Accessibility**: the map's credit links are spaced so each is easy to tap; the
+  motorway pages measured score 100 for accessibility in Lighthouse.
+- **Documentation.** The README has a "New in 2.1.17" box, a section on the motorway
+  pages, new example questions and new real answers captured from production at
+  2.1.17. SOURCES.md names, for every source, the cards and motorway pages it feeds,
+  and adds the website's own sources: the BKG VG2500 map base with its source note
+  verbatim, and DB-IP. The package description and keywords name motorway traffic.
 
 ## [2.1.16] - 2026-10-14
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.16 while the registry's latest is 2.1.14, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string moved; the capture date is the same day.
+**Every motorway page now has a map, a junction strip with filters, and the services along the road.**
+The package matches the server's 2.1.16 and covers the server releases 2.1.15 and
+2.1.16. No tool, prompt or resource was added, removed or renamed, and no tool
+description or input schema changed. One answer changed: `get_driving_rules` now
+dates the lorry ban.
+
+### Changed (server 2.1.15 – 2.1.16)
+
+- **`get_driving_rules` dates the lorry ban (2.1.16).** Asked about the Sunday and
+  holiday lorry ban (`topic: "truck_ban"`), it now opens with the next ban day, from
+  a calendar of § 30 Abs. 3 and 4 StVO with the holidays per Land and the summer
+  Saturdays of the Ferienreiseverordnung; a holiday kept only in some Länder names
+  them. Its description, schema and prompts are unchanged.
+- **The map (2.1.15).** Germany's outline and the Länder from the BKG's VG2500
+  (dl-de/by-2-0), with its source note verbatim under the map; the motorway as a
+  schematic line through the points of BASt's Location Code List, broken where the
+  list has no course and every break named (2.1.16); closures solid, roadworks
+  hatched, jams with their delay. It never draws OpenStreetMap, the share-alike
+  parking databases or a fuel price.
+- **The junction strip and filter (2.1.15)**, a form that works without JavaScript;
+  **interchanges (2.1.16)** name and link the motorways they meet; a chosen stretch
+  gives its length.
+- **Services along the road (2.1.15):** parking with live free spaces where the
+  operator publishes them, the share-alike lorry parks, P+R sites and OpenStreetMap
+  car parks in blocks of their own, chargers with their status, traffic cameras as
+  links, the road-surface forecast and the DWD's warnings. Since 2.1.16 the chargers
+  are also sorted by power class and the page names the longest stretch with no site
+  of 150 kW or more.
+- **Fuel on a click (2.1.15).** The page carries no fuel price; a button loads at
+  most ten stations along the road, each price with its time and the MTS-K note, and
+  no crawler follows it. Since 2.1.16 the stations with a recent price come first,
+  spread along the whole road.
+- **Planned full closures, next 7 days (2.1.16)**: the rows `check_road_status`
+  returns for the road with `horizon_days: 7`, soonest first, each with the signed
+  detour Baden-Württemberg publishes where there is one.
+- **On every motorway (2.1.16):** the lorry ban dated, the advisory speed, the
+  rescue lane and the emergency numbers, in the same words `get_driving_rules` uses.
+- **Ask your assistant (2.1.16):** a connect button, the address to copy, and two or
+  three questions this page can answer, each answered from its own rows with its
+  time and source.
+- **The motorway index (2.1.16)** gains a search, a "worst right now" order and an
+  overview map of Germany; **the home page** lists the worst motorways right now.
+- **Fixed (2.1.16):** a charger confirmed minutes earlier no longer reads "possibly
+  out of date" on a motorway page, because the page now judges a status by the same
+  freshness rule as the tool and the charging card; jam labels on the map no longer
+  overlap; and the motorway lines no longer look dashed.
+- **Privacy (2.1.15).** The motorway pages are measured by analytics only after
+  consent, and only by the motorway's own page address — never a chosen stretch,
+  direction or filter, and never your place. The privacy page says so.
 
 ## [2.1.14] - 2026-10-14
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.14 while the registry's latest is 2.1.12, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string moved; the capture date is the same day.
+**Every place now has an Autobahn card, and every German motorway has a page of its own.**
+The package matches the server's 2.1.14 and covers the server releases 2.1.13 and
+2.1.14. No tool, prompt or resource was added, removed or renamed, and no tool
+description or input schema changed. The new pages ask the tools' own questions, so
+a page and your assistant agree about the same road.
+
+### Changed (server 2.1.13 – 2.1.14)
+
+- **The Autobahn card (2.1.13)**, right after the road card. Autobahn GmbH's rows
+  near a place moved there from the road card, so nothing is shown twice; a Land
+  feed's message on a motorway stays on the road card. When no motorway is in reach
+  the card names the nearest one; a stale reading says so with its time and shows no
+  figure.
+- **A page per motorway (2.1.13).** The counts with their time and per direction,
+  the next planned full closure, the closures, jams, warnings and roadworks from the
+  same statement `check_road_status` answers a road from, the junctions in order,
+  the Länder and the places along the road, and a block on asking your assistant,
+  after the information.
+- **No dead motorway addresses (2.1.13).** Every motorway of the register answers, a
+  quiet one with "no current reports" and its static facts; spellings such as `A 3`,
+  `a03` or `BAB3` lead to the canonical page, and a number the register does not
+  hold leads to the index.
+- **Written for search (2.1.13).** Titles and descriptions in seven languages lead
+  with how people search, structured data names each page and its place in the site,
+  `llms.txt` and `llms-full.txt` list the live page patterns, and the sitemaps list
+  every page in every language.
+- **Fresh motorway data (2.1.14).** In 2.1.13 the per-motorway summary behind the
+  card and the pages could hold up the Autobahn refresh, so motorway readings came
+  about every twelve minutes instead of about five. The summary now takes seconds
+  and runs beside the refresh, which is back on its own cadence.
 
 ## [2.1.12] - 2026-10-14
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.12 while the registry's latest is 2.1.10, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string moved; the capture date is the same day.
+**The road and parking cards on viafrei.de now answer the way `check_road_status` and `find_parking` do.**
+The package matches the server's 2.1.12 and covers the server releases 2.1.11 and
+2.1.12. No tool, prompt or resource was added, removed or renamed, and no tool
+description or input schema changed. One resource's wording was corrected: the
+share-alike parking offer in `viafrei://attribution`.
+
+### Changed (server 2.1.11 – 2.1.12)
+
+- **Land and city feeds on the road card (2.1.11).** A place's road card now reads
+  the same feeds `check_road_status` reads for that place. A message that two feeds
+  carry is one row, the publisher's own, with the relaying feed credited beside it;
+  a message is shown only when its Land can be told. A planned-works programme the
+  tool answers separately is not shown as the road today.
+- **Every row says where it is (2.1.11)**: the stretch from the message's title,
+  else the publisher's own place words, else the two junctions it runs between, else
+  the nearest junction. A city's own street messages are no longer crowded out by
+  the motorways.
+- **Hamburg's traffic cameras on the road card (2.1.11)**: up to two within 5 km, as
+  links to the publisher's images and never as an image, with the publisher's caveat
+  that the images are not available around the clock.
+- **Trucklounge on the parking card (2.1.12).** Up to three nearby lorry parks in a
+  block headed as a separate database, with the publisher's own occupancy reading
+  and its time, said as a past report once it is old, and never "free now" for a
+  value that has not moved in hours. The block carries the ODbL offer of a copy.
+- **P+R NRW on the parking card (2.1.12)**, in a block of its own with the
+  share-alike sentence. Its occupancy counts are from 2024, so the card, like the
+  tool, does not show them.
+- **The low-emission-zone sentence (2.1.12).** A Gemeinde the zone table names gets
+  the sentence `get_driving_rules` states — the zone and the plaque it needs, or
+  that there is none — with the review date and "informational, not legal advice". A
+  Gemeinde the table does not name gets nothing, because a missing entry is not a
+  missing zone.
+- **Watch suggestions (2.1.12).** The weather, road, charging and transit cards
+  suggest what to ask your assistant to watch, in this chat; `watch_situation` sends
+  nothing anywhere else.
+- **`viafrei://attribution` no longer calls the parking export "complete"
+  (2.1.12).** The copy we send under ODbL holds every row and the full occupancy
+  history except the rows the publisher marks confidential, which no answer uses
+  either, and the resource now says so.
 
 ## [2.1.10] - 2026-10-14
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.10 while the registry's latest is 2.1.9, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string and the capture date moved.
+**The transit card on viafrei.de now uses every public-transport source by its tool's own rules.**
+The package matches the server's 2.1.10. No tool, prompt or resource was added,
+removed or renamed, and no tool description or input schema changed. The website's
+transit card now reads punctuality, station realtime and shared bikes exactly as
+`check_transit_disruption`, `get_train_departures` and `find_sharing` do.
+
+### Changed (server 2.1.10)
+
+- **VBB leads in Berlin and Brandenburg.** A place there takes its punctuality
+  figure from VBB's live feed (CC BY 4.0) whenever VBB covers the district, is fresh
+  and has reported enough trips; otherwise, and everywhere else, DELFI answers as
+  before. A VBB figure carries VBB's line and no share-alike sentence.
+- **Railway stops matched through the national stop directory.** A station's
+  realtime calls are paired with its stops within 300 m by `get_train_departures`'
+  rule, and the card then credits the stop directory (DELFI zHV) and DB's station
+  data.
+- **Shared bikes within 1 km**, by `find_sharing`'s rule: a station counts as
+  available only while it is renting, has a bike and its count is at most 15 minutes
+  old. Nothing is shown where no publisher has data.
+- **DB Timetables stays off the cards.** It is asked once per question under the
+  provider's rate limit and nothing of it is stored, so showing it on a page would
+  mean asking the provider for every visitor and crawler. It answers in
+  `get_train_departures` only.
+- **Fixed on the charging card:** each language's own plural forms ("1 charge
+  point", not "1 charge points"), and a town an operator typed in English
+  ("Cologne") is printed under its own name on the German page, by one national
+  rule; `find_charging_station` still prints the town as published.
 
 ## [2.1.9] - 2026-10-13
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.9 while the registry's latest is 2.1.8, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string moved; the capture date is the same day.
+**The charging card on viafrei.de now says what `find_charging_station` says.** The
+package matches the server's 2.1.9. No tool, prompt or resource was added, removed
+or renamed, and no tool description or input schema changed. What changed is the
+website: its charging card now answers from the same rules and the same reading of
+the data as the tool, so a card and your assistant asked about the same place agree.
+
+### Changed (server 2.1.9)
+
+- **The charging card follows `find_charging_station`.** It uses the tool's own
+  states, per-feed freshness windows and tally, lists only sites that still have a
+  live point, and counts the points the tool counts. A site whose every point is
+  closed or withdrawn is no longer a row of its own.
+- **One physical point, one row.** Where the same charger reached us through an
+  operator's own feed and through a republication of it, the card folds the two into
+  the row of the better-ranked feed (the operator's own feed before a roaming hub
+  before an aggregator) and credits the other feed on that row. Two different sites
+  at one address stay two rows.
+- **Every status feed whose reading decided a state on the card is credited**, as
+  the tool credits it, and a row from the Ladesäulenregister says so beside "no
+  status data".
 
 ## [2.1.8] - 2026-10-13
 
