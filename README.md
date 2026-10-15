@@ -39,6 +39,13 @@ on viafrei.de, with a map.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
+> **New in 2.1.18: the website shows the tools' live answers.** The figures on the
+> [viafrei.de](https://viafrei.de/en) home page now stand beside the question you could ask
+> your assistant and what ViaFrei's own tools answer to it right now, with the tool's
+> name, the data's time and every source credited. A place's cards (warnings, roads,
+> places nearby, charging, parking) carry the answer for that place. It is the
+> same answer your assistant gets through this connector.
+>
 > **New since 2.1.13: a live page for every German motorway.** All 122 of them, in
 > seven languages, at [viafrei.de/en/motorway](https://viafrei.de/en/motorway) and
 > [viafrei.de/de/autobahn](https://viafrei.de/de/autobahn). Each page has a map of
