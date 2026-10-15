@@ -5,6 +5,7 @@
 [![Smithery](https://img.shields.io/badge/Smithery-viafrei-ff5a1f)](https://smithery.ai/servers/viafrei/viafrei)
 [![npm](https://img.shields.io/npm/v/viafrei)](https://www.npmjs.com/package/viafrei)
 [![Glama](https://glama.ai/mcp/servers/mavrovde/viafrei-mcp/badge)](https://glama.ai/mcp/servers/mavrovde/viafrei-mcp)
+[![ViaFrei MCP connector](https://glama.ai/mcp/connectors/de.viafrei.mcp/via-frei/badges/score.svg)](https://glama.ai/mcp/connectors/de.viafrei.mcp/via-frei)
 
 ### Germany's traffic, trains, charging and roads — in your AI assistant.
 
