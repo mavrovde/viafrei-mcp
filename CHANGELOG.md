@@ -7,21 +7,51 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.1.18] - 2026-10-15
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.18 while the registry's latest is 2.1.17, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string and the capture date moved.
+**viafrei.de now shows what ViaFrei's own tools answer right now, beside the figures and under a place's cards.**
+The package matches the server's 2.1.18. No tool, prompt or resource was added,
+removed or renamed, and no tool description or input schema changed; this release is
+about the website and the service's operation.
+
+### Added (server 2.1.18)
+
+- **Live answers on the home page.** The server asks its own read-only tools the
+  site's example questions every 15 minutes, through the same handlers, result
+  shape and attribution an assistant gets. The hero's motorway sign carries the
+  live A8 answer, and the Autobahn, punctuality and charging figures each stand
+  beside their question and the tool's live answer, with the tool's name, the
+  data's time, a credit line per source with its licence link, and the result's
+  conditions verbatim. A question is never shown without its answer, and no fuel
+  price is ever asked for the site.
+- **Live answers under a place's cards.** On a place page, and for the place the
+  home page opens on, the warnings, roads, places nearby, charging and parking cards
+  carry the answer for that municipality under their "ask your assistant" line,
+  asked at the municipality's centroid, never at a visitor's position. Only a
+  person's view asks; a crawler or a prefetch does not. The answers are held per
+  municipality for at most 15 minutes in memory and are never logged.
+- **Each answer credited as its licence asks**: a weather answer is credited as a
+  summary of the Deutscher Wetterdienst's warnings, an OpenStreetMap answer carries
+  the ODbL offer, and a share-alike note is never dropped.
+
+### Fixed (server 2.1.18)
+
+- **Every motorway names its real ends.** A short connector beside the road (the
+  A5's branch to Neuenburg, the A81's to Böblingen) is no longer read as the
+  motorway's end. Four motorways changed their ends, and no other: the A5 now runs
+  to the Hattenbacher Dreieck, the A81 to Würzburg-West, the A92 to Deggendorf and
+  the A99 from München Süd-West to München-Süd. No motorway's length or junction
+  count moved.
+- **Every page is told to search engines.** After a deploy the site tells IndexNow
+  about the pages of every sitemap it publishes, the motorway and place pages
+  included, not the main sitemap's 63 pages alone.
+
+### Changed (server 2.1.18)
+
+- **The service keeps a record of its own faults across deploys**, masked three
+  times, so that no address, session, token, coordinate, place or price can be
+  stored, and deleted after thirty days. It reads no request log.
+- **Documentation.** The README has a "New in 2.1.18" box for the live answers.
 
 ## [2.1.17] - 2026-10-14
-
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.17 while the registry's latest is 2.1.16, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string moved; the capture date is the same day.
 
 **The motorway pages are written to be found, by a search engine and by an AI assistant, and the home page shows its motorway catalogue reliably.**
 The package matches the server's 2.1.17. No tool, prompt or resource was added,
