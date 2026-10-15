@@ -31,6 +31,10 @@ about the website and the service's operation.
 - **Each answer credited as its licence asks**: a weather answer is credited as a
   summary of the Deutscher Wetterdienst's warnings, an OpenStreetMap answer carries
   the ODbL offer, and a share-alike note is never dropped.
+- **The service keeps a record of its own faults across deploys**: only warnings
+  and errors, only allow-listed fields, masked three times so that no address,
+  session, token, coordinate, place or price can be stored, and deleted after
+  thirty days. The website's access log is never read.
 
 ### Fixed (server 2.1.18)
 
@@ -44,11 +48,8 @@ about the website and the service's operation.
   about the pages of every sitemap it publishes, the motorway and place pages
   included, not the main sitemap's 63 pages alone.
 
-### Changed (server 2.1.18)
+### Changed
 
-- **The service keeps a record of its own faults across deploys**, masked three
-  times, so that no address, session, token, coordinate, place or price can be
-  stored, and deleted after thirty days. It reads no request log.
 - **Documentation.** The README has a "New in 2.1.18" box for the live answers.
 
 ## [2.1.17] - 2026-10-14
