@@ -5,7 +5,7 @@
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.1.22"
+    "version": "2.1.23"
   },
   "capabilities": {
     "tools": {
@@ -534,7 +534,7 @@
           },
           "limit": {
             "default": 5,
-            "description": "How many lines to return, nearest first (1–10, default 5). Records of one place within 50 m that read alike are folded into one line that says how many units it holds; structuredContent.sites lists every record of the lines shown, so it can be longer than limit.",
+            "description": "How many lines to return, nearest first (1–10, default 5). Places within 50 m that read alike are folded into one line that says how many units it holds; structuredContent.sites has one entry per place of the lines shown, with siteIds naming every record of that place, so it can be longer than limit.",
             "type": "integer",
             "minimum": 1,
             "maximum": 10
