@@ -215,8 +215,8 @@ that every answer carries it.
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.1.16,
-2026-10-14), it exposes twenty-two tools, twenty of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.1.25,
+2026-10-17), it exposes twenty-two tools, twenty of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
@@ -635,6 +635,14 @@ limitation sits on top of it and is stricter; the full statement is
 [at the top of this page](#fuel-prices-are-consumer-information-only).
 Tankerkönig's terms are blunt about bulk use: attempts to pull the data in bulk
 "werden geblockt (und API-Keys deaktiviert)".
+
+**How the server asks it (since 2.1.19–2.1.22).** Only when a person asks: no
+background request is ever made, and a crawler never triggers one. One request a
+minute, the key's limit, through one queue that loses no ask. One request answers
+every station within 25 km of the person who asked, so a second question nearby is
+answered from it at once. While a new price is being fetched, the last known price
+is shown with its time, never as current. No Tankerkönig answer is archived, and no
+log line carries the asked coordinate.
 
 Terms: <https://creativecommons.tankerkoenig.de> · MTS-K guidance for consumer
 services: <https://www.bundeskartellamt.de>
