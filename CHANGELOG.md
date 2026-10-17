@@ -30,9 +30,10 @@ renamed. One parameter description changed (below).
   languages.
 - **An examples page**, `/en/examples` (`/de/beispiele`): every example of the site
   by domain (transit, roads, parking, charging, more), each with its question, tool
-  and answer, live where the server holds one and otherwise dated. Every moment of
-  the home asks its three questions again, and every connect card is back, all
-  re-asked on production.
+  and answer, live where the server holds one and otherwise dated, plus a fuel
+  section that links to the dated fuel examples. Every moment of the home asks its
+  three questions again, and 31 of the 32 connect cards are back (one fuel card is
+  retired under the fuel-price terms), all re-asked on production.
 - **A road-sign design over every card type**: soft elevation, a question bubble and
   an answer bubble, and a card-and-assistant layout on desktop that stacks on a
   phone. Colours, shields, type and every corner radius are unchanged.
@@ -44,9 +45,9 @@ renamed. One parameter description changed (below).
 - **Charging availability no longer falls behind**: feeds that had drifted hours or
   days behind their publisher answer with the newest publication, and a charger
   restated unchanged by a snapshot feed no longer reads "possibly out of date".
-- **Departures name a long-distance train by its number**: "Fernzug 881 → München
-  Hbf", where the board used to print the line ("Fernzug 28"). The product (ICE,
-  IC) is not in the national timetable, so it is not invented.
+- **Departures name a long-distance train by its number**: "Fernzug" and the
+  train's own number, where the board used to print the line ("Fernzug 28"). The
+  product (ICE, IC) is not in the national timetable, so it is not invented.
 - **An ambiguous station name offers the largest stations first**, and one train
   filed under two parts of a station is one row.
 - **A road answer names the road classes nobody covers in that Land**: around

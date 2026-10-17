@@ -636,10 +636,12 @@ limitation sits on top of it and is stricter; the full statement is
 Tankerkönig's terms are blunt about bulk use: attempts to pull the data in bulk
 "werden geblockt (und API-Keys deaktiviert)".
 
-**How the server asks it (since 2.1.19–2.1.22).** Only when a person asks: no
-background request is ever made, and a crawler never triggers one. One request a
+**How the server asks it (since 2.1.19–2.1.22).** Every request follows a person's
+question: nothing is fetched for a place nobody asked about, and a crawler never
+triggers one. One request a
 minute, the key's limit, through one queue that loses no ask. One request answers
-every station within 25 km of the person who asked, so a second question nearby is
+every station within 25 km of the asked place (a public point, never the person's
+own position), so a second question nearby is
 answered from it at once. While a new price is being fetched, the last known price
 is shown with its time, never as current. No Tankerkönig answer is archived, and no
 log line carries the asked coordinate.
