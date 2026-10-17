@@ -9,7 +9,7 @@ the server's own text, reproduced verbatim, because that text is what an
 assistant reads when it decides which tool to call; paraphrasing it here would
 document a different server.
 
-**It is a dated snapshot, taken on 2026-10-16.** Generating this file makes
+**It is a dated snapshot, taken on 2026-10-17.** Generating this file makes
 it impossible for the document and the snapshot to disagree — CI regenerates and
 compares — but it cannot keep the snapshot from ageing against the live server,
 because a capture is a point in time. **The source of truth is the running
@@ -17,11 +17,11 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.1.22 |
+| Server | `viafrei` 2.1.24 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
-| Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-16 |
+| Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-17 |
 | Surface | 22 tools, 10 resources, 2 resource templates, 9 prompts |
 | Parameter schemas | JSON Schema draft-07 |
 | Capabilities | `tools`, `resources`, `prompts`, `logging` |
@@ -237,7 +237,7 @@ The server's own instructions to a connecting client, verbatim:
 - **`connector`** — Plug the car needs: "ccs2" (CCS Combo 2 — the DC fast-charging standard on almost every European EV), "type2" (Typ 2 / Mennekes, the AC socket) or "chademo" (older Japanese DC, e.g. Nissan Leaf). Omit unless the person named their plug or their car model — filtering on a guess hides chargers they could have used.
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.
-- **`limit`** — How many lines to return, nearest first (1–10, default 5). Records of one place within 50 m that read alike are folded into one line that says how many units it holds; structuredContent.sites lists every record of the lines shown, so it can be longer than limit.
+- **`limit`** — How many lines to return, nearest first (1–10, default 5). Places within 50 m that read alike are folded into one line that says how many units it holds; structuredContent.sites has one entry per place of the lines shown, with siteIds naming every record of that place, so it can be longer than limit.
 - **`lon`** — Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use place.
 - **`min_power_kw`** — Only charging points of at least this many kW (1–1000). Use when the person names a number or asks for fast charging: 50 = DC fast (a bare "fast"/"schnell"/"Schnelllader"), 150 = HPC ("HPC", "ultra", "ultraschnell"), 300 = the fastest posts in Germany. Omit for "where can I charge" — 11 kW overnight is a valid answer to that question.
 - **`only_available`** — When true, return only sites with at least one point reported FREE right now. Default false. Use it when the person asks what is free at this moment. Note that only some operators publish live status: the result always says how many nearby sites were dropped because their status is unknown, so the filter never silently hides a charger that may well be free.
@@ -737,5 +737,5 @@ single call.
 ---
 
 Generated from `catalogue.json` by `scripts/gen-api-doc.mjs`. The snapshot was
-read from `https://mcp.viafrei.de/mcp` on 2026-10-16; no tool was invoked to
+read from `https://mcp.viafrei.de/mcp` on 2026-10-17; no tool was invoked to
 produce it, so no data provider was contacted.
