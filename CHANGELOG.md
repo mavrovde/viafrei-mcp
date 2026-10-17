@@ -5,6 +5,15 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-17
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.2.0 while the registry's latest is 2.1.25, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**unchanged** — only the version string moved; the capture date is the same day.
+
 ## [2.1.25] - 2026-10-17
 
 **Ask your assistant first: viafrei.de opens on a live conversation, every example
@@ -2982,6 +2991,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.2.0]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.0
 [2.1.25]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.25
 [2.1.22]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.22
 [2.1.21]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.21
