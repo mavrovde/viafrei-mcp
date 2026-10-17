@@ -5,32 +5,96 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.1.25] - 2026-10-17
+
+**Ask your assistant first: viafrei.de opens on a live conversation, every example
+is back with an examples page, and the place cards show the live data you could
+not see before.** The package matches the server's 2.1.25 and covers the server
+releases 2.1.19 to 2.1.25. No tool, prompt or resource was added, removed or
+renamed. One parameter description changed (below).
+
+### Changed (tool surface)
+
+- **`find_charging_station`: `limit` counts places.** Records of one place within
+  50 m that read alike were already one line; `structuredContent.sites` now holds
+  one entry per place of the lines shown, with `siteIds` naming every record of that
+  place. Several publishers file one car park as many records, so a count of
+  "1349 charging sites" around Würselen counted records; it now counts 461 places.
+
+### Added (server 2.1.19–2.1.25)
+
+- **The home asks your assistant first.** The headline says to ask your AI
+  assistant, and the first screen of a phone holds one live conversation (the
+  question, the tool, today's answer with its time and sources) and a "Connect in
+  one minute" button naming the clients the connect page documents, in all seven
+  languages.
+- **An examples page**, `/en/examples` (`/de/beispiele`): every example of the site
+  by domain (transit, roads, parking, charging, more), each with its question, tool
+  and answer, live where the server holds one and otherwise dated, plus a fuel
+  section that links to the dated fuel examples. Every moment of the home asks its
+  three questions again, and 31 of the 32 connect cards are back (one fuel card is
+  retired under the fuel-price terms), all re-asked on production.
+- **A road-sign design over every card type**: soft elevation, a question bubble and
+  an answer bubble, and a card-and-assistant layout on desktop that stacks on a
+  phone. Colours, shields, type and every corner radius are unchanged.
+- **A place page can be opened by its name alone**: `/de/ort/koeln` now leads to
+  Köln's page.
+
+### Fixed (server 2.1.19–2.1.25)
+
+- **Charging availability no longer falls behind**: feeds that had drifted hours or
+  days behind their publisher answer with the newest publication, and a charger
+  restated unchanged by a snapshot feed no longer reads "possibly out of date".
+- **Departures name a long-distance train by its number**: "Fernzug" and the
+  train's own number, where the board used to print the line ("Fernzug 28"). The
+  product (ICE, IC) is not in the national timetable, so it is not invented.
+- **An ambiguous station name offers the largest stations first**, and one train
+  filed under two parts of a station is one row.
+- **A road answer names the road classes nobody covers in that Land**: around
+  Alsdorf, "no jams reported" no longer reads as an all-clear for North
+  Rhine-Westphalia's federal and Land roads.
+- **Fuel prices are fetched only when a person asks**, and one request answers every
+  station within 25 km of that person; a repeated question comes back at once, and
+  the last known price is shown with its time while a new one is fetched. No fuel
+  answer is archived.
+- **An assistant's connector reconnects by itself after a server restart**, instead
+  of having to be removed and added again.
+- **The place cards show the live data that was off every page**: when none of the
+  three nearest chargers or car parks reports live, the nearest one in the same ring
+  that does is shown fourth; a town's own lorry park is no longer hidden by a car
+  park far away; and one charger is one row.
+- **More roadworks are on the map**: Sachsen's and Thüringen's works keep the
+  publisher's own point.
+- **Faster large answers**: `check_transit_disruption` for a Land or a set of Kreise
+  answers in about a second (Berlin 0.7–0.8 s, NRW 0.9–1.1 s, warm), and
+  `find_charging_station` near a big city no longer runs out of time (München within
+  10 km had taken 9.7 s).
+
+### Bridge
+
+- No code change: the bridge relays the server's catalogue as before.
+
 ## [2.1.22] - 2026-10-16
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.22 while the registry's latest is 2.1.21, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string and the capture date moved.
+**One fuel request refreshes every station around a person, and the home never
+loses a live block.** The package matches the server's 2.1.22; the tool surface is
+unchanged. A fuel question refreshes every station within 25 km of the asked point
+in one request, a repeated question comes back at once, and the home keeps its last
+good copy of each live block when one is slow.
 
 ## [2.1.21] - 2026-10-15
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.21 while the registry's latest is 2.1.20, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string moved; the capture date is the same day.
+**Every fuel answer lists the stations held, current prices or not.** The package
+matches the server's 2.1.21; the tool surface is unchanged. Around a place the tools
+and the site list every station we hold, with the last known price and its time
+while a new one is fetched.
 
 ## [2.1.20] - 2026-10-15
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.1.20 while the registry's latest is 2.1.18, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**unchanged** — only the version string moved; the capture date is the same day.
+**An assistant's connector reconnects by itself after a server restart.** The
+package matches the server's 2.1.20; the tool surface is unchanged. A session lost
+in a restart is now answered so that the client opens a new one by itself, instead
+of the connector having to be removed and added again.
 
 ## [2.1.18] - 2026-10-15
 
@@ -2918,6 +2982,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.1.25]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.25
 [2.1.22]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.22
 [2.1.21]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.21
 [2.1.20]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.1.20

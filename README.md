@@ -40,6 +40,18 @@ on viafrei.de, with a map.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
+> **New in 2.1.25: viafrei.de asks your assistant first.** The home opens on one
+> live conversation (a question, the tool, today's answer with its time and sources)
+> and a "Connect in one minute" button. Every example is back, with an
+> [examples page](https://viafrei.de/en/examples) listing them all, under a
+> road-sign design that keeps the information of every card. Since 2.1.19 the
+> answers improved too: departures name a long-distance train by its number, an
+> ambiguous station name offers the largest stations first, a road answer says which
+> road classes nobody covers in that Land, charging availability no longer falls
+> behind, `find_charging_station` counts places rather than records, fuel prices
+> are fetched only when a person asks (every station within 25 km in one request),
+> and a connector reconnects by itself after a server restart.
+>
 > **New in 2.1.18: the website shows the tools' live answers.** The figures on the
 > [viafrei.de](https://viafrei.de/en) home page now stand beside the question you could ask
 > your assistant and what ViaFrei's own tools answer to it right now, with the tool's
@@ -128,8 +140,9 @@ whole, not one section of it.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first three were asked of **server 2.1.17 on 2026-10-14,
-around 22:40 Berlin time**, minutes after it went live. The next three were asked
+are not mock-ups. The first two were asked of **server 2.1.25 on 2026-10-17 at
+18:38 Berlin time**, an hour after it went live. The next three were asked of
+server 2.1.17 on 2026-10-14, around 22:40 Berlin time, minutes after it went live. The next three were asked
 of server 2.1.8 on 2026-10-13 around 22:40, three more of server 2.1.5 that
 afternoon, between about 14:50 and 16:20, and the others of server 2.0.10 that morning around
 06:41. Those were asked again of server 2.1.17 on 2026-10-14 around 22:43 and
@@ -139,6 +152,40 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🚧 "Is there anything on the roads around Alsdorf?"</b> — <code>check_road_status</code></summary>
+
+```text
+Alsdorf (05334004): no jams reported, 1 closure, 12 restrictions, 0 planned roadworks sites — window until 2026-10-20.
+I do not hold federal and Land roads (Bundes-, Landes-/Staatsstraßen) for North Rhine-Westphalia: for those, this answer is no all-clear.
+• Roadworks (Baustelle) A4: Provider text (German): "Instandsetzung Grenze NL_D - AK Aachen · AK Aachen (aus Richtung Aachener Land) nach A4 — Zeitraum dieser Bauphase: Beginn: 25.08.26 um 09:00 Uhr, Ende: 01.12.26 um 15:00 Uhr, (Ende der Gesamtmaßnahme: 01.12.2…" (2026-08-25)
+• Roadworks (Baustelle) A544: Provider text (German): "A544 | Aachen - Würselen · Autobahnkreuz Aachen -> Aachen (Europaplatz) — Zeitraum dieser Bauphase: Beginn: 17.10.26 um 05:00 Uhr, Ende: 16.10.27 um 05:00 Uhr, (Ende der Gesamtmaßnahme: 16.10.2…" (2026-10-17)
+…
+```
+The second line is new in 2.1.23: where no source covers a road class in that Land,
+the answer says so instead of letting "no jams" read as an all-clear. The same line
+is on the place's road card on viafrei.de.
+*Edited: the remaining entries and the source line omitted.*
+</details>
+
+<details>
+<summary><b>🔌 "Where can I charge around Würselen?"</b> — <code>find_charging_station</code></summary>
+
+```text
+Charging around Würselen (05334036) (within 10 km), nearest first:
+1. Würselen - Lehnstraße, Lehnstraße 27, 52146 Würselen (Ladenetz) — 0.1 km, Type 2, up to 22.1 kW, 0.50 €/kWh net, status from 2026-10-15 17:37 — possibly out of date (2 charging units)
+2. Würselen Rathaus, Rathausstraße 2, 52146 Würselen (Ladenetz) — 0.2 km, Type 2, up to 22.1 kW, 0.41 €/kWh net, status from 13:19 — possibly out of date (2 charging units)
+…
+Only a few operators publish live occupancy; "no status data" means unknown, not free.
+
+As of 18:38 · Source: Ladepunkte: e-clearing.net (smartlab Innovationsgesellschaft mbH) via Mobilithek, CC0 1.0 (…) · Ladepunkt-Verfügbarkeit: e-clearing.net (smartlab Innovationsgesellschaft mbH) via Mobilithek, CC0 1.0 (…) · …
+```
+One line per place, each saying how many charging units it holds; since 2.1.23 a
+publisher's many records of one car park are one place. A status too old to vouch
+for is said with its time, never as free.
+*Edited: three of five lines, the site ids and most of the source line omitted.*
+</details>
+
+<details>
 <summary><b>🛣️ "Which full closures are planned on the A7 in the next seven days?"</b> — <code>check_road_status</code></summary>
 
 ```text
@@ -643,7 +690,7 @@ Restart the client and ask one of the questions above.
 
 <!-- catalogue:begin — generated by scripts/gen-readme-catalogue.mjs from catalogue.json; do not edit by hand -->
 
-**22 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.1.22, snapshot of 2026-10-16. Each line is the server's own words; the full parameters are in [API.md](API.md).
+**22 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.1.25, snapshot of 2026-10-17. Each line is the server's own words; the full parameters are in [API.md](API.md).
 
 #### 🚗 On the road
 
