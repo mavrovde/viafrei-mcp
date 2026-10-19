@@ -675,6 +675,8 @@ Restart the client and ask one of the questions above.
   Connect through Smithery's hosted connection, with no local install.
 - **Glama — [glama.ai/mcp/servers/mavrovde/viafrei-mcp](https://glama.ai/mcp/servers/mavrovde/viafrei-mcp).**
   The directory listing for this repository, with the tool list.
+- **Glama connector — [glama.ai/mcp/connectors/de.viafrei.mcp/via-frei](https://glama.ai/mcp/connectors/de.viafrei.mcp/via-frei).**
+  The hosted endpoint as a Glama connector, ownership verified, with its health check.
 - **mcpservers.org — [mcpservers.org/servers/mavrovde/viafrei-mcp](https://mcpservers.org/servers/mavrovde/viafrei-mcp).**
   The directory listing for this repository, in several languages.
 - **Official MCP Registry — `de.viafrei/mcp`.** The hosted endpoint, as MCP
@@ -682,6 +684,8 @@ Restart the client and ask one of the questions above.
   find it; [`server.json`](server.json) is the entry. It is republished with every
   release of this package, after the npm publish, and only when the live server
   reports the same version.
+- **awesome-remote-mcp-servers — [punkpeye/awesome-remote-mcp-servers](https://github.com/punkpeye/awesome-remote-mcp-servers).**
+  The curated list of remote MCP servers; ViaFrei is listed with its hosted endpoint.
 - **For AI tools — [viafrei.de/llms.txt](https://viafrei.de/llms.txt)** and
   [llms-full.txt](https://viafrei.de/llms-full.txt): what ViaFrei is, how to
   connect, every tool in one line each, the example questions with the tool that
