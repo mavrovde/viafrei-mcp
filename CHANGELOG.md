@@ -5,6 +5,107 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.2.6] - 2026-10-19
+
+**Lorry routes, city roadworks and the measured traffic of Hamburg and Bonn.**
+The package matches the server's 2.2.6 and covers the server releases 2.2.4 to
+2.2.6. No tool, prompt or resource was added,
+removed or renamed. Nine tools changed: three gained parameters, one gained a
+value, one parameter reaches more data, and four descriptions changed (below).
+
+### Changed (tool surface)
+
+- **`check_road_status`: a `vehicle` parameter.** `"long_lorry"` with a road says
+  whether the road is in the long-lorry positive network, and with a place, which
+  network roads are near it. `"lorry"` with a place lists the height, weight and
+  width limits and the lorry bans within 5 km. Leave it out for closures and
+  roadworks, as before.
+- **`check_autobahn_traffic`: `place`, `lat`/`lon` and `radius_km`** (1–100,
+  default 25). With a place, each road's events within the radius come first,
+  nearest first, and the headline counts them with the road-wide total beside
+  them. `limit` now puts each road's most important item first, in the order you
+  listed the roads, so every road with something in force is on the first page.
+- **`get_driving_rules`: `place` or `lat`/`lon`** checks a point against the
+  published low-emission-zone boundaries: inside, outside with the distance, or
+  unknown.
+- **`find_parking`: `kind: "disabled_badge"`** lists the on-street bays reserved
+  for a disabled parking permit, where a city publishes them, with the sensor's
+  state.
+- **`find_roadworks_ahead`**: `place` now reaches the city and Land roadworks held
+  by point within 3 km, not only Hamburg's.
+- **Descriptions**: `describe_location` also names any low-emission zone;
+  `find_place` gives the official key (AGS/RS) only in the structured result;
+  `find_address` says what business is at an address, never who lives there;
+  `check_transit_disruption` counts trips that skip a stop apart from trips that
+  are cancelled.
+
+### Added (server 2.2.4–2.2.6)
+
+- **Lorry routes.** BASt's extract of the long-lorry network for the whole
+  country, and Hamburg's dated field-trial network. NRW.Mobidrom's SEVAS
+  restrictions and priority routes for the towns of North Rhine-Westphalia, with
+  the ODbL offer for that database on every answer that uses it. VMZ Bremen's
+  clearance heights and weight limits, quoted in the publisher's own words. BASt's
+  and Bremen's conditions of use travel with each answer as `_meta.conditionNote`.
+  A place no publisher covers is answered as "no data", which is not a clearance.
+  The ivm data for Frankfurt RheinMain is built but held back, and nothing of it is
+  shown yet.
+- **City and Land roadworks from the open portals**: Kiel, Schleswig-Holstein,
+  Brandenburg, Freiburg, Karlsruhe, Frankfurt, Berlin, Duisburg, Aachen, Ingolstadt,
+  Köln (as permits), Münster, Dortmund, Stuttgart and München. One works is shown
+  once, with every feed that carries it credited. München's answers carry the
+  city's sentence that it records works mainly in the inner districts and on main
+  roads.
+- **Low-emission zones by point**: the boundaries Berlin, Aachen, Duisburg and
+  München publish, and the Umweltbundesamt's register of all 73 zones where no city
+  publishes one.
+- **Measured traffic state of Hamburg and Bonn** in a place answer of
+  `check_road_status`, in each city's own class names, only while the reading is
+  under 30 minutes old.
+- **Dortmund's street sensors**: free disabled-badge bays, and whether the bay
+  beside a charge point is free.
+- **Punctuality failovers**: VRN's realtime feed (Rhein-Neckar and Rhein-Nahe,
+  buses and trams) and VBN's (Bremen and Niedersachsen) answer
+  `check_transit_disruption` where DELFI reported nothing or is stale. They are
+  never added to DELFI's figures.
+- **Step-free stops**: Baden-Württemberg's BFRK survey (1 104 stations and 14 065
+  stops) and Münster's step-free bus stops in `check_station_facilities`, and a
+  step-free line at the end of a `get_departures` board.
+- **Hamburg's live charge-point status**, as a second source for points already
+  held, and **MVV's typical regional-bus load** beside a departure, from MVV's
+  passenger counts and labelled as typical, not live.
+
+### Fixed (server 2.2.4–2.2.6)
+
+- **A source that has stopped republishing is named in every answer that uses
+  it**, with its age, instead of being passed off as current.
+- **A place is named without its official key**, and an option in a list names its
+  Kreis ("Neustadt am Rübenberge (Niedersachsen, Region Hannover)"). A part of a
+  town is named as one ("Stadtteil von Hamburg").
+- **A roadworks end date is never cut off**, and every quoted publisher text is
+  shortened at a word boundary.
+- **A skipped stop is a stop skipped, not a cancellation**: a trip counts as
+  cancelled only when it serves none of its stops.
+- **Chargers wholly out of order are listed last**, and a stale status says how old
+  it is.
+- **The road-surface forecast never shows a slot that is over.**
+- **A house number "0" is no longer printed.** Two car parks of one name say which
+  is which, and `find_nearby` lists the same car parks as `find_parking`.
+- **"Freiburg Hbf" is Freiburg's main station**, not its centre, and DB station
+  names are printed with spaces ("Frankfurt (Main) Hbf"). A stop name the publisher
+  cut short is completed from the survey where the survey names it in full.
+- **`find_nearby` no longer calls a junction of a dual-carriageway federal road a
+  motorway junction.**
+- **Fuel prices are kept warm in the big cities and along the motorways**, always
+  behind every person's own request and within the key's limits.
+- **The GeoNutzV lines name the current year** when the answer is made.
+
+### Bridge
+
+- No code change: the bridge relays the server's catalogue as before. README and
+  SOURCES.md describe the new sources, with seven answers captured from server
+  2.2.6.
+
 ## [2.2.3] - 2026-10-18
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
@@ -3018,6 +3119,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.2.6]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.6
 [2.2.3]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.3
 [2.2.2]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.2
 [2.2.1]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.1

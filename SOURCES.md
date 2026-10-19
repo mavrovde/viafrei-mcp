@@ -15,12 +15,17 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.1.17 on 2026-10-14**, minutes after it
-went live (it reads the same as at 2.1.16): 156 sources, of which 143 are held, 12 are planned (licence read,
-nothing ingested yet) and one is discontinued. No line, licence or status has
-changed since server 2.1.5; what has changed is **where** the sources appear,
-because since 2.1.9 the cards on viafrei.de answer by the tools' own rules and
-since 2.1.13 every motorway has a page of its own. The website also uses two
+with that resource as served by server 2.2.6 on 2026-10-19**, the day it went live:
+212 sources. 195 of them are held and answering, 12 are planned (licence read,
+nothing ingested yet) and one is discontinued. The other four are listed by the
+register but do not answer yet: two are **held back** (the ivm lorry data for
+Frankfurt RheinMain) and two have **no data yet**. The page was last compared at
+server 2.1.17, and 56 rows are new since then: city and Land roadworks, the
+low-emission-zone boundaries, lorry routes, step-free surveys, two more realtime
+feeds for punctuality, the measured traffic state of Hamburg and Bonn, and more
+car parks. Of the rows that were already here, no licence or status has changed,
+and one line has: BASt's location-code list now carries the licence's URL inside
+the line, as its long-lorry extract does. The website also uses two
 sources the server's register does not list, named
 [near the end](#the-websites-own-sources). Whatever the surfaces say, the answer you hold is the thing to read:
 `_meta.sources` and the attribution lines on it are produced from the same result
@@ -190,6 +195,31 @@ confidential, which no answer uses either — and our alterations, under ODbL 1.
 free of charge on request to the contact address in the Impressum on viafrei.de. The same request also gets the P+R NRW data under
 CC BY-SA 4.0 — not an ODbL duty, the register says, but the same channel.
 
+### And the share-alike lorry and stop-access databases
+
+Three more sources are ODbL 1.0 *databases* of their own, because their geometry
+is taken from OpenStreetMap. Each is kept apart: it is never joined to another
+source, and its rows are listed per publisher.
+
+- **SEVAS** (NRW.Mobidrom, lorry restrictions and priority routes in North
+  Rhine-Westphalia's towns), live since server 2.2.6. Its attributes are
+  Datenlizenz Deutschland – Zero 2.0, and its segments are OpenStreetMap ways.
+  Wherever a SEVAS row answered, `check_road_status` with `vehicle` says that the
+  rows come from our derived ODbL database and that a complete CSV copy is sent
+  free of charge on request. The road card on viafrei.de says the same under its
+  lorry block.
+- **TU Chemnitz's VDV-462 export** (stop accessibility mapped in OpenStreetMap,
+  project OPENER next). It is switched on and has no data yet. When it answers, the
+  rows appear in a block of their own in `check_station_facilities`, and the same
+  offer applies.
+- **ivm Frankfurt RheinMain's lorry priority network** is held back, so nothing
+  of it is shown or credited today. The offer will cover it once it answers.
+
+Our side of the offer is the same as for the OpenStreetMap tables: the complete
+contents of the database and our alterations, under ODbL 1.0, free of charge, from
+the contact address in the Impressum on viafrei.de. If you keep such rows in a
+database you use publicly, you owe your recipients the same.
+
 ---
 
 ## The catalogue
@@ -210,13 +240,21 @@ that every answer carries it.
   of the record.
 - **discontinued** — the licence was read and the publisher has since closed the
   route to the data; nothing is held.
+- **held back** — the data is collected or ready to be, and we keep it out of every
+  answer, card and credit until a condition of its terms is met. Nothing of it
+  reaches you.
+- **no data yet** — switched on, but no read has succeeded yet, so nothing
+  answers from it.
 
-**Status is the register's, not a measurement.** The last time each source's
+**Status is the register's, not a measurement**, with one exception: the four
+rows marked held back or no data yet were read from the server's own coverage
+resource, `viafrei://coverage`, on 2026-10-19, because the register lists them like
+any other source. The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.1.25,
-2026-10-17), it exposes twenty-two tools, twenty of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.2.6,
+2026-10-19), it exposes twenty-two tools, twenty of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
@@ -231,7 +269,7 @@ feed, live, in the resource `viafrei://coverage`.
 | **Roads, traffic messages and roadworks** — feeds `check_autobahn_traffic`, `check_road_status`, `find_roadworks_ahead`, `watch_situation`; site: the road card (closures, jams, city and Land messages and works, Hamburg roadworks and cameras, BW detours), the Autobahn card, the motorway pages (lists, map, junction strip, planned full closures with BW detours, the home's ten worst motorways) and long closures on the News page | | | |
 | `autobahn` | Verkehrsdaten: Autobahn GmbH des Bundes | open, no licence text published | held |
 | `mobilithek_bab_messages` | Verkehrsmeldungen: Die Autobahn GmbH des Bundes (Mobilithek), Nutzungsbestimmungen nach GeoNutzV, Daten verändert; Ortsangaben: TMC Location Code List der Bundesanstalt für Straßenwesen (BASt), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), bearbeitet | GeoNutzV | held |
-| `bast_lcl` | TMC Location Code List (LCL 22.0): Bundesanstalt für Straßenwesen (BASt), CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `bast_lcl` | TMC Location Code List (LCL 22.0): Bundesanstalt für Straßenwesen (BASt), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), bearbeitet | CC BY 4.0 | held |
 | `mobilithek_roadworks_bast` | Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen (BASt) via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_roadworks_ald_ni` | Arbeitsstellen Niedersachsen: Niedersächsische Landesbehörde für Straßenbau und Verkehr via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `mobilithek_roadworks_ald_sn` | Arbeitsstellen Sachsen: Landesamt für Straßenbau und Verkehr des Freistaates Sachsen (LASuV) via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
@@ -260,6 +298,39 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_traffic_hamburg` | Verkehrsmeldungen Hamburg: Polizei Hamburg – Landesmeldestelle via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | planned |
 | `mobilithek_roadweather_sh_static` | Straßenwetter Schleswig-Holstein (Messstellen): Landesbetrieb Straßenbau und Verkehr Schleswig-Holstein (LBV.SH) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
 | `mobilithek_roadweather_sh_dyn` | Straßenwetter Schleswig-Holstein: Landesbetrieb Straßenbau und Verkehr Schleswig-Holstein (LBV.SH) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
+| `mobilithek_viz_berlin` | Baustellen und Sperrungen Berlin: Digitale Plattform Stadtverkehr Berlin / Baustellen, Sperrungen und sonstige Störungen von besonderem verkehrlichem Interesse, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `mobilithek_traffic_lms_berlin` | Verkehrsmeldungen Berlin: Landesmeldestelle Berlin (LMST BE) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `berlin_planb` | Ereignisse im Straßenland: Land Berlin, Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `mobilithek_roadworks_bayern` | Baustellen Bayern: © Bayerische Straßenbauverwaltung – Zentralstelle für Verkehrsmanagement 2026 — GeoNutzV, Daten verändert | GeoNutzV | held |
+| `mobilithek_roadworks_mv` | Arbeitsstellen Mecklenburg-Vorpommern: © Landesamt für Straßenbau und Verkehr Mecklenburg-Vorpommern 2026 — GeoNutzV, Daten verändert | GeoNutzV | held |
+| `mobilithek_sperrinfosys_sn` | Sperrungen und Umleitungen Sachsen — Quelle: Baustelleninformationssystem Freistaat Sachsen, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `mobilithek_detours_nrw` | Umleitungen Nordrhein-Westfalen: Landesbetrieb Straßenbau Nordrhein-Westfalen via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `mobilithek_los_nrw` | Verkehrslage Nordrhein-Westfalen: © Die Autobahn GmbH des Bundes 2026 — GeoNutzV, Daten verändert | GeoNutzV | held |
+| `mobilithek_ald_14d` | Arbeitsstellen auf Autobahnen (14 Tage): Die Autobahn GmbH des Bundes | MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei | "eingeschränkte Nutzung, kostenfrei", no licence text — see below | held |
+| `kiel_baustellen` | Baustellen: © Landeshauptstadt Kiel, Amt für Bauordnung, Vermessung und Geoinformation, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `sh_baustellen` | Baustellen Schleswig-Holstein: © LBV.SH/CC BY 4.0; © Geokompetenz/LVermGeo SH/CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `bb_baustellen` | Baustelleninformationen: Landesbetrieb Straßenwesen Brandenburg, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
+| `freiburg_baustellen` | Verkehrsrelevante Baustellen Freiburg — Datengrundlage: Stadt Freiburg, www.freiburg.de (Geodaten © Stadt Freiburg, geoportal.freiburg.de), Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
+| `karlsruhe_tba` | Baustellen und Veranstaltungen: Stadt Karlsruhe, Tiefbauamt – Digitale Mobilität, über MobiData BW, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `frankfurt_verkehr` | Baustellen und Verkehrsmeldungen: Stadt Frankfurt am Main – Straßenverkehrsamt, www.frankfurt.de, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
+| `duisburg_baustellen` | Baustellen: Daten der Stadt Duisburg, WBD, DVG, Nerra, Netze-Duisburg (© Stadt Duisburg; Amt für Bodenordnung, Geomanagement und Kataster), CC BY 3.0 DE, bearbeitet | CC BY 3.0 DE | held |
+| `aachen_baustellen` | Baustellen: Stadt Aachen (2026), Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
+| `ingolstadt_baustellen` | Baustellen: Stadt Ingolstadt, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `koeln_baustellen` | Genehmigte Baustellen: Stadt Köln, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `stuttgart_baustellen` | Baustellen: Landeshauptstadt Stuttgart, Stadtmessungsamt, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `muenster_baustellen` | Baustellen Münster — Datenquelle: Stadt Münster, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `dortmund_baustellen` | Baustellen Dortmund: Stadt Dortmund (Tiefbauamt), Open Data Dortmund, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `muenchen_baustellen` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | held |
+| `hh_verkehrslage` | Verkehrslage: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
+| `bonn_verkehrslage` | Verkehrslage Bonn — Datenquelle: Bundesstadt Bonn, Amt 66, https://opendata.bonn.de (Daten verändert), CC BY | CC BY (version unstated) | held |
+| **Lorry routes** — feeds `check_road_status` with `vehicle`; site: the lorry line on the road card | | | |
+| `lorry_bast_langlkw` | Lang-Lkw-Netz: Bundesanstalt für Straßen- und Verkehrswesen (BASt), Positivnetz Lang-LKW (Auszug Bundesfernstraßen), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), bearbeitet | CC BY 4.0 **plus a condition of use** | held |
+| `lorry_hh_langlkw` | Lang-Lkw-Netz Hamburg (Feldversuch 2015): Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, (BVM), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `lorry_sevas_nrw` | Lkw-Navigationsdaten NRW: NRW.Mobidrom GmbH (SEVAS), Datenlizenz Deutschland – Zero – Version 2.0; Geometrie: © OpenStreetMap-Mitwirkende, Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/) | **ODbL 1.0** (attributes dl-de/zero-2-0) | held |
+| `lorry_hb_durchfahrtshoehen` | Daten: Verkehrsmanagementzentrale Bremen (ASV Bremen), dl-de/by-2-0, bearbeitet | dl-de/by-2-0 **plus a condition of use** | held |
+| `lorry_hb_fuehrungshoehen` | Daten: Verkehrsmanagementzentrale Bremen (ASV Bremen), dl-de/by-2-0, bearbeitet | dl-de/by-2-0 **plus a condition of use** | held |
+| `lorry_ivm_vorrangnetz` | Lkw-Vorrangnetz Frankfurt RheinMain: ivm - Integriertes Verkehrs- und Mobilitätsmanagement Region Frankfurt RheinMain GmbH, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert; Geometrie: © OpenStreetMap-Mitwirkende, Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/) | **ODbL 1.0** (attributes dl-de/by-2-0) | held back |
+| `lorry_ivm_beschilderung` | Lkw-Beschilderung Frankfurt RheinMain: ivm Region Frankfurt RheinMain, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held back |
 | **Rail and public transport** — feeds `get_train_departures`, `get_departures`, `check_transit_disruption`, `watch_situation`; site: the transit card (live departures, the district's punctuality, VBB's in Berlin and Brandenburg) | | | |
 | `db_timetables` | Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `delfi_static` | Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet | CC BY 4.0 | held |
@@ -270,11 +341,19 @@ feed, live, in the resource `viafrei://coverage`.
 | `delfi_siri_sx` | Störungsmeldungen: DELFI e.V. via Mobilithek, Datensatz „DELFI-Datensatz SIRI SX“, CC BY-SA 4.0, bearbeitet | **CC BY-SA 4.0** | held |
 | `delfi_zhv` | Haltestellendaten: DELFI e.V. (zentrales Haltestellenverzeichnis), CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `db_stada` | Bahnhofsdaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
-| **Station lifts and escalators** — feeds `check_station_facilities`; site: the station lines on the transit card | | | |
+| `vrn_rt` | Echtzeitdaten: Verkehrsverbund Rhein-Neckar GmbH (VRN), CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `vbn_siri_et` | Echtzeitdaten: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „SIRI-ET Niedersachsen und Bremen“, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `mvv_bus_load` | Auslastung Regionalbus: Münchner Verkehrs- und Tarifverbund GmbH (MVV) via opendata-oepnv.de, CC BY, bearbeitet | CC BY (version unstated) | held |
+| **Station lifts, escalators and step-free access** — feeds `check_station_facilities` and the step-free line that ends a `get_departures` board; site: the station lines on the transit card | | | |
 | `db_fasta` | Aufzüge und Fahrtreppen: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_openstation_netex` | Aufzüge und Fahrtreppen (Bestand): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
 | `mobilithek_openstation_siri_fm` | Aufzüge und Fahrtreppen (Status): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
 | `kvb_lifts` | Aufzugsdaten: Kölner Verkehrs-Betriebe AG, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0, no warranty | held |
+| `bfrk_spnv` | Barrierefreiheit: NVBW Nahverkehrsgesellschaft Baden-Württemberg mbH (BFRK, Bahnhöfe) via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
+| `bfrk_oepnv` | Barrierefreiheit: NVBW Nahverkehrsgesellschaft Baden-Württemberg mbH (BFRK, Haltestellen) via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
+| `dresden_bf_haltestellen` | Barrierefreiheit: Landeshauptstadt Dresden (Haltestellen Dresden – Barrierefreiheit), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | no data yet |
+| `muenster_bf_haltestellen` | Barrierefreie Bushaltestellen Münster — Datenquelle: Stadt Münster, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `tuc_vdv462` | Barrierefreiheit (aus OpenStreetMap): TU Chemnitz (OPENER next, osm2vdv462) via Mobilithek — © OpenStreetMap-Mitwirkende, Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/), bearbeitet | **ODbL 1.0** | no data yet |
 | **Fuel** — feeds `find_cheapest_fuel`, `find_fuel_station`, `find_nearby`; site: the fuel card, the fuel page, and the fuel button on a motorway page (loaded only on a click) | | | |
 | `tankerkoenig` | Tankstellenpreise: Tankerkönig.de — MTS-K, CC BY 4.0, bearbeitet | CC BY 4.0 **plus the MTS-K purpose limit** | held |
 | **Hydrogen** — feeds `find_hydrogen_station`; site: the fuel card (the two nearest hydrogen stations within 25 km) | | | |
@@ -336,6 +415,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_afir_ladebusiness_dyn` | Ladepunkt-Verfügbarkeit: Smartlab Innovationsgesellschaft mbH (ladebusiness) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
 | `ocpdb_chargecloud` | Ladepunkte und Verfügbarkeit: chargecloud (CC0 1.0) via MobiData BW (NVBW), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert | dl-de/by-2-0 | held |
 | `ocpdb_taubert` | Ladepunkte und Verfügbarkeit: Taubert Consulting (CC0 1.0) via MobiData BW (NVBW), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert | dl-de/by-2-0 | held |
+| `hh_emobility` | Ladestatus: Freie und Hansestadt Hamburg, Behörde für Wirtschaft und Innovation, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
 | **Parking** — feeds `find_parking`, `find_nearby`; site: the parking card (München forecast included; the share-alike lorry parks and P+R sites in blocks of their own) and the motorway pages (parking and rest) | | | |
 | `mobilithek_truckpark_static_geonutzv` | LKW-Parken: © Lkw-Parken BAB Deutschland / Bundesministerium für Verkehr (BMV) 2026 — GeoNutzV, Daten verändert | GeoNutzV | held |
 | `mobilithek_park_bosch_static` | Lkw-Parken: Bosch Service Solutions via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
@@ -382,6 +462,16 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_park_sh_truck_dyn` | Lkw-Parken (Belegung): Landesbetrieb Straßenbau und Verkehr Schleswig-Holstein (LBV.SH) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
 | `mobilithek_park_kiel_dyn` | Parkplätze Kieler Altstadt (Belegung): KielRegion GmbH via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | planned |
 | `mobilithek_db_bahnpark` | Parking Information Daten der DB BahnPark – API über den DB API Marketplace | dl-de/by-2-0 | discontinued |
+| `dortmund_parksensoren` | Parksensoren Dortmund: Stadt Dortmund (Dortmunder Systemhaus – Smart City), Open Data Dortmund, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `mobilithek_park_wuppertal_static` | Parkhäuser Wuppertal: Stadt Wuppertal via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `mobilithek_park_leipzig_pr_static` | P+R-Anlagen Leipzig: Stadt Leipzig, Verkehrs- und Tiefbauamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `mobilithek_park_leipzig_pr_dyn` | P+R-Belegung Leipzig: Stadt Leipzig, Verkehrs- und Tiefbauamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `freiburg_parkleitsystem` | Parkleitsystem Freiburg — Datengrundlage: Stadt Freiburg, www.freiburg.de, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `freiburg_park_ride` | P+R-Belegung Freiburg — Datengrundlage: Stadt Freiburg, www.freiburg.de, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `herrenberg_parkapi` | Parkplätze Herrenberg: Stadt Herrenberg (stadtnavi), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `jena_parkdaten` | Parkdaten Jena: Kommunalservice Jena, CC BY 3.0 DE, bearbeitet | CC BY 3.0 DE | held |
+| `vrr_park_ride` | Park&Ride-Anlagen: VRR AöR via opendata-oepnv.de, CC BY, bearbeitet | CC BY (version unstated) | held |
+| `trk_lkw_parken` | Lkw-Parkplätze: Digitale Mobilität (TechnologieRegion Karlsruhe), CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | **Bike sharing** — feeds `find_sharing`; site: shared bikes within 1 km on the transit card | | | |
 | `gbfs_nextbike` | Bikesharing: nextbike GmbH (GBFS), CC0 1.0 | CC0 1.0 | held |
 | `gbfs_donkey` | Bikesharing: Donkey Republic (GBFS), CC0 1.0 | CC0 1.0 | held |
@@ -392,6 +482,12 @@ feed, live, in the resource `viafrei://coverage`.
 | `bkg_gvisys` | Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0, Datenquellen: https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_gn250.pdf (Daten verändert) | dl-de/by-2-0 | held |
 | `geonames` | Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet | CC BY 4.0 | held |
 | `osm` | OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | held |
+| **Low-emission zones** — feeds `get_driving_rules` (with a place or a coordinate) and `describe_location`; site: the low-emission-zone line in the rules block of the place pages | | | |
+| `berlin_umweltzone` | Umweltzone: Land Berlin, Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `aachen_umweltzone` | Umweltzone: Stadt Aachen (2026), Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
+| `duisburg_umweltzone` | Umweltzonen Duisburg: Stadt Duisburg, CC BY 3.0 DE, bearbeitet | CC BY 3.0 DE | held |
+| `muenchen_umweltzone` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | held |
+| `uba_umweltzonen` | Umweltzonen in Deutschland: Umweltbundesamt, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
 | **Our own** — feeds `get_driving_rules` and the rules resources; the watch tools; site: the low-emission-zone sentence and the watch suggestions on the place pages, and the dated lorry ban and the rules on every motorway page | | | |
 | `viafrei_rules` | Verkehrsregeln: ViaFrei, eigene Zusammenstellung aus amtlichen Quellen (StVO, StVZO, 35. BImSchV, StVG, EmoG, AFIR); jede Aussage mit Quelle und Prüfdatum — informativ, keine Rechtsberatung / Road rules: ViaFrei, our own compilation from official sources; every statement carries its source and the date it was read — informational, not legal advice | our own text | held |
 | `viafrei_watch` | Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben / Watch: ViaFrei, our own service — every report names the source of the data behind it | no provider data | held |
@@ -545,16 +641,29 @@ Five things about them are not in the table:
   confidentiality level; a record marked anything other than `noRestriction` is
   stored and never returned — not in a tool answer, a watch notice, a site card or
   an export.
-- **GeoNutzV lines carry a year.** The motorway lorry-parking file, the
-  Thüringen roadworks and the Rüsselsheim messages require a source note *and* a
-  note that the data was changed; the year in the line is the year of the last
-  download:
+- **GeoNutzV lines carry a year.** Six sources are under the GeoNutzV: the
+  motorway lorry-parking file, the roadworks of Thüringen, Bayern and
+  Mecklenburg-Vorpommern, the NRW motorway traffic state, and the Rüsselsheim
+  messages. Each requires a source note *and* a note that the data was changed.
+  Since server 2.2.6 the year in the line is the current year in Berlin when the
+  answer is made, so a line printed on 1 January names the new year:
 
 ```
-LKW-Parken: © Lkw-Parken BAB Deutschland / Bundesministerium für Verkehr (BMV) <Jahr des letzten Datenbezugs> — GeoNutzV, Daten verändert
-Arbeitsstellen Thüringen: © Thüringer Landesamt für Bau und Verkehr (TLBV) <Jahr des letzten Datenbezugs> — GeoNutzV, Daten verändert
-Verkehrsmeldungen Rüsselsheim am Main: © Stadt Rüsselsheim am Main <Jahr des letzten Datenbezugs> — GeoNutzV, Daten verändert
+LKW-Parken: © Lkw-Parken BAB Deutschland / Bundesministerium für Verkehr (BMV) <Jahr> — GeoNutzV, Daten verändert
+Arbeitsstellen Thüringen: © Thüringer Landesamt für Bau und Verkehr (TLBV) <Jahr> — GeoNutzV, Daten verändert
+Baustellen Bayern: © Bayerische Straßenbauverwaltung – Zentralstelle für Verkehrsmanagement <Jahr> — GeoNutzV, Daten verändert
+Arbeitsstellen Mecklenburg-Vorpommern: © Landesamt für Straßenbau und Verkehr Mecklenburg-Vorpommern <Jahr> — GeoNutzV, Daten verändert
+Verkehrslage Nordrhein-Westfalen: © Die Autobahn GmbH des Bundes <Jahr> — GeoNutzV, Daten verändert
+Verkehrsmeldungen Rüsselsheim am Main: © Stadt Rüsselsheim am Main <Jahr> — GeoNutzV, Daten verändert
 ```
+- **The 14-day motorway roadworks feed has a label and no terms.** Die Autobahn
+  GmbH publishes its feed of long-running motorway works (current, and starting in
+  the next 14 days) on the access point as "eingeschränkte Nutzung, kostenfrei"
+  (restricted use, free of charge), with no licence text. We use it only inside
+  answers, one item at a time, with that label in its line, and never in an export
+  or a bulk copy. Where BASt's file carries the same works, it is shown once under
+  BASt's line with this one beside it. Do not redistribute it either. If the
+  publisher states terms or objects, it is withdrawn.
 
 Datenlizenz Deutschland – Zero – 2.0, the licence of several rows in the table,
 attaches **no** condition at all: "Jede Nutzung ist ohne Einschränkungen oder
@@ -979,6 +1088,142 @@ The watch tools name a source of their own, `viafrei_watch`, which carries no
 provider data: every report a watch makes names the source of the data that
 triggered it.
 
+### City and Land roadworks from the open portals
+
+Since server 2.2.4, the roadworks the cities and Länder publish on their own open
+data portals answer `check_road_status` and `find_roadworks_ahead` when you name a
+place, and appear on the road card: Kiel, Schleswig-Holstein (LBV.SH), Brandenburg,
+Freiburg, Karlsruhe, Frankfurt am Main, Berlin's planned street events, Duisburg,
+Aachen, Ingolstadt, Köln, Münster, Dortmund and Stuttgart, and since 2.2.6
+**München**. Through the national access point also come the roadworks of Bayern and
+Mecklenburg-Vorpommern, Sachsen's closures and detours (SPERRINFOSYS), NRW's
+detours for works off the motorways, the Berlin traffic-information centre's works
+and closures, and the Berlin Landesmeldestelle's traffic messages.
+
+- **One works, one item.** When several feeds carry the same works, it is shown
+  once and every feed that carries it is credited.
+- **Köln's rows are permits**, and the answer says so: a permitted works is not
+  proof that work is under way.
+- **München records works mainly in the inner districts and on main roads**, and
+  only sporadically elsewhere. Every answer the city's feed speaks for carries that
+  sentence, including an answer that found nothing. A temporary no-stopping zone
+  and a footway-only works are never answered as a road restriction.
+- **No personal data.** A publisher's personal fields (names, telephone numbers,
+  contact desks) are dropped when the data is read, and are not kept in our copy
+  of the publisher's file either.
+
+### Measured city traffic — Hamburg and Bonn
+
+Since server 2.2.6, `check_road_status` with a place counts the segments of a
+city's own traffic-state measurement within 10 km. Two cities publish one:
+**Hamburg** (the Behörde für Verkehr und Mobilitätswende, dl-de/by-2-0) and
+**Bonn** (the Bundesstadt Bonn, CC BY with no version stated). Both are read every
+five minutes, as each publisher updates them.
+
+- A city answers only while its own time stamp is younger than 30 minutes, and
+  only where one of its segments lies within 2 km of the place.
+- The classes are the cities' own ("zäher Verkehr", "gestauter Verkehr",
+  "Staugefahr", …), translated into the language you asked in. Hamburg lists only
+  segments that are not flowing, and the answer says so. Bonn's "aktuell nicht
+  ermittelbar" is reported as not measured, never as free.
+- The Hamburg forecast (Verkehrslageprognose) is not used: its host did not answer
+  when we built this.
+
+### Lorry routes — BASt, Hamburg, SEVAS and VMZ Bremen
+
+Since server 2.2.6, `check_road_status` answers where a lorry may go when you set
+`vehicle`. Each publisher's rows are listed apart, with its own line.
+
+- **The long-lorry positive network** (`vehicle: "long_lorry"`). BASt's extract of
+  the federal network (CC BY 4.0) answers for any road or place, with the release it
+  was built from. It carries a **condition of use**: BASt states that the extract is
+  not complete, not binding and not for navigation. That notice rides on every
+  such answer as `_meta.conditionNote`, verbatim in German and as a marked
+  translation in English, and the answer names the ordinance as what binds.
+  Hamburg's 2015 field-trial network (dl-de/by-2-0) is always shown with its date.
+- **Height, weight and width limits and lorry bans near a place**
+  (`vehicle: "lorry"`). NRW.Mobidrom's **SEVAS** data covers the towns of North
+  Rhine-Westphalia: its attributes are DL-DE Zero 2.0 and its geometry is
+  OpenStreetMap, so it is an ODbL database ([above](#and-the-share-alike-lorry-and-stop-access-databases)).
+  **VMZ Bremen** (ASV Bremen, dl-de/by-2-0) publishes Bremen's clearance heights and
+  weight limits. These are quoted in the publisher's own words and never turned
+  into a number of ours. Every Bremen answer carries the **condition of use** that
+  only the signs on site bind, that the data is not for route guidance, and the
+  date the files were read.
+- **"No data" is not a clearance.** A place no publisher covers is answered as
+  such and credited to nobody. A covered place with nothing near says "none listed,
+  which is not a clearance".
+- **ivm Frankfurt RheinMain** (the lorry priority network and lorry signs) is
+  **held back**. Its terms ask for a dataset reference and a change notice that our
+  line does not carry yet, so nothing of ivm is fetched, shown or credited.
+
+### Low-emission zones — the cities and the Umweltbundesamt
+
+Since server 2.2.4, `get_driving_rules` and `describe_location` check a place or a
+coordinate against the zone boundary a city publishes: Berlin (dl-de/zero-2-0),
+Aachen (dl-de/by-2-0), Duisburg (CC BY 3.0 DE) and, since 2.2.6, München
+(dl-de/by-2-0). The answer is inside, inside a released area, outside with the
+distance, or unknown. A road the zone does not apply to is named as the city lists
+it.
+
+The **Umweltbundesamt's** register of all 73 German zones (dl-de/by-2-0) answers
+where no city publishes a boundary, or when the city's file is out of date. Its
+answers state the register's own date (24.06.2025). Where a city publishes its
+boundary, the city decides, and the register is credited beside it when it
+agrees.
+
+### Step-free access — surveys and OpenStreetMap
+
+Since server 2.2.5, `check_station_facilities` adds what a survey records about a
+station or stop, after DB's live lift states, and a `get_departures` board ends
+with the stop's step-free line.
+
+- **Baden-Württemberg's BFRK survey** (NVBW via MobiData BW, dl-de/by-2-0): 1 104
+  railway stations and 14 065 bus and tram stops, with platform heights, guidance
+  strips, lifts (the narrowest door, the smallest cabin), ramps (the steepest
+  slope), stairs and escalators. It is the survey's unchecked raw data, and the
+  answer says so.
+- **Münster's step-free bus stops** (Stadt Münster, dl-de/by-2-0). A stop the
+  list does not name is unknown, never "not step-free".
+- **Dresden's register of its platforms** (Landeshauptstadt Dresden, dl-de/by-2-0)
+  has no data yet.
+- **TU Chemnitz's VDV-462 export** of what OpenStreetMap maps at stops (ODbL 1.0)
+  has no data yet; it is a share-alike database
+  ([above](#and-the-share-alike-lorry-and-stop-access-databases)).
+
+One survey answers per stop, and every survey that carries it is credited. A
+survey states what is built, not whether a lift is working now.
+
+### More realtime and more context for public transport
+
+- **VRN** (Verkehrsverbund Rhein-Neckar, CC BY 4.0) and **VBN** (Verkehrsverbund
+  Bremen/Niedersachsen, CC BY 4.0, through the access point) publish realtime feeds
+  of their own. Since server 2.2.5 they answer `check_transit_disruption` and the
+  punctuality on the transit card **as a failover**: only where DELFI reported
+  nothing for the region or DELFI's feed is stale. Their figures are never added
+  to DELFI's. Such an answer carries their line and no share-alike sentence,
+  because they are CC BY and not CC BY-SA. If you store them, keep them apart from
+  DELFI's rows.
+- **How full an MVV regional bus usually is** (Münchner Verkehrs- und Tarifverbund
+  via opendata-oepnv.de, CC BY with no version stated), beside a departure in
+  `get_departures` and on the transit card. These are typical values from MVV's
+  passenger counts, with the counting year, not a live reading. The line is shown
+  only where a load is shown.
+
+### Hamburg's charge-point status and Dortmund's street sensors
+
+- **Hamburg** (Behörde für Wirtschaft und Innovation, dl-de/by-2-0) publishes the
+  live state of its public charge points. Since server 2.2.5 it is a second source
+  of **status only** for points we already hold from the operators' own files.
+  `find_charging_station` and the charging card credit the city beside the
+  operator only where a Hamburg status answered.
+- **Dortmund's street sensors** (Stadt Dortmund, dl-de/zero-2-0), since server
+  2.2.4: `find_parking {kind: "disabled_badge"}` names the nearest disabled-badge
+  bays with free or occupied and the time of the sensor's last message, and
+  `find_charging_station` says whether the bay beside a charge point is free. A
+  state counts for three hours after the city's newest message and is then
+  unknown. Loading zones are stored and answered by no tool yet.
+
 ## The website's own sources
 
 viafrei.de reads the same data as the server: its cards, place pages and motorway
@@ -1008,7 +1253,7 @@ the server does not, and neither is in any tool answer or has a row in
   own line sits beside it:
 
   ```
-  TMC Location Code List (LCL 22.0): Bundesanstalt für Straßenwesen (BASt), CC BY 4.0, bearbeitet
+  TMC Location Code List (LCL 22.0): Bundesanstalt für Straßenwesen (BASt), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), bearbeitet
   ```
 
   BASt states that neither it nor the ministry warrants that the list is correct
@@ -1037,7 +1282,20 @@ at the Thiersheim truck stop, and Kiel's old-town car parks.
 
 **Discontinued.** DB BahnPark, above.
 
+**Held back.** ivm Frankfurt RheinMain's lorry priority network and lorry signs,
+[above](#lorry-routes--bast-hamburg-sevas-and-vmz-bremen): nothing of them is
+fetched, shown or credited until our line carries what their terms ask for.
+
+**No data yet.** Dresden's step-free platforms and TU Chemnitz's VDV-462 export
+are switched on, and no read had succeeded when this page was compared.
+
 **Not built:**
+
+- **Hamburg's traffic forecast** (Verkehrslageprognose): its host did not answer
+  when the measured traffic state was built.
+- **Tram-stop lifts of city operators other than KVB in Köln.** A station's lift
+  count is DB's own list, and the answer says that lifts at tram, light-rail and
+  underground stops are not included.
 
 - **Typical traffic per motorway** ("usually jammed on Friday afternoons"). The
   history we hold is far too short to say it, and an aggregate of that kind is a
@@ -1056,7 +1314,9 @@ at the Thiersheim truck stop, and Kiel's old-town car parks.
   interpret, and the access point's own terms supply no fallback licence, so
   nothing is ingested or shown from them, even if a contract is approved. The
   lorry parks along the motorways are still listed, from the lorry-parking file
-  and the operators above.
+  and the operators above. **One exception**, decided on purpose: Die Autobahn
+  GmbH's 14-day roadworks feed, used in answers only and on the conditions
+  [described above](#roadworks-and-traffic-messages-beyond-the-motorway-interface).
 - **Two charge-point offers the access point marks non-public**: not polled,
   stored or shown, although the same operator's public offers are read.
 - **A charge-point operator republished by MobiData BW** whose origin offer could
@@ -1081,10 +1341,10 @@ at the Thiersheim truck stop, and Kiel's old-town car parks.
   result carries the one that belongs to the data that answered it, and the
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
-- The catalogue above was **generated** from that register as served on
-  2026-10-13 and **compared** line by line with it as served on 2026-10-14 (servers
-  2.1.16 and 2.1.17), not typed: every id it lists is here, once, with its line and licence
-  as served.
+- The catalogue above was **generated** from that register and **compared** line
+  by line with it as served by server 2.2.6 on 2026-10-19, not typed: every id it
+  lists is here, once, with its line and licence as served. The 56 rows added then
+  were taken from the server's own coverage resource, which carries the same lines.
 - Every row in our internal register records the licence, the operative sentence,
   the date it was read and who may do what with the data. Rows are re-verified
   **quarterly** and whenever a provider announces a change.
