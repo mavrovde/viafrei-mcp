@@ -1,11 +1,11 @@
 {
   "$comment": "Captured from the PRODUCTION ViaFrei MCP server with initialize, tools/list, resources/list, resources/templates/list and prompts/list. No tool was invoked, so no data provider was contacted. ONE field is removed rather than stored: every tool's inputSchema carried a $schema URI naming the JSON Schema draft-07 dialect. It is dropped because storing it would put a host on this repository's allow-list that nothing else needs, and the dialect is a property of every draft-07 schema rather than a fact about this catalogue - API.md states it in words instead. Nothing else is altered: every tool, parameter, constraint, resource, template and prompt is as the server returned it. A SECOND substitution, for a different reason: two input schemas carried a 288-character regular expression validating an ISO-8601 date including leap years. Each is stored as patternLength rather than as its text, because such a regex spells its arithmetic as character classes of selected digits, and the leak sweep that guards this repository cannot tell a class of five digits from a five-digit internal value. The two ways to keep the text would both have been falsehoods - narrowing the sweep for every file, or an allow-list entry claiming a character class is a number this project publishes - so the text is not kept. Nothing about the constraint is hidden by this: API.md already summarised a pattern of over 60 characters by its length, which is what a reader gets either way, and the server hands anyone the full expression in tools/list.",
-  "capturedAt": "2026-10-18",
+  "capturedAt": "2026-10-19",
   "source": "https://mcp.viafrei.de/mcp",
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.2.3"
+    "version": "2.2.4"
   },
   "capabilities": {
     "tools": {
@@ -271,7 +271,7 @@
     },
     {
       "name": "find_parking",
-      "description": "Parking near a place, a coordinate or along one motorway: motorway lorry parks, car parks and P+R sites, with total spaces and, where published, free spaces now and the reading's age. Use when asked where to park or leave the car for the train (\"Parkhaus in Köln\", \"Rastplatz A3\", \"P+R\"). Do NOT use for fuel (find_cheapest_fuel) or EV charging (find_charging_station). Radius ≤ 25 km, ≤ 10 sites per list; ODbL and CC BY-SA sources are separate lists (up to three). No \"free now\" means no published count, not full. No prices: for \"was kostet\" say so, no call. Show each source's attribution.",
+      "description": "Parking near a place, a coordinate or along one motorway: lorry parks, car parks, P+R and disabled-badge bays, with total spaces and, where published, free spaces now and the reading's age. Use when asked where to park or leave the car for the train (\"Parkhaus in Köln\", \"Rastplatz A3\", \"P+R\"). Do NOT use for fuel (find_cheapest_fuel) or EV charging (find_charging_station). Radius ≤ 25 km, ≤ 10 sites per list; ODbL and CC BY-SA sources are separate lists (up to three). No \"free now\" means no published count, not full. No prices: for \"was kostet\" say so, no call. Show each source's attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -309,14 +309,15 @@
           },
           "kind": {
             "default": "any",
-            "description": "Which kind of parking: \"car_park\" = public car park (Parkhaus/Parkplatz), \"park_and_ride\" = P+R beside a station, \"truck\" = lorry parking, \"any\" = all of them. Default \"any\". Rest areas are NOT a kind we can filter: no source we hold classifies them, so for \"Rastanlage\"/\"Raststätte\"/\"rest area\" leave kind out (\"truck\" when lorry spaces were asked for); \"rest_area\" is still accepted and answered as \"any\", with a sentence saying why. Pass a kind only when the person named one — a lorry driver asking for a break wants \"truck\", someone leaving the car for the train wants \"park_and_ride\". A camper, a caravan or a coach is none of these: leave the argument out rather than filtering a tourist into lorry bays.",
+            "description": "Which kind of parking: \"car_park\" = public car park (Parkhaus/Parkplatz), \"park_and_ride\" = P+R beside a station, \"truck\" = lorry parking, \"any\" = all of them. Default \"any\". \"disabled_badge\" = on-street bays reserved for a disabled parking permit (Behindertenparkplatz, Schwerbehindertenparkplatz), where a municipality publishes them, with a sensor's free/occupied where one is fitted — pass it only when such a bay was asked for; it is never part of \"any\" and takes place or lat+lon, not road. Rest areas are NOT a kind we can filter: no source we hold classifies them, so for \"Rastanlage\"/\"Raststätte\"/\"rest area\" leave kind out (\"truck\" when lorry spaces were asked for); \"rest_area\" is still accepted and answered as \"any\", with a sentence saying why. Pass a kind only when the person named one — a lorry driver asking for a break wants \"truck\", someone leaving the car for the train wants \"park_and_ride\". A camper, a caravan or a coach is none of these: leave the argument out rather than filtering a tourist into lorry bays.",
             "type": "string",
             "enum": [
               "any",
               "rest_area",
               "car_park",
               "park_and_ride",
-              "truck"
+              "truck",
+              "disabled_badge"
             ]
           },
           "radius_km": {
@@ -418,7 +419,7 @@
     },
     {
       "name": "find_roadworks_ahead",
-      "description": "Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, SN, TH or BW, or Hamburg city streets by place, in a date window: section, restriction, dates. Use when a date or window is named, it says geplant, or how long a site lasts (\"Baustellen auf der A7 in den Sommerferien?\"). ONE road/place per call. Do NOT use when more than one motorway is named, for the situation this minute, or for Baustellen with neither date nor geplant — all three are check_autobahn_traffic; whether a road is open — check_road_status. ≤ 92 days, max 20 sites. Show attribution.",
+      "description": "Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, SN, TH or BW, or city streets by place, in a date window: section, restriction, dates. Use when a date or window is named, it says geplant, or how long a site lasts (\"Baustellen auf der A7 in den Sommerferien?\"). ONE road/place per call. Do NOT use when more than one motorway is named, for the situation this minute, or for Baustellen with neither date nor geplant — all three are check_autobahn_traffic; whether a road is open — check_road_status. ≤ 92 days, max 20 sites. Show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -428,7 +429,7 @@
             "pattern": "^(?:[AaBb] ?\\d{1,3}|[LlSs] ?\\d{1,4})$"
           },
           "place": {
-            "description": "A place in Hamburg — a district, street or address, e.g. \"Hamburg-Altona\", \"Wilhelmsburg\", \"Köhlbrandbrücke\" — for the city's own roadworks (Bauweiser) within 3 km of it. Outside Hamburg, city roadworks are not held and the answer says so. Give road OR place.",
+            "description": "A place — a district, street or address, e.g. \"Hamburg-Altona\", \"Berlin-Mitte\", \"Kiel\" — for the city and Land roadworks held by point within 3 km of it. Where no such source covers the place, the answer says so. Give road OR place.",
             "type": "string",
             "minLength": 2,
             "maxLength": 120
@@ -840,7 +841,7 @@
     },
     {
       "name": "describe_location",
-      "description": "Turns a coordinate into words: the nearest address, settlement and motorway junction with their distances, and the Gemeinde, Kreis and Land the point lies in. Use when you already HAVE a lat/lon and need to say where that is. Do NOT use to look up a place or address BY NAME — that is find_place, find_poi or find_address; this only goes coordinate to words. Those three come from the municipality the point lies in (by its official key), not from the nearest Kreis point; near the national border the answer says so. OpenStreetMap ODbL 1.0 for the address; show the attribution line.",
+      "description": "Turns a coordinate into words: the nearest address, settlement and motorway junction with their distances, and the Gemeinde, Kreis and Land the point lies in; also any low-emission zone. Use when you already HAVE a lat/lon and need to say where that is. Do NOT use to look up a place or address BY NAME — that is find_place, find_poi or find_address; this only goes coordinate to words. Those come from the municipality the point lies in (its key), not the nearest Kreis point; near the border the answer says so. OpenStreetMap ODbL 1.0 for the address; show the attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1017,12 +1018,12 @@
     },
     {
       "name": "get_driving_rules",
-      "description": "Returns the German road rules a visitor needs: low-emission zones (Umweltzone) and which Feinstaubplakette a city requires, speed limits (advisory 130), winter tyres, alcohol, the Sunday lorry ban, tolls (no car toll), Rettungsgasse, what must be in the car, and electric cars (E-Kennzeichen, ad-hoc payment, plugs). Use when someone drives through Germany or asks whether they may enter a city. Do NOT use for live traffic or closures: check_autobahn_traffic; to FIND a charger: find_charging_station. Optional city narrows to its zone. Sourced and dated; show the attribution. Not legal advice.",
+      "description": "Returns the German road rules a visitor needs: low-emission zones (Umweltzone) and the Feinstaubplakette, speed limits (advisory 130), winter tyres, alcohol, the Sunday lorry ban, tolls, Rettungsgasse, what must be in the car, electric cars. Use when someone drives through Germany or asks whether they may enter a city or street. Do NOT use for live traffic or closures: check_autobahn_traffic; to FIND a charger: find_charging_station. city narrows to its zone; place or lat+lon checks a point against the published zone boundaries. Sourced, dated; show the attribution. Not legal advice.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "topic": {
-            "description": "Which rule to answer. \"lez\" = low-emission zone and Feinstaubplakette, \"speed\" = speed limits including the Autobahn advisory 130, \"winter\" = winter-tyre duty, \"alcohol\" = alcohol and drugs, \"toll\" = car and lorry toll, \"truck_ban\" = Sunday and holiday lorry ban, \"equipment\" = what the law requires in the car, \"emergency\" = 112/110, rescue lane, breakdown, crash, \"ev\" = electric car (E-Kennzeichen, charging payment, plugs). Omit for a one-line overview of all nine.",
+            "description": "Which rule to answer. \"lez\" = low-emission zone and Feinstaubplakette, \"speed\" = speed limits including the Autobahn advisory 130, \"winter\" = winter-tyre duty, \"alcohol\" = alcohol and drugs, \"toll\" = car and lorry toll, \"truck_ban\" = Sunday and holiday lorry ban, \"equipment\" = what the law requires in the car, \"emergency\" = 112/110, rescue lane, breakdown, crash, \"ev\" = electric car (E-Kennzeichen, charging payment, plugs). Omit for a one-line overview of all nine; with place or lat+lon, omitted means \"lez\".",
             "type": "string",
             "enum": [
               "lez",
@@ -1041,6 +1042,24 @@
             "type": "string",
             "minLength": 2,
             "maxLength": 60
+          },
+          "place": {
+            "description": "A street address, district, station or other point (\"Alexanderplatz, Berlin\", \"Kölner Dom\") to check against the published low-emission-zone boundaries: inside, outside with the distance, or unknown. Give either place OR lat+lon, never both.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "lat": {
+            "description": "Latitude (WGS 84) of the point to check against the zone boundaries. Use with lon; otherwise use place.",
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lon": {
+            "description": "Longitude (WGS 84) of the point to check against the zone boundaries. Use with lat; otherwise use place.",
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
           },
           "language": {
             "default": "de",
