@@ -675,6 +675,8 @@ Restart the client and ask one of the questions above.
   Connect through Smithery's hosted connection, with no local install.
 - **Glama — [glama.ai/mcp/servers/mavrovde/viafrei-mcp](https://glama.ai/mcp/servers/mavrovde/viafrei-mcp).**
   The directory listing for this repository, with the tool list.
+- **mcpservers.org — [mcpservers.org/servers/mavrovde/viafrei-mcp](https://mcpservers.org/servers/mavrovde/viafrei-mcp).**
+  The directory listing for this repository, in several languages.
 - **Official MCP Registry — `de.viafrei/mcp`.** The hosted endpoint, as MCP
   clients and directories that read the [registry](https://registry.modelcontextprotocol.io)
   find it; [`server.json`](server.json) is the entry. It is republished with every
