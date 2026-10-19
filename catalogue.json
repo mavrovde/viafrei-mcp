@@ -5,7 +5,7 @@
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.2.6"
+    "version": "2.2.8"
   },
   "capabilities": {
     "tools": {
@@ -153,7 +153,7 @@
           },
           "fuel": {
             "default": "e10",
-            "description": "Fuel grade: \"e5\" (Super E5), \"e10\" (Super E10, the standard German petrol) or \"diesel\". Default \"e10\". Pass the grade the person named — a diesel driver is not helped by a petrol price.",
+            "description": "Fuel grade: \"e5\" (Super E5), \"e10\" (Super E10, the standard German petrol) or \"diesel\" — LPG/Autogas and CNG are not held by any source here: say so, never substitute a petrol grade. Default \"e10\". Pass the grade the person named — a diesel driver is not helped by a petrol price.",
             "type": "string",
             "enum": [
               "e5",
@@ -222,7 +222,7 @@
             ]
           },
           "fuel": {
-            "description": "Only stations with a current price for this grade: \"e5\" (Super E5), \"e10\" (Super E10) or \"diesel\". Omit to get every station near the place whatever it sells — the answer then lists all the grades it holds a price for. Required when sort is \"price\", because a price ordering needs a grade.",
+            "description": "Only stations with a current price for this grade: \"e5\" (Super E5), \"e10\" (Super E10) or \"diesel\" — LPG/Autogas and CNG are not held by any source here, so say so rather than call for them. Omit to get every station near the place whatever it sells — the answer then lists all the grades it holds a price for. Required when sort is \"price\", because a price ordering needs a grade.",
             "type": "string",
             "enum": [
               "e5",
@@ -379,12 +379,12 @@
     },
     {
       "name": "check_road_status",
-      "description": "Whether a motorway, B or Land road (NI, SN, TH, BW: pass the Land/town as place) is open, closed, restricted, now/coming days; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road is open/passable — \"ist die A8 in diesem Moment gesperrt\", at any clock, closures tonight/weekend — or city Stau: \"Stau in Köln?\". Do NOT use for jams/delays on a named motorway or multi-motorway route — check_autobahn_traffic; roadworks in a date window — find_roadworks_ahead; city street: not held, say so. ≤ 14 days, ≤ 11 entries. Show attribution.",
+      "description": "If a motorway, B/Land road (NI, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/next days; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road is open/passable — \"ist die A8 in diesem Moment gesperrt\", at any clock, closures tonight/weekend — or city Stau: \"Stau in Köln?\". Do NOT use for jams/delays on a named motorway or multi-motorway route — check_autobahn_traffic; roadworks by date window — find_roadworks_ahead; city street: not held, say so. ≤ 14 days/11 entries. Show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "road": {
-            "description": "One German motorway or federal road, e.g. \"A8\" or \"B27\", or a Landes- or Staatsstraße in Niedersachsen, Sachsen or Thüringen, e.g. \"L1025\" or \"S296\". \"A8\", \"A 8\" and \"a8\" are the same road. Use this whenever the person named a road — it is the only input that reaches the planned-works data, which is filed by road and section and carries no coordinates. When the person also says WHERE — a town or a Bundesland (\"die B2 bei Potsdam\", \"L1025 in Niedersachsen\") — pass that as place too: only sources for that Land answer, and a Land no source covers is named. L and S numbers repeat in every Land, so give the Land with them. Otherwise give exactly one of road, place, or lat+lon.",
+            "description": "One road: a German motorway, e.g. \"A8\"; a Bundesstraße in Schleswig-Holstein, Niedersachsen, Baden-Württemberg, Bayern, Berlin, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. \"B27\"; or a Landes- or Staatsstraße in Niedersachsen, Baden-Württemberg, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. \"L1025\" or \"S296\". \"A8\", \"A 8\" and \"a8\" are the same road. Use this whenever the person named a road — it is the only input that reaches the planned-works data, which is filed by road and section and carries no coordinates. When the person also says WHERE — a town or a Bundesland (\"die B2 bei Potsdam\", \"L1025 in Niedersachsen\") — pass that as place too: only sources for that Land answer, and a Land no source covers is named. L and S numbers repeat in every Land, so give the Land with them. Otherwise give exactly one of road, place, or lat+lon.",
             "type": "string",
             "pattern": "^(?:[ABab] ?\\d{1,3}|[LlSs] ?\\d{1,4})$"
           },
@@ -408,7 +408,7 @@
           },
           "horizon_days": {
             "default": 3,
-            "description": "How many days ahead to look, counting from now (0 = right now only, max 14, default 3). Set it only to what the person actually asked for: 0 when they said right now / gerade / jetzt / in diesem Moment, 1 for tonight or heute Abend, 3 for \"this weekend\", 7 for \"next week\", and for a named weekday (\"am Freitag\", \"on Friday\") the number of days from today to that day. A bare \"is the A8 open?\" asks for no window — omit the argument and take the default rather than reading it as 0. Live closures are always included whatever this is, and so, by place, are the jams reported right now (\"Stau in Köln?\" needs no horizon).",
+            "description": "Days ahead from now (0 = right now only, max 14, default 3). Only what was asked; count the days from today to the last day meant, both included: 0 for right now / jetzt / gerade; 1 for today, tonight, heute Abend; 2 for tomorrow; a weekday (\"am Freitag\") the days through it; \"this weekend\" the days through Sunday (Monday 7, Friday 3, Sunday 1); \"next week\" through next Sunday. A bare \"is the A8 open?\" asks for no window: omit it, never 0. Live closures, and by place the jams reported now, are always included.",
             "type": "integer",
             "minimum": 0,
             "maximum": 14
@@ -421,7 +421,7 @@
             "maximum": 11
           },
           "vehicle": {
-            "description": "Set ONLY when the person asks for a lorry (Lkw, truck, HGV) or a long lorry (Lang-Lkw, EuroCombi, Gigaliner): then the answer is where that vehicle may go, instead of closures. \"long_lorry\" with a road (\"darf der Lang-Lkw auf die A7?\") answers whether the road is in the long-lorry positive network; with a place, the network roads near it. \"lorry\" or \"long_lorry\" with a place (\"Durchfahrtshöhe in Haan\", \"Gewichtsgrenze in Bremen\") answers the height, weight, width and lorry-ban signs near it, and the lorry priority routes, where a publisher holds them (NRW, Bremen). Omit for cars and for closures.",
+            "description": "Set ONLY when the person asks for a lorry (Lkw, truck, HGV) or a long lorry (Lang-Lkw, EuroCombi, Gigaliner): then the answer is where that vehicle may go, instead of closures. \"long_lorry\" with a road (\"darf der Lang-Lkw auf die A7?\") answers whether the road is in the long-lorry positive network; with a place, the network roads near it. \"lorry\" or \"long_lorry\" with a place (\"Durchfahrtshöhe in Haan\", \"Lkw-Vorrangroute in Frankfurt\", \"Gewichtsgrenze in Bremen\") answers the height, weight, width and lorry-ban signs near it, and the lorry priority routes, where a publisher holds them (NRW, Frankfurt RheinMain, Bremen). Omit for cars and for closures.",
             "type": "string",
             "enum": [
               "lorry",
@@ -452,12 +452,12 @@
     },
     {
       "name": "find_roadworks_ahead",
-      "description": "Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, SN, TH or BW, or city streets by place, in a date window: section, restriction, dates. Use when a date or window is named, it says geplant, or how long a site lasts (\"Baustellen auf der A7 in den Sommerferien?\"). ONE road/place per call. Do NOT use when more than one motorway is named, for the situation this minute, or for Baustellen with neither date nor geplant — all three are check_autobahn_traffic; whether a road is open — check_road_status. ≤ 92 days, max 20 sites. Show attribution.",
+      "description": "Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: section, restriction, dates. Use when a date or window is named, it says geplant, or how long a site lasts (\"Baustellen auf der A7 in den Sommerferien?\"). ONE road/place per call. Do NOT use when more than one motorway is named, for the situation this minute, or for Baustellen with neither date nor geplant — all three are check_autobahn_traffic; whether a road is open — check_road_status. ≤ 92 days, max 20 sites. Show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "road": {
-            "description": "The road to look at, one per call: an Autobahn, e.g. \"A7\" or \"A100\", or a Bundesstraße, Landesstraße or Staatsstraße in Niedersachsen, Sachsen or Thüringen, e.g. \"B6\", \"L1025\", \"S296\" — \"A7\", \"A 7\" and \"a7\" are the same road. B and L roads in other Länder and Kreisstraßen are not covered. Ask again for a second road. Give road OR place.",
+            "description": "The road to look at, one per call: an Autobahn, e.g. \"A7\" or \"A100\"; a Bundesstraße in Niedersachsen, Baden-Württemberg, Bayern, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. \"B6\"; a Landesstraße in Niedersachsen, Baden-Württemberg, Mecklenburg-Vorpommern or Thüringen, e.g. \"L1025\"; or a Staatsstraße in Sachsen, e.g. \"S296\" — \"A7\", \"A 7\" and \"a7\" are the same road. B and L roads in other Länder and Kreisstraßen are not covered. Ask again for a second road. Give road OR place.",
             "type": "string",
             "pattern": "^(?:[AaBb] ?\\d{1,3}|[LlSs] ?\\d{1,4})$"
           },
@@ -588,7 +588,7 @@
     },
     {
       "name": "find_hydrogen_station",
-      "description": "Returns hydrogen (H2) filling stations near a place or coordinate, nearest first, with operator, address, pumps (700 bar car, 350 bar truck/bus), opening hours where published and the age of the record. Use when someone asks where to refuel a fuel-cell car, lorry or bus (\"Wasserstofftankstelle\", \"H2 tanken\", \"hydrogen station near me\"). Do NOT use for petrol, diesel or LPG (call find_fuel_station) or EV charging (call find_charging_station). Radius ≤ 150 km, ≤ 10 stations; no live availability or price is published. Shows the attribution line.",
+      "description": "Returns hydrogen (H2) filling stations near a place or coordinate, nearest first, with operator, address, pumps (700 bar car, 350 bar truck/bus), opening hours where published and the age of the record. Use when someone asks where to refuel a fuel-cell car, lorry or bus (\"Wasserstofftankstelle\", \"H2 tanken\", \"hydrogen station near me\"). Do NOT use for petrol or diesel (call find_fuel_station) or EV charging (call find_charging_station); LPG/Autogas and CNG are not held — say so. Radius ≤ 150 km, ≤ 10 stations; no live availability or price is published. Shows the attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1374,7 +1374,7 @@
     },
     {
       "name": "check_station_facilities",
-      "description": "Report whether the lifts and escalators of a German railway station — or of a Köln Stadtbahn stop — are working now: each one, where it is, its state (in service / out of service / unknown) and the operator's explanation. Use when asked about step-free access or a broken lift: \"Funktioniert der Aufzug am Kölner Hauptbahnhof?\", \"is the lift at Hamburg Hbf working?\", \"Rolltreppe am Neumarkt kaputt?\", wheelchair, pram, heavy luggage. Do NOT use for train times, platforms or delays — call get_train_departures. At most 50 facilities, out-of-service ones first. Results carry their attribution line.",
+      "description": "Whether the lifts and escalators of a railway station or Köln Stadtbahn stop work now: each one, its place, state and reason. Another tram, U-Bahn or bus stop (named with its city: \"Stuttgart Charlottenplatz\") gets its step-free survey where one exists. Use when asked about step-free access, broken lifts, wheelchair or pram: \"Funktioniert der Aufzug am Kölner Hbf?\", \"is the lift at Hamburg Hbf working?\". Do NOT use for departures, platforms or delays — call get_train_departures (trains) or get_departures (bus, tram, U-Bahn). At most 50, broken first. Results carry their attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1453,13 +1453,13 @@
               "weather",
               "charger"
             ],
-            "description": "What kind of thing to watch. `road` = one motorway or federal road (key: \"A8\", \"B27\") — reports a closure or restriction appearing or clearing; `station` = one public-transport stop (key: its name, \"Köln Hbf\", or its DHID) — reports departures running late past the threshold; `region` = a city or district by AGS prefix (key: \"14612\") — reports the share of late trips crossing the threshold; `place` = a town or address (key: \"Fulda\") — reports road restrictions appearing within the radius; `weather` = one DWD warn cell (key: a place name, \"Kiel\", or the cell id) — reports an official warning coming into force; `charger` = one charging site (key: a place, \"Würzburg\", or the site id) — reports a point turning free."
+            "description": "What kind of thing to watch. `road` = one motorway or federal road (key: \"A8\", \"B27\") — reports a closure or restriction appearing or clearing; `station` = one public-transport stop (key: its name, \"Köln Hbf\", or its DHID) — reports departures running late past the threshold; `region` = a city, district or Land (key: its name, \"Hamburg\", or its AGS key, \"14612\") — reports the share of late trips crossing the threshold; `place` = a town or address (key: \"Fulda\") — reports road restrictions appearing within the radius; `weather` = one DWD warn cell (key: a place name, \"Kiel\", or the cell id) — reports an official warning coming into force; `charger` = one charging site (key: a place, \"Würzburg\", or the site id) — reports a point turning free."
           },
           "key": {
             "type": "string",
             "minLength": 1,
             "maxLength": 200,
-            "description": "The thing to watch, in the person's own words — a name is enough and no read tool is needed first; the server resolves it and the answer names the key it resolved to. `road`: a road number (\"A8\", \"B27\"). `place`: a town or address (\"Fulda\"). `weather`: a place name (\"Kiel\"), resolved to the DWD warn cell it lies in — or a warn cell id (\"801002000\"); a Land or Kreis is an area and takes no single cell. `station`: a stop or station name (\"Köln Hbf\", \"München, Marienplatz\"), resolved to its DHID the way get_departures resolves a stop — or a DHID (\"de:14612:28\"); an EVA number from get_train_departures (\"8000207\") is not a DHID and is refused. `charger`: a place (\"Würzburg\"), resolved to the nearest charging site that reports live occupancy — or a site id from find_charging_station. `region`: an AGS prefix (\"14612\") from check_transit_disruption. A name that fits several places or stops gets a which-one list and opens no watch; call again with the chosen line."
+            "description": "The thing to watch, in the person's own words — a name is enough and no read tool is needed first; the server resolves it and the answer names the key it resolved to. `road`: a road number (\"A8\", \"B27\"). `place`: a town or address (\"Fulda\"). `weather`: a place name (\"Kiel\"), resolved to the DWD warn cell it lies in — or a warn cell id (\"801002000\"); a Land or Kreis is an area and takes no single cell. `station`: a stop or station name (\"Köln Hbf\", \"München, Marienplatz\"), resolved to its DHID the way get_departures resolves a stop — or a DHID (\"de:14612:28\"); an EVA number from get_train_departures (\"8000207\") is not a DHID and is refused. `charger`: a place (\"Würzburg\"), resolved to the nearest charging site that reports live occupancy — or a site id from find_charging_station. `region`: a city, district or Land (\"Hamburg\", \"Landkreis Fulda\"), resolved to its AGS key the way check_transit_disruption resolves its region — or an AGS key (\"14612\"). A name that fits several places or stops gets a which-one list and opens no watch; call again with the chosen line."
           },
           "hours": {
             "description": "How long to watch, in hours (default 3, maximum 24). Prefer this over `until`: it needs no knowledge of the current time. Give one of `hours` or `until`, never both.",
