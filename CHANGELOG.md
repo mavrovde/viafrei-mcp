@@ -5,6 +5,28 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.2.6] - 2026-10-19
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.2.6 while the registry's latest is 2.2.3, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**CHANGED** — the automation knows what moved, not what it means:
+
+- tools: check_autobahn_traffic differs between the server and the snapshot
+- tools: find_parking differs between the server and the snapshot
+- tools: check_road_status differs between the server and the snapshot
+- tools: find_roadworks_ahead differs between the server and the snapshot
+- tools: find_place differs between the server and the snapshot
+- tools: find_address differs between the server and the snapshot
+- tools: describe_location differs between the server and the snapshot
+- tools: get_driving_rules differs between the server and the snapshot
+- tools: check_transit_disruption differs between the server and the snapshot
+
+**A person must describe the change above before this merges.** A release note that
+lists a tool name without saying what it does misleads the reader it exists for.
+
 ## [2.2.3] - 2026-10-18
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
@@ -3018,6 +3040,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.2.6]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.6
 [2.2.3]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.3
 [2.2.2]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.2
 [2.2.1]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.1
