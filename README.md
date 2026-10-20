@@ -41,80 +41,29 @@ on viafrei.de, with a map.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in 2.2.14: Hamburg's street detail, lorry rules for more cities, step-free
-> platforms and English summaries.** Since 2.2.6, the server added these:
+> **New in 2.3.2: answers that name the place they used, one line per place, and
+> faster lookups.** Since 2.2.14, from a 1,000-question test round:
 >
-> - **Hamburg, street by street.** A place answer from `check_road_status` now
->   names the numbered motorway detours the city signs near you (signs 460/455),
->   as signage context and never as a route; counts the signal installations
->   within 500 m, at junctions and at pedestrian crossings; and gives the city's
->   quarter-hour traffic counts per cross-section and direction, with the reminder
->   that a count is a volume, not a jam. `find_parking` lists the city's on-street
->   bays near a place with their rules, hours, maximum stay and counts (never an
->   occupancy, which the city does not publish) and the places the city keeps for
->   coaches. A lorry question names Hamburg's network for oversize and heavy
->   transport, and says it is an aid for the permit application, not a permit.
-> - **Where may my lorry go, in more cities.** `check_road_status` with
->   `vehicle: "lorry"` now answers from Stadt Köln's own lorry network and its
->   height and weight limits (per direction where the city says so), Dresden's
->   lorry bans ("over 3.5 t, sign 253", with the additional sign quoted) and
->   lorry priority routes, and ivm's lorry priority network and lorry signs for
->   Frankfurt RheinMain. Every publisher gets its own nearest lines, and one
->   restriction drawn on several road segments is one line.
-> - **Step-free, platform by platform.** `check_station_facilities` lists each
->   platform of a DB station: step-free or not, wheelchair access, platform height
->   and tactile guidance, from DB InfraGO's station inventory. A tram, U-Bahn or
->   bus stop named with its city ("Stuttgart Charlottenplatz") is that stop, not
->   the nearest railway station. Dresden's stop register answers, and in Frankfurt
->   the answer names the traffic signals near a stop that have an acoustic signal
->   for blind pedestrians.
-> - **Low-emission zones from Essen's and Bochum's own boundaries.**
->   `get_driving_rules` with a place now checks the point against the zone each
->   city publishes, as it did for Berlin, Aachen, Duisburg and München. Two
->   publishers' polygons count as one zone only when they share at least half of
->   the smaller one, so a sliver of a neighbour's zone no longer decides the answer.
-> - **English summaries.** With `language: "en"`, every road and transit entry
->   carries a one-line `gist` in our own words ("Closure on the A59; since
->   2026-10-05, until 2026-10-23 12:00, whole measure until 2031-12-23."). The
->   publisher's German words stay quoted and labelled as German, never translated.
-> - **A reason code on every tool error.** An error result now carries
->   `_meta.errorCode` from a closed list of seven: `invalid_input`, `not_found`,
->   `out_of_coverage`, `unavailable`, `limit_reached`, `timeout`, `internal`. A
->   client can decide whether to retry, rephrase or give up without parsing the
->   message.
-> - **More context around a place**: Brandenburg's road border crossings to
->   Poland, Karlsruhe's winter-service streets, Schleswig-Holstein's signed detour
->   routes with their extra distance and last day, Aachen's pedestrian-zone
->   entrances with their delivery hours, München's loading and delivery bays (some
->   carry a sensor; its reading is not published, so a bay is never called free),
->   and what Berlin's counting sites usually count at this hour, from a past
->   month's median and labelled as such.
-> - **Parking**: Kiel's car parks and P+R sites, Frankfurt's disabled-badge bays,
->   and a Karlsruhe lorry bay's fee and time limit.
-> - **Charging**: smartlab ended its ladenetz.de and ladebusiness publications on
->   2026-10-19. Their sites answer with place, plugs and power only, dated and with
->   no status, through 17 Nov 2026, and then stop. A live feed that has answered
->   "unchanged" for too long is no longer called current.
-> - **Smaller things**: a mistyped tool name gets the closest real names back;
->   `watch_situation` takes a region by its name ("Hamburg"); `horizon_days` counts
->   through the last day you mean; one police message carried by two feeds is one
->   line, and one closure published once per direction is one line "both
->   directions"; a long answer is cut at a whole line; the coverage lists in the
->   road tools' descriptions now match what they read (Land roads in NI, BW, MV, SN
->   and TH; federal roads also in SH, BY and BE); LPG and CNG are said to be held
->   by no source.
->
-> **Earlier, in 2.2.6:** lorry routes (the long-lorry network, SEVAS for North
-> Rhine-Westphalia, VMZ Bremen), city roadworks from fifteen city and Land portals,
-> the low-emission-zone check by place, the measured traffic of Hamburg and Bonn,
-> and Dortmund's free disabled-badge bays.
->
-> **Earlier, in 2.1:** viafrei.de opens on a live conversation and an
-> [examples page](https://viafrei.de/en/examples), every German motorway has a
-> [live page](#-motorway-pages) of its own, the site's cards say what the tools say,
-> hydrogen stations, company offices, and more city roads and car parks. Every
-> source is listed, with what it feeds and what we hold back, in
-> [SOURCES.md](SOURCES.md). The [CHANGELOG](CHANGELOG.md) has the whole list.
+> - **The place used is named.** Asked for "Munich", every place tool answers
+>   "Answering for München (you asked "Munich")." on its first line; the same for a
+>   station or stop matched under another spelling.
+> - **Every label offered resolves.** A which-one list's labels ("Wolfen
+>   (Bitterfeld)", "AS Cloppenburg (A1)") answer in one call when handed back.
+> - **One place, one line.** In Oschatz, a works site carried by the city portal
+>   and by the Land roadworks feed reads once: "Bahnhofstraße · S30 — Oschatz;
+>   Erneuerung Gehweg (laufend, 31.08.2026–30.10.2026; 0,3 km)".
+> - **No false all-clear.** `check_autobahn_traffic` for a motorway number we
+>   hold no stretch of says so and names the nearest real numbers, instead of
+>   "nothing reported".
+> - **Dense cities read better.** `check_road_status {place: "Kiel"}` leads with
+>   "im Umkreis von 3 km 61 Meldungen, davon 11 Sperrungen", then the whole
+>   25 km.
+> - **A near miss on an address helps.** `find_address` for "Heisfeldr Straße 10,
+>   Leer" says the town holds addresses but none on that street, and suggests
+>   "Heisfelder Straße (26789 Leer (Ostfriesland)) — 224 kartierte Adressen".
+> - **Watches say what they watch.** `watch_situation` takes the person's words in
+>   `request`; a jam alone opens no watch, because a road watch reports closures
+>   and restrictions, not jams.
 
 ---
 
