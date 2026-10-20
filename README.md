@@ -49,8 +49,8 @@ on viafrei.de, with a map.
 >   station or stop matched under another spelling.
 > - **Every label offered resolves.** A which-one list's labels ("Wolfen
 >   (Bitterfeld)", "AS Cloppenburg (A1)") answer in one call when handed back.
-> - **One place, one line.** In Oschatz, a works site carried by the city portal
->   and by the Land roadworks feed reads once: "Bahnhofstraße · S30 — Oschatz;
+> - **One place, one line.** In Oschatz, a works site carried by two of Saxony's
+>   feeds (its closure system and its roadworks feed) reads once: "Bahnhofstraße · S30 — Oschatz;
 >   Erneuerung Gehweg (laufend, 31.08.2026–30.10.2026; 0,3 km)".
 > - **No false all-clear.** `check_autobahn_traffic` for a motorway number we
 >   hold no stretch of says so and names the nearest real numbers, instead of
@@ -60,10 +60,13 @@ on viafrei.de, with a map.
 >   25 km.
 > - **A near miss on an address helps.** `find_address` for "Heisfeldr Straße 10,
 >   Leer" says the town holds addresses but none on that street, and suggests
->   "Heisfelder Straße (26789 Leer (Ostfriesland)) — 224 kartierte Adressen".
+>   "Heisfelder Straße (26789 Leer (Ostfriesland)) — 114 kartierte Adressen".
 > - **Watches say what they watch.** `watch_situation` takes the person's words in
 >   `request`; a jam alone opens no watch, because a road watch reports closures
 >   and restrictions, not jams.
+>
+> Every source is listed, with what it feeds and what we hold back, in
+> [SOURCES.md](SOURCES.md). The [CHANGELOG](CHANGELOG.md) has the whole list.
 
 ---
 

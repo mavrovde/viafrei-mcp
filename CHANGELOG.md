@@ -41,7 +41,7 @@ resource was added, removed or renamed. One tool gained an optional argument.
 - **Roads**: closures are counted by what is closed (a footway or one lane is a
   restriction); in a dense city the headline gives the count within 3 km first;
   roadworks by place also ask the Land roadworks feeds.
-- **Places**: a district never carries another Land; an address that is not found
+- **Places**: a city district never carries another Land; an address that is not found
   says whether the town or only the street is missing from the map, and suggests
   similar streets.
 - **Transit**: an empty departure board names the next departure; a Land whose
@@ -49,8 +49,8 @@ resource was added, removed or renamed. One tool gained an optional argument.
 - **Charging**: a site whose name says it is private is not listed; an ended source
   yields to a current one at the same place.
 - **Speed**: city lorry restrictions answer in well under a second (was about 6 s),
-  the weather cell is tested once, and the street suggestion reads the nearest
-  addresses first.
+  weather warnings for a place are found faster, and the street suggestion reads
+  the nearest addresses first.
 
 ## [2.2.14] - 2026-10-20
 
