@@ -10,8 +10,8 @@ a Changelog and the versions follow Semantic Versioning.
 **Hamburg's street detail, lorry rules for more cities, step-free platforms and English summaries.**
 The package matches the server's 2.2.14 and covers the server releases 2.2.7 to
 2.2.14. No tool, prompt or resource was added, removed or
-renamed, and no parameter was added. Seven tool descriptions changed (below); an
-error result now carries a reason code.
+renamed, and no parameter was added. Four tool descriptions and the argument descriptions of
+three more changed (below); an error result now carries a reason code.
 
 ### Changed (tool surface)
 

@@ -214,7 +214,7 @@ source, and its rows are listed per publisher.
   free of charge on request. The road card on viafrei.de says the same under its
   lorry block.
 - **TU Chemnitz's VDV-462 export** (stop accessibility mapped in OpenStreetMap,
-  project OPENER next). Since server 2.2.14's comparison it answers: its rows
+  project OPENER next), answering at server 2.2.14: its rows
   appear in a block of their own in `check_station_facilities`, and the same offer
   applies.
 - **ivm Frankfurt RheinMain's lorry priority network**, live since server 2.2.7.
@@ -313,7 +313,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_sperrinfosys_sn` | Sperrungen und Umleitungen Sachsen — Quelle: Baustelleninformationssystem Freistaat Sachsen, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
 | `mobilithek_detours_nrw` | Umleitungen Nordrhein-Westfalen: Landesbetrieb Straßenbau Nordrhein-Westfalen via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `mobilithek_los_nrw` | Verkehrslage Nordrhein-Westfalen: © Die Autobahn GmbH des Bundes 2026 — GeoNutzV, Daten verändert | GeoNutzV | held |
-| `mobilithek_ald_14d` | Arbeitsstellen auf Autobahnen (14 Tage): Die Autobahn GmbH des Bundes | MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei | "eingeschränkte Nutzung, kostenfrei", no licence text — see below | held |
+| `mobilithek_ald_14d` | Arbeitsstellen auf Autobahnen (14 Tage): Die Autobahn GmbH des Bundes \| MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei | "eingeschränkte Nutzung, kostenfrei", no licence text — see below | held |
 | `kiel_baustellen` | Baustellen: © Landeshauptstadt Kiel, Amt für Bauordnung, Vermessung und Geoinformation, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `sh_baustellen` | Baustellen Schleswig-Holstein: © LBV.SH/CC BY 4.0; © Geokompetenz/LVermGeo SH/CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `bb_baustellen` | Baustelleninformationen: Landesbetrieb Straßenwesen Brandenburg, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
