@@ -5,6 +5,53 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-10-20
+
+**Answers that name the place they used, one line per place, and faster lookups.**
+The package matches the server's 2.3.2 and covers the server releases 2.3.0 to
+2.3.2, which are fixes from a 1,000-question test round. No tool, prompt or
+resource was added, removed or renamed. One tool gained an optional argument.
+
+### Changed (tool surface)
+
+- **`watch_situation`**: a road or place watch reports closures and restrictions,
+  not jams, and the description now says so. The new optional `request` argument
+  carries the person's own words. A watch asked for a jam alone opens nothing and
+  says why; a mixed request opens the watch and says what it does not cover.
+
+### Fixed (answers)
+
+- **The place used is named.** When a place, station or stop was matched under
+  another spelling or name ("Munich", a typo), the answer's first line says which
+  place it answered for. English and French names of the large cities and the
+  Länder resolve.
+- **Every label offered in a which-one list resolves** when it is handed back,
+  in one call. A junction label ("AS Cloppenburg (A1)") is read on its road.
+- **One place, one line.** The same charging site, works site or car park from two
+  feeds within 50 m is one line, and every feed is credited.
+- **No all-clear for a road we hold nothing on.** A motorway number that exists
+  but has no stretch with us, or one that does not exist, is refused with the
+  nearest real numbers.
+- **Each source carries its own "as of" time**, the headline takes the newest live
+  one, and a source that has stopped publishing is flagged.
+- **Public names, not internal ids**: a low-emission zone by its city, postcodes
+  with their leading zero, no record numbers in road entries.
+- **Copy**: real plurals, the formal "Sie" in German, no German words in English
+  answers except quoted provider text, relative dates counted from today in Berlin.
+- **Roads**: closures are counted by what is closed (a footway or one lane is a
+  restriction); in a dense city the headline gives the count within 3 km first;
+  roadworks by place also ask the Land roadworks feeds.
+- **Places**: a city district never carries another Land; an address that is not found
+  says whether the town or only the street is missing from the map, and suggests
+  similar streets.
+- **Transit**: an empty departure board names the next departure; a Land whose
+  service alerts have gone silent says since when; train lines read "S2", not "S S2".
+- **Charging**: a site whose name says it is private is not listed; an ended source
+  yields to a current one at the same place.
+- **Speed**: city lorry restrictions answer in well under a second (was about 6 s),
+  weather warnings for a place are found faster, and the street suggestion reads
+  the nearest addresses first.
+
 ## [2.2.14] - 2026-10-20
 
 **Hamburg's street detail, lorry rules for more cities, step-free platforms and English summaries.**
@@ -3234,6 +3281,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.3.2]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.3.2
 [2.2.14]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.14
 [2.2.6]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.6
 [2.2.3]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.2.3
