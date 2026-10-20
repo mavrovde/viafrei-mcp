@@ -41,61 +41,73 @@ on viafrei.de, with a map.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in 2.2.6: lorry routes, city roadworks and the cities' own measured traffic.**
-> Since 2.2.3, the server added these:
+> **New in 2.2.14: Hamburg's street detail, lorry rules for more cities, step-free
+> platforms and English summaries.** Since 2.2.6, the server added these:
 >
-> - **Where may my lorry go?** `check_road_status` takes a `vehicle`. With
->   `"long_lorry"` it says whether a road is in the long-lorry positive network
->   (BASt's extract, and Hamburg's dated field-trial network), and BASt's notice
->   that the extract is not binding travels with every such answer. With
->   `"lorry"` and a place it lists the height, weight and width limits and the
->   lorry bans within 5 km. Those come from NRW.Mobidrom's SEVAS data for North
->   Rhine-Westphalia's towns and from VMZ Bremen, which gives its heights and weights
->   in its own words. Where no publisher covers a place, the answer says it has no
->   data, which is not a clearance. The ivm data for Frankfurt RheinMain is not
->   live yet: it is held back until its terms are fully met.
-> - **City roadworks from the cities' own portals.** Kiel, Schleswig-Holstein,
->   Brandenburg, Freiburg, Karlsruhe, Frankfurt, Berlin (planned street events),
->   Duisburg, Aachen, Ingolstadt, Köln (permits), Münster, Dortmund, Stuttgart and,
->   since 2.2.6, **München**. Ask `check_road_status` or `find_roadworks_ahead` with
->   a place. When several feeds report the same works, it is shown once and every
->   feed is credited.
-> - **Am I in a low-emission zone?** `get_driving_rules` and `describe_location`
->   take a place or a coordinate and check it against the zone boundary the city
->   publishes (Berlin, Aachen, Duisburg, München). The answer is inside, outside
->   with the distance, or unknown. The Umweltbundesamt's register of all 73 German
->   zones answers where no city publishes its own boundary.
-> - **Measured traffic in Hamburg and Bonn.** A place answer from
->   `check_road_status` counts the city's own traffic-state segments, using each
->   city's own class names, and only while the city's reading is under 30 minutes
->   old.
-> - **Motorway traffic around a place.** `check_autobahn_traffic` takes a `place` or
->   a coordinate and a radius. The road's events near you come first, and the
->   road-wide total is shown beside them. A roadworks end date is no longer cut
->   off, and every road you name gets a line on the first page.
-> - **Free disabled-badge bays in Dortmund**, from the city's street sensors:
->   `find_parking {kind: "disabled_badge"}`. The same sensors say whether the bay
->   beside a charger is free.
-> - **Punctuality where DELFI is silent.** VRN's own realtime feed (Rhein-Neckar
->   and Rhein-Nahe, buses and trams) and VBN's (Bremen and Niedersachsen) answer
->   `check_transit_disruption` as a failover. They are never added to DELFI's
->   figures. A stop that a trip skips is now counted as skipped, not as a
->   cancellation.
-> - **Step-free stops.** Baden-Württemberg's BFRK survey of 1 104 stations and
->   14 065 stops, and Münster's list of step-free bus stops, answer
->   `check_station_facilities`, and a departure board ends with the stop's step-free
->   line. The survey says what is there, not whether a lift is working now.
-> - **Live charge status from Hamburg itself**, as a second source for points we
->   already hold, and **how full an MVV regional bus usually is** beside its
->   departure. MVV's figures are typical values from its passenger counts, not
->   realtime.
-> - **Fixes**: a place is named without its official key, and an option names its
->   Kreis. A house number "0" is no longer printed. A source that has stopped
->   republishing is named in every answer that uses it. Fuel prices stay warm in
->   the big cities and along the motorways. Two car parks of one name say which is
->   which. A part of a town is named as one (for example "Stadtteil von Hamburg").
->   A cut-off stop name is completed from the survey. The road-surface forecast
->   never shows a slot that is over.
+> - **Hamburg, street by street.** A place answer from `check_road_status` now
+>   names the numbered motorway detours the city signs near you (signs 460/455),
+>   as signage context and never as a route; counts the signal installations
+>   within 500 m, at junctions and at pedestrian crossings; and gives the city's
+>   quarter-hour traffic counts per cross-section and direction, with the reminder
+>   that a count is a volume, not a jam. `find_parking` lists the city's on-street
+>   bays near a place with their rules, hours, maximum stay and counts (never an
+>   occupancy, which the city does not publish) and the places the city keeps for
+>   coaches. A lorry question names Hamburg's network for oversize and heavy
+>   transport, and says it is an aid for the permit application, not a permit.
+> - **Where may my lorry go, in more cities.** `check_road_status` with
+>   `vehicle: "lorry"` now answers from Stadt Köln's own lorry network and its
+>   height and weight limits (per direction where the city says so), Dresden's
+>   lorry bans ("over 3.5 t, sign 253", with the additional sign quoted) and
+>   lorry priority routes, and ivm's lorry priority network and lorry signs for
+>   Frankfurt RheinMain. Every publisher gets its own nearest lines, and one
+>   restriction drawn on several road segments is one line.
+> - **Step-free, platform by platform.** `check_station_facilities` lists each
+>   platform of a DB station: step-free or not, wheelchair access, platform height
+>   and tactile guidance, from DB InfraGO's station inventory. A tram, U-Bahn or
+>   bus stop named with its city ("Stuttgart Charlottenplatz") is that stop, not
+>   the nearest railway station. Dresden's stop register answers, and in Frankfurt
+>   the answer names the traffic signals near a stop that have an acoustic signal
+>   for blind pedestrians.
+> - **Low-emission zones from Essen's and Bochum's own boundaries.**
+>   `get_driving_rules` with a place now checks the point against the zone each
+>   city publishes, as it did for Berlin, Aachen, Duisburg and München. Two
+>   publishers' polygons count as one zone only when they share at least half of
+>   the smaller one, so a sliver of a neighbour's zone no longer decides the answer.
+> - **English summaries.** With `language: "en"`, every road and transit entry
+>   carries a one-line `gist` in our own words ("Closure on the A59; since
+>   2026-10-05, until 2026-10-23 12:00, whole measure until 2031-12-23."). The
+>   publisher's German words stay quoted and labelled as German, never translated.
+> - **A reason code on every tool error.** An error result now carries
+>   `_meta.errorCode` from a closed list of seven: `invalid_input`, `not_found`,
+>   `out_of_coverage`, `unavailable`, `limit_reached`, `timeout`, `internal`. A
+>   client can decide whether to retry, rephrase or give up without parsing the
+>   message.
+> - **More context around a place**: Brandenburg's road border crossings to
+>   Poland, Karlsruhe's winter-service streets, Schleswig-Holstein's signed detour
+>   routes with their extra distance and last day, Aachen's pedestrian-zone
+>   entrances with their delivery hours, München's loading and delivery bays (some
+>   carry a sensor; its reading is not published, so a bay is never called free),
+>   and what Berlin's counting sites usually count at this hour, from a past
+>   month's median and labelled as such.
+> - **Parking**: Kiel's car parks and P+R sites, Frankfurt's disabled-badge bays,
+>   and a Karlsruhe lorry bay's fee and time limit.
+> - **Charging**: smartlab ended its ladenetz.de and ladebusiness publications on
+>   2026-10-19. Their sites answer with place, plugs and power only, dated and with
+>   no status, through 17 Nov 2026, and then stop. A live feed that has answered
+>   "unchanged" for too long is no longer called current.
+> - **Smaller things**: a mistyped tool name gets the closest real names back;
+>   `watch_situation` takes a region by its name ("Hamburg"); `horizon_days` counts
+>   through the last day you mean; one police message carried by two feeds is one
+>   line, and one closure published once per direction is one line "both
+>   directions"; a long answer is cut at a whole line; the coverage lists in the
+>   road tools' descriptions now match what they read (Land roads in NI, BW, MV, SN
+>   and TH; federal roads also in SH, BY and BE); LPG and CNG are said to be held
+>   by no source.
+>
+> **Earlier, in 2.2.6:** lorry routes (the long-lorry network, SEVAS for North
+> Rhine-Westphalia, VMZ Bremen), city roadworks from fifteen city and Land portals,
+> the low-emission-zone check by place, the measured traffic of Hamburg and Bonn,
+> and Dortmund's free disabled-badge bays.
 >
 > **Earlier, in 2.1:** viafrei.de opens on a live conversation and an
 > [examples page](https://viafrei.de/en/examples), every German motorway has a
@@ -115,31 +127,36 @@ comes back in the language you asked in.
 | when you're… | ask |
 |---|---|
 | 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* |
-| 🚗 **about to drive** | *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Vollsperrungen sind auf der A7 in den nächsten sieben Tagen geplant?* · *Welche Baustellen gibt es in München?* · *How is the traffic on the A3 around Köln?* · *Ist die Fehmarnsundbrücke wegen Wind gesperrt?* |
-| 🚚 **driving a lorry** | *Darf der Lang-Lkw auf die A7?* · *Which height limits are there for lorries in Bremen?* · *Gibt es Lkw-Durchfahrtsverbote bei Bielefeld?* · *Wann ist der nächste Lkw-Fahrverbotstag?* · *Gilt am 31. Oktober in Niedersachsen Lkw-Fahrverbot?* |
+| 🚗 **about to drive** | *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Vollsperrungen sind auf der A7 in den nächsten sieben Tagen geplant?* · *Welche Baustellen gibt es in München?* · *How is the traffic on the A3 around Köln?* · *Ist die Fehmarnsundbrücke wegen Wind gesperrt?* · *Which detours are signed near Hamburg Hbf?* |
+| 🚚 **driving a lorry** | *Darf der Lang-Lkw auf die A7?* · *Which height limits are there for lorries in Bremen?* · *Gibt es Lkw-Durchfahrtsverbote bei Bielefeld?* · *Wann ist der nächste Lkw-Fahrverbotstag?* · *Gilt am 31. Oktober in Niedersachsen Lkw-Fahrverbot?* · *Welche Durchfahrtshöhen gibt es am Kölner Dom?* · *Where are the lorry bans in Dresden?* |
 | 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Is traffic backed up on the Cologne motorway ring — A1, A3 or A4?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
 | ⚡ **driving electric or on hydrogen** | *Where can I charge with Type 2 near Leipzig?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* · *Where can I fill up a hydrogen lorry near Hamburg?* |
-| 🅿️ **parking** | *Is the P+R at Fröttmaning usually full in the morning?* · *Wie viele Plätze sind in den Kasseler Parkhäusern frei?* · *Is there a free disabled parking bay near Dortmund's Hansastraße?* · *Find a rest area with lorry parking on the A9* |
+| 🅿️ **parking** | *Is the P+R at Fröttmaning usually full in the morning?* · *Wie viele Plätze sind in den Kasseler Parkhäusern frei?* · *Is there a free disabled parking bay near Dortmund's Hansastraße?* · *Find a rest area with lorry parking on the A9* · *Where can I park on the street near Hamburg Rathaus?* |
 | ⛽ **filling up** | *Where is diesel cheapest near Kassel?* · *Welche Tankstellen gibt es in Weimar?* |
-| ♿ **travelling step-free** | *Funktioniert der Aufzug am Bahnhof Köln Messe/Deutz?* · *Is Tübingen Hbf step-free?* · *Ist die Bushaltestelle Ludgeriplatz in Münster barrierefrei?* |
+| ♿ **travelling step-free** | *Funktioniert der Aufzug am Bahnhof Köln Messe/Deutz?* · *Is Tübingen Hbf step-free?* · *Ist die Bushaltestelle Ludgeriplatz in Münster barrierefrei?* · *Which platforms at Leipzig Hbf are step-free?* |
 | 🌦️ **watching the weather** | *Gibt es eine Unwetterwarnung für Freiburg?* · *Is the road near Garmisch going to be icy this morning?* |
 | 📍 **looking for a place** | *What is the address of the Elbphilharmonie in Hamburg?* · *Welche Apotheken gibt es in Fulda?* · *My satnav shows 50.1109, 8.6821 — what address is that?* |
-| 🇩🇪 **new to German roads** | *Do I need an emission sticker for Stuttgart?* · *Is Marienplatz in Munich inside the low-emission zone?* · *Is there a speed limit on the Autobahn?* |
+| 🇩🇪 **new to German roads** | *Do I need an emission sticker for Stuttgart?* · *Is Marienplatz in Munich inside the low-emission zone?* · *Liegt Essen Hbf in der Umweltzone?* · *Is there a speed limit on the Autobahn?* |
 | ⏳ **waiting for news** | *Tell me as soon as the closure on the A7 is lifted.* · *Sag mir Bescheid, wenn in Köln ein Viertel oder mehr der Bus- und Bahnfahrten verspätet ist.* · *Warn me when a DWD severe-weather warning comes into force for Cologne.* |
 
 **What the answers cover, honestly.** Live traffic is the motorways, plus the
-measured traffic state of Hamburg's and Bonn's streets. Closures and roadworks also
-cover federal roads, Land roads in Niedersachsen, Sachsen, Thüringen and
-Baden-Württemberg, the city streets of Hamburg and Bremen, the works the city and
-Land portals publish (Kiel, Schleswig-Holstein, Brandenburg, Freiburg, Karlsruhe,
-Frankfurt, Berlin, Duisburg, Aachen, Ingolstadt, Köln, Münster, Dortmund,
-Stuttgart, München), the traffic reports some Länder and cities publish
-(Baden-Württemberg, Schleswig-Holstein, Berlin, Hamburg, Köln, Hannover, Kassel,
-Leipzig, Rüsselsheim am Main), and the state of Schleswig-Holstein's large bridges;
-other city streets are not covered. Lorry restrictions by place cover North
-Rhine-Westphalia's towns (SEVAS) and Bremen; elsewhere the answer says it holds no
-data, which is never a clearance, and the long-lorry network covers the whole
-country. Departures cover
+measured traffic state of Hamburg's and Bonn's streets and the quarter-hour counts
+of Hamburg's counting sites (a count is a volume, never a jam). Closures and
+roadworks also cover Land roads in Niedersachsen, Baden-Württemberg,
+Mecklenburg-Vorpommern, Sachsen and Thüringen, federal roads there and in
+Schleswig-Holstein, Bayern and Berlin, the city streets of Hamburg and Bremen, the
+works the city and Land portals publish (Kiel, Schleswig-Holstein, Brandenburg,
+Freiburg, Karlsruhe, Frankfurt, Berlin, Duisburg, Aachen, Ingolstadt, Köln,
+Münster, Dortmund, Stuttgart, München), the traffic reports some Länder and cities
+publish (Baden-Württemberg, Schleswig-Holstein, Berlin, Hamburg, Köln, Hannover,
+Kassel, Leipzig, Rüsselsheim am Main), and the state of Schleswig-Holstein's large
+bridges; other city streets are not covered. Street detail around a place
+(signed detours, signal installations, on-street bays, loading bays, border
+crossings, winter service, pedestrian-zone entrances) exists only where a city or
+Land publishes it, and the answer names which. Lorry restrictions by place cover
+North Rhine-Westphalia's towns (SEVAS), Köln, Dresden, the Frankfurt RheinMain
+region (ivm) and Bremen; elsewhere the answer says it holds no data, which is never
+a clearance, and the long-lorry network covers the whole country. Departures cover
 every German stop from the timetable; a live delay appears where a realtime feed
 carries that trip, and otherwise the answer says the time is the plan. Live
 parking and charging occupancy exist only where the operator publishes them, and
@@ -159,9 +176,10 @@ whole, not one section of it.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first seven were asked of **server 2.2.6 on 2026-10-19
-between 07:34 and 07:45 Berlin time**, the day it went live; an "As of" time
-earlier than that is the time the source was last read. The next two were asked of
+are not mock-ups. The first nine were asked of **server 2.2.14 on 2026-10-20
+between 06:00 and 06:16 Berlin time**; an "As of" time earlier than that is the
+time the source was last read. The next seven were asked of server 2.2.6 on
+2026-10-19 between 07:34 and 07:45 Berlin time, the day it went live. The next two were asked of
 server 2.1.25 on 2026-10-17 at 18:38 Berlin time, an hour after it went live. The next three were asked of
 server 2.1.17 on 2026-10-14, around 22:40 Berlin time, minutes after it went live. The next three were asked
 of server 2.1.8 on 2026-10-13 around 22:40, three more of server 2.1.5 that
@@ -173,6 +191,178 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🛣️ "Which detours are signed near Hamburg Hbf?"</b> — <code>check_road_status</code> with <code>place</code>, <code>limit: 3</code>, <code>horizon_days: 1</code></summary>
+
+```text
+Hamburg Hbf: 1 jam report, 176 closures, 291 restrictions, 2 planned roadworks sites, 13 current roadworks sites per BASt — window until 2026-10-21.
+I do not hold federal and Land roads (Bundes-, Landes-/Staatsstraßen) for Hamburg: for those, this answer is no all-clear.
+Measured traffic state (Hamburg, BVM (traffic state), as of 06:00) within 10 km: 952 segments: jammed traffic: 3, slow traffic: 35, dense traffic: 914 — nearest segment (jammed traffic or slow traffic) 1.1 km away, main road; the source does not list free-flowing segments — a segment it does not list is flowing or not measured.
+Counted traffic within 1.0 km (BVM counting sites (Hamburg)): counting site 0330, cross-section 4 (0.1 km), 05:30–05:45: no cross-section total (not every direction counted); by direction: west to east 37 · counting site 0331, cross-section 3 (0.2 km), 05:30–05:45: 53 motor vehicles; by direction: northeast to southwest 34, southwest to northeast 19. Further cross-sections in reach: 2. A count is a volume per quarter hour, not a statement about congestion or free flow.
+• Traffic jam (Stau) A1: Provider text (German): "A1 | Tunnel Moorfleet - Norderelbbrücke · Lübeck -> Hamburg" (since 05:26; +10 min; 7.6 km away)
+…
+Signed motorway detours nearby (signs 460/455): U 26 (nearest section: Bürgerweide; 1.3 km); U 85 (nearest section: Heidenkampsweg; 1.3 km) — signage context, not a route recommendation
+Signal installations nearby (16 within 500 m): 11 at junctions, 5 at pedestrian crossings; nearest: Mönckebergstraße/Steintorwall (0.1 km)
+```
+New in 2.2.12 (the counts) and 2.2.13 (the detours and the signal installations).
+A detour is named by its number and its nearest street, and always as the signs
+you will see, never as a route we recommend. A bus registration at a signal is
+counted only where the city records one, and a zero is never said.
+*Edited: the first line (a note that one roadworks source is 13 days old), two of
+three entries, the sources that answered and the source line omitted.*
+</details>
+
+<details>
+<summary><b>🅿️ "Where can I park on the street near Hamburg Rathaus?"</b> — <code>find_parking</code></summary>
+
+```text
+Parking around Hamburg, Rathaus (within 10 km), nearest first:
+1. Europa-Passage — Car park (Parkhaus), 0.2 km, 690 spaces, no occupancy published
+2. Alter Wall / BUCERIUS-Passage — Car park (Parkhaus), 0.3 km, 210 spaces, 95 free (as of 06:00)
+3. Große Reichenstraße — Car park (Parkhaus), 0.3 km, 850 spaces, 488 free (as of 06:06)
+…
+On-street parking bays nearby (the city's register) (168 bays within 300 m): Rathausstraße (for disabled badge holders; 1 bay; 0.1 km); Rathausstraße (electric vehicles charging only Mon–Sat 09:00–20:00; at most 180 min; 1 bay; 0.1 km); Rathausstraße (pay and display; 2 bays; 0.1 km) — the city publishes no occupancy — whether a bay is free is not known; the signs on site apply
+```
+New in 2.2.13. The bays come from the Landesbetrieb Verkehr's register of public
+parking space: a street's bays under one rule set are one line, with the rule, the
+hours and the maximum stay. Stopping bans and personal disabled bays are never
+counted or offered. The same answer also lists the city's coach places, with the
+city's own remark quoted, and the OpenStreetMap car parks in a block of their own.
+*Edited: two car parks, the OpenStreetMap and coach blocks and the source line
+omitted.*
+</details>
+
+<details>
+<summary><b>🚛 "Which height limits are there for lorries at Köln Dom?"</b> — <code>check_road_status</code> with <code>vehicle: "lorry"</code></summary>
+
+```text
+Lorry restrictions within 5 km of Dom, Köln (NRW.Mobidrom (SEVAS)): 387 — No lorries 177, Height limit 121, Cycle street 46, Weight limit 38, No hazardous goods 2, Length limit 2, No vehicles 1. Nearest:
+- No lorries — Marzellenstraße, Köln (0 km)
+- Cycle street — Trankgasse, Köln (0.1 km)
+- Height limit 4 m — Tunisstraße, Köln (0.2 km)
+Lorry priority routes: 4 in range, the nearest 0.2 km away.
+Lorry restrictions within 5 km of Dom, Köln (Stadt Köln): 26 — Height limit 21, Weight limit 3, No lorries 2. Nearest:
+- Height limit 4 m — Tunisstraße, Unterführung Komödienstraße, direction “Norden” (0.2 km)
+- Height limit 3.8 m — Nord-Süd-Fahrt, Unterführung Schildergasse, direction “Süden” (0.7 km)
+- Height limit 4 m — Nord-Süd-Fahrt, Unterführung Cäcilienstraße, direction “Norden” (0.8 km)
+Lorry route network (Stadt Köln, as of 2014-01-01), nearest section: secondary lorry connection for deliveries 0.2 km (Tunisstr., Ursulastr., Victoriastr.); primary lorry connection 1.3 km (Holzmarkt, Zu-/Abfahrt Severinsbrücke, Severinsbrücke); …
+These lorry entries come from our database derived from “SEVAS (NRW.Mobidrom)” (ODbL 1.0; its geometry comes from OpenStreetMap). We send a complete machine-readable copy (CSV) under the ODbL 1.0 free of charge on request – contact details in the Impressum on viafrei.de.
+```
+New in 2.2.9 and 2.2.10. Each publisher gets its own nearest lines, so the city's
+per-direction heights are no longer crowded out by SEVAS's. A SEVAS restriction
+drawn on several road segments is counted and named once.
+*Edited: the end of the network line, the closing line and the source line omitted.*
+</details>
+
+<details>
+<summary><b>🚫 "Where are the lorry bans in Dresden?"</b> — <code>check_road_status</code> with <code>vehicle: "lorry"</code></summary>
+
+```text
+Lorry restrictions within 5 km of Dresden Altmarkt (Landeshauptstadt Dresden): 1 — No lorries 1. Nearest:
+- No lorries over 3.5 t (sign 253) (0 km); additional sign „Dienstleister, Anlieferer und Wohnmobile frei“
+Lorry route network (Landeshauptstadt Dresden), nearest section: lorry priority route 1.6 km. This is the network the city routes lorry traffic over; later rules, such as through-traffic bans, are not shown in it — not an all-clear: the signs on site apply.
+Current closures and roadworks: the same question without vehicle.
+
+As of 03:41 · Source: Lkw-Verbotszonen: Landeshauptstadt Dresden (Quelle: Geodaten Sachsen), Datenlizenz Deutschland – Namensnennung – Version 2.0 (…), bearbeitet (…) · Lkw-Vorrangroutennetz: Landeshauptstadt Dresden (Quelle: Geodaten Sachsen), … · …
+Lorry bans are shown here as information, not legal advice: only the signs on site say whom and when a ban binds.
+```
+New in 2.2.10. The city's ban zone is one ban, stated as the city's record states
+it; the additional sign is quoted in German, as it is signed. The last line is the
+condition note that travels with every such answer as `_meta.conditionNote`.
+*Edited: the source URIs shortened to (…).*
+</details>
+
+<details>
+<summary><b>🏗️ "Can my heavy transport go through Hamburg Hbf?"</b> — <code>check_road_status</code> with <code>vehicle: "lorry"</code></summary>
+
+```text
+Lorry restrictions around Hamburg Hbf: no data. We hold them only where a publisher publishes them (so far NRW.Mobidrom for North Rhine-Westphalia, ivm for the Frankfurt RheinMain region, VMZ Bremen for Bremen and Stadt Köln and Landeshauptstadt Dresden, each for its own city area) — this is not an all-clear.
+Oversize and heavy transport network (Landesbetrieb Verkehr Hamburg), nearest section 0.4 km (Kreuzweg, Steindamm, Deichtorplatz) — an aid for the application in VEMAGS, no permit.
+Current closures and roadworks: the same question without vehicle.
+…
+The oversize and heavy transport network helps with an application in VEMAGS and is no permit: an oversize or heavy transport needs its own permit or authorisation (§ 29(3), § 46(1) StVO), and the signs on site apply. The network is the LBV's compilation of the routes most often needed; it names no permitted dimensions, weights or axle loads, and the route a transport may take is the one its permit sets.
+```
+New in 2.2.10. "No data" for the restrictions is said as what it is, and the
+network is never presented as a permission.
+*Edited: the source line omitted.*
+</details>
+
+<details>
+<summary><b>♿ "Is Frankfurt Konstablerwache step-free?"</b> — <code>check_station_facilities</code></summary>
+
+```text
+2 of 14 reported facilities at Frankfurt (Main) Konstablerwache are out of service. Counted are the facilities DB reports for this station. The platform details are from DB's station data, as of 2026-10-19. …
+…
+Platforms at Frankfurt (Main) Konstablerwache per DB's station data: 2 of 2 step-free. The station as a whole: step-free, wheelchair accessible.
+Platform 2 (Bahnsteig Gleis 2): step-free · wheelchair accessible · platform height 96 cm · tactile guidance · level boarding into the train: unknown
+Platform 3 (Bahnsteig Gleis 3): step-free · wheelchair accessible · platform height 96 cm · tactile guidance · level boarding into the train: unknown
+
+Traffic signals within 300 m: 6, 3 of them with an acoustic signal for blind pedestrians: Konstabler Wache/Kurt-Schumacher-Straße (60 m); Berliner Straße/Battonstraße/Kurt-Schumacher-Straße (240 m); Battonstr./Klingerstr./Stoltzestr. (270 m)
+```
+New in 2.2.9 (the platforms, from DB InfraGO's station inventory) and 2.2.10 (the
+acoustic signals, from Stadt Frankfurt am Main). "Unknown" is said as unknown, never
+as no. A tram or U-Bahn stop named with its city, such as "Stuttgart
+Charlottenplatz", is answered as that stop, with the sentence that we hold no lift
+status and no survey for it where that is so.
+*Edited: the rest of the first line, the fourteen escalator lines and the source
+line omitted.*
+</details>
+
+<details>
+<summary><b>🌿 "Is Essen Hbf inside the low-emission zone?"</b> — <code>get_driving_rules</code> with <code>place</code></summary>
+
+```text
+Low-emission zone and plaque — Essen Hbf:
+Essen Hbf lies inside the Umweltzone Essen (Umweltzone).
+Required: the green plaque (emission group 4). You can buy it at vehicle registration offices, TÜV/DEKRA/GTÜ/KÜS and approved garages on presentation of the vehicle registration document (part I). (Umweltbundesamt, Umweltzonen in Deutschland; not confirmed: exactly which cities belong to the Ruhr zone today — check the source)
+Zone boundary last read on 2026-10-19.
+…
+```
+New in 2.2.10, for Essen and Bochum. The point is checked against the city's own
+polygon, credited "Umweltzone: Datenquelle: Stadt Essen – opendata.essen.de,
+Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet", with the
+Umweltbundesamt's agreeing zone credited beside it.
+*Edited: the general rules that follow and the source line omitted.*
+</details>
+
+<details>
+<summary><b>🇬🇧 "Is the A59 closed anywhere?"</b> — <code>check_autobahn_traffic</code> with <code>language: "en"</code>, and the <code>gist</code> of each entry</summary>
+
+```text
+A59, road-wide: 0 jams, 12 closures, 22 roadworks sites; announced from 10:00: 3 closures, 17 roadworks sites — As of 06:09. Traffic state at 53 measuring sites (NRW, as of 06:08): 4 slow, 5 heavy, 44 free-flowing; standstill or slow near Düsseldorf-Garath, Monheim, Richrath.
+• Closure (Sperrung): A59, since 2026-10-05 00:00, until 2026-10-23 12:00 (whole measure until 2031-12-23) — Provider text (German): "A59 6-streifiger Ausbau AK DU - AS DU-Marxloh · AK Duisburg (aus Richtung Duisburg-Häfen) — Zeitraum dieser Bauphase: […] Ende: 23.10.26 um 12:00 Uhr …"
+…
+
+structuredContent.events[0].gist:
+Closure on the A59; since 2026-10-05, until 2026-10-23 12:00, whole measure until 2031-12-23.
+```
+New in 2.2.8 and 2.2.9. The gist is built only from fields we already parse (kind,
+road, junctions, direction, length, limits, dates, distance), so it never
+translates the publisher's words. For a works in phases it ends with the current
+phase and names the whole measure's end as such. A German answer carries no gist.
+*Edited: two entries and the source line omitted; the gist is quoted from the
+structured result.*
+</details>
+
+<details>
+<summary><b>🧯 A call that fails says why — <code>_meta.errorCode</code></b></summary>
+
+```text
+find_parking {place: "Xyzzyqwertstadt"}
+→ isError: true · _meta.errorCode: "not_found"
+  I do not know "Xyzzyqwertstadt". Name a town, a district or a stop — or pass lat/lon.
+
+check_autobahn_traffic {road: "A59"}   (the argument is "roads", a list)
+→ isError: true · _meta.errorCode: "invalid_input"
+  MCP error -32602: Input validation error: Invalid arguments for tool check_autobahn_traffic: Invalid input: expected array, received undefined at roads
+```
+New in 2.2.13. Every error result carries one code from a closed list of seven
+(`invalid_input`, `not_found`, `out_of_coverage`, `unavailable`, `limit_reached`,
+`timeout`, `internal`), so a client can tell "ask differently" from "try later"
+without reading the sentence.
+*Edited: shown as the two results' fields, not as the raw JSON-RPC frames.*
+</details>
+
+<details>
 <summary><b>🚚 "Darf der Lang-Lkw auf die A7?"</b> — <code>check_road_status</code> with <code>vehicle: "long_lorry"</code></summary>
 
 ```text
@@ -831,6 +1021,8 @@ Restart the client and ask one of the questions above.
   reports the same version.
 - **awesome-remote-mcp-servers — [punkpeye/awesome-remote-mcp-servers](https://github.com/punkpeye/awesome-remote-mcp-servers).**
   The curated list of remote MCP servers; ViaFrei is listed with its hosted endpoint.
+- **TensorBlock MCP Index — [tensorblock.co/mcp/servers/…](https://tensorblock.co/mcp/servers/github-mavrovde-viafrei-mcp-e9117452).**
+  TensorBlock's searchable index of MCP servers, with a profile page for this repository.
 - **For AI tools — [viafrei.de/llms.txt](https://viafrei.de/llms.txt)** and
   [llms-full.txt](https://viafrei.de/llms-full.txt): what ViaFrei is, how to
   connect, every tool in one line each, the example questions with the tool that

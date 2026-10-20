@@ -7,23 +7,118 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.2.14] - 2026-10-20
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.2.14 while the registry's latest is 2.2.6, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**CHANGED** — the automation knows what moved, not what it means:
+**Hamburg's street detail, lorry rules for more cities, step-free platforms and English summaries.**
+The package matches the server's 2.2.14 and covers the server releases 2.2.7 to
+2.2.14. No tool, prompt or resource was added, removed or
+renamed, and no parameter was added. Seven tool descriptions changed (below); an
+error result now carries a reason code.
 
-- tools: find_cheapest_fuel differs between the server and the snapshot
-- tools: find_fuel_station differs between the server and the snapshot
-- tools: check_road_status differs between the server and the snapshot
-- tools: find_roadworks_ahead differs between the server and the snapshot
-- tools: find_hydrogen_station differs between the server and the snapshot
-- tools: check_station_facilities differs between the server and the snapshot
-- tools: watch_situation differs between the server and the snapshot
+### Changed (tool surface)
 
-**A person must describe the change above before this merges.** A release note that
-lists a tool name without saying what it does misleads the reader it exists for.
+- **`check_road_status`**: the description and the `road` argument name the
+  coverage the tool really has: Land roads in NI, BW, MV, SN and TH, federal roads
+  there and in SH, BY and BE. `horizon_days` is now counted through the last day
+  meant, both included (1 for today or tonight, 2 for tomorrow, this weekend
+  through Sunday). `vehicle` lists Frankfurt RheinMain beside NRW and Bremen.
+- **`find_roadworks_ahead`**: the same derived coverage list ("NI, BW, MV, SN or
+  TH (BY: B only)") in the description and the `road` argument.
+- **`check_station_facilities`**: also answers a tram, U-Bahn or bus stop named
+  with its city ("Stuttgart Charlottenplatz") from its step-free survey, and points
+  to `get_departures` for a stop's departures.
+- **`watch_situation`**: a `region` key may be a name ("Hamburg", "Landkreis
+  Fulda"), resolved the way `check_transit_disruption` resolves a region, or an
+  AGS key as before.
+- **`find_cheapest_fuel`, `find_fuel_station`, `find_hydrogen_station`**: say that
+  no source here holds LPG/Autogas or CNG, instead of sending a person to another
+  fuel tool.
+- **Error results**: every tool error carries `_meta.errorCode`, one of
+  `invalid_input`, `not_found`, `out_of_coverage`, `unavailable`, `limit_reached`,
+  `timeout` or `internal`. A tool name the server does not have is answered with
+  the closest real names, also after a client's namespace prefix.
+
+### Added (server 2.2.7–2.2.14)
+
+- **Hamburg, street by street.** A place answer from `check_road_status` names the
+  numbered motorway detours the city signs nearby (signs 460/455), as signage
+  context and never as a route; counts the signal installations within 500 m at
+  junctions and at pedestrian crossings, and at how many a bus registration is set
+  up; and gives the quarter-hour counts of the city's counting sites per
+  cross-section and direction, as a volume and never as a jam. `find_parking` lists
+  the city's on-street bays with their rules, hours, maximum stay and counts (never
+  an occupancy) and the places the city keeps for coaches. A lorry question names
+  the network for oversize and heavy transport, with the note that it is an aid for
+  the permit application and no permit.
+- **Lorry restrictions for more cities.** Stadt Köln's lorry network and its
+  height and weight limits, per direction where the city says so; Dresden's lorry
+  ban zone (over 3.5 t, sign 253, with the additional sign quoted) and lorry
+  priority routes, with a note that a ban is information and not legal advice; and
+  ivm's lorry priority network and lorry signs for Frankfurt RheinMain, under the
+  credit ivm's terms prescribe and with the ODbL offer for the network.
+- **Step-free platforms.** `check_station_facilities` lists each platform of a DB
+  station: step-free, wheelchair access, platform height, tactile guidance and
+  level boarding, from DB InfraGO's station inventory. Dresden's stop register now
+  answers, and in Frankfurt am Main the answer names the traffic signals near a
+  stop that have an acoustic signal for blind pedestrians.
+- **Low-emission zones of Essen and Bochum**, from each city's own boundary, by
+  place in `get_driving_rules` and `describe_location`.
+- **English summaries.** With `language: "en"`, each entry of `check_road_status`,
+  `check_autobahn_traffic`, `find_roadworks_ahead` and `check_transit_disruption`
+  carries a `gist`, built only from fields the server parses. The publishers' words
+  stay quoted in German and labelled as such.
+- **More context around a place**: Brandenburg's road border crossings to Poland,
+  Karlsruhe's winter-service streets, Schleswig-Holstein's signed detour routes with
+  their extra distance and last day, Aachen's pedestrian-zone entrances with their
+  delivery hours, München's loading and delivery bays (a sensor is named as fitted,
+  its reading is not published), and what Berlin's counting sites usually count in
+  this hour, from a past month's median and said as such.
+- **Parking**: Kiel's car parks and P+R sites, Frankfurt's disabled-badge bays, and
+  the fee and time limit of the Karlsruhe region's lorry bays.
+
+### Changed (server 2.2.7–2.2.14)
+
+- **smartlab's charging publications ended.** The publisher ended its ladenetz.de
+  and ladebusiness feeds on 2026-10-19. Their sites that no other feed carries
+  answer with place, plugs and power only, dated and with no status, through
+  17 Nov 2026, and then stop. A live feed that has only answered "unchanged" for
+  far longer than its rhythm is no longer treated as current.
+- **Two publishers' low-emission-zone polygons are one zone only when they share
+  at least half of the smaller one's area**, so a sliver of a neighbouring city's
+  zone no longer decides the answer.
+
+### Fixed (server 2.2.7–2.2.14)
+
+- **A long answer is cut at a whole line**, so a detour line keeps its closing
+  words, and one bay is "1 bay".
+- **One police message carried by two feeds is one line**, credited to both, and a
+  closure published once per direction is one line marked "both directions".
+- **A works in phases shows its current phase**, with the whole measure's end
+  named as such, in the line and in the English gist.
+- **A city tram or U-Bahn stop named with its city is that stop**, not the nearest
+  railway station or a stop of the same name elsewhere.
+- **Rostock's service alerts are placed where their lines run**, so
+  `check_transit_disruption` answers Rostock and Mecklenburg-Vorpommern with them.
+- **A Kiel "Parkplatz" is no longer called a car park building**, and a site with
+  no name of its own is located by its direction from the place asked about.
+- **Dresden's lorry layers and step-free stops load again**: the city's server ends
+  its compressed answers early, and the server now reads them as a browser does,
+  while a body that was really cut off is still refused.
+- **Fuel prices are kept warm again** in the big cities and along the motorways.
+- **A city file whose host answered with an error is asked again within the hour**,
+  not the next day.
+- **A counted-traffic profile older than 24 months is never called usual.**
+- **`prompts/get` reads "EN", "English" and similar spellings as the choice they
+  mean**, and a blank field as not given.
+- **`viafrei://attribution` and `viafrei://coverage` describe each share-alike
+  database by what it holds**, not by an internal name.
+- **The legacy `/sse` door is tested to answer exactly as `/mcp` does.**
+
+### Bridge
+
+- No code change: the bridge relays the server's catalogue as before. The shipped
+  snapshot, API.md and the README's tool list were re-captured from server 2.2.14.
+  README and SOURCES.md describe the new sources, with nine answers captured from
+  server 2.2.14 on 2026-10-20; SOURCES.md was compared row by row with the server's
+  register (237 sources).
 
 ## [2.2.6] - 2026-10-19
 
