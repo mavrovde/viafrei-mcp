@@ -17,7 +17,7 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.2.14 |
+| Server | `viafrei` 2.3.1 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
@@ -546,7 +546,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Not read-only** — it creates or removes state. Answers from data this service already holds (closed world). Idempotent: false. Destructive: false.
 
-> Opens a watch so THIS conversation is told when something changes: a road reopening, a stop running late, a weather warning, a charge point turning free. Use when asked to be told later: "sag mir Bescheid, wenn die A8 wieder frei ist", "tell me when a warning comes for Kiel". A name is enough as the key; no lookup first. Do NOT use to look up now, nor for e-mail, SMS or any alert outside this chat — we cannot send one; say so. Set hours (≤ 24, default 3) to cover the time asked about; condition narrows it (only the reopening, one charge point). Session-scoped, ≤ 10 watches. Show attribution.
+> Opens a watch so THIS conversation is told when something changes: a road closed or restricted (not a jam), a stop running late, a weather warning, a charger freeing up. Use when asked to be told later: "sag mir Bescheid, wenn die A8 wieder frei ist", "tell me when a warning comes for Kiel". A name is enough as the key; no lookup first. Do NOT use to look up now, nor for e-mail, SMS or alerts outside this chat — we cannot send one; say so. Set hours (≤ 24, default 3) for the time asked; condition narrows it (only the reopening, one charge point). Session-scoped, ≤ 10 watches. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -555,10 +555,11 @@ The server's own instructions to a connecting client, verbatim:
 | `condition` | object | no | — | keys: `delay_min`, `late_share`, `min_trips`, `radius_km`, `min_level`, `event`, `point_id` (each described below); `additionalProperties` |
 | `hours` | number | no | — | min 0.25; max 24 |
 | `language` | string | no | `"de"` | one of `"de"`, `"en"` |
+| `request` | string | no | — | max length 200 |
 | `until` | string | no | — | format `date-time`; pattern (288 characters — see the description; the `format` above is the short answer) |
 
 - **`key`** — The thing to watch, in the person's own words — a name is enough and no read tool is needed first; the server resolves it and the answer names the key it resolved to. `road`: a road number ("A8", "B27"). `place`: a town or address ("Fulda"). `weather`: a place name ("Kiel"), resolved to the DWD warn cell it lies in — or a warn cell id ("801002000"); a Land or Kreis is an area and takes no single cell. `station`: a stop or station name ("Köln Hbf", "München, Marienplatz"), resolved to its DHID the way get_departures resolves a stop — or a DHID ("de:14612:28"); an EVA number from get_train_departures ("8000207") is not a DHID and is refused. `charger`: a place ("Würzburg"), resolved to the nearest charging site that reports live occupancy — or a site id from find_charging_station. `region`: a city, district or Land ("Hamburg", "Landkreis Fulda"), resolved to its AGS key the way check_transit_disruption resolves its region — or an AGS key ("14612"). A name that fits several places or stops gets a which-one list and opens no watch; call again with the chosen line.
-- **`kind`** — What kind of thing to watch. `road` = one motorway or federal road (key: "A8", "B27") — reports a closure or restriction appearing or clearing; `station` = one public-transport stop (key: its name, "Köln Hbf", or its DHID) — reports departures running late past the threshold; `region` = a city, district or Land (key: its name, "Hamburg", or its AGS key, "14612") — reports the share of late trips crossing the threshold; `place` = a town or address (key: "Fulda") — reports road restrictions appearing within the radius; `weather` = one DWD warn cell (key: a place name, "Kiel", or the cell id) — reports an official warning coming into force; `charger` = one charging site (key: a place, "Würzburg", or the site id) — reports a point turning free.
+- **`kind`** — What kind of thing to watch. `road` = one motorway or federal road (key: "A8", "B27") — reports a closure or restriction appearing or clearing, not a jam; `station` = one public-transport stop (key: its name, "Köln Hbf", or its DHID) — reports departures running late past the threshold; `region` = a city, district or Land (key: its name, "Hamburg", or its AGS key, "14612") — reports the share of late trips crossing the threshold; `place` = a town or address (key: "Fulda") — reports road restrictions appearing within the radius, not a jam; `weather` = one DWD warn cell (key: a place name, "Kiel", or the cell id) — reports an official warning coming into force; `charger` = one charging site (key: a place, "Würzburg", or the site id) — reports a point turning free.
 - **`condition`** — Optional threshold; the keys of each kind, with an example: road {"event": "reopen"} (only the reopening); station {"delay_min": 20}; region {"late_share": 0.3, "delay_min": 5, "min_trips": 20}; place {"radius_km": 10}; weather {"min_level": 3}; charger {"point_id": "2"} (one charge point). Any other key, or a key of another kind, is refused by name; leave it out for the default. The answer repeats the condition it applies.
   - `delay_min` (integer, min 1; max 600) — station: minutes of delay that count as a disruption (default 10).
   - `late_share` (number, min 0.01; max 1) — region: share of observed trips running late that trips the watch (default 0.25).
@@ -569,6 +570,7 @@ The server's own instructions to a connecting client, verbatim:
   - `point_id` (string, min length 1; max length 200) — charger: one charge point of the site instead of any of them.
 - **`hours`** — How long to watch, in hours (default 3, maximum 24). Prefer this over `until`: it needs no knowledge of the current time. Give one of `hours` or `until`, never both.
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
+- **`request`** — The person's request in their own words ("sag mir Bescheid, wenn sich auf der A7 ein Stau bildet"). Pass it on every call: a `road` or `place` watch reports closures and restrictions, never a jam or slow traffic, and the answer says so — a request about a jam alone opens no watch.
 - **`until`** — An explicit end instant as ISO-8601 with an offset ("2026-09-20T18:40:00+02:00"), at most 24 hours ahead. Use only when the person named a time; otherwise use `hours`. Give one of `hours` or `until`, never both.
 
 ### `stop_watch` — Stop a watch
