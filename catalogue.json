@@ -5,7 +5,7 @@
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.2.14"
+    "version": "2.3.0"
   },
   "capabilities": {
     "tools": {
@@ -1430,7 +1430,7 @@
     },
     {
       "name": "watch_situation",
-      "description": "Opens a watch so THIS conversation is told when something changes: a road reopening, a stop running late, a weather warning, a charge point turning free. Use when asked to be told later: \"sag mir Bescheid, wenn die A8 wieder frei ist\", \"tell me when a warning comes for Kiel\". A name is enough as the key; no lookup first. Do NOT use to look up now, nor for e-mail, SMS or any alert outside this chat — we cannot send one; say so. Set hours (≤ 24, default 3) to cover the time asked about; condition narrows it (only the reopening, one charge point). Session-scoped, ≤ 10 watches. Show attribution.",
+      "description": "Opens a watch so THIS conversation is told when something changes: a road closed or restricted (not a jam), a stop running late, a weather warning, a charger freeing up. Use when asked to be told later: \"sag mir Bescheid, wenn die A8 wieder frei ist\", \"tell me when a warning comes for Kiel\". A name is enough as the key; no lookup first. Do NOT use to look up now, nor for e-mail, SMS or alerts outside this chat — we cannot send one; say so. Set hours (≤ 24, default 3) for the time asked; condition narrows it (only the reopening, one charge point). Session-scoped, ≤ 10 watches. Show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1453,13 +1453,18 @@
               "weather",
               "charger"
             ],
-            "description": "What kind of thing to watch. `road` = one motorway or federal road (key: \"A8\", \"B27\") — reports a closure or restriction appearing or clearing; `station` = one public-transport stop (key: its name, \"Köln Hbf\", or its DHID) — reports departures running late past the threshold; `region` = a city, district or Land (key: its name, \"Hamburg\", or its AGS key, \"14612\") — reports the share of late trips crossing the threshold; `place` = a town or address (key: \"Fulda\") — reports road restrictions appearing within the radius; `weather` = one DWD warn cell (key: a place name, \"Kiel\", or the cell id) — reports an official warning coming into force; `charger` = one charging site (key: a place, \"Würzburg\", or the site id) — reports a point turning free."
+            "description": "What kind of thing to watch. `road` = one motorway or federal road (key: \"A8\", \"B27\") — reports a closure or restriction appearing or clearing, not a jam; `station` = one public-transport stop (key: its name, \"Köln Hbf\", or its DHID) — reports departures running late past the threshold; `region` = a city, district or Land (key: its name, \"Hamburg\", or its AGS key, \"14612\") — reports the share of late trips crossing the threshold; `place` = a town or address (key: \"Fulda\") — reports road restrictions appearing within the radius, not a jam; `weather` = one DWD warn cell (key: a place name, \"Kiel\", or the cell id) — reports an official warning coming into force; `charger` = one charging site (key: a place, \"Würzburg\", or the site id) — reports a point turning free."
           },
           "key": {
             "type": "string",
             "minLength": 1,
             "maxLength": 200,
             "description": "The thing to watch, in the person's own words — a name is enough and no read tool is needed first; the server resolves it and the answer names the key it resolved to. `road`: a road number (\"A8\", \"B27\"). `place`: a town or address (\"Fulda\"). `weather`: a place name (\"Kiel\"), resolved to the DWD warn cell it lies in — or a warn cell id (\"801002000\"); a Land or Kreis is an area and takes no single cell. `station`: a stop or station name (\"Köln Hbf\", \"München, Marienplatz\"), resolved to its DHID the way get_departures resolves a stop — or a DHID (\"de:14612:28\"); an EVA number from get_train_departures (\"8000207\") is not a DHID and is refused. `charger`: a place (\"Würzburg\"), resolved to the nearest charging site that reports live occupancy — or a site id from find_charging_station. `region`: a city, district or Land (\"Hamburg\", \"Landkreis Fulda\"), resolved to its AGS key the way check_transit_disruption resolves its region — or an AGS key (\"14612\"). A name that fits several places or stops gets a which-one list and opens no watch; call again with the chosen line."
+          },
+          "request": {
+            "description": "The person's request in their own words (\"sag mir Bescheid, wenn sich auf der A7 ein Stau bildet\"). Pass it on every call: a `road` or `place` watch reports closures and restrictions, never a jam or slow traffic, and the answer says so — a request about a jam alone opens no watch.",
+            "type": "string",
+            "maxLength": 200
           },
           "hours": {
             "description": "How long to watch, in hours (default 3, maximum 24). Prefer this over `until`: it needs no knowledge of the current time. Give one of `hours` or `until`, never both.",
