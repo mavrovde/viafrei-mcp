@@ -17,7 +17,7 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.3.7 |
+| Server | `viafrei` 2.3.9 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
@@ -66,7 +66,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Jams, slow traffic, closures and roadworks in force this minute on up to 5 motorways, with delay/speed. Use when asked about a named motorway now: Stau, a delay, how it looks, or a LIST of closures now; name every motorway (Munich→Berlin: A9). Do NOT use for yes/no: is a road open/closed/passable — check_road_status, even now — nor a closure with no time word or a later one (tonight, weekend); Baustellen dated or geplant — find_roadworks_ahead; Stau in a town, no motorway — check_road_status; fuel (find_cheapest_fuel), trains (get_train_departures). ~5 min old. Show the attribution line.
+> Per motorway (≤ 5): an Ampel verdict, then jams, closures and roadworks in force now, with delay/speed. Use when asked about a named motorway now: frei/clear (Ampel), Stau, a delay, how it looks, or a LIST of closures; name every motorway (Munich→Berlin: A9). Do NOT use for open/closed/gesperrt/passable, even now, a closure with no time word or a later one (tonight, weekend), or a town, no motorway — check_road_status; Baustellen dated or geplant — find_roadworks_ahead; a named city street: not held; fuel (find_cheapest_fuel), trains (get_train_departures). ~5 min old. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -182,7 +182,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> If a motorway, B/Land road (NI, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/next days; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road is open/passable — "ist die A8 in diesem Moment gesperrt", at any clock, closures tonight/weekend — or city Stau: "Stau in Köln?". Do NOT use for jams/delays on a named motorway or multi-motorway route — check_autobahn_traffic; roadworks by date window — find_roadworks_ahead; city street: not held, say so. ≤ 14 days/11 entries. Show attribution.
+> If a motorway, B/Land road (NI, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/next days; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road is open/closed/gesperrt/passable, even now — "A8 in diesem Moment gesperrt?" — closures tonight/weekend, or Stau in a town (Köln). Do NOT use for a named motorway frei/clear (Ampel) or its jams/delays — check_autobahn_traffic; dated roadworks — find_roadworks_ahead; a named city street: not held, no call. ≤ 14 days/11 entries. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
