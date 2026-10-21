@@ -5,7 +5,7 @@
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.3.7"
+    "version": "2.3.10"
   },
   "capabilities": {
     "tools": {
@@ -24,7 +24,7 @@
   "tools": [
     {
       "name": "check_autobahn_traffic",
-      "description": "Jams, slow traffic, closures and roadworks in force this minute on up to 5 motorways, with delay/speed. Use when asked about a named motorway now: Stau, a delay, how it looks, or a LIST of closures now; name every motorway (Munich→Berlin: A9). Do NOT use for yes/no: is a road open/closed/passable — check_road_status, even now — nor a closure with no time word or a later one (tonight, weekend); Baustellen dated or geplant — find_roadworks_ahead; Stau in a town, no motorway — check_road_status; fuel (find_cheapest_fuel), trains (get_train_departures). ~5 min old. Show the attribution line.",
+      "description": "Per motorway (≤ 5): an Ampel verdict, then jams, closures and roadworks in force now, with delay/speed. Use when asked about a named motorway now: frei/clear (Ampel), Stau, a delay, how it looks, or a LIST of closures; name every motorway (Munich→Berlin: A9). Do NOT use for open/closed/gesperrt/passable, even now, a closure with no time word or a later one (tonight, weekend), or a town, no motorway — check_road_status; Baustellen dated or geplant — find_roadworks_ahead; a named city street: not held; fuel (find_cheapest_fuel), trains (get_train_departures). ~5 min old. Show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -296,7 +296,7 @@
     },
     {
       "name": "find_parking",
-      "description": "Parking near a place, a coordinate or along one motorway: lorry parks, car parks, P+R and disabled-badge bays, with total spaces and, where published, free spaces now and the reading's age. Use when asked where to park or leave the car for the train (\"Parkhaus in Köln\", \"Rastplatz A3\", \"P+R\"). Do NOT use for fuel (find_cheapest_fuel) or EV charging (find_charging_station). Radius ≤ 25 km, ≤ 10 sites per list; ODbL and CC BY-SA sources are separate lists (up to three). No \"free now\" means no published count, not full. No prices: for \"was kostet\" say so, no call. Show each source's attribution.",
+      "description": "Parking near a place, a coordinate or along one motorway: lorry parks, car parks, P+R and disabled-badge bays, with total spaces, stated amenities (WC, shower) and published free spaces. Use when asked where to park or leave the car for the train (\"Parkhaus in Köln\", \"Rastplatz A3\", \"P+R\"). Do NOT use for fuel (find_cheapest_fuel) or EV charging (find_charging_station). Radius ≤ 25 km, ≤ 10 sites per list; ODbL and CC BY-SA sources are separate lists (up to three). No \"free now\" means no published count, not full. No prices: for \"was kostet\" say so, no call. Show each source's attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -357,6 +357,31 @@
             "description": "Set true only when the person asks whether spaces are free right now. It keeps just the facilities whose operator publishes live occupancy AND currently reports a space, and the result says how many were dropped for publishing nothing — most German parking publishes no occupancy at all, so true usually narrows the answer to very little. Default false.",
             "type": "boolean"
           },
+          "facilities": {
+            "description": "Keep only sites whose own publisher states ALL of these amenities: \"toilet\", \"shower\", \"restaurant\", \"snack\", \"cafe\", \"shop\", \"fuel\", \"charging\", \"drinking_water\", \"picnic\", \"playground\", \"wifi\", \"security\", \"accessible_toilet\". Pass it only when the person asks for one — \"Rastplatz mit Dusche an der A7\" → road \"A7\", facilities [\"shower\"]; \"car park with a toilet near Köln Hbf\" → facilities [\"toilet\"]. Many publishers state no amenities, so the filter can narrow the answer to little; an amenity nobody stated is unknown, not absent, and the answer says how many sites state any. A toilet, restaurant or charger merely NEAR a site (listed beside it, from OpenStreetMap or the charging register) never satisfies the filter. Leave it out otherwise: every listed site already carries its amenity line.",
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "toilet",
+                "accessible_toilet",
+                "shower",
+                "restaurant",
+                "snack",
+                "cafe",
+                "shop",
+                "fuel",
+                "charging",
+                "drinking_water",
+                "picnic",
+                "playground",
+                "wifi",
+                "security"
+              ]
+            }
+          },
           "limit": {
             "default": 5,
             "description": "How many facilities to return, nearest first (1–10, default 5).",
@@ -379,7 +404,7 @@
     },
     {
       "name": "check_road_status",
-      "description": "If a motorway, B/Land road (NI, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/next days; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road is open/passable — \"ist die A8 in diesem Moment gesperrt\", at any clock, closures tonight/weekend — or city Stau: \"Stau in Köln?\". Do NOT use for jams/delays on a named motorway or multi-motorway route — check_autobahn_traffic; roadworks by date window — find_roadworks_ahead; city street: not held, say so. ≤ 14 days/11 entries. Show attribution.",
+      "description": "If a motorway, B/Land road (NI, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/next days; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road is open/closed/gesperrt/passable, even now — \"A8 in diesem Moment gesperrt?\" — closures tonight/weekend, or Stau in a town (Köln). Do NOT use for a named motorway frei/clear (Ampel) or its jams/delays — check_autobahn_traffic; dated roadworks — find_roadworks_ahead; a named city street: not held, no call. ≤ 14 days/11 entries. Show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
