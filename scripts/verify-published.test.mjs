@@ -152,6 +152,36 @@ await t('every read is bounded by its own timeout signal', async () => {
   for (const c of reg.calls) assert.ok(c.init.signal instanceof AbortSignal, `no timeout signal on ${c.url}`);
 });
 
+/** A registry that never answers: each read resolves only when its own abort signal fires. */
+function hangingRegistry() {
+  const aborted = [];
+  const fetch = (url, init = {}) => new Promise((_, reject) => {
+    if (!init.signal) return; // a read without a signal hangs for ever, and the test's own guard catches it
+    init.signal.addEventListener('abort', () => { aborted.push(url); reject(init.signal.reason); }, { once: true });
+  });
+  return { fetch, aborted };
+}
+
+await t('the read timeout fires: a registry that never answers ends in "no answer within", and every read was aborted', async () => {
+  const reg = hangingRegistry();
+  const guard = new Promise((_, reject) => setTimeout(() => reject(new Error('the run did not end: a read was never aborted')), 5_000));
+  const r = await Promise.race([
+    verifyPublished({ name: NAME, version: V, repo: REPO, deadlineMs: 10_000, intervalMs: 5_000, readTimeoutMs: 25,
+      fetch: reg.fetch, sleep: async () => {}, log: () => {} }),
+    guard,
+  ]);
+  assert.equal(r.ok, false);
+  assert.match(r.failures[0], /The last read failed: no answer within 0\.025 s\./);
+  assert.equal(reg.aborted.length, r.reads, `${r.reads} reads, ${reg.aborted.length} aborted`);
+});
+
+await t('a failed read followed by plain 404s does not blame "the last read"', async () => {
+  const r = await run(registry({ versionThrowsUntil: 2, visibleFrom: 99 }));
+  assert.equal(r.ok, false);
+  assert.match(r.failures[0], /not visible within 20 s/);
+  assert.doesNotMatch(r.failures[0], /last read failed/);
+});
+
 await t('a read that throws is retried under the same budget, and the run still passes', async () => {
   const r = await run(registry({ versionThrowsUntil: 3 }));
   assert.equal(r.ok, true, r.failures.join('; '));
