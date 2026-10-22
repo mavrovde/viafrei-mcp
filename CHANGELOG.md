@@ -7,19 +7,102 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.3.12] - 2026-10-22
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.3.12 while the registry's latest is 2.3.7, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**CHANGED** — the automation knows what moved, not what it means:
+**A traffic light for every motorway, what a rest area has, and train boards that say why they are empty.**
+The package matches the server's 2.3.12 and covers the server releases 2.3.3 to
+2.3.12. 2.3.3, 2.3.5 and 2.3.7 were published here as plain mirrors, so what they
+brought is described here as well. No tool, prompt or resource was added, removed
+or renamed. One tool gained an optional argument, and three tool descriptions
+changed (below).
 
-- tools: check_autobahn_traffic differs between the server and the snapshot
-- tools: find_parking differs between the server and the snapshot
-- tools: check_road_status differs between the server and the snapshot
+### Changed (tool surface)
 
-**A person must describe the change above before this merges.** A release note that
-lists a tool name without saying what it does misleads the reader it exists for.
+- **`check_autobahn_traffic`** opens each motorway with a traffic light (Ampel):
+  "A7 — traffic light red: full closure (and 156 more reasons)." The description
+  now says that "is the A7 clear?" belongs here, while "is it open or closed?" stays
+  with `check_road_status`. A named city street is said to be not held, with no call.
+- **`check_road_status`**: the description says the other half of the same split.
+  Open, closed, "gesperrt" or passable, even right now, and Stau in a town are
+  answered here. A motorway's "frei?" and its jams go to `check_autobahn_traffic`.
+- **`find_parking`** lists, for each site, the amenities its own publisher states:
+  WC, shower, restaurant, snack bar, café, shop, fuel, charging, drinking water,
+  picnic area, playground, wifi, security, accessible toilet, or "not reported".
+  The new optional **`facilities`** argument (one to five of those names) keeps only
+  the sites whose publisher states all of them: "Rastplatz mit Dusche an der A7"
+  is `road: "A7", facilities: ["shower"]`. An amenity nobody stated is unknown,
+  not absent, and the answer says how many sites state any at all. What
+  OpenStreetMap shows within 300 m (500 m in a city), and public chargers near a
+  site, are listed beside it in a block of their own with their licence line.
+  They never count as the site's own, and never satisfy the filter.
+
+### Added (server 2.3.3–2.3.12)
+
+- **The traffic light, one national rule.** Red for a closure of the carriageway,
+  a jam of 30 minutes or more, a safety message (a wrong-way driver, people or
+  objects on the road), a DWD warning of level 3 or above, or a closed bridge.
+  Yellow for a shorter jam, roadworks, a lower warning, slippery roads in the
+  road-weather forecast, a closed ramp, or a source we cannot see right now. Green
+  only when every source is current and reports nothing, and even then the answer
+  says it is no guarantee of a clear road. Each reason names its source. Roadworks
+  and closed ramps are grouped ("11 × a junction ramp closed"). The structured
+  result keeps the full count in `reasonsTotal` and `reasonCounts`. Police and Land
+  traffic messages are read for every Land that publishes them.
+- **A jam says what a driver needs**: where it ends, roughly how long it is, since
+  when, whether it is growing (from at least three readings in 30 minutes), the
+  cause and the publisher's detour where given, and the total delay per direction.
+- **Empty train boards explain themselves.** When `get_train_departures` finds no
+  train of the type asked, it says whether the DELFI timetable lists none either,
+  and names a rail replacement bus near the station when the timetable files one.
+  It does not judge ICE or IC from the timetable, which names no product for
+  long-distance trains, and says so. When DB's board cannot be read and no live
+  feed answers, the next train in the DELFI timetable answers instead of an error,
+  marked as planned times. New optional result keys: `timetableTrains`,
+  `nextReplacementBus`, `timetableReadBounded`, `timetableInWindowAtLeast`,
+  `timetableJudgesCategories`.
+- **Punctuality in Niedersachsen and Bremen from VBN.** Where DELFI's trips in a
+  region are mostly untimed, `check_transit_disruption` takes the share it covers
+  from VBN's own live feed. It says that share is not Land-wide and credits VBN
+  alone.
+- **Motorway pages on viafrei.de** grew a lot; see the README's
+  [Motorway pages](https://github.com/mavrovde/viafrei-mcp#-motorway-pages). Each page has the traffic light,
+  one card per kind with checkboxes (and `?show=` in the address), amenity
+  filters on the parking card, and "around you" within a chosen radius of your
+  rounded position. They also show police and Land messages along the road,
+  Schleswig-Holstein's bridge states, signed detours, Brandenburg's border
+  crossings and the lorry networks of SEVAS and ivm.
+- **The site speaks 22 languages.** French, Spanish, Italian, Portuguese, Dutch,
+  Danish, Polish, Czech, Slovak, Hungarian, Croatian, Serbian (Cyrillic),
+  Lithuanian, Latvian and Greek joined the seven before. Every address uses the
+  same English route words after the language token, and "autobahn" in every
+  language (`/fr/autobahn/a7`, `/de/place/muenchen`). Every old address answers
+  with one redirect to its new one.
+
+### Fixed (server 2.3.3–2.3.12)
+
+- **A qualified place answers in that Kreis**: "Bennewitz, Landkreis Leipzig" is
+  Bennewitz, never a Leipzig district of a similar name. A bare name shared by
+  towns of a similar size asks which one, and a landmark is looked up as itself.
+- **"Koeln Hbf" finds Köln Hbf**: a stop not found as written is tried again
+  under its umlaut spelling.
+- **A station named like towns in another Land names its Land** on the board's
+  first line ("Sennfeld (Baden-Württemberg)").
+- **Road entries carry no internal markers** from the federal roadworks feed, and
+  a length reads "9.9 km".
+- **A service alert on a line is placed in the Länder of the agency that runs
+  it**, not in every Land of its network.
+- **The parking amenities of sites loaded earlier** are read from the data
+  already held, so older sites are not left at "not reported".
+
+### Bridge
+
+- No code change in the relay. The shipped snapshot, API.md and the README's tool
+  list were re-captured from server 2.3.12. The README's examples were refreshed
+  with answers captured from server 2.3.12 on 2026-10-22. SOURCES.md was compared
+  row by row with the server's register (237 sources, unchanged in number).
+  Berlin's park-and-ride sites now answer.
+- **The publish verifier waits for npm properly.** npm makes the version
+  document, `dist-tags.latest` and the tarball visible at different moments, so
+  `scripts/verify-published.mjs` now polls all three, inside one shared deadline,
+  and a failure says what the last read saw (#141).
 
 ## [2.3.7] - 2026-10-21
 

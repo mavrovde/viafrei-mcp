@@ -15,22 +15,19 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.2.14 on 2026-10-20**: 237 sources. 219 of
-them are held and answering, 12 are planned (licence read, nothing ingested yet),
-five are discontinued and one, Berlin's park-and-ride sites, has **no data yet**.
-The page was last compared at server 2.2.6, and 25 rows are new since then:
-Hamburg's signed detours, signal installations, traffic counts, on-street bays and
-coach places, its heavy-transport network, Köln's and Dresden's lorry data,
-Frankfurt's acoustic traffic signals and disabled-badge bays, Kiel's car parks,
-Essen's and Bochum's zone boundaries, and road context from Brandenburg,
-Schleswig-Holstein, Karlsruhe, Aachen, München and Berlin. Of the rows that were
-already here, eight changed status: ivm's two lorry feeds for Frankfurt RheinMain
-are no longer held back and answer, Dresden's step-free stops and TU Chemnitz's
-stop-accessibility export now answer, and smartlab's four charging publications
-(ladenetz.de and ladebusiness) were ended by their publisher and are discontinued.
-Four lines changed: both ivm lines now carry the dataset reference and change
-notice ivm's terms prescribe, DB InfraGO's inventory line names the platforms it
-now also feeds, and Duisburg's zone line names the city's portal. The website also
+with that resource as served by server 2.3.12 on 2026-10-22**: 237 sources, the same
+ids as at server 2.2.14. 220 of them are held and answering, 12 are planned (licence
+read, nothing ingested yet) and five are discontinued. No row was added or removed
+since the last comparison, at server 2.2.14, and no attribution line changed. One
+status changed: Berlin's park-and-ride sites, switched on with no successful read
+then, now answer. What changed is what the sources feed. The motorway traffic light
+reads the Autobahn GmbH's reports, the police and Land traffic messages, the DWD
+warnings, the road-weather forecast and Schleswig-Holstein's bridge states. A parking
+site's amenities come from its own publisher, with what OpenStreetMap and the charging
+register show close by listed beside it. VBN's realtime feed now also gives the
+punctuality share in Niedersachsen and Bremen where DELFI's trips are mostly untimed.
+The motorway pages list police and Land messages, bridge states, signed detours,
+border crossings and the lorry networks. The website also
 uses two sources the server's register does not list, named
 [near the end](#the-websites-own-sources). Whatever the surfaces say, the answer you hold is the thing to read:
 `_meta.sources` and the attribution lines on it are produced from the same result
@@ -253,15 +250,15 @@ that every answer carries it.
 - **no data yet** — switched on, but no read has succeeded yet, so nothing
   answers from it.
 
-**Status is the register's, not a measurement**, with one exception: the row
-marked no data yet was read from the server's own coverage resource,
-`viafrei://coverage`, on 2026-10-20, because the register lists it like any other
-source. The last time each source's
+**Status is the register's, not a measurement.** Berlin's park-and-ride row, marked
+no data yet at server 2.2.14 from the server's own coverage resource,
+`viafrei://coverage`, was read there again on 2026-10-22: it is current and answers.
+The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.2.14,
-2026-10-20), it exposes twenty-two tools, twenty of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.3.12,
+2026-10-22), it exposes twenty-two tools, twenty of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
@@ -273,7 +270,7 @@ feed, live, in the resource `viafrei://coverage`.
 
 | Source id | Attribution line | Licence | Status |
 |---|---|---|---|
-| **Roads, traffic messages and roadworks** — feeds `check_autobahn_traffic`, `check_road_status`, `find_roadworks_ahead`, `watch_situation`; site: the road card (closures, jams, city and Land messages and works, Hamburg roadworks and cameras, BW detours, measured and counted traffic, and the street context of a place), the Autobahn card, the motorway pages (lists, map, junction strip, planned full closures with BW detours, the home's ten worst motorways) and long closures on the News page | | | |
+| **Roads, traffic messages and roadworks** — feeds `check_autobahn_traffic` (its traffic light included), `check_road_status`, `find_roadworks_ahead`, `watch_situation`; site: the road card (closures, jams, city and Land messages and works, Hamburg roadworks and cameras, BW detours, measured and counted traffic, and the street context of a place), the Autobahn card, the motorway pages (the traffic light, the cards, map, junction strip, planned full closures with BW detours, police and Land messages, Schleswig-Holstein's bridge states, signed detours, border crossings, the home's ten worst motorways) and long closures on the News page | | | |
 | `autobahn` | Verkehrsdaten: Autobahn GmbH des Bundes | open, no licence text published | held |
 | `mobilithek_bab_messages` | Verkehrsmeldungen: Die Autobahn GmbH des Bundes (Mobilithek), Nutzungsbestimmungen nach GeoNutzV, Daten verändert; Ortsangaben: TMC Location Code List der Bundesanstalt für Straßenwesen (BASt), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), bearbeitet | GeoNutzV | held |
 | `bast_lcl` | TMC Location Code List (LCL 22.0): Bundesanstalt für Straßenwesen (BASt), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), bearbeitet | CC BY 4.0 | held |
@@ -341,7 +338,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `aachen_fussgaengerzonen` | Zugang Fußgängerzonen: Stadt Aachen (2026), Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
 | `muenchen_lieferzonen` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | held |
 | `muenchen_3l_zonen` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | held |
-| **Lorry routes** — feeds `check_road_status` with `vehicle`; site: the lorry block on the road card | | | |
+| **Lorry routes** — feeds `check_road_status` with `vehicle`; site: the lorry block on the road card, and the lorry networks of SEVAS and ivm on the motorway pages | | | |
 | `lorry_bast_langlkw` | Lang-Lkw-Netz: Bundesanstalt für Straßen- und Verkehrswesen (BASt), Positivnetz Lang-LKW (Auszug Bundesfernstraßen), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), bearbeitet | CC BY 4.0 **plus a condition of use** | held |
 | `lorry_hh_langlkw` | Lang-Lkw-Netz Hamburg (Feldversuch 2015): Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende, (BVM), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
 | `lorry_sevas_nrw` | Lkw-Navigationsdaten NRW: NRW.Mobidrom GmbH (SEVAS), Datenlizenz Deutschland – Zero – Version 2.0; Geometrie: © OpenStreetMap-Mitwirkende, Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/) | **ODbL 1.0** (attributes dl-de/zero-2-0) | held |
@@ -354,7 +351,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `lorry_dresden_verbotszonen` | Lkw-Verbotszonen: Landeshauptstadt Dresden (Quelle: Geodaten Sachsen), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 **plus a condition of use** | held |
 | `lorry_dresden_vorrangrouten` | Lkw-Vorrangroutennetz: Landeshauptstadt Dresden (Quelle: Geodaten Sachsen), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
 | `lorry_hh_gst_netz` | Großraum- und Schwertransport-Netz Hamburg: Freie und Hansestadt Hamburg, Landesbetrieb Verkehr (LBV), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 **plus a condition of use** | held |
-| **Rail and public transport** — feeds `get_train_departures`, `get_departures`, `check_transit_disruption`, `watch_situation`; site: the transit card (live departures, the district's punctuality, VBB's in Berlin and Brandenburg) | | | |
+| **Rail and public transport** — feeds `get_train_departures` (the DELFI timetable also answers an empty or unreadable board), `get_departures`, `check_transit_disruption` (VBN's share where DELFI's trips in Niedersachsen and Bremen are mostly untimed), `watch_situation`; site: the transit card (live departures, the district's punctuality, VBB's in Berlin and Brandenburg) | | | |
 | `db_timetables` | Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `delfi_static` | Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `delfi_rt_tu` | Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | held |
@@ -382,7 +379,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `tankerkoenig` | Tankstellenpreise: Tankerkönig.de — MTS-K, CC BY 4.0, bearbeitet | CC BY 4.0 **plus the MTS-K purpose limit** | held |
 | **Hydrogen** — feeds `find_hydrogen_station`; site: the fuel card (the two nearest hydrogen stations within 25 km) | | | |
 | `mobilithek_h2_stations` | Wasserstofftankstellen: H2 Mobility Deutschland GmbH & Co. KG via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
-| **Charging** — feeds `find_charging_station`, `find_nearby`, `watch_situation`; site: the charging card and the motorway pages (chargers along the road, power classes, the longest stretch without a fast charger) | | | |
+| **Charging** — feeds `find_charging_station`, `find_nearby`, `watch_situation`, and the chargers named near a site in `find_parking`; site: the charging card and the motorway pages (chargers along the road, power classes, the longest stretch without a fast charger) | | | |
 | `bnetza_lsr` | Ladesäulenregister: Bundesnetzagentur.de, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_afir_ecomovement` | Ladepunkte: Eco-Movement via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_afir_ecomovement_dyn` | Ladepunkt-Verfügbarkeit: Eco-Movement via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
@@ -440,7 +437,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `ocpdb_chargecloud` | Ladepunkte und Verfügbarkeit: chargecloud (CC0 1.0) via MobiData BW (NVBW), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert | dl-de/by-2-0 | held |
 | `ocpdb_taubert` | Ladepunkte und Verfügbarkeit: Taubert Consulting (CC0 1.0) via MobiData BW (NVBW), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten geändert | dl-de/by-2-0 | held |
 | `hh_emobility` | Ladestatus: Freie und Hansestadt Hamburg, Behörde für Wirtschaft und Innovation, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
-| **Parking** — feeds `find_parking`, `find_nearby`; site: the parking card (München forecast included; the share-alike lorry parks and P+R sites, Hamburg's coach places and on-street bays in blocks of their own) and the motorway pages (parking and rest) | | | |
+| **Parking** — feeds `find_parking` (each site's amenities as its publisher states them, and the `facilities` filter), `find_nearby`; site: the parking card (München forecast included; the share-alike lorry parks and P+R sites, Hamburg's coach places and on-street bays in blocks of their own) and the motorway pages (parking and rest, with the amenity filters) | | | |
 | `mobilithek_truckpark_static_geonutzv` | LKW-Parken: © Lkw-Parken BAB Deutschland / Bundesministerium für Verkehr (BMV) 2026 — GeoNutzV, Daten verändert | GeoNutzV | held |
 | `mobilithek_park_bosch_static` | Lkw-Parken: Bosch Service Solutions via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_park_bosch_dyn` | Lkw-Parken (Belegung): Bosch Service Solutions via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
@@ -501,14 +498,14 @@ feed, live, in the resource `viafrei://coverage`.
 | `frankfurt_behindertenparkplaetze` | Behindertenparkplätze: Stadt Frankfurt am Main – Straßenverkehrsamt, www.frankfurt.de, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
 | `hh_reisebusparkplaetze` | Reisebusparkplätze: Freie und Hansestadt Hamburg, Behörde für Verkehr und Mobilitätswende (BVM), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
 | `hh_parkraum` | Öffentlicher Parkraum: Freie und Hansestadt Hamburg, Landesbetrieb Verkehr, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
-| `berlin_park_ride` | Park-and-Ride-Anlagen: Land Berlin, Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt (Umland: Verkehrsverbund Berlin-Brandenburg), Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | no data yet |
+| `berlin_park_ride` | Park-and-Ride-Anlagen: Land Berlin, Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt (Umland: Verkehrsverbund Berlin-Brandenburg), Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | **Bike sharing** — feeds `find_sharing`; site: shared bikes within 1 km on the transit card | | | |
 | `gbfs_nextbike` | Bikesharing: nextbike GmbH (GBFS), CC0 1.0 | CC0 1.0 | held |
 | `gbfs_donkey` | Bikesharing: Donkey Republic (GBFS), CC0 1.0 | CC0 1.0 | held |
-| **Weather** — feeds `check_weather_warnings`, `watch_situation`; site: the weather card, road-surface forecast included, and the motorway pages (warnings along the road, the road-surface forecast per station) | | | |
+| **Weather** — feeds `check_weather_warnings`, `watch_situation`, and the motorway traffic light (DWD warnings and the road-surface forecast); site: the weather card, road-surface forecast included, and the motorway pages (warnings along the road, the road-surface forecast per station) | | | |
 | `dwd` | Quelle: Deutscher Wetterdienst | CC BY 4.0 | held |
 | `dwd_road` | Quelle: Deutscher Wetterdienst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder | CC BY 4.0 **plus a condition of use** | held |
-| **Places and addresses** — feeds every tool that takes a `place`, and `find_place`, `find_poi`, `find_address`, `describe_location`, `find_nearby`; site: the place search, the place pages and the place name in the place bar | | | |
+| **Places and addresses** — feeds every tool that takes a `place`, and `find_place`, `find_poi`, `find_address`, `describe_location`, `find_nearby`, and what OpenStreetMap shows near a site in `find_parking`; site: the place search, the place pages and the place name in the place bar | | | |
 | `bkg_gvisys` | Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0, Datenquellen: https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_gn250.pdf (Daten verändert) | dl-de/by-2-0 | held |
 | `geonames` | Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet | CC BY 4.0 | held |
 | `osm` | OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | held |
@@ -1078,8 +1075,9 @@ carries the line of every publisher it lists.
   **Leipzig**, where the city publishes live free spaces per site (dl-de/by-2-0),
   and since server 2.2.9 **Kiel** (below). **Berlin's park-and-ride sites** (the
   Senatsverwaltung's dataset with the VBB's sites around the city, DL-DE Zero 2.0)
-  are switched on and have **no data yet**: the first reads ended in an error, so
-  nothing answers from them.
+  answer at server 2.3.12, after first reads that ended in an error: each site's
+  place, capacity and, where stated, that it is free of charge. No live occupancy
+  is published for them, and the answer says so.
 - **Kiel** (Landeshauptstadt Kiel, CC BY 4.0), since server 2.2.9: the city's car
   parks, open lots, underground car parks and P+R sites. The city publishes a point
   and a type word only, so no capacity or free count is shown, and a site named
@@ -1431,11 +1429,11 @@ at the Thiersheim truck stop, and Kiel's old-town car parks.
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; see the
 charging section for the dated grace window.
 
-**Held back.** Nothing at server 2.2.14. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.3.12. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** Berlin's park-and-ride sites are switched on, and no read had
-succeeded when this page was compared.
+**No data yet.** None at server 2.3.12. Berlin's park-and-ride sites, the one such
+row at 2.2.14, answer now.
 
 **Not built:**
 
@@ -1450,7 +1448,9 @@ succeeded when this page was compared.
 - **Typical traffic per motorway** ("usually jammed on Friday afternoons"). The
   history we hold is far too short to say it, and an aggregate of that kind is a
   new derivation that would need its own licence review first. The motorway
-  pages show what is reported now and what is planned, nothing more.
+  pages show what is reported now and what is planned, nothing more; a jam's
+  "growing" or "steady" is read from its own last half hour of readings, not from
+  a history.
 - **DB Timetables on the site.** It is asked once per question, under the
   provider's rate limit, and nothing of it is stored; showing it on a card would
   mean calling the provider whenever any visitor or crawler opened a page. It
@@ -1492,11 +1492,12 @@ succeeded when this page was compared.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.2.14 on 2026-10-20, not typed: every id it
+  by line with it as served by server 2.3.12 on 2026-10-22, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
-  fetch through. The 25 rows added then were taken from the same resource.
+  fetch through. No row was added at 2.3.12; the 25 added at 2.2.14 were taken
+  from the same resource.
 - Every row in our internal register records the licence, the operative sentence,
   the date it was read and who may do what with the data. Rows are re-verified
   **quarterly** and whenever a provider announces a change.
