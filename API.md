@@ -9,7 +9,7 @@ the server's own text, reproduced verbatim, because that text is what an
 assistant reads when it decides which tool to call; paraphrasing it here would
 document a different server.
 
-**It is a dated snapshot, taken on 2026-10-21.** Generating this file makes
+**It is a dated snapshot, taken on 2026-10-22.** Generating this file makes
 it impossible for the document and the snapshot to disagree — CI regenerates and
 compares — but it cannot keep the snapshot from ageing against the live server,
 because a capture is a point in time. **The source of truth is the running
@@ -17,11 +17,11 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.3.7 |
+| Server | `viafrei` 2.3.11 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
-| Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-21 |
+| Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-22 |
 | Surface | 22 tools, 10 resources, 2 resource templates, 9 prompts |
 | Parameter schemas | JSON Schema draft-07 |
 | Capabilities | `tools`, `resources`, `prompts`, `logging` |
@@ -66,7 +66,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Jams, slow traffic, closures and roadworks in force this minute on up to 5 motorways, with delay/speed. Use when asked about a named motorway now: Stau, a delay, how it looks, or a LIST of closures now; name every motorway (Munich→Berlin: A9). Do NOT use for yes/no: is a road open/closed/passable — check_road_status, even now — nor a closure with no time word or a later one (tonight, weekend); Baustellen dated or geplant — find_roadworks_ahead; Stau in a town, no motorway — check_road_status; fuel (find_cheapest_fuel), trains (get_train_departures). ~5 min old. Show the attribution line.
+> Per motorway (≤ 5): an Ampel verdict, then jams, closures and roadworks in force now, with delay/speed. Use when asked about a named motorway now: frei/clear (Ampel), Stau, a delay, how it looks, or a LIST of closures; name every motorway (Munich→Berlin: A9). Do NOT use for open/closed/gesperrt/passable, even now, a closure with no time word or a later one (tonight, weekend), or a town, no motorway — check_road_status; Baustellen dated or geplant — find_roadworks_ahead; a named city street: not held; fuel (find_cheapest_fuel), trains (get_train_departures). ~5 min old. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -154,10 +154,11 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Parking near a place, a coordinate or along one motorway: lorry parks, car parks, P+R and disabled-badge bays, with total spaces and, where published, free spaces now and the reading's age. Use when asked where to park or leave the car for the train ("Parkhaus in Köln", "Rastplatz A3", "P+R"). Do NOT use for fuel (find_cheapest_fuel) or EV charging (find_charging_station). Radius ≤ 25 km, ≤ 10 sites per list; ODbL and CC BY-SA sources are separate lists (up to three). No "free now" means no published count, not full. No prices: for "was kostet" say so, no call. Show each source's attribution.
+> Parking near a place, a coordinate or along one motorway: lorry parks, car parks, P+R and disabled-badge bays, with total spaces, stated amenities (WC, shower) and published free spaces. Use when asked where to park or leave the car for the train ("Parkhaus in Köln", "Rastplatz A3", "P+R"). Do NOT use for fuel (find_cheapest_fuel) or EV charging (find_charging_station). Radius ≤ 25 km, ≤ 10 sites per list; ODbL and CC BY-SA sources are separate lists (up to three). No "free now" means no published count, not full. No prices: for "was kostet" say so, no call. Show each source's attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
+| `facilities` | array of string | no | — | min 1 item(s); max 5 item(s); each item: one of `"toilet"`, `"accessible_toilet"`, `"shower"`, `"restaurant"`, `"snack"`, `"cafe"`, `"shop"`, `"fuel"`, `"charging"`, `"drinking_water"`, `"picnic"`, `"playground"`, `"wifi"`, `"security"` |
 | `kind` | string | no | `"any"` | one of `"any"`, `"rest_area"`, `"car_park"`, `"park_and_ride"`, `"truck"`, `"disabled_badge"` |
 | `language` | string | no | `"de"` | one of `"de"`, `"en"` |
 | `lat` | number | no | — | min -90; max 90 |
@@ -168,6 +169,7 @@ The server's own instructions to a connecting client, verbatim:
 | `radius_km` | number | no | `10` | min 1; max 25 |
 | `road` | string | no | — | max length 16 |
 
+- **`facilities`** — Keep only sites whose own publisher states ALL of these amenities: "toilet", "shower", "restaurant", "snack", "cafe", "shop", "fuel", "charging", "drinking_water", "picnic", "playground", "wifi", "security", "accessible_toilet". Pass it only when the person asks for one — "Rastplatz mit Dusche an der A7" → road "A7", facilities ["shower"]; "car park with a toilet near Köln Hbf" → facilities ["toilet"]. Many publishers state no amenities, so the filter can narrow the answer to little; an amenity nobody stated is unknown, not absent, and the answer says how many sites state any. A toilet, restaurant or charger merely NEAR a site (listed beside it, from OpenStreetMap or the charging register) never satisfies the filter. Leave it out otherwise: every listed site already carries its amenity line.
 - **`kind`** — Which kind of parking: "car_park" = public car park (Parkhaus/Parkplatz), "park_and_ride" = P+R beside a station, "truck" = lorry parking, "any" = all of them. Default "any". "disabled_badge" = on-street bays reserved for a disabled parking permit (Behindertenparkplatz, Schwerbehindertenparkplatz), where a municipality publishes them, with a sensor's free/occupied where one is fitted — pass it only when such a bay was asked for; it is never part of "any" and takes place or lat+lon, not road. Rest areas are NOT a kind we can filter: no source we hold classifies them, so for "Rastanlage"/"Raststätte"/"rest area" leave kind out ("truck" when lorry spaces were asked for); "rest_area" is still accepted and answered as "any", with a sentence saying why. Pass a kind only when the person named one — a lorry driver asking for a break wants "truck", someone leaving the car for the train wants "park_and_ride". A camper, a caravan or a coach is none of these: leave the argument out rather than filtering a tourist into lorry bays.
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.
@@ -182,7 +184,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> If a motorway, B/Land road (NI, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/next days; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road is open/passable — "ist die A8 in diesem Moment gesperrt", at any clock, closures tonight/weekend — or city Stau: "Stau in Köln?". Do NOT use for jams/delays on a named motorway or multi-motorway route — check_autobahn_traffic; roadworks by date window — find_roadworks_ahead; city street: not held, say so. ≤ 14 days/11 entries. Show attribution.
+> If a motorway, B/Land road (NI, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/next days; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road is open/closed/gesperrt/passable, even now — "A8 in diesem Moment gesperrt?" — closures tonight/weekend, or Stau in a town (Köln). Do NOT use for a named motorway frei/clear (Ampel) or its jams/delays — check_autobahn_traffic; dated roadworks — find_roadworks_ahead; a named city street: not held, no call. ≤ 14 days/11 entries. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -755,5 +757,5 @@ single call.
 ---
 
 Generated from `catalogue.json` by `scripts/gen-api-doc.mjs`. The snapshot was
-read from `https://mcp.viafrei.de/mcp` on 2026-10-21; no tool was invoked to
+read from `https://mcp.viafrei.de/mcp` on 2026-10-22; no tool was invoked to
 produce it, so no data provider was contacted.
