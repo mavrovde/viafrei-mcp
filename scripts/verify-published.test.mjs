@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { verifyPublished } from './verify-published.mjs';
+import { READ_TIMEOUT_MS, verifyPublished } from './verify-published.mjs';
 
 const NAME = 'viafrei';
 const V = '9.9.9';
@@ -152,6 +152,13 @@ await t('every read is bounded by its own timeout signal', async () => {
   for (const c of reg.calls) assert.ok(c.init.signal instanceof AbortSignal, `no timeout signal on ${c.url}`);
 });
 
+/** Race a run against a 5 s guard, and clear the guard either way. */
+async function withGuard(run) {
+  let timer;
+  const guard = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('the run did not end: a read was never aborted')), 5_000); });
+  try { return await Promise.race([run, guard]); } finally { clearTimeout(timer); }
+}
+
 /** A registry that never answers: each read resolves only when its own abort signal fires. */
 function hangingRegistry() {
   const aborted = [];
@@ -164,15 +171,45 @@ function hangingRegistry() {
 
 await t('the read timeout fires: a registry that never answers ends in "no answer within", and every read was aborted', async () => {
   const reg = hangingRegistry();
-  const guard = new Promise((_, reject) => setTimeout(() => reject(new Error('the run did not end: a read was never aborted')), 5_000));
-  const r = await Promise.race([
-    verifyPublished({ name: NAME, version: V, repo: REPO, deadlineMs: 10_000, intervalMs: 5_000, readTimeoutMs: 25,
-      fetch: reg.fetch, sleep: async () => {}, log: () => {} }),
-    guard,
-  ]);
+  const r = await withGuard(verifyPublished({ name: NAME, version: V, repo: REPO, deadlineMs: 10_000, intervalMs: 5_000, readTimeoutMs: 25,
+    fetch: reg.fetch, sleep: async () => {}, log: () => {} }));
   assert.equal(r.ok, false);
   assert.match(r.failures[0], /The last read failed: no answer within 0\.025 s\./);
   assert.equal(reg.aborted.length, r.reads, `${r.reads} reads, ${reg.aborted.length} aborted`);
+});
+
+await t('the tarball HEAD has the same timeout: a tarball that never answers fails as "no answer within", and it was aborted', async () => {
+  const good = registry();
+  const aborted = [];
+  const fetch = (url, init = {}) => {
+    if (!url.startsWith(TARBALL)) return good.fetch(url, init);
+    return new Promise((_, reject) => {
+      if (!init.signal) return;
+      init.signal.addEventListener('abort', () => { aborted.push(url); reject(init.signal.reason); }, { once: true });
+    });
+  };
+  const r = await withGuard(verifyPublished({ name: NAME, version: V, repo: REPO, deadlineMs: 10_000, intervalMs: 5_000, readTimeoutMs: 25,
+    fetch, sleep: async () => {}, log: () => {} }));
+  assert.equal(r.ok, false);
+  assert.equal(r.failures.length, 1, r.failures.join('; '));
+  assert.match(r.failures[0], /the tarball .* is not served: still a failed read \(no answer within 0\.025 s\)/);
+  assert.ok(aborted.length >= 1, 'no tarball read was aborted');
+});
+
+await t('the default read timeout is 15 s, and it is what a run uses when none is given', async () => {
+  assert.equal(READ_TIMEOUT_MS, 15_000);
+  const seen = [];
+  const real = AbortSignal.timeout;
+  AbortSignal.timeout = (ms) => { seen.push(ms); return real.call(AbortSignal, ms); };
+  try {
+    const reg = registry();
+    await verifyPublished({ name: NAME, version: V, repo: REPO, deadlineMs: 20_000, intervalMs: 5_000,
+      fetch: reg.fetch, sleep: async () => {}, log: () => {} });
+    assert.ok(seen.length >= 3, `only ${seen.length} reads asked for a timeout`);
+    assert.deepEqual([...new Set(seen)], [15_000]);
+  } finally {
+    AbortSignal.timeout = real;
+  }
 });
 
 await t('a failed read followed by plain 404s does not blame "the last read"', async () => {

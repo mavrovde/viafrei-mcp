@@ -63,8 +63,13 @@ export async function verifyPublished(o) {
 function freshGet(ctx, url) {
   return ctx.fetchFn(`${url}?nocache=${randomUUID()}`, {
     headers: { 'cache-control': 'no-cache', accept: 'application/json' },
-    signal: AbortSignal.timeout(ctx.readTimeout),
+    signal: readSignal(ctx),
   });
+}
+
+/** The one place a read gets its timeout: every registry read, document, dist-tag and tarball alike, uses this. */
+function readSignal(ctx) {
+  return AbortSignal.timeout(ctx.readTimeout);
 }
 
 /** What a thrown read says, in one line. */
@@ -147,7 +152,7 @@ async function checkTarball(ctx, doc) {
   if (!tarball) return ['dist.tarball is absent'];
   if (!tarball.startsWith(`${REGISTRY}/`)) return [`dist.tarball is not on ${REGISTRY}: ${tarball}`];
   return pollProperty(ctx, `the tarball ${tarball} is not served`, async () => {
-    const t = await ctx.fetchFn(`${tarball}?nocache=${randomUUID()}`, { method: 'HEAD', headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(ctx.readTimeout) });
+    const t = await ctx.fetchFn(`${tarball}?nocache=${randomUUID()}`, { method: 'HEAD', headers: { 'cache-control': 'no-cache' }, signal: readSignal(ctx) });
     return { ok: t.status === 200, seen: `answered HTTP ${t.status}` };
   });
 }
