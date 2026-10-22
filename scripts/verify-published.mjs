@@ -8,6 +8,12 @@
 // `no-cache` header AND a unique query string), never uses the npm client, and
 // polls with a DEADLINE. One negative read is "not visible yet", never "not
 // published"; only the deadline turns it into a failure, and the message says so.
+// npm makes the version document, `dist-tags.latest` and the tarball visible at
+// DIFFERENT moments, so each of the three is polled, and all three share ONE
+// deadline: the time spent waiting for the document is not given back to the
+// dist-tag, so the whole verification ends within the deadline and inside the
+// job's own timeout. A property still negative when it passes fails with what
+// was last seen.
 //
 // Asserted, each a failure when it does not hold:
 //   - the version document exists and is about THIS version;
@@ -34,6 +40,8 @@ export async function verifyPublished(o) {
     log: o.log ?? ((s) => console.log(s)),
     deadline: o.deadlineMs ?? 300_000,
     interval: o.intervalMs ?? 5_000,
+    // Milliseconds waited so far, across every poll: the one budget all three share.
+    spent: 0,
   };
   const { doc, reads } = await pollVersion(ctx, o.name, o.version);
   if (!doc) {
@@ -49,17 +57,24 @@ function freshGet(ctx, url) {
   return ctx.fetchFn(`${url}?nocache=${randomUUID()}`, { headers: { 'cache-control': 'no-cache', accept: 'application/json' } });
 }
 
+/** Sleep one interval if the shared deadline still allows it; false when it does not. */
+async function wait(ctx) {
+  if (ctx.spent + ctx.interval > ctx.deadline) return false;
+  await ctx.sleep(ctx.interval);
+  ctx.spent += ctx.interval;
+  return true;
+}
+
 /** Poll the version document until it answers 200 or the deadline passes. */
 async function pollVersion(ctx, name, version) {
   let reads = 0;
-  for (let waited = 0; waited <= ctx.deadline; waited += ctx.interval) {
+  for (;;) {
     reads += 1;
     // Sequential on purpose: each read waits for the previous one and the interval.
     const r = await freshGet(ctx, `${REGISTRY}/${name}/${version}`);
     if (r.status === 200) return { doc: await r.json(), reads };
     if (r.status !== 404) ctx.log(`read ${reads}: HTTP ${r.status} (retrying)`);
-    if (waited + ctx.interval > ctx.deadline) break;
-    await ctx.sleep(ctx.interval);
+    if (!(await wait(ctx))) break;
   }
   return { doc: null, reads };
 }
@@ -73,10 +88,30 @@ function checkDocument(doc, o) {
   return failures;
 }
 
+/**
+ * Poll one property until `probe` answers `{ ok: true }` or the deadline passes. Each read is fresh (both cache
+ * defeats are in `probe`); the failure names the property and what the last read saw.
+ */
+async function pollProperty(ctx, what, probe) {
+  let reads = 0;
+  let seen = '(no read)';
+  for (;;) {
+    reads += 1;
+    // Sequential on purpose: each read waits for the previous one and the interval.
+    const r = await probe();
+    if (r.ok) return [];
+    seen = r.seen;
+    if (!(await wait(ctx))) break;
+  }
+  return [`${what}: still ${seen} after ${reads} read(s) within ${Math.round(ctx.deadline / 1000)} s`];
+}
+
 async function checkLatest(ctx, o) {
-  const packument = await freshGet(ctx, `${REGISTRY}/${o.name}`);
-  const latest = packument.status === 200 ? (await packument.json())['dist-tags']?.latest : undefined;
-  return latest === o.version ? [] : [`dist-tags.latest is ${latest ?? '(unreadable)'}, not ${o.version}`];
+  return pollProperty(ctx, `dist-tags.latest is not ${o.version}`, async () => {
+    const packument = await freshGet(ctx, `${REGISTRY}/${o.name}`);
+    const latest = packument.status === 200 ? (await packument.json())['dist-tags']?.latest : undefined;
+    return { ok: latest === o.version, seen: `dist-tags.latest is ${latest ?? `(unreadable, HTTP ${packument.status})`}` };
+  });
 }
 
 /** HEAD the tarball — only ever on the registry itself, never a host a document names. */
@@ -84,8 +119,10 @@ async function checkTarball(ctx, doc) {
   const tarball = doc.dist?.tarball;
   if (!tarball) return ['dist.tarball is absent'];
   if (!tarball.startsWith(`${REGISTRY}/`)) return [`dist.tarball is not on ${REGISTRY}: ${tarball}`];
-  const t = await ctx.fetchFn(tarball, { method: 'HEAD', headers: { 'cache-control': 'no-cache' } });
-  return t.status === 200 ? [] : [`the tarball ${tarball} answered HTTP ${t.status}`];
+  return pollProperty(ctx, `the tarball ${tarball} is not served`, async () => {
+    const t = await ctx.fetchFn(`${tarball}?nocache=${randomUUID()}`, { method: 'HEAD', headers: { 'cache-control': 'no-cache' } });
+    return { ok: t.status === 200, seen: `answered HTTP ${t.status}` };
+  });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
