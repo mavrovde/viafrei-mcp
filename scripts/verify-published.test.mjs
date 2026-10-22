@@ -30,21 +30,26 @@ const goodDoc = () => ({
 });
 
 /** A registry stub: `visibleFrom` is the read on which the version document appears. */
-function registry({ doc = goodDoc(), latest = V, visibleFrom = 1, tarballStatus = 200, latestFrom = 1, tarballFrom = 1 } = {}) {
+// `versionThrowsUntil`: version reads before this one throw (a network error); `latestBadJson`: the packument's body is not JSON.
+function registry({ doc = goodDoc(), latest = V, visibleFrom = 1, tarballStatus = 200, latestFrom = 1, tarballFrom = 1,
+  versionThrowsUntil = 0, latestBadJson = false, allThrow = false } = {}) {
   const calls = [];
   let versionReads = 0;
   let latestReads = 0;
   let tarballReads = 0;
   const fetch = async (url, init = {}) => {
     calls.push({ url, init });
+    if (allThrow) throw new TypeError('fetch failed');
     const bare = url.split('?')[0];
     const res = (status, body) => ({ status, json: async () => body });
     if (bare === `https://registry.npmjs.org/${NAME}/${V}`) {
       versionReads += 1;
+      if (versionReads < versionThrowsUntil) throw new TypeError('fetch failed');
       return versionReads >= visibleFrom ? res(200, doc) : res(404, {});
     }
     if (bare === `https://registry.npmjs.org/${NAME}`) {
       latestReads += 1;
+      if (latestBadJson) return { status: 200, json: async () => { throw new SyntaxError('Unexpected token < in JSON at position 0'); } };
       return res(200, { 'dist-tags': { latest: latestReads >= latestFrom ? latest : '9.9.8' } });
     }
     if (bare === TARBALL) {
@@ -127,6 +132,44 @@ await t('every registry read defeats both caches', async () => {
   assert.equal(queries.size, reads.length, 'two reads shared a query string');
 });
 
+await t('every tarball HEAD defeats both caches too', async () => {
+  const reg = registry({ tarballFrom: 3 });
+  await run(reg);
+  const heads = reg.calls.filter((c) => c.url.startsWith(TARBALL));
+  assert.ok(heads.length >= 3, `only ${heads.length} tarball reads`);
+  for (const c of heads) {
+    assert.equal(c.init.method, 'HEAD');
+    assert.match(c.url, /\?nocache=/, `no unique query on ${c.url}`);
+    assert.equal(c.init.headers?.['cache-control'], 'no-cache', `no no-cache header on ${c.url}`);
+  }
+  assert.equal(new Set(heads.map((c) => c.url)).size, heads.length, 'two tarball reads shared a query string');
+});
+
+await t('every read is bounded by its own timeout signal', async () => {
+  const reg = registry({ visibleFrom: 2, tarballFrom: 2 });
+  await run(reg);
+  assert.ok(reg.calls.length >= 4);
+  for (const c of reg.calls) assert.ok(c.init.signal instanceof AbortSignal, `no timeout signal on ${c.url}`);
+});
+
+await t('a read that throws is retried under the same budget, and the run still passes', async () => {
+  const r = await run(registry({ versionThrowsUntil: 3 }));
+  assert.equal(r.ok, true, r.failures.join('; '));
+  assert.equal(r.reads, 3);
+});
+
+await t('a registry that always throws ends in a named failure, never an unhandled rejection', async () => {
+  const r = await run(registry({ allThrow: true }));
+  assert.equal(r.ok, false);
+  assert.match(r.failures[0], /not visible within 20 s \(5 reads\)\. The last read failed: fetch failed\./);
+});
+
+await t('a packument whose body is not JSON fails by name and is retried, not thrown', async () => {
+  const r = await run(registry({ latestBadJson: true }));
+  assert.equal(r.ok, false);
+  assert.ok(r.failures.some((f) => /dist-tags\.latest is not 9\.9\.9: still a failed read \(Unexpected token/.test(f)), r.failures.join('; '));
+});
+
 // npm shows the version document, the dist-tag and the tarball at different moments (the v2.3.2 run saw the document,
 // then latest still on the previous release and the tarball 404, all three fine minutes later).
 const staggered = () => registry({ visibleFrom: 1, latestFrom: 3, tarballFrom: 5 });
@@ -180,7 +223,6 @@ await t('the guard on the guard: a verifier that reads latest ONCE fails the sta
   const src = readFileSync(new URL('./verify-published.mjs', import.meta.url), 'utf8');
   const mutant = src.replace(/return pollProperty\(ctx, `dist-tags\.latest[^]*?\n  \}\);\n/, (m) => m.replace('return pollProperty(ctx,', 'return pollOnce(ctx,'))
     + '\nasync function pollOnce(ctx, what, probe) { const r = await probe(); return r.ok ? [] : [`${what}: ${r.seen}`]; }\n';
-  assert.notEqual(mutant, src + '', 'the mutant changed nothing');
   assert.match(mutant, /return pollOnce\(ctx, `dist-tags/, 'the mutation did not reach the latest read');
   const dir = mkdtempSync(join(tmpdir(), 'verify-mutant-'));
   writeFileSync(join(dir, 'verify-published.mjs'), mutant);

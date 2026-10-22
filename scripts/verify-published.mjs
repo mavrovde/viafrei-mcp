@@ -10,10 +10,13 @@
 // published"; only the deadline turns it into a failure, and the message says so.
 // npm makes the version document, `dist-tags.latest` and the tarball visible at
 // DIFFERENT moments, so each of the three is polled, and all three share ONE
-// deadline: the time spent waiting for the document is not given back to the
-// dist-tag, so the whole verification ends within the deadline and inside the
-// job's own timeout. A property still negative when it passes fails with what
-// was last seen.
+// deadline for the time spent WAITING between reads: the wait for the document
+// is not given back to the dist-tag. Each read has its own timeout
+// (READ_TIMEOUT_MS), so a run lasts at most the deadline plus one read timeout
+// per read. A property still negative when the deadline passes fails with what
+// was last seen. A read that throws (a network error, a timeout, a body that is
+// not JSON) counts as a negative read and is retried under the same budget;
+// it never ends the run with an unhandled rejection.
 //
 // Asserted, each a failure when it does not hold:
 //   - the version document exists and is about THIS version;
@@ -27,6 +30,8 @@
 import { randomUUID } from 'node:crypto';
 
 const REGISTRY = 'https://registry.npmjs.org';
+/** One read may take this long before it is abandoned and counted as a negative read. */
+export const READ_TIMEOUT_MS = 15_000;
 
 /**
  * @param {{name: string, version: string, repo: string, deadlineMs?: number, intervalMs?: number,
@@ -43,18 +48,27 @@ export async function verifyPublished(o) {
     // Milliseconds waited so far, across every poll: the one budget all three share.
     spent: 0,
   };
-  const { doc, reads } = await pollVersion(ctx, o.name, o.version);
+  const { doc, reads, lastError } = await pollVersion(ctx, o.name, o.version);
   if (!doc) {
-    return { ok: false, reads, failures: [`${o.name}@${o.version} was not visible within ${Math.round(ctx.deadline / 1000)} s (${reads} reads). That is a timeout, not proof it was never published: check the registry again before re-tagging.`] };
+    const why = lastError ? ` The last read failed: ${lastError}.` : '';
+    return { ok: false, reads, failures: [`${o.name}@${o.version} was not visible within ${Math.round(ctx.deadline / 1000)} s (${reads} reads).${why} That is a timeout, not proof it was never published: check the registry again before re-tagging.`] };
   }
   ctx.log(`${o.name}@${o.version} is on the registry (after ${reads} read(s))`);
   const failures = [...checkDocument(doc, o), ...(await checkLatest(ctx, o)), ...(await checkTarball(ctx, doc))];
   return { ok: failures.length === 0, failures, reads };
 }
 
-/** A GET that defeats both caches: a no-cache header and a unique query string. */
+/** A GET that defeats both caches (a no-cache header and a unique query string), bounded by READ_TIMEOUT_MS. */
 function freshGet(ctx, url) {
-  return ctx.fetchFn(`${url}?nocache=${randomUUID()}`, { headers: { 'cache-control': 'no-cache', accept: 'application/json' } });
+  return ctx.fetchFn(`${url}?nocache=${randomUUID()}`, {
+    headers: { 'cache-control': 'no-cache', accept: 'application/json' },
+    signal: AbortSignal.timeout(READ_TIMEOUT_MS),
+  });
+}
+
+/** What a thrown read says, in one line. */
+function describeError(e) {
+  return e?.name === 'TimeoutError' ? `no answer within ${READ_TIMEOUT_MS / 1000} s` : String(e?.message ?? e).split('\n')[0];
 }
 
 /** Sleep one interval if the shared deadline still allows it; false when it does not. */
@@ -68,15 +82,22 @@ async function wait(ctx) {
 /** Poll the version document until it answers 200 or the deadline passes. */
 async function pollVersion(ctx, name, version) {
   let reads = 0;
+  let lastError = null;
   for (;;) {
     reads += 1;
     // Sequential on purpose: each read waits for the previous one and the interval.
-    const r = await freshGet(ctx, `${REGISTRY}/${name}/${version}`);
-    if (r.status === 200) return { doc: await r.json(), reads };
-    if (r.status !== 404) ctx.log(`read ${reads}: HTTP ${r.status} (retrying)`);
+    try {
+      const r = await freshGet(ctx, `${REGISTRY}/${name}/${version}`);
+      if (r.status === 200) return { doc: await r.json(), reads, lastError: null };
+      lastError = null;
+      if (r.status !== 404) ctx.log(`read ${reads}: HTTP ${r.status} (retrying)`);
+    } catch (e) {
+      lastError = describeError(e);
+      ctx.log(`read ${reads}: ${lastError} (retrying)`);
+    }
     if (!(await wait(ctx))) break;
   }
-  return { doc: null, reads };
+  return { doc: null, reads, lastError };
 }
 
 function checkDocument(doc, o) {
@@ -98,7 +119,12 @@ async function pollProperty(ctx, what, probe) {
   for (;;) {
     reads += 1;
     // Sequential on purpose: each read waits for the previous one and the interval.
-    const r = await probe();
+    let r;
+    try {
+      r = await probe();
+    } catch (e) {
+      r = { ok: false, seen: `a failed read (${describeError(e)})` };
+    }
     if (r.ok) return [];
     seen = r.seen;
     if (!(await wait(ctx))) break;
@@ -120,7 +146,7 @@ async function checkTarball(ctx, doc) {
   if (!tarball) return ['dist.tarball is absent'];
   if (!tarball.startsWith(`${REGISTRY}/`)) return [`dist.tarball is not on ${REGISTRY}: ${tarball}`];
   return pollProperty(ctx, `the tarball ${tarball} is not served`, async () => {
-    const t = await ctx.fetchFn(`${tarball}?nocache=${randomUUID()}`, { method: 'HEAD', headers: { 'cache-control': 'no-cache' } });
+    const t = await ctx.fetchFn(`${tarball}?nocache=${randomUUID()}`, { method: 'HEAD', headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(READ_TIMEOUT_MS) });
     return { ok: t.status === 200, seen: `answered HTTP ${t.status}` };
   });
 }
