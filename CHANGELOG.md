@@ -75,10 +75,9 @@ server now introduces itself with the ViaFrei brand line (below).
 ### Fixed (server 2.3.14-2.3.18)
 
 - **Watches notify.** The server now checks every open watch once a minute.
-- **Road answers agree with themselves**: the counts match the traffic light and the
-  list, the sections of one measure are one line, and a one-sided or alternating
-  closure is a restriction. A closed footway or cycle path is not a road closure, and a
-  closure in effect is printed with its own dates where its words give them.
+- **Road answers**: the sections of one measure are one line, a one-sided or
+  alternating closure is a restriction, and a closed footway or cycle path is not a
+  road closure.
 - **Places**: a street plus a town never answers from another town, a district
   qualifier picks the town inside it, a DB name with brackets finds its stop, and a
   town keeps its own municipality key, so roadworks for Bochum no longer name

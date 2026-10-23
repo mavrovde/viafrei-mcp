@@ -61,7 +61,7 @@ on viafrei.de, with a map and a traffic light.
 >   the others, names the missing one and never opens with an all-clear.
 > - **"Source:" on every credit line**, and a result's legal condition note at the top
 >   of the answer text, so a smaller assistant does not drop it.
-> - **Fixes** to road counts, place names, private car parks and charger names — the
+> - **Fixes** to road wording, place names, private car parks and charger names — the
 >   charge points of one site that differ only in their status are one line, "3 of 4 free".
 >
 > Every source is listed, with what it feeds and what we hold back, in
