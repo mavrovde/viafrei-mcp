@@ -5,6 +5,93 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.3.18] - 2026-10-24
+
+**A motorway watch now reports jams, weather warnings come in the DWD's own English, and every credit line says "Source".**
+The package matches the server's 2.3.18 and covers the server releases 2.3.14 to
+2.3.18. Nothing was published here between 2.3.13 and 2.3.18, so what those releases
+brought is described here. No tool, prompt or resource was added, removed or
+renamed. One tool gained an optional argument and its description changed, and the
+server now introduces itself with the ViaFrei brand line (below).
+
+### Changed (tool surface)
+
+- **`watch_situation`** watches jams on a motorway. A `road` watch takes the new
+  optional `condition.events`: `["jams"]` reports a jam the Autobahn GmbH or the police
+  report appearing or clearing, `["restrictions", "jams"]` reports both, and the
+  default stays closures, roadworks and restrictions. "Sag mir Bescheid, wenn sich auf
+  der A7 ein Stau bildet" now opens a watch instead of being declined. On a road that
+  is not a motorway, and for a `place` watch, the answer still says that only closures
+  and restrictions are watched. `condition.event: "reopen"` now covers a jam clearing
+  as well as a restriction.
+- **The server's `initialize` answer** carries a title and a description in
+  `serverInfo`: "The German Real-Time Mobility Context Platform for AI", followed by
+  the pitch "ViaFrei gives AI assistants real-time awareness of Germany. Trains and
+  buses, traffic and roadworks, fuel, charging, parking and weather. One MCP. No API
+  key. No sign-up." The instructions now open with "ViaFrei gives AI assistants
+  real-time awareness of Germany" and separate the live data from the reference data
+  (places, addresses and the driving rules).
+
+### Changed (package)
+
+- **The npm description, the MCP Registry entry and the README open with the brand
+  line**, "The German Real-Time Mobility Context Platform for AI". No code changed in
+  the bridge itself.
+
+### Added (server 2.3.14-2.3.18)
+
+- **Weather warnings in the DWD's own English.** With `language: "en"`,
+  `check_weather_warnings` shows the DWD's own English text of each warning,
+  unaltered and under "Quelle: Deutscher Wetterdienst", where the DWD publishes one.
+  On viafrei.de, where the DWD has no English text and on the other twenty
+  languages, the weather card shows the official German text, verbatim and labelled
+  as the binding original, beside our translation, labelled as ours, under
+  "Datenbasis: Deutscher Wetterdienst, bearbeitet (Übersetzung)". The translation is a
+  fixed table of the DWD's own sentences: numbers and units are copied as they are,
+  and a sentence the table does not hold is shown in German only, never guessed.
+- **Lifted low-emission zones.** The zone list follows the Umweltbundesamt's list of
+  2026-10-22: 35 zones in force and 23 lifted. `get_driving_rules` and
+  `describe_location` say "the Umweltzone Hannover was lifted on 22.02.2024 according
+  to the Umweltbundesamt; no plaque is needed there any more", and the place card on
+  viafrei.de says the same in every language instead of "no zone".
+
+### Changed (server 2.3.14-2.3.18)
+
+- **Every credit line opens with "Quelle:" or "Source:"**, and a result's purpose or
+  condition note opens the answer text as well as `_meta`, so a smaller assistant no
+  longer drops either.
+- **A road answer with a source it could not read says so.** If one of the road
+  sources of `check_road_status` cannot be read, the answer keeps every other
+  source's entries, names the missing one ("Not read: … — the read failed just now")
+  and lists it under `unavailableSources`. The first line then says "no reports from
+  the sources that were read", never an all-clear.
+- **Source ids, not internal keys.** Every field of a structured result that names a
+  source now carries the id that `viafrei://attribution` and `_meta.sources` use. Row
+  ids of `find_roadworks_ahead` are opaque and stable from call to call. No field was
+  removed or renamed; only values changed.
+- **`find_roadworks_ahead`** names the signed detours of Straßen.NRW among the sources
+  it read for a place in North Rhine-Westphalia.
+
+### Fixed (server 2.3.14-2.3.18)
+
+- **Watches notify.** The server now checks every open watch once a minute.
+- **Road answers**: the sections of one measure are one line, a one-sided or
+  alternating closure is a restriction, and a closed footway or cycle path is not a
+  road closure.
+- **Places**: a street plus a town never answers from another town, a district
+  qualifier picks the town inside it, a DB name with brackets finds its stop, and a
+  town keeps its own municipality key, so roadworks for Bochum no longer name
+  Dortmund's city feed. A city's feed answers only for its own city.
+- **`find_parking`** leaves out car parks OpenStreetMap tags as private, customers
+  only or permit only.
+- **Charging**: a site named only by an operator code is named by its address, and the
+  charge points of one site that differ only in their momentary status are one line
+  ("3 of 4 free").
+- **`stop_watch`** finds a watch under every spelling it was opened with.
+- **viafrei.de** stays up under heavy crawling: self-declared crawlers share one
+  request budget, and people, MCP clients and the major search engines are not
+  slowed.
+
 ## [2.3.13] - 2026-10-22
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
@@ -3416,6 +3503,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.3.18]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.3.18
 [2.3.13]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.3.13
 [2.3.12]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.3.12
 [2.3.7]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.3.7

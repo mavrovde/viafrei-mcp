@@ -8,7 +8,10 @@
 [![ViaFrei MCP connector](https://glama.ai/mcp/connectors/de.viafrei.mcp/via-frei/badges/score.svg)](https://glama.ai/mcp/connectors/de.viafrei.mcp/via-frei)
 [![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/mavrovde/viafrei-mcp)
 
-### Germany's traffic, trains, charging and roads — in your AI assistant.
+### The German Real-Time Mobility Context Platform for AI
+
+**ViaFrei gives AI assistants real-time awareness of Germany.** Trains and buses,
+traffic and roadworks, fuel, charging, parking and weather. One MCP. No API key. No sign-up.
 
 **Ask in plain words. Get the live answer, with its source.**
 
@@ -41,26 +44,25 @@ on viafrei.de, with a map and a traffic light.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in 2.3.12: a traffic light for every motorway, what a rest area has, and
-> train boards that say why they are empty.** Since 2.3.2:
+> **New in 2.3.18: watch a motorway for jams, weather warnings in the DWD's own
+> English, and answers that say which source they could not read.** Since 2.3.13:
 >
-> - **A traffic light per motorway.** `check_autobahn_traffic` opens with it: "A7 —
->   traffic light red: full closure (and 156 more reasons)." Green means nothing is
->   reported, and the answer says that this is no guarantee of a clear road. "Is the
->   A7 clear?" is asked of this tool, "is it closed?" of `check_road_status`.
-> - **Jams in detail**: where a jam ends, roughly how long it is, since when, whether
->   it is growing, and the delay per direction ("Flensburg → Hamburg +72 min (2 jams)").
-> - **What a rest area has.** `find_parking` lists each site's amenities as its own
->   publisher states them ("Ausstattung laut Herausgeber: WC · Dusche · Tankstelle ·
->   Picknickplatz · Spielplatz") and filters by them with `facilities: ["shower"]`.
->   What OpenStreetMap shows nearby is listed apart and never counted as the site's own.
-> - **Empty train boards explain themselves.** "No ICE train leaves Tübingen Hbf in
->   the next 60 minutes. … The DELFI timetable names no product for long-distance
->   trains, so it cannot tell whether any ICE train runs."
-> - **Motorway pages, rebuilt**: one card per kind with checkboxes, amenity filters on
->   the parking card, "around you" within a radius, and 22 languages.
-> - **Places and parking**: "Bennewitz, Landkreis Leipzig" answers in that Kreis,
->   "Koeln Hbf" finds Köln Hbf, and Berlin's park-and-ride sites answer.
+> - **A jam watch.** "Tell me when a jam builds up on the A7" now opens a watch:
+>   `watch_situation` with `kind: "road"` and `condition: {"events": ["jams"]}` reports
+>   a jam the Autobahn GmbH or the police report on that motorway appearing or
+>   clearing. Closures and restrictions stay the default, and both can be watched together.
+> - **The DWD's own English.** Ask `check_weather_warnings` in English and each
+>   warning comes in the DWD's own English text, unaltered. On viafrei.de, in the other
+>   twenty languages, the binding German original stands beside our labelled translation.
+> - **Lifted low-emission zones**: "the Umweltzone Hannover was lifted on 22.02.2024
+>   according to the Umweltbundesamt; no plaque is needed there any more" — 35 zones
+>   in force and 23 lifted, from the Umweltbundesamt's list of 2026-10-22.
+> - **Honest gaps.** When one road source cannot be read, `check_road_status` keeps
+>   the others, names the missing one and never opens with an all-clear.
+> - **"Source:" on every credit line**, and a result's legal condition note at the top
+>   of the answer text, so a smaller assistant does not drop it.
+> - **Fixes** to road wording, place names, private car parks and charger names — the
+>   charge points of one site that differ only in their status are one line, "3 of 4 free".
 >
 > Every source is listed, with what it feeds and what we hold back, in
 > [SOURCES.md](SOURCES.md). The [CHANGELOG](CHANGELOG.md) has the whole list.
@@ -86,7 +88,7 @@ comes back in the language you asked in.
 | 🌦️ **watching the weather** | *Gibt es eine Unwetterwarnung für Freiburg?* · *Is the road near Garmisch going to be icy this morning?* |
 | 📍 **looking for a place** | *What is the address of the Elbphilharmonie in Hamburg?* · *Welche Apotheken gibt es in Fulda?* · *My satnav shows 50.1109, 8.6821 — what address is that?* |
 | 🇩🇪 **new to German roads** | *Do I need an emission sticker for Stuttgart?* · *Is Marienplatz in Munich inside the low-emission zone?* · *Liegt Essen Hbf in der Umweltzone?* · *Is there a speed limit on the Autobahn?* |
-| ⏳ **waiting for news** | *Tell me as soon as the closure on the A7 is lifted.* · *Sag mir Bescheid, wenn in Köln ein Viertel oder mehr der Bus- und Bahnfahrten verspätet ist.* · *Warn me when a DWD severe-weather warning comes into force for Cologne.* |
+| ⏳ **waiting for news** | *Tell me as soon as the closure on the A7 is lifted.* · *Tell me when a jam builds up on the A7.* · *Sag mir Bescheid, wenn in Köln ein Viertel oder mehr der Bus- und Bahnfahrten verspätet ist.* · *Warn me when a DWD severe-weather warning comes into force for Cologne.* |
 
 **What the answers cover, honestly.** Live traffic is the motorways, plus the
 measured traffic state of Hamburg's and Bonn's streets and the quarter-hour counts
@@ -124,13 +126,15 @@ the conversation that opened it: the server keeps every change there, and your
 assistant shows it when you ask, or on its own if your client supports MCP
 notifications. Nothing is sent by e-mail or SMS. Up to 10 watches per
 conversation, each for up to 24 hours (3 by default), and a road is watched as a
-whole, not one section of it.
+whole, not one section of it. On a motorway a watch can also report jams; on other
+roads and around a place it watches closures and restrictions only, and says so.
 
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first five were asked of **server 2.3.12 on 2026-10-22
-between 08:50 and 09:20 Berlin time**; an "As of" time earlier than that is the
+are not mock-ups. The first three were asked of **server 2.3.18 on 2026-10-24
+at 00:20 Berlin time**. The next five were asked of server 2.3.12 on 2026-10-22
+between 08:50 and 09:20 Berlin time; an "As of" time earlier than that is the
 time the source was last read. The next nine were asked of server 2.2.14 on
 2026-10-20 between 06:00 and 06:16 Berlin time. The next seven were asked of server 2.2.6 on
 2026-10-19 between 07:34 and 07:45 Berlin time, the day it went live. The next two were asked of
@@ -145,6 +149,70 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🌬️ "Is there a weather warning for Kiel?"</b> — <code>check_weather_warnings</code> with <code>language: "en"</code></summary>
+
+```text
+2 official notices for Kiel, highest level 1 of 4:
+
+1. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) — Wind gusts (WINDBÖEN)
+   Area: Stadt Kiel (warn cell 801002000)
+   Valid: from 2026-10-24 04:00 until 2026-10-24 12:00
+   Official DWD wording in English (the DWD's own text), reproduced unaltered:
+   „Official WARNING of WIND GUSTS“
+   „There is a risk of wind gusts (level 1 of 4).
+Max. gusts: < 60 km/h; Wind direction: south then south-west“
+   For the drive: Gusts can push vehicles sideways; take particular care on bridges, in woodland and when overtaking lorries.
+…
+Quelle: Deutscher Wetterdienst (https://www.dwd.de/copyright; Lizenz: CC BY 4.0, …) · …
+```
+New in 2.3.17 and 2.3.18. The warning text is the DWD's own English, unaltered, so it
+keeps the DWD's Quellenvermerk. The level name stays German ("Wetterwarnung") with our
+gloss beside it, because a German official level has no official English name. The
+driving sentence is ours. On viafrei.de, where the DWD has no English text and in the
+other twenty languages, the card shows the German original as the binding text beside
+our labelled translation.
+*Edited: the road-weather condition note that opens the answer, two DWD lines on the
+level and its CAP fields, the hazard text, the second warning, the road-surface
+forecast and most of the source line omitted.*
+</details>
+
+<details>
+<summary><b>🔌 "Where can I charge near Hamburg Hbf?"</b> — <code>find_charging_station</code> with <code>language: "en"</code></summary>
+
+```text
+Charging around Hamburg Hbf (within 10 km), nearest first, sites wholly out of order last:
+1. Heidi-Kabel-Platz, 20099 Hamburg — 0.2 km, Type 2, up to 22 kW, 0.50 €/kWh, 3 of 4 free (as of 00:19) (2 charging units)
+2. Mönckebergstr. 1, 20095 Hamburg (E.ON Drive Infrastructure) — 0.3 km, CCS2, up to 150 kW, no status data, per charging point register
+3. Borgesch 1, 20099 Hamburg (Hamburger Energiewerke) — 0.3 km, Type 2, up to 22 kW, no status data, per charging point register; CCS2/Type 2, up to 50 kW, no status data, per charging point register (2 charging units)
+4. Hühnerposten 14, 20097 Hamburg — 0.4 km, Type 2, up to 22 kW, 0.50 €/kWh, status from 2026-10-23 20:01 (4 h 19 min ago) — possibly out of date
+…
+```
+New in 2.3.15: the charge points of one site that differ only in their momentary status
+are one line ("3 of 4 free"), and a site that its operator names only by a code is named
+by its address. A status older than its feed's own window is shown with its time and
+"possibly out of date", never as free.
+*Edited: two more sites, the site ids for `watch_situation` and the source line
+omitted.*
+</details>
+
+<details>
+<summary><b>🌿 "Do I need an emission sticker for Hannover?"</b> — <code>get_driving_rules</code> with <code>topic: "lez"</code>, <code>language: "en"</code></summary>
+
+```text
+Low-emission zone and plaque — Hannover:
+Hannover: the Umweltzone Hannover was lifted on 22.02.2024 according to the Umweltbundesamt; no plaque is needed there any more — the signs on the spot still decide.
+…
+Source: Verkehrsregeln: ViaFrei, eigene Zusammenstellung aus amtlichen Quellen (…) · Umweltzonen in Deutschland: Umweltbundesamt, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet (…)
+Reviewed 2026-09-19 · Informational, not legal advice.
+```
+New in 2.3.14: the zone list follows the Umweltbundesamt's list of 2026-10-22, with 35
+zones in force and 23 lifted. A lifted zone is said as lifted, with its date, instead of
+"no zone".
+*Edited: the general rules on plaques and fines and the links in the source line
+omitted.*
+</details>
+
+<details>
 <summary><b>🚦 "Is the A7 clear right now?"</b> — <code>check_autobahn_traffic</code> with <code>roads: ["A7"]</code>, <code>language: "en"</code></summary>
 
 ```text
@@ -1097,6 +1165,8 @@ Restart the client and ask one of the questions above.
   find it; [`server.json`](server.json) is the entry. It is republished with every
   release of this package, after the npm publish, and only when the live server
   reports the same version.
+- **awesome-mcp-servers — [punkpeye/awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers).**
+  The largest curated list of MCP servers; ViaFrei is listed under Travel & Transportation.
 - **awesome-remote-mcp-servers — [punkpeye/awesome-remote-mcp-servers](https://github.com/punkpeye/awesome-remote-mcp-servers).**
   The curated list of remote MCP servers; ViaFrei is listed with its hosted endpoint.
 - **TensorBlock MCP Index — [tensorblock.co/mcp/servers/…](https://tensorblock.co/mcp/servers/github-mavrovde-viafrei-mcp-e9117452).**
@@ -1112,7 +1182,7 @@ Restart the client and ask one of the questions above.
 
 <!-- catalogue:begin — generated by scripts/gen-readme-catalogue.mjs from catalogue.json; do not edit by hand -->
 
-**22 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.3.13, snapshot of 2026-10-22. Each line is the server's own words; the full parameters are in [API.md](API.md).
+**22 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.3.18, snapshot of 2026-10-23. Each line is the server's own words; the full parameters are in [API.md](API.md).
 
 #### 🚗 On the road
 
@@ -1168,7 +1238,7 @@ Restart the client and ask one of the questions above.
 
 | tool | what it answers |
 |---|---|
-| [`watch_situation`](API.md#watch_situation--watch-for-a-change) — Watch for a change | Opens a watch so THIS conversation is told when something changes: a road closed or restricted (not a jam), a stop running late, a weather warning, a charger freeing up. |
+| [`watch_situation`](API.md#watch_situation--watch-for-a-change) — Watch for a change | Opens a watch so THIS conversation is told when something changes: a road closed or restricted, a motorway jam, a stop running late, a weather warning, a charger freeing up. |
 | [`stop_watch`](API.md#stop_watch--stop-a-watch) — Stop a watch | Ends a watch this conversation opened with watch_situation, so no further notifications arrive for it. |
 
 #### 🧭 Prompts — ready-made briefings
