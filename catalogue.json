@@ -1,11 +1,13 @@
 {
   "$comment": "Captured from the PRODUCTION ViaFrei MCP server with initialize, tools/list, resources/list, resources/templates/list and prompts/list. No tool was invoked, so no data provider was contacted. ONE field is removed rather than stored: every tool's inputSchema carried a $schema URI naming the JSON Schema draft-07 dialect. It is dropped because storing it would put a host on this repository's allow-list that nothing else needs, and the dialect is a property of every draft-07 schema rather than a fact about this catalogue - API.md states it in words instead. Nothing else is altered: every tool, parameter, constraint, resource, template and prompt is as the server returned it. A SECOND substitution, for a different reason: two input schemas carried a 288-character regular expression validating an ISO-8601 date including leap years. Each is stored as patternLength rather than as its text, because such a regex spells its arithmetic as character classes of selected digits, and the leak sweep that guards this repository cannot tell a class of five digits from a five-digit internal value. The two ways to keep the text would both have been falsehoods - narrowing the sweep for every file, or an allow-list entry claiming a character class is a number this project publishes - so the text is not kept. Nothing about the constraint is hidden by this: API.md already summarised a pattern of over 60 characters by its length, which is what a reader gets either way, and the server hands anyone the full expression in tools/list.",
-  "capturedAt": "2026-10-22",
+  "capturedAt": "2026-10-23",
   "source": "https://mcp.viafrei.de/mcp",
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.3.13"
+    "version": "2.3.18",
+    "title": "ViaFrei",
+    "description": "The German Real-Time Mobility Context Platform for AI. ViaFrei gives AI assistants real-time awareness of Germany. Trains and buses, traffic and roadworks, fuel, charging, parking and weather. One MCP. No API key. No sign-up."
   },
   "capabilities": {
     "tools": {
@@ -20,7 +22,7 @@
     },
     "logging": {}
   },
-  "instructions": "ViaFrei answers from German open transport data, live: motorway traffic, closures and roadworks (plus Land and city traffic messages where a feed carries them), fuel prices, EV charging, parking, train and public-transport departures, regional public-transport punctuality and service alerts, station lifts and escalators, DWD weather warnings, places and addresses, and the curated German driving rules. Every tool takes a `language` argument that defaults to German (\"de\"): set it on every call to the language the user writes in — \"en\" for English — or an English question is answered in German. Always show the attribution line of a result to the user, and when a result carries `_meta.purposeNote` or `_meta.conditionNote`, show that sentence verbatim as well — it is a legal condition of the data, not a caption. Times are Europe/Berlin; the rules answers carry a review date and are informational, not legal advice. ViaFrei is in beta: sources are still being added and answers and coverage can change, so when a decision depends on a closure, a departure or a price, tell the user to confirm it with the source the attribution line names.",
+  "instructions": "ViaFrei gives AI assistants real-time awareness of Germany: live motorway traffic, closures and roadworks (plus Land and city traffic messages where a feed carries them), fuel prices, EV charging, parking, train and public-transport departures, regional public-transport punctuality and service alerts, station lifts and escalators and DWD weather warnings; and, as reference data, places and addresses and the curated German driving rules. Every tool takes a `language` argument that defaults to German (\"de\"): set it on every call to the language the user writes in — \"en\" for English — or an English question is answered in German. Always show the attribution line of a result to the user, and when a result carries `_meta.purposeNote` or `_meta.conditionNote`, show that sentence verbatim as well — it is a legal condition of the data, not a caption. Times are Europe/Berlin; the rules answers carry a review date and are informational, not legal advice. ViaFrei is in beta: sources are still being added and answers and coverage can change, so when a decision depends on a closure, a departure or a price, tell the user to confirm it with the source the attribution line names.",
   "tools": [
     {
       "name": "check_autobahn_traffic",
@@ -1455,7 +1457,7 @@
     },
     {
       "name": "watch_situation",
-      "description": "Opens a watch so THIS conversation is told when something changes: a road closed or restricted (not a jam), a stop running late, a weather warning, a charger freeing up. Use when asked to be told later: \"sag mir Bescheid, wenn die A8 wieder frei ist\", \"tell me when a warning comes for Kiel\". A name is enough as the key; no lookup first. Do NOT use to look up now, nor for e-mail, SMS or alerts outside this chat — we cannot send one; say so. Set hours (≤ 24, default 3) for the time asked; condition narrows it (only the reopening, one charge point). Session-scoped, ≤ 10 watches. Show attribution.",
+      "description": "Opens a watch so THIS conversation is told when something changes: a road closed or restricted, a motorway jam, a stop running late, a weather warning, a charger freeing up. Use when asked to be told later: \"sag mir Bescheid, wenn die A8 wieder frei ist\", \"tell me when a warning comes for Kiel\". A name is enough as key; no lookup first. Do NOT use to look up now, nor for e-mail, SMS or alerts outside this chat — we cannot send one; say so. Set hours (≤ 24, default 3) for the time asked; condition narrows it (only the reopening, one charge point). Session-scoped, ≤ 10 watches. Show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1478,7 +1480,7 @@
               "weather",
               "charger"
             ],
-            "description": "What kind of thing to watch. `road` = one motorway or federal road (key: \"A8\", \"B27\") — reports a closure or restriction appearing or clearing, not a jam; `station` = one public-transport stop (key: its name, \"Köln Hbf\", or its DHID) — reports departures running late past the threshold; `region` = a city, district or Land (key: its name, \"Hamburg\", or its AGS key, \"14612\") — reports the share of late trips crossing the threshold; `place` = a town or address (key: \"Fulda\") — reports road restrictions appearing within the radius, not a jam; `weather` = one DWD warn cell (key: a place name, \"Kiel\", or the cell id) — reports an official warning coming into force; `charger` = one charging site (key: a place, \"Würzburg\", or the site id) — reports a point turning free."
+            "description": "What kind of thing to watch. `road` = one motorway or federal road (key: \"A8\", \"B27\") — reports a closure or restriction appearing or clearing, and on a motorway a jam (condition events) appearing or clearing; `station` = one public-transport stop (key: its name, \"Köln Hbf\", or its DHID) — reports departures running late past the threshold; `region` = a city, district or Land (key: its name, \"Hamburg\", or its AGS key, \"14612\") — reports the share of late trips crossing the threshold; `place` = a town or address (key: \"Fulda\") — reports road restrictions appearing within the radius, not a jam; `weather` = one DWD warn cell (key: a place name, \"Kiel\", or the cell id) — reports an official warning coming into force; `charger` = one charging site (key: a place, \"Würzburg\", or the site id) — reports a point turning free."
           },
           "key": {
             "type": "string",
@@ -1487,7 +1489,7 @@
             "description": "The thing to watch, in the person's own words — a name is enough and no read tool is needed first; the server resolves it and the answer names the key it resolved to. `road`: a road number (\"A8\", \"B27\"). `place`: a town or address (\"Fulda\"). `weather`: a place name (\"Kiel\"), resolved to the DWD warn cell it lies in — or a warn cell id (\"801002000\"); a Land or Kreis is an area and takes no single cell. `station`: a stop or station name (\"Köln Hbf\", \"München, Marienplatz\"), resolved to its DHID the way get_departures resolves a stop — or a DHID (\"de:14612:28\"); an EVA number from get_train_departures (\"8000207\") is not a DHID and is refused. `charger`: a place (\"Würzburg\"), resolved to the nearest charging site that reports live occupancy — or a site id from find_charging_station. `region`: a city, district or Land (\"Hamburg\", \"Landkreis Fulda\"), resolved to its AGS key the way check_transit_disruption resolves its region — or an AGS key (\"14612\"). A name that fits several places or stops gets a which-one list and opens no watch; call again with the chosen line."
           },
           "request": {
-            "description": "The person's request in their own words (\"sag mir Bescheid, wenn sich auf der A7 ein Stau bildet\"). Pass it on every call: a `road` or `place` watch reports closures and restrictions, never a jam or slow traffic, and the answer says so — a request about a jam alone opens no watch.",
+            "description": "The person's request in their own words (\"sag mir Bescheid, wenn sich auf der A7 ein Stau bildet\"). Pass it on every call: a jam asked for on a motorway is watched (the Autobahn GmbH's and the police's jam reports); on another road, and for a `place` watch, closures and restrictions only, never a jam or slow traffic, and the answer says so.",
             "type": "string",
             "maxLength": 200
           },
@@ -1504,7 +1506,7 @@
             "patternLength": 288
           },
           "condition": {
-            "description": "Optional threshold; the keys of each kind, with an example: road {\"event\": \"reopen\"} (only the reopening); station {\"delay_min\": 20}; region {\"late_share\": 0.3, \"delay_min\": 5, \"min_trips\": 20}; place {\"radius_km\": 10}; weather {\"min_level\": 3}; charger {\"point_id\": \"2\"} (one charge point). Any other key, or a key of another kind, is refused by name; leave it out for the default. The answer repeats the condition it applies.",
+            "description": "Optional threshold; the keys of each kind, with an example: road {\"event\": \"reopen\"} (only the reopening), {\"events\": [\"jams\"]} (jams on a motorway); station {\"delay_min\": 20}; region {\"late_share\": 0.3, \"delay_min\": 5, \"min_trips\": 20}; place {\"radius_km\": 10}; weather {\"min_level\": 3}; charger {\"point_id\": \"2\"} (one charge point). Any other key, or a key of another kind, is refused by name; leave it out for the default. The answer repeats the condition it applies.",
             "type": "object",
             "properties": {
               "delay_min": {
@@ -1538,12 +1540,25 @@
                 "maximum": 4
               },
               "event": {
-                "description": "road: 'reopen' reports only a restriction clearing; 'any' reports both (default).",
+                "description": "road: 'reopen' reports only a restriction (or jam) clearing; 'any' reports both (default).",
                 "type": "string",
                 "enum": [
                   "reopen",
                   "any"
                 ]
+              },
+              "events": {
+                "description": "road: what to report — 'restrictions' (closures, roadworks, restrictions; the default) and/or 'jams' (a jam the Autobahn GmbH or the police report on the motorway, motorways only). A jam watch: [\"jams\"]; both: [\"restrictions\", \"jams\"].",
+                "minItems": 1,
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "restrictions",
+                    "jams"
+                  ]
+                }
               },
               "point_id": {
                 "description": "charger: one charge point of the site instead of any of them.",
