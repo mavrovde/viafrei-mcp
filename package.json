@@ -1,7 +1,7 @@
 {
   "name": "viafrei",
   "version": "2.3.18",
-  "description": "German motorway traffic and roadworks, rail, parking, charging, fuel, address and weather data in your AI assistant - MCP, no API key. stdio bridge to the hosted ViaFrei MCP server.",
+  "description": "The German Real-Time Mobility Context Platform for AI: live motorway traffic and roadworks, trains and buses, parking, charging, fuel and weather in your AI assistant - MCP, no API key, no sign-up. stdio bridge to the hosted ViaFrei MCP server.",
   "keywords": [
     "mcp",
     "modelcontextprotocol",

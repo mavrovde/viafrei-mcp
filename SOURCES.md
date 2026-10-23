@@ -15,19 +15,18 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.3.12 on 2026-10-22**: 237 sources, the same
-ids as at server 2.2.14. 220 of them are held and answering, 12 are planned (licence
-read, nothing ingested yet) and five are discontinued. No row was added or removed
-since the last comparison, at server 2.2.14, and no attribution line changed. One
-status changed: Berlin's park-and-ride sites, switched on with no successful read
-then, now answer. What changed is what the sources feed. The motorway traffic light
-reads the Autobahn GmbH's reports, the police and Land traffic messages, the DWD
-warnings, the road-weather forecast and Schleswig-Holstein's bridge states. A parking
-site's amenities come from its own publisher, with what OpenStreetMap and the charging
-register show close by listed beside it. VBN's realtime feed now also gives the
-punctuality share in Niedersachsen and Bremen where DELFI's trips are mostly untimed.
-The motorway pages list police and Land messages, bridge states, signed detours,
-border crossings and the lorry networks. The website also
+with that resource as served by server 2.3.18 on 2026-10-24**: 237 sources, the same
+ids as at server 2.3.12. 220 of them are held and answering, 12 are planned (licence
+read, nothing ingested yet) and five are discontinued. No row was added or removed,
+no attribution line changed and no status changed since the last comparison, at
+server 2.3.12. What changed is what the sources feed. The DWD's own English text of a
+warning now answers `check_weather_warnings` in English, and the site's weather card
+shows the German original beside our labelled translation in the other languages.
+The low-emission-zone answers follow the Umweltbundesamt's list of 2026-10-22, which
+names the lifted zones. A motorway watch now also reads the Autobahn GmbH's and the
+police's jam reports. `find_roadworks_ahead` names Straßen.NRW's signed detours among
+the sources it read for a place in North Rhine-Westphalia, and every field of a result
+that names a source now carries the id used here. The website also
 uses two sources the server's register does not list, named
 [near the end](#the-websites-own-sources). Whatever the surfaces say, the answer you hold is the thing to read:
 `_meta.sources` and the attribution lines on it are produced from the same result
@@ -252,13 +251,14 @@ that every answer carries it.
 
 **Status is the register's, not a measurement.** Berlin's park-and-ride row, marked
 no data yet at server 2.2.14 from the server's own coverage resource,
-`viafrei://coverage`, was read there again on 2026-10-22: it is current and answers.
+`viafrei://coverage`, was read there again on 2026-10-22: it is current and answers,
+and still was at server 2.3.18.
 The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.3.12,
-2026-10-22), it exposes twenty-two tools, twenty of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.3.18,
+2026-10-23), it exposes twenty-two tools, twenty of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
@@ -502,7 +502,7 @@ feed, live, in the resource `viafrei://coverage`.
 | **Bike sharing** — feeds `find_sharing`; site: shared bikes within 1 km on the transit card | | | |
 | `gbfs_nextbike` | Bikesharing: nextbike GmbH (GBFS), CC0 1.0 | CC0 1.0 | held |
 | `gbfs_donkey` | Bikesharing: Donkey Republic (GBFS), CC0 1.0 | CC0 1.0 | held |
-| **Weather** — feeds `check_weather_warnings`, `watch_situation`, and the motorway traffic light (DWD warnings and the road-surface forecast); site: the weather card, road-surface forecast included, and the motorway pages (warnings along the road, the road-surface forecast per station) | | | |
+| **Weather** — feeds `check_weather_warnings` (the DWD's own English text with `language: "en"`), `watch_situation`, and the motorway traffic light (DWD warnings and the road-surface forecast); site: the weather card (the German original beside our labelled translation on the translated pages), road-surface forecast included, and the motorway pages (warnings along the road, the road-surface forecast per station) | | | |
 | `dwd` | Quelle: Deutscher Wetterdienst | CC BY 4.0 | held |
 | `dwd_road` | Quelle: Deutscher Wetterdienst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder | CC BY 4.0 **plus a condition of use** | held |
 | **Places and addresses** — feeds every tool that takes a `place`, and `find_place`, `find_poi`, `find_address`, `describe_location`, `find_nearby`, and what OpenStreetMap shows near a site in `find_parking`; site: the place search, the place pages and the place name in the place bar | | | |
@@ -867,6 +867,24 @@ summary instead, the DWD requires the Quellenvermerk to be **removed** and a
 changed-data note put in its place — an altered warning must not look official.
 If you rewrite a warning further, the same rule applies to you.
 
+**New in server 2.3.17: the DWD's own English, and a labelled translation.** The DWD
+publishes an English text of its warnings in its own CAP feed. With `language: "en"`,
+`check_weather_warnings` shows that text unaltered, so it keeps
+`Quelle: Deutscher Wetterdienst`. On viafrei.de, where the DWD has no English text for
+a warning and on the other twenty languages, the card shows the official German text
+verbatim, labelled as the binding original, beside our translation, labelled as ours,
+under a third line:
+
+```
+Datenbasis: Deutscher Wetterdienst, bearbeitet (Übersetzung)
+```
+
+The translation is a fixed table of the DWD's own sentences: numbers, units and
+Beaufort figures are copied as they are, and a sentence the table does not hold is
+shown in German only, never guessed. A German official level name ("Wetterwarnung",
+"Unwetterwarnung") has no official English one, so an answer keeps it in German with
+our gloss beside it.
+
 **New in server 2.0: the road-surface forecast.** `check_weather_warnings` adds the
 DWD's model forecast for the nearest road-weather stations — road-surface
 temperature and whether slipperiness is forecast — with its own line:
@@ -1075,7 +1093,7 @@ carries the line of every publisher it lists.
   **Leipzig**, where the city publishes live free spaces per site (dl-de/by-2-0),
   and since server 2.2.9 **Kiel** (below). **Berlin's park-and-ride sites** (the
   Senatsverwaltung's dataset with the VBB's sites around the city, DL-DE Zero 2.0)
-  answer at server 2.3.12, after first reads that ended in an error: each site's
+  answer since server 2.3.12, after first reads that ended in an error: each site's
   place, capacity and, where stated, that it is free of charge. No live occupancy
   is published for them, and the answer says so.
 - **Kiel** (Landeshauptstadt Kiel, CC BY 4.0), since server 2.2.9: the city's car
@@ -1307,6 +1325,12 @@ answers state the register's own date (24.06.2025). Where a city publishes its
 boundary, the city decides, and the register is credited beside it when it
 agrees.
 
+Since server 2.3.14 our list of which zones are in force follows the
+Umweltbundesamt's list of 2026-10-22: 35 zones in force and 23 lifted. A place inside
+a lifted zone's old boundary is told that the zone was lifted and on which day ("the
+Umweltzone Hannover was lifted on 22.02.2024 according to the Umweltbundesamt"), and
+no plaque is asked for; the signs on the spot still decide.
+
 ### Step-free access — surveys and OpenStreetMap
 
 Since server 2.2.5, `check_station_facilities` adds what a survey records about a
@@ -1429,10 +1453,10 @@ at the Thiersheim truck stop, and Kiel's old-town car parks.
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; see the
 charging section for the dated grace window.
 
-**Held back.** Nothing at server 2.3.12. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.3.18. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.3.12. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.3.18. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1492,11 +1516,11 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.3.12 on 2026-10-22, not typed: every id it
+  by line with it as served by server 2.3.18 on 2026-10-24, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
-  fetch through. No row was added at 2.3.12; the 25 added at 2.2.14 were taken
+  fetch through. No row was added at 2.3.12 or 2.3.18; the 25 added at 2.2.14 were taken
   from the same resource.
 - Every row in our internal register records the licence, the operative sentence,
   the date it was read and who may do what with the data. Rows are re-verified
