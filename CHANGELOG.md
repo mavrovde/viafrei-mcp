@@ -5,6 +5,21 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.3.21] - 2026-10-24
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.3.21 while the registry's latest is 2.3.20, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**CHANGED** — the automation knows what moved, not what it means:
+
+- tools: check_road_status differs between the server and the snapshot
+- tools: find_roadworks_ahead differs between the server and the snapshot
+
+**A person must describe the change above before this merges.** A release note that
+lists a tool name without saying what it does misleads the reader it exists for.
+
 ## [2.3.20] - 2026-10-24
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
@@ -3521,6 +3536,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.3.21]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.3.21
 [2.3.20]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.3.20
 [2.3.19]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.3.19
 [2.3.18]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.3.18
