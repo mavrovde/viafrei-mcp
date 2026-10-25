@@ -44,25 +44,34 @@ on viafrei.de, with a map and a traffic light.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in 2.3.18: watch a motorway for jams, weather warnings in the DWD's own
-> English, and answers that say which source they could not read.** Since 2.3.13:
+> **New in the 2.3 line (server 2.3.0 to 2.3.23): motorway pages you can navigate,
+> four more charging operators, the motorway's short-notice works, and roadworks for
+> Hessen and North Rhine-Westphalia.**
 >
-> - **A jam watch.** "Tell me when a jam builds up on the A7" now opens a watch:
->   `watch_situation` with `kind: "road"` and `condition: {"events": ["jams"]}` reports
->   a jam the Autobahn GmbH or the police report on that motorway appearing or
->   clearing. Closures and restrictions stay the default, and both can be watched together.
-> - **The DWD's own English.** Ask `check_weather_warnings` in English and each
->   warning comes in the DWD's own English text, unaltered. On viafrei.de, in the other
->   twenty languages, the binding German original stands beside our labelled translation.
-> - **Lifted low-emission zones**: "the Umweltzone Hannover was lifted on 22.02.2024
->   according to the Umweltbundesamt; no plaque is needed there any more" — 35 zones
->   in force and 23 lifted, from the Umweltbundesamt's list of 2026-10-22.
-> - **Honest gaps.** When one road source cannot be read, `check_road_status` keeps
->   the others, names the missing one and never opens with an all-clear.
-> - **"Source:" on every credit line**, and a result's legal condition note at the top
->   of the answer text, so a smaller assistant does not drop it.
-> - **Fixes** to road wording, place names, private car parks and charger names — the
->   charge points of one site that differ only in their status are one line, "3 of 4 free".
+> - **A traffic light for every motorway.** `check_autobahn_traffic` opens each road
+>   with a red, yellow or green Ampel and names its reasons: "A7 — traffic light red:
+>   full closure (and 146 more reasons)". A jam says where it ends, how long it is,
+>   since when and whether it is growing.
+> - **[Motorway pages](#-motorway-pages) you can navigate.** "Around you" within a
+>   radius you choose, panels in order of usefulness with how fresh each one is,
+>   search as you type, the towns along the route with their official websites, and
+>   the crossing motorways, each with its own traffic light and a link to its page.
+> - **Four more charging operators with live availability**: eliso, ELU Mobility's
+>   charging park at Krautheim (up to 400 kW), TC-Backend and Chargepool.
+> - **The Autobahn GmbH's short-duration works (AkD)** in `find_roadworks_ahead` and
+>   `check_road_status`: the night closures planned for the coming days, each with its
+>   own window, never counted as a closure before it begins.
+> - **Roadworks on Bundes-, Landes- and Kreisstraßen in Hessen** (Hessen Mobil) and in
+>   **North Rhine-Westphalia** (Straßen.NRW), and **VBN's own punctuality feed** for
+>   Niedersachsen and Bremen where the national feed is thin.
+> - **DWD weather warnings in every language**: the DWD's own English text in English,
+>   and on viafrei.de the binding German original beside our labelled translation in
+>   the other twenty languages. **Fifteen more site languages**: viafrei.de now speaks
+>   twenty-two.
+> - **MCP done by the book.** Errors carry the codes the specification assigns
+>   (`-32602`, `-32002`, `-32600`), `logging/setLevel` is honoured, an unsupported
+>   method is a 405 with `Allow`, and a refused Origin or Host is a 403 before any
+>   session is touched.
 >
 > Every source is listed, with what it feeds and what we hold back, in
 > [SOURCES.md](SOURCES.md). The [CHANGELOG](CHANGELOG.md) has the whole list.
@@ -93,9 +102,11 @@ comes back in the language you asked in.
 **What the answers cover, honestly.** Live traffic is the motorways, plus the
 measured traffic state of Hamburg's and Bonn's streets and the quarter-hour counts
 of Hamburg's counting sites (a count is a volume, never a jam). Closures and
-roadworks also cover Land roads in Niedersachsen, Baden-Württemberg,
-Mecklenburg-Vorpommern, Sachsen and Thüringen, federal roads there and in
-Schleswig-Holstein, Bayern and Berlin, the city streets of Hamburg and Bremen, the
+roadworks also cover Land roads in Niedersachsen, Nordrhein-Westfalen, Hessen,
+Baden-Württemberg, Mecklenburg-Vorpommern, Sachsen and Thüringen, federal roads
+there and in Schleswig-Holstein, Bayern and Berlin, the Autobahn GmbH's planned
+short-duration works on the motorways (a plan with its own window, never a closure
+before it begins), the city streets of Hamburg and Bremen, the
 works the city and Land portals publish (Kiel, Schleswig-Holstein, Brandenburg,
 Freiburg, Karlsruhe, Frankfurt, Berlin, Duisburg, Aachen, Ingolstadt, Köln,
 Münster, Dortmund, Stuttgart, München), the traffic reports some Länder and cities
@@ -132,8 +143,10 @@ roads and around a place it watches closures and restrictions only, and says so.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first three were asked of **server 2.3.18 on 2026-10-24
-at 00:20 Berlin time**. The next five were asked of server 2.3.12 on 2026-10-22
+are not mock-ups. The first four were asked of **server 2.3.23 on 2026-10-25
+between 15:04 and 15:06 Berlin time**, the day it went live; an "As of" time earlier
+than that is the time the source was last read. The next three were asked of server
+2.3.18 on 2026-10-24 at 00:20 Berlin time. The next five were asked of server 2.3.12 on 2026-10-22
 between 08:50 and 09:20 Berlin time; an "As of" time earlier than that is the
 time the source was last read. The next nine were asked of server 2.2.14 on
 2026-10-20 between 06:00 and 06:16 Berlin time. The next seven were asked of server 2.2.6 on
@@ -149,6 +162,87 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🚦 "Is the A7 clear right now?"</b> — <code>check_autobahn_traffic</code> with <code>roads: ["A7"]</code>, <code>language: "en"</code></summary>
+
+```text
+A7 — traffic light red: full closure (and 146 more reasons).
+A7, road-wide: 6 jams, 12 closures, 101 roadworks sites; plus police/Land messages: 18 restrictions, 3 roadworks sites, 2 reports; announced from 2026-10-26 07:00: 28 closures, 132 roadworks sites — As of 15:04. Delay per direction: Fulda → Würzburg +23 min (1 jam); Hamburg → Hannover +32 min (2 jams); Hannover → Hamburg +21 min (2 jams); Würzburg → Fulda +7 min (1 jam). +1 more in the structured result.
+• Traffic jam (Stau): A7, end of the jam 0.6 km past Am Forsthaus, about 3.6 km long, growing (about 3.1 km 27 min ago), since 13:01, +23 min — between Am Forsthaus and Speicherz, towards Würzburg — Provider text (German): "A7 | Am Forsthaus - Speicherz · Fulda -> Würzburg — […] Angespannte Verkehrslage […]"
+• Traffic jam (Stau): A7, end of the jam 0.9 km past Maschener Kreuz/A39, about 2.6 km long, steady (about 2.4 km 27 min ago), since 13:40, +10 min — between Maschener Kreuz/A39 and Harburger Berge, towards Hamburg — …
+…
+Source: Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de) · Verkehrsmeldungen der Polizei: Landesbetrieb Straßenbau NRW (VIZ.NRW) via Mobilithek, … · Arbeitsstellen kürzerer Dauer auf Autobahnen (geplant): Die Autobahn GmbH des Bundes | MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei (…) · Datenbasis: Deutscher Wetterdienst, zusammengefasst (…) · As of 15:04
+```
+The traffic light (since 2.3.9) is one national rule: red for a closure of the
+carriageway, a jam of 30 minutes or more, a safety message or a DWD warning of level 3
+or above; green only when every source it reads is current and reports nothing. A jam
+says where it ends, how long it is, since when and whether it is growing. The short-notice
+works of the Autobahn GmbH are listed beside the live situation only while their planned
+window holds, and never count towards the light.
+*Edited: the condition notes that open the answer (road-weather stations, the
+Baden-Württemberg traffic-warning service, the short-duration works), four more jams, the
+closures and planned works, and most of the source line omitted.*
+</details>
+
+<details>
+<summary><b>🚧 "Which roadworks are planned on the A3 this week?"</b> — <code>find_roadworks_ahead</code> with <code>road: "A3"</code>, <code>language: "en"</code></summary>
+
+```text
+Planned short-duration roadworks are planned at short notice and often changed; they replace neither a permit for oversize and heavy transports nor the route check before setting off (our translation of the publisher's note).
+A3: 28 planned roadworks sites between 2026-10-25 and 2026-11-01. 10 of them are in this answer — raise limit to 20 for the rest. Not current and therefore not used: BASt (roadworks), Autobahn GmbH (roadworks, next 14 days).
+• Construction works (Baustelle): A3 — nearest junction: Oberhausen-Lirich (placed by ViaFrei) — 2 of 3 lanes closed, hard shoulder closed — planned 2026-10-24 20:00–2026-10-25 05:00; 2026-10-25 20:00–2026-10-26 05:00; 2026-10-26 20:00–2026-10-27 05:00 (+3 more dates) — Provider text (German): "A3 DB BW Längsfugenabdichtung - A3 DB BW Längsfugenabdichtung; Bauwerksarbeiten"
+• Maintenance works (Instandsetzung): A3 — nearest junction: Frankfurt am Main-Flughafen (placed by ViaFrei) — 1 of 3 lanes closed, others restricted — per the plan now 2026-10-25 08:00–18:00 — Provider text (German): "A3 von Kelsterbach (AS) nach Frankfurter Kreuz (AK) Fahrbahninstandsetzung - …"
+…
+Source: Arbeitsstellen kürzerer Dauer auf Autobahnen (geplant): Die Autobahn GmbH des Bundes | MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei (…) · TMC Location Code List (LCL 22.0): Bundesanstalt für Straßenwesen (BASt), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), bearbeitet (…) · As of 14:53, unchanged since 14:37
+```
+New in 2.3.21: the Autobahn GmbH's short-duration works (AkD), the night and day
+closures it plans at short notice. Each is listed with the windows the publisher states,
+a series of nights as separate windows, "planned" until a window opens and "per the plan
+now" inside it, and never as a closure that has begun. The publisher's note goes with
+every answer that carries one. This answer also shows the honest gap: two other
+roadworks sources were not current at that moment, so the answer names them and does
+not use them.
+*Edited: eight more sites and the planning-data note at the end omitted.*
+</details>
+
+<details>
+<summary><b>🏗️ "Roadworks on the B49 this week?"</b> — <code>find_roadworks_ahead</code> with <code>road: "B49"</code>, <code>language: "en"</code></summary>
+
+```text
+B49: 14 roadworks sites between 2026-10-25 and 2026-11-01, 5 of them already begun. None in Niedersachsen, Sachsen, Thüringen, Baden-Württemberg, Bayern, Mecklenburg-Vorpommern or Nordrhein-Westfalen — all 14 in Hessen. 10 of them are in this answer — raise limit to 20 for the rest.
+• Construction works (Baustelle) (Hessen): B49 — 1 of 2 lanes closed, phase 2026-08-24 until 2026-11-27 — 2026-08-21 until 2026-11-27 — Provider text (German): "Limburg a.d. Lahn-Linden; Bauwerksarbeiten"
+• Lane management (Verkehrsführung) (Hessen): B49 — 1 of 1 lanes restricted, all open, phase 2026-10-13 until 2026-11-09 — 2026-10-12 until 2026-11-10 — Provider text (German): "Limburg-Gießen; Auf-/Abbau Verkehrsführung"
+• Maintenance works (Instandsetzung) (Hessen): B49 — planned 2026-10-26 08:00–17:00 — Provider text (German): "Limburg a.d. Lahn-Leun; Arbeiten an Schutzeinrichtungen"
+…
+Source: Arbeitsstellen Hessen: Hessen Mobil (Daten verändert) via Mobilithek, GeoNutzV (https://mobilithek.info/) · As of 14:35
+```
+New in 2.3.21: Hessen Mobil's works on Bundes-, Landes- and Kreisstraßen, and the
+Landesbetrieb Straßenbau NRW's works off the motorways. The credit is the source note
+GeoNutzV prescribes, "Hessen Mobil (Daten verändert)", with its link.
+*Edited: seven more sites and the closing note naming the covered Länder omitted.*
+</details>
+
+<details>
+<summary><b>⚡ "Where can I charge in Krautheim?"</b> — <code>find_charging_station</code> with <code>place: "Krautheim, Hohenlohekreis"</code>, <code>language: "en"</code></summary>
+
+```text
+Charging around Krautheim (within 10 km), nearest first, sites wholly out of order last:
+1. Krautheim - Ladesäule Krautheim, Götzstraße  47, 74238 Krautheim (Regioladen+ GmbH & Co. KG) — 0.6 km, Type 2, up to 22 kW, 0.62 €/kWh net, 2 of 2 free (as of 15:04)
+2. Uferweg 12, 74238 Krautheim (Rüdinger Spedition GmbH) — 0.8 km, CCS2, up to 400 kW, no status data, per charging point register (4 charging units)
+3. Krautheim — 0.8 km, CCS2/Type 2, up to 400 kW, 0.48 €/kWh, occupied, 18 without status (as of 14:39)
+…
+Only a few operators publish live occupancy; "no status data" means unknown, not free.
+…
+Source: Ladepunkte: chargecloud GmbH via Mobilithek, CC0 1.0 (…) · … · Ladepunkte: ELU Mobility via Mobilithek, Open Data (freie Nutzung) (…) · Ladepunkt-Verfügbarkeit: ELU Mobility via Mobilithek, Open Data (freie Nutzung) (…) · …
+```
+New in 2.3.23: ELU Mobility's charging park at Krautheim, up to 400 kW, answers with its
+live status: row 3, the park's 26 points, with the status the operator publishes. Row 2
+is the Bundesnetzagentur's register at the same spot, which never carries a status. eliso, TC-Backend and Chargepool joined in the same release.
+A "Krautheim" alone asks which one: there are three.
+*Edited: two more sites, the site ids for `watch_situation`, the price and register
+notes and most of the source line omitted.*
+</details>
+
+<details>
 <summary><b>🌬️ "Is there a weather warning for Kiel?"</b> — <code>check_weather_warnings</code> with <code>language: "en"</code></summary>
 
 ```text
@@ -1028,11 +1122,28 @@ What the A7's page holds, from top to bottom:
   fuel — with checkboxes. The cards, their counts and the map follow without a
   reload, and the choice can stand in the address (`?show=`). The traffic light
   still judges everything and says when the choice hides some of its reasons.
+  The panels stand in order of usefulness, each with an icon, and the empty ones fold
+  into one line.
+- **How fresh each panel is**, as a shape and a word, never colour alone: live,
+  delayed, stale (the panel keeps its data and says it may be out of date) or
+  reference data with its date, beside the Berlin time of the source's last good
+  read. A panel whose read failed says so, never "nothing reported".
+- **Search**, as you type: junctions, Länder and every panel row by row, with umlauts,
+  case and the usual abbreviations (AS, AK, AD, Kreuz, Dreieck) folded, each hit
+  linking to its row. Without JavaScript the same search is a plain form. The index
+  search also takes a town or a junction: "Kassel" lists the A7, the A44 and the A49
+  with the matching junctions.
+- **The towns along the route**: every town within reach of an exit, in road order,
+  at its nearest exit, the large ones first, each linking to its exit and to its place
+  page, and to its official website where Wikidata states one.
+- **The crossing motorways**: each interchange and triangle names the motorways it
+  meets, each linked to that motorway's page centred on the same junction, with the
+  traffic light that page shows there.
 
 - **One sentence about the road**, built from its own data: from Füssen to
   Flensburg/Harrislee, about 928 km on the schematic line, the Länder it crosses in
   road order and how many junctions and interchanges it has, followed by what is
-  reported now, with its time. On 2026-10-14 the English page read: "The A7 runs
+  reported now, with its time. Every figure in it links to its panel. On 2026-10-14 the English page read: "The A7 runs
   from Füssen junction to Flensburg/Harrislee junction, about 928 km long
   (schematic), through Bavaria, Baden-Württemberg, Hesse, Lower Saxony, Hamburg
   and Schleswig-Holstein, with 141 junctions and interchanges (24 of them
@@ -1040,7 +1151,8 @@ What the A7's page holds, from top to bottom:
   of 22:37)."
 - **A map**, drawn on the server: Germany's outline and the Länder from the BKG's
   VG2500, the motorway as a schematic line through the junctions of BASt's Location
-  Code List, closures solid, roadworks hatched, jams with their delay. Where the
+  Code List, closures solid, roadworks hatched, jams with their delay. A map zoomed
+  below 25 km also draws the Land and Kreis borders from the BKG's VG250. Where the
   list has no course for a stretch the line breaks, and the page names the break
   rather than drawing across it.
 - **What is reported now**: closures, jams and roadworks under their own heading,
@@ -1171,6 +1283,8 @@ Restart the client and ask one of the questions above.
   The curated list of remote MCP servers; ViaFrei is listed with its hosted endpoint.
 - **TensorBlock MCP Index — [tensorblock.co/mcp/servers/…](https://tensorblock.co/mcp/servers/github-mavrovde-viafrei-mcp-e9117452).**
   TensorBlock's searchable index of MCP servers, with a profile page for this repository.
+- **TensorBlock awesome-mcp-servers — [TensorBlock/awesome-mcp-servers](https://github.com/TensorBlock/awesome-mcp-servers).**
+  TensorBlock's curated list on GitHub; ViaFrei is listed under Travel & Transportation.
 - **For AI tools — [viafrei.de/llms.txt](https://viafrei.de/llms.txt)** and
   [llms-full.txt](https://viafrei.de/llms-full.txt): what ViaFrei is, how to
   connect, every tool in one line each, the example questions with the tool that

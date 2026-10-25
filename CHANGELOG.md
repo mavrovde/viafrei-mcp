@@ -7,18 +7,95 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.3.23] - 2026-10-25
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.3.23 while the registry's latest is 2.3.20, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**CHANGED** — the automation knows what moved, not what it means:
+**Roadworks for Hessen and North Rhine-Westphalia, the motorway's short-notice works, four more charging operators, and MCP error codes as the specification writes them.**
+The package matches the server's 2.3.23 and covers the server releases 2.3.19 to
+2.3.23. 2.3.20 was published here as a plain mirror, so what it brought is described
+here as well. No tool, prompt or resource was added, removed or renamed, and no
+argument changed. Two tool descriptions changed (below), and the server's answers to
+malformed requests now carry the error codes the MCP specification assigns.
 
-- tools: check_road_status differs between the server and the snapshot
-- tools: find_roadworks_ahead differs between the server and the snapshot
+### Changed (tool surface)
 
-**A person must describe the change above before this merges.** A release note that
-lists a tool name without saying what it does misleads the reader it exists for.
+- **`check_road_status`** and **`find_roadworks_ahead`** name two more Länder for
+  Bundes- and Landesstraßen: North Rhine-Westphalia and Hessen. The short form now
+  reads "NI, NW, HE, BW, MV, SN, TH", and the `road` argument's description lists
+  Nordrhein-Westfalen and Hessen beside the others. The argument's pattern and every
+  other field are unchanged.
+
+### Changed (protocol and results, server 2.3.19-2.3.23)
+
+- **Error codes follow the specification.** A request whose `params` fail the
+  method's schema is `-32602 Invalid params`; a resource that does not exist is
+  `-32002 Resource not found`; a POST body that is JSON but not a JSON-RPC message
+  (an `"id": null`, no `jsonrpc` member, a method that is not a string) is
+  `-32600 Invalid Request`. A client that matched on the older codes should match
+  on these.
+- **`logging/setLevel` is honoured.** The server's own warnings
+  (`notifications/message`, for example about stale data) reach a client only at or
+  above the level it asked for.
+- **An unsupported method is `405 Method Not Allowed` with an `Allow` header** on
+  `/mcp`, instead of a 404, and a HEAD never touches a session.
+- **Ids in results are public ones.** Every field of a structured result that names
+  a source or a row carries an id that is stable and documented (the
+  `viafrei://attribution` ids for sources); no field was removed or renamed, only
+  values changed.
+
+### Security (server 2.3.22)
+
+- **A refused `Origin` or `Host` is answered 403 on every MCP request, before any
+  session is looked up**, as the Streamable HTTP transport's security warning
+  requires.
+
+### Added (server 2.3.19-2.3.23)
+
+- **Roadworks in Hessen and North Rhine-Westphalia off the motorways.** Hessen
+  Mobil's works on Bundes-, Landes- and Kreisstraßen and the Landesbetrieb Straßenbau
+  NRW's works on Land, federal and district roads answer `find_roadworks_ahead`,
+  `check_road_status` by road and by place, and the place cards on viafrei.de. "B49"
+  now answers with fourteen sites in Hessen for the coming week.
+- **The Autobahn GmbH's short-duration works (AkD).** Plans for the next days, such
+  as a lane closed for one night, answer `find_roadworks_ahead` and `check_road_status`
+  with the windows the publisher states ("planned 2026-10-24 20:00–2026-10-25 05:00",
+  "per the plan now …"), a series of nights as separate windows. They are never said
+  to have begun, never counted as a closure and never colour the traffic light, and
+  every answer carrying one shows the publisher's note that such plans change at
+  short notice.
+- **The Autobahn GmbH's strategic routing.** When the Autobahn GmbH switches a
+  strategic detour on, `check_autobahn_traffic`, `check_road_status` and the motorway
+  page say so, as the Autobahn GmbH's recommendation and never as a route of ours.
+  Most of the time no strategy is switched and nothing is said.
+- **Four more charging operators, with live availability:** eliso (79 sites),
+  ELU Mobility's charging park at Krautheim (26 points up to 400 kW), TC-Backend
+  (CC0 1.0) and Chargepool (ENERANDO Technologies). A charge point published twice,
+  by its operator and by a regional portal, answers once.
+- **Backup feeds.** Five more feeds stand behind sources already shown (police
+  traffic messages for NRW and Hamburg, planned works in Mecklenburg-Vorpommern, the
+  per-lane traffic state in NRW). A message two of them carry is shown once,
+  crediting every source that carried it.
+- **Motorway pages on viafrei.de** gained search as you type, the towns along the
+  route with their official websites, a crossings card whose interchanges link to the
+  other motorway with its own traffic light, a freshness sign on every panel, and
+  Land and Kreis borders on the zoomed maps (BKG VG250). See the README's
+  [Motorway pages](https://github.com/mavrovde/viafrei-mcp#-motorway-pages).
+
+### Fixed (server 2.3.19-2.3.23)
+
+- **Clock-change Sundays.** A departure before 03:00 on the two Sundays the clocks
+  change, and a reading stamped in the hour that happens twice in October, are the
+  instants the publisher meant.
+- **One works site published by two feeds is one line**, and contractor contact
+  clauses are cut from road texts.
+- **A motorway panel whose read failed** says so, instead of "nothing reported".
+
+### Bridge
+
+- No code change in the relay. The shipped snapshot, API.md and the README's tool
+  list were re-captured from server 2.3.23. The README's examples were refreshed with
+  answers captured from server 2.3.23 on 2026-10-25, and SOURCES.md was compared row
+  by row with the server's register (251 sources, fourteen more than at 2.3.18).
+- **The 2.3.21 and 2.3.22 proposals were closed unmerged**, superseded by this one:
+  each listed the changed descriptions without saying what they meant, and the
+  release-notes gate refused to write a page from such a block, which failed CI.
 
 ## [2.3.20] - 2026-10-24
 
