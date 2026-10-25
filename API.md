@@ -9,7 +9,7 @@ the server's own text, reproduced verbatim, because that text is what an
 assistant reads when it decides which tool to call; paraphrasing it here would
 document a different server.
 
-**It is a dated snapshot, taken on 2026-10-24.** Generating this file makes
+**It is a dated snapshot, taken on 2026-10-25.** Generating this file makes
 it impossible for the document and the snapshot to disagree — CI regenerates and
 compares — but it cannot keep the snapshot from ageing against the live server,
 because a capture is a point in time. **The source of truth is the running
@@ -17,11 +17,11 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.3.20 |
+| Server | `viafrei` 2.3.22 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
-| Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-24 |
+| Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-25 |
 | Surface | 22 tools, 10 resources, 2 resource templates, 9 prompts |
 | Parameter schemas | JSON Schema draft-07 |
 | Capabilities | `tools`, `resources`, `prompts`, `logging` |
@@ -184,7 +184,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> If a motorway, B/Land road (NI, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/next days; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road is open/closed/gesperrt/passable, even now — "A8 in diesem Moment gesperrt?" — closures tonight/weekend, or Stau in a town (Köln). Do NOT use for a named motorway frei/clear (Ampel) or its jams/delays — check_autobahn_traffic; dated roadworks — find_roadworks_ahead; a named city street: not held, no call. ≤ 14 days/11 entries. Show attribution.
+> If a motorway/B/Land road (NI, NW, HE, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/soon; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road's open/closed/gesperrt/passable, even now — "A8 in diesem Moment gesperrt?" — closures tonight/weekend, or Stau in a town (Köln). Do NOT use for a named motorway frei/clear (Ampel) or its jams/delays — check_autobahn_traffic; dated roadworks — find_roadworks_ahead; a named city street: not held, no call. ≤14 days/11 entries. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -203,14 +203,14 @@ The server's own instructions to a connecting client, verbatim:
 - **`limit`** — Maximum entries to return (1–11, default 10). By road, closures come first, then restrictions in force, then planned works; by place, nearest first.
 - **`lon`** — Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use place.
 - **`place`** — Where to look, as free text: a city ("München", "Munich"), a district or Kreis ("Kreis Fulda"), a Bundesland, a station or stop ("Hamburg Hbf"), a motorway junction ("AK Neufahrn"), or a street address with a house number ("Bahnhofstraße 12, 36037 Fulda"). A motorway number alone ("A7") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.
-- **`road`** — One road: a German motorway, e.g. "A8"; a Bundesstraße in Schleswig-Holstein, Niedersachsen, Baden-Württemberg, Bayern, Berlin, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. "B27"; or a Landes- or Staatsstraße in Niedersachsen, Baden-Württemberg, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. "L1025" or "S296". "A8", "A 8" and "a8" are the same road. Use this whenever the person named a road — it is the only input that reaches the planned-works data, which is filed by road and section and carries no coordinates. When the person also says WHERE — a town or a Bundesland ("die B2 bei Potsdam", "L1025 in Niedersachsen") — pass that as place too: only sources for that Land answer, and a Land no source covers is named. L and S numbers repeat in every Land, so give the Land with them. Otherwise give exactly one of road, place, or lat+lon.
+- **`road`** — One road: a German motorway, e.g. "A8"; a Bundesstraße in Schleswig-Holstein, Niedersachsen, Nordrhein-Westfalen, Hessen, Baden-Württemberg, Bayern, Berlin, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. "B27"; or a Landes- or Staatsstraße in Niedersachsen, Nordrhein-Westfalen, Hessen, Baden-Württemberg, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. "L1025" or "S296". "A8", "A 8" and "a8" are the same road. Use this whenever the person named a road — it is the only input that reaches the planned-works data, which is filed by road and section and carries no coordinates. When the person also says WHERE — a town or a Bundesland ("die B2 bei Potsdam", "L1025 in Niedersachsen") — pass that as place too: only sources for that Land answer, and a Land no source covers is named. L and S numbers repeat in every Land, so give the Land with them. Otherwise give exactly one of road, place, or lat+lon.
 - **`vehicle`** — Set ONLY when the person asks for a lorry (Lkw, truck, HGV) or a long lorry (Lang-Lkw, EuroCombi, Gigaliner): then the answer is where that vehicle may go, instead of closures. "long_lorry" with a road ("darf der Lang-Lkw auf die A7?") answers whether the road is in the long-lorry positive network; with a place, the network roads near it. "lorry" or "long_lorry" with a place ("Durchfahrtshöhe in Haan", "Lkw-Vorrangroute in Frankfurt", "Gewichtsgrenze in Bremen") answers the height, weight, width and lorry-ban signs near it, and the lorry priority routes, where a publisher holds them (NRW, Frankfurt RheinMain, Bremen). Omit for cars and for closures.
 
 ### `find_roadworks_ahead` — Planned roadworks
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: section, restriction, dates. Use when a date or window is named, it says geplant, or how long a site lasts ("Baustellen auf der A7 in den Sommerferien?"). ONE road/place per call. Do NOT use when more than one motorway is named, for the situation this minute, or for Baustellen with neither date nor geplant — all three are check_autobahn_traffic; whether a road is open — check_road_status. ≤ 92 days, max 20 sites. Show attribution.
+> Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, NW, HE, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: section, restriction, dates. Use when a date or window is named, it says geplant, or how long a site lasts ("Baustellen auf der A7 in den Sommerferien?"). ONE road/place per call. Do NOT use when more than one motorway is named, for the situation this minute, or for Baustellen with neither date nor geplant — all three are check_autobahn_traffic; whether a road is open — check_road_status. ≤ 92 days, max 20 sites. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -225,7 +225,7 @@ The server's own instructions to a connecting client, verbatim:
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`limit`** — Maximum sites to return (1–20, default 10), ordered by planned start. Every returned site is in the structured result; the readable text prints the first 10 and says how many more of them are in the structured half. The answer always names how many sites the window holds in total, so a small limit never hides the size of the problem.
 - **`place`** — A place — a district, street or address, e.g. "Hamburg-Altona", "Berlin-Mitte", "Kiel" — for the city and Land roadworks held by point within 3 km of it. Where no such source covers the place, the answer says so. Give road OR place.
-- **`road`** — The road to look at, one per call: an Autobahn, e.g. "A7" or "A100"; a Bundesstraße in Niedersachsen, Baden-Württemberg, Bayern, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. "B6"; a Landesstraße in Niedersachsen, Baden-Württemberg, Mecklenburg-Vorpommern or Thüringen, e.g. "L1025"; or a Staatsstraße in Sachsen, e.g. "S296" — "A7", "A 7" and "a7" are the same road. B and L roads in other Länder and Kreisstraßen are not covered. Ask again for a second road. Give road OR place.
+- **`road`** — The road to look at, one per call: an Autobahn, e.g. "A7" or "A100"; a Bundesstraße in Niedersachsen, Nordrhein-Westfalen, Hessen, Baden-Württemberg, Bayern, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. "B6"; a Landesstraße in Niedersachsen, Nordrhein-Westfalen, Hessen, Baden-Württemberg, Mecklenburg-Vorpommern or Thüringen, e.g. "L1025"; or a Staatsstraße in Sachsen, e.g. "S296" — "A7", "A 7" and "a7" are the same road. B and L roads in other Länder and Kreisstraßen are not covered. Ask again for a second road. Give road OR place.
 - **`to`** — Last day of the window, inclusive, as YYYY-MM-DD. Omit for 7 days after `from`, which is the right window for "am I going to hit roadworks on this drive". The window may span at most 92 days. For "how long will this last" / "wie lange dauert die Baustelle noch", leave both dates out: the default 7 days already returns the site's planned end date. Only widen — 28 days is the sensible step — when the person asked about a period that long.
 
 ### `find_charging_station` — EV charging nearby
@@ -758,5 +758,5 @@ single call.
 ---
 
 Generated from `catalogue.json` by `scripts/gen-api-doc.mjs`. The snapshot was
-read from `https://mcp.viafrei.de/mcp` on 2026-10-24; no tool was invoked to
+read from `https://mcp.viafrei.de/mcp` on 2026-10-25; no tool was invoked to
 produce it, so no data provider was contacted.
