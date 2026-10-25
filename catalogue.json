@@ -1,11 +1,11 @@
 {
   "$comment": "Captured from the PRODUCTION ViaFrei MCP server with initialize, tools/list, resources/list, resources/templates/list and prompts/list. No tool was invoked, so no data provider was contacted. ONE field is removed rather than stored: every tool's inputSchema carried a $schema URI naming the JSON Schema draft-07 dialect. It is dropped because storing it would put a host on this repository's allow-list that nothing else needs, and the dialect is a property of every draft-07 schema rather than a fact about this catalogue - API.md states it in words instead. Nothing else is altered: every tool, parameter, constraint, resource, template and prompt is as the server returned it. A SECOND substitution, for a different reason: two input schemas carried a 288-character regular expression validating an ISO-8601 date including leap years. Each is stored as patternLength rather than as its text, because such a regex spells its arithmetic as character classes of selected digits, and the leak sweep that guards this repository cannot tell a class of five digits from a five-digit internal value. The two ways to keep the text would both have been falsehoods - narrowing the sweep for every file, or an allow-list entry claiming a character class is a number this project publishes - so the text is not kept. Nothing about the constraint is hidden by this: API.md already summarised a pattern of over 60 characters by its length, which is what a reader gets either way, and the server hands anyone the full expression in tools/list.",
-  "capturedAt": "2026-10-24",
+  "capturedAt": "2026-10-25",
   "source": "https://mcp.viafrei.de/mcp",
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.3.20",
+    "version": "2.3.23",
     "title": "ViaFrei",
     "description": "The German Real-Time Mobility Context Platform for AI. ViaFrei gives AI assistants real-time awareness of Germany. Trains and buses, traffic and roadworks, fuel, charging, parking and weather. One MCP. No API key. No sign-up."
   },
@@ -406,12 +406,12 @@
     },
     {
       "name": "check_road_status",
-      "description": "If a motorway, B/Land road (NI, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/next days; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road is open/closed/gesperrt/passable, even now — \"A8 in diesem Moment gesperrt?\" — closures tonight/weekend, or Stau in a town (Köln). Do NOT use for a named motorway frei/clear (Ampel) or its jams/delays — check_autobahn_traffic; dated roadworks — find_roadworks_ahead; a named city street: not held, no call. ≤ 14 days/11 entries. Show attribution.",
+      "description": "If a motorway/B/Land road (NI, NW, HE, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/soon; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). Use when asked if a road's open/closed/gesperrt/passable, even now — \"A8 in diesem Moment gesperrt?\" — closures tonight/weekend, or Stau in a town (Köln). Do NOT use for a named motorway frei/clear (Ampel) or its jams/delays — check_autobahn_traffic; dated roadworks — find_roadworks_ahead; a named city street: not held, no call. ≤14 days/11 entries. Show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "road": {
-            "description": "One road: a German motorway, e.g. \"A8\"; a Bundesstraße in Schleswig-Holstein, Niedersachsen, Baden-Württemberg, Bayern, Berlin, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. \"B27\"; or a Landes- or Staatsstraße in Niedersachsen, Baden-Württemberg, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. \"L1025\" or \"S296\". \"A8\", \"A 8\" and \"a8\" are the same road. Use this whenever the person named a road — it is the only input that reaches the planned-works data, which is filed by road and section and carries no coordinates. When the person also says WHERE — a town or a Bundesland (\"die B2 bei Potsdam\", \"L1025 in Niedersachsen\") — pass that as place too: only sources for that Land answer, and a Land no source covers is named. L and S numbers repeat in every Land, so give the Land with them. Otherwise give exactly one of road, place, or lat+lon.",
+            "description": "One road: a German motorway, e.g. \"A8\"; a Bundesstraße in Schleswig-Holstein, Niedersachsen, Nordrhein-Westfalen, Hessen, Baden-Württemberg, Bayern, Berlin, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. \"B27\"; or a Landes- or Staatsstraße in Niedersachsen, Nordrhein-Westfalen, Hessen, Baden-Württemberg, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. \"L1025\" or \"S296\". \"A8\", \"A 8\" and \"a8\" are the same road. Use this whenever the person named a road — it is the only input that reaches the planned-works data, which is filed by road and section and carries no coordinates. When the person also says WHERE — a town or a Bundesland (\"die B2 bei Potsdam\", \"L1025 in Niedersachsen\") — pass that as place too: only sources for that Land answer, and a Land no source covers is named. L and S numbers repeat in every Land, so give the Land with them. Otherwise give exactly one of road, place, or lat+lon.",
             "type": "string",
             "pattern": "^(?:[ABab] ?\\d{1,3}|[LlSs] ?\\d{1,4})$"
           },
@@ -479,12 +479,12 @@
     },
     {
       "name": "find_roadworks_ahead",
-      "description": "Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: section, restriction, dates. Use when a date or window is named, it says geplant, or how long a site lasts (\"Baustellen auf der A7 in den Sommerferien?\"). ONE road/place per call. Do NOT use when more than one motorway is named, for the situation this minute, or for Baustellen with neither date nor geplant — all three are check_autobahn_traffic; whether a road is open — check_road_status. ≤ 92 days, max 20 sites. Show attribution.",
+      "description": "Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, NW, HE, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: section, restriction, dates. Use when a date or window is named, it says geplant, or how long a site lasts (\"Baustellen auf der A7 in den Sommerferien?\"). ONE road/place per call. Do NOT use when more than one motorway is named, for the situation this minute, or for Baustellen with neither date nor geplant — all three are check_autobahn_traffic; whether a road is open — check_road_status. ≤ 92 days, max 20 sites. Show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "road": {
-            "description": "The road to look at, one per call: an Autobahn, e.g. \"A7\" or \"A100\"; a Bundesstraße in Niedersachsen, Baden-Württemberg, Bayern, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. \"B6\"; a Landesstraße in Niedersachsen, Baden-Württemberg, Mecklenburg-Vorpommern or Thüringen, e.g. \"L1025\"; or a Staatsstraße in Sachsen, e.g. \"S296\" — \"A7\", \"A 7\" and \"a7\" are the same road. B and L roads in other Länder and Kreisstraßen are not covered. Ask again for a second road. Give road OR place.",
+            "description": "The road to look at, one per call: an Autobahn, e.g. \"A7\" or \"A100\"; a Bundesstraße in Niedersachsen, Nordrhein-Westfalen, Hessen, Baden-Württemberg, Bayern, Mecklenburg-Vorpommern, Sachsen or Thüringen, e.g. \"B6\"; a Landesstraße in Niedersachsen, Nordrhein-Westfalen, Hessen, Baden-Württemberg, Mecklenburg-Vorpommern or Thüringen, e.g. \"L1025\"; or a Staatsstraße in Sachsen, e.g. \"S296\" — \"A7\", \"A 7\" and \"a7\" are the same road. B and L roads in other Länder and Kreisstraßen are not covered. Ask again for a second road. Give road OR place.",
             "type": "string",
             "pattern": "^(?:[AaBb] ?\\d{1,3}|[LlSs] ?\\d{1,4})$"
           },
