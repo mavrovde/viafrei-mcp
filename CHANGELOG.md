@@ -71,7 +71,7 @@ changed, and the server's instructions gained one sentence (all below).
   place names.
 - **One record, one answer.** `find_roadworks_ahead` no longer says "full closure"
   beside a lane line that says one lane of three is closed.
-- **A strategic rerouting's id** in a structured result is a public row id.
+- **A strategic rerouting's id** in a structured result is now a stable public id.
 - **Dates in another year** say their year, so a window begun a year ago is never
   read as running now.
 

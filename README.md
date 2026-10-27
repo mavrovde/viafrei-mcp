@@ -137,7 +137,8 @@ with the operator's status beside it; a reading the publisher stopped updating s
 when it was last reported, and one that cannot be right is called implausible.
 Truck-parking occupancy at the motorway rest areas (Toll Collect's SID) is shown
 only after the user accepts ViaFrei's terms of use, section 2, in the question the
-client asks; a client that cannot ask gets the lorry parks without it. A parking site's amenities (WC, shower,
+client asks; a client that cannot ask gets the lorry parks without it. A parking
+site's amenities (WC, shower,
 restaurant and more) are the ones its own publisher states; many state none, and an
 amenity nobody stated is unknown, not absent. A motorway's traffic light is green
 only when every source it reads is current and reports nothing, and even then it is
@@ -161,7 +162,8 @@ These came back from the production server at `https://mcp.viafrei.de/mcp`. They
 are not mock-ups. The first five were asked of **server 2.4.3 on 2026-10-27
 between 16:00 and 16:02 Berlin time**, the day it went live; an "As of" time earlier
 than that is the time the source was last read. The next four were asked of server
-2.3.23 on 2026-10-25 between 15:04 and 15:06 Berlin time, the day it went live. The next three were asked of server
+2.3.23 on 2026-10-25 between 15:04 and 15:06 Berlin time, the day it went live.
+The next three were asked of server
 2.3.18 on 2026-10-24 at 00:20 Berlin time. The next five were asked of server 2.3.12 on 2026-10-22
 between 08:50 and 09:20 Berlin time; an "As of" time earlier than that is the
 time the source was last read. The next nine were asked of server 2.2.14 on
@@ -183,7 +185,7 @@ it was sent, shortened where marked.
 ```text
 A3 — traffic light red: full closure (and 109 more reasons).
 A3, road-wide: 11 jams, 4 closures, 104 roadworks sites; plus police/Land messages: 3 jams, 6 restrictions, 8 roadworks sites, 6 reports; announced from 18:00: 49 closures, 110 roadworks sites — As of 16:01. Traffic state at 127 measuring sites (NRW, as of 15:58): 29 standstill, 5 slow, 29 heavy, 64 free-flowing; standstill or slow near Bonn/Siegburg, Duisburg-Wedau, Köln-Dellbrück; …
-• Traffic jam (Stau): A3, end of the jam 2.7 km past AS Leverkusen-Zentrum, about 10.0 km long, growing (about 8.9 km 17 min ago), since 15:39, +57 min — between junction Leverkusen-Zentrum and junction Königsforst, towards Frankfurt — Provider text (German): "A3 | Leverkusen-Zentrum - Königsforst · Oberhausen -> Frankfurt — […] Angespannte Verkehrslage […]"
+• Traffic jam (Stau): A3, end of the jam 2.7 km past AS Leverkusen-Zentrum, about 10.0 km long, growing (about 8.9 km 17 min ago), since 15:39, +57 min — between junction Leverkusen-Zentrum and junction Königsforst, towards Frankfurt — Provider text (German): "A3 | Leverkusen-Zentrum - Königsforst · Oberhausen -> Frankfurt — […] Angespannte Verkehrslage […] …"
 • Traffic jam (Stau): A3, end of the jam 0.8 km past AS Iggensbach, about 6.6 km long, since 15:25, +18 min — between junction Iggensbach and junction Hengersberg, towards Nürnberg — …
 …
 Source: Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de) · Verkehrslage Nordrhein-Westfalen: © Die Autobahn GmbH des Bundes 2026 — GeoNutzV, Daten verändert (…) · TMC Location Code List (LCL 22.0): Bundesanstalt für Straßenwesen (BASt), CC BY 4.0 (…), bearbeitet (…) · …
@@ -209,15 +211,18 @@ shortened):
 ```
 Every jam, closure and works site of the three road tools carries the same five
 answers: where (the junction pair, the town and the Land), which way, when, what it
-means for a driver and what the work is. An assistant can say "between Köln-Mülheim
-and Leverkusen-Zentrum towards Frankfurt, since 15:39" without parsing the
-publisher's text, and link the map.
-*Edited: the condition notes that open the answer, the third jam, the short-duration
-works listed after it, and most of the source line omitted.*
+means for a driver and what the work is. `where` places the entry's own point (`at`,
+here the end of the jam, 2.7 km past Leverkusen-Zentrum) between the two junctions
+around it, while the publisher's title above names the whole stretch the jam covers.
+An assistant can say where, which way and since when without parsing the publisher's
+text, and link the map.
+*Edited: the condition notes that open the answer, the rest of the first jam's
+provider text, the third jam, the short-duration works listed after it, and most of
+the source line omitted.*
 </details>
 
 <details>
-<summary><b>⚡ "Is there an EnBW charger with 150 kW or more in Stuttgart?"</b> — <code>find_charging_station</code> with <code>operator: "EnBW"</code>, <code>min_power_kw: 150</code></summary>
+<summary><b>⚡ "Is there an EnBW charger with 150 kW or more in Stuttgart?"</b> — <code>find_charging_station</code> with <code>place: "Stuttgart"</code>, <code>operator: "EnBW"</code>, <code>min_power_kw: 150</code>, <code>language: "en"</code></summary>
 
 ```text
 Charging around Stuttgart (within 10 km, ≥ 150 kW, operator EnBW), nearest first, sites wholly out of order last:
@@ -310,8 +315,9 @@ elicitation shows the user the question, and the figures follow only on an expli
 yes. This capture came from a client that cannot ask, so the answer lists the lorry
 parks without the figures and says where to get them. An assistant must never accept
 for the user.
-*Edited: three more lorry parks, the nearby lines, the OpenStreetMap notice and most
-of the source line omitted.*
+*Edited: three more lorry parks, the nearby lines, the OpenStreetMap notice, the
+line saying the list is in name order, most of the source line and the closing
+sentence on missing free counts omitted.*
 </details>
 
 <details>
@@ -1378,8 +1384,9 @@ motorway sitemaps list every page in every language, and
 [llms.txt](https://viafrei.de/llms.txt) and
 [llms-full.txt](https://viafrei.de/llms-full.txt) describe the pages;
 llms-full.txt also lists every motorway page in English and German. [robots.txt](https://viafrei.de/robots.txt) keeps the AI training and
-corpus crawlers off the fuel page, names them one by one, and since 2.4.0 leaves the
-motorway, place, station and exit pages open to every crawler. No fuel price is in
+corpus crawlers off the fuel page, names them one by one, and leaves the motorway
+pages open to every crawler, the place pages since 2.4.0, and the station and exit
+pages from their first release. No fuel price is in
 any page's HTML: a reader's browser asks for the prices when the card comes into
 view, and that address is closed to every crawler.
 
