@@ -7,21 +7,83 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.4.3] - 2026-10-27
 
-**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
-relays to. The running server reports 2.4.3 while the registry's latest is 2.4.0, so
-this release moves the package to the server's number and carries whatever had been
-waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**CHANGED** — the automation knows what moved, not what it means:
+**Road entries that say where, which way and when, charging by operator and power band, truck-parking occupancy, and a page for every station.**
+The package matches the server's 2.4.3 and covers the server releases 2.4.0 to
+2.4.3. 2.4.0 was published here as a plain mirror, so what it brought is described
+here as well. No tool, prompt or resource was added, removed or renamed.
+`find_charging_station` gained two optional arguments, four tool descriptions
+changed, and the server's instructions gained one sentence (all below).
 
-- tools: check_autobahn_traffic differs between the server and the snapshot
-- tools: find_roadworks_ahead differs between the server and the snapshot
-- tools: find_charging_station differs between the server and the snapshot
-- tools: get_train_departures differs between the server and the snapshot
-- instructions: the server's initialize answer differs from the snapshot's
+### Changed (tool surface)
 
-**A person must describe the change above before this merges.** A release note that
-lists a tool name without saying what it does misleads the reader it exists for.
+- **`find_charging_station`** takes two new optional arguments: `operator` (a
+  charge-point operator brand as a person names it, "IONITY", "EnBW", "Tesla",
+  "Aral pulse"; spellings of one brand match together, and sites whose source names
+  no operator are left out) and `max_power_kw` (1-1000, never below `min_power_kw`;
+  with it a band such as 50 to 149 kW is one question). The description names the
+  filters, and the structured result gains `sitesMatching` beside `sitesInRadius`.
+- **`get_train_departures`** says its board also lists the station's U-Bahn and
+  trams, and sends a question about one bus, tram or U-Bahn line to
+  `get_departures`.
+- **`check_autobahn_traffic`** and **`find_roadworks_ahead`** say their entries carry
+  the place, the impact and map links.
+- **The server's instructions** add: truck-parking occupancy from the Toll Collect
+  SID is given only after the user accepts ViaFrei's terms of use, section 2, in the
+  question the client shows (MCP elicitation); never accept on the user's behalf.
+
+### Added (server 2.4.0-2.4.3)
+
+- **The entry.** Every jam, closure and works site in `check_autobahn_traffic`,
+  `check_road_status` and `find_roadworks_ahead` carries an `entry` object: `where`
+  (the junction pair, the nearest town and Land), `direction`, `when` (and whether it
+  runs now), `impact` (full closure, lanes, hard shoulder, ramp), `what` (the work in
+  plain words) and `maps`. A project name is never given as the place, and a plan with
+  several windows is said by the first that has not ended.
+- **Interchanges.** `get_train_departures` lists a station's U-Bahn, Stadtbahn and
+  trams from the timetable, with realtime where the feed reports it, and every line
+  that calls there.
+- **Rail replacement buses** are labelled as such in both departure tools and in the
+  data (`replacementBus: true`).
+- **Truck-parking occupancy of the motorway rest areas** from Toll Collect's
+  Stellplatz-Informationsdienst, in `find_parking`, behind MCP elicitation: the
+  figures follow only when the user accepts ViaFrei's terms of use, section 2. A
+  client without elicitation gets the lorry parks without the figures and is told
+  why. Every figure carries its condition sentence.
+- **New parking sources:** the car parks of Konstanz and Wiesbaden with live
+  occupancy, and the lorry park at Autohof Thiersheim on the A93.
+- **Parking as published.** Every figure as the operator publishes it, with the
+  operator's own status beside it and a status dot; a figure that cannot be right is
+  said to be implausible; a reading the publisher stopped updating is "last
+  reported" with its time.
+- **On viafrei.de:** a page for every railway station in DB's directory (departures,
+  arrivals, platforms, lifts per platform, interchange lines, alerts, parking and
+  charging at the door) and for the motorway exits; cards that refresh in place and
+  page through long lists twelve entries at a time; a topic filter on the home; the
+  charging filters on every charging card; the terms of use at
+  [viafrei.de/en/terms](https://viafrei.de/en/terms). Place, station and exit pages
+  are open to every crawler, and fuel prices are fetched by the reader's browser,
+  never carried in a page's HTML.
+
+### Fixed (server 2.4.0-2.4.3)
+
+- **One entry, said once.** Two copies of the same works site, or a publisher's text
+  repeating itself, are one line; a works measure no longer repeats the stretch its
+  place names.
+- **One record, one answer.** `find_roadworks_ahead` no longer says "full closure"
+  beside a lane line that says one lane of three is closed.
+- **A strategic rerouting's id** in a structured result is a public row id.
+- **Dates in another year** say their year, so a window begun a year ago is never
+  read as running now.
+
+### Bridge
+
+- No code change in the relay. The shipped snapshot, API.md and the README's tool
+  list were re-captured from server 2.4.3. The README gained five answers captured
+  from server 2.4.3 on 2026-10-27 and a section on the station and exit pages, and
+  SOURCES.md was compared row by row with the server's register (259 sources, eight
+  more than at 2.3.23) and gained a section on the terms that come with the
+  truck-parking occupancy.
+- **The 2.4.1 and 2.4.2 proposals were closed unmerged**, superseded by this one.
 
 ## [2.4.0] - 2026-10-25
 
