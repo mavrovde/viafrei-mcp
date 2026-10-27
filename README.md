@@ -44,34 +44,43 @@ on viafrei.de, with a map and a traffic light.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in the 2.3 line (server 2.3.0 to 2.3.23): motorway pages you can navigate,
-> four more charging operators, the motorway's short-notice works, and roadworks for
-> Hessen and North Rhine-Westphalia.**
+> **New in the 2.4 line (server 2.4.0 to 2.4.3): every road entry says where, which
+> way, when and what it means; charging by operator and power band; truck-parking
+> occupancy for the motorway rest areas; and a page for every railway station.**
 >
-> - **A traffic light for every motorway.** `check_autobahn_traffic` opens each road
->   with a red, yellow or green Ampel and names its reasons: "A7 — traffic light red:
->   full closure (and 146 more reasons)". A jam says where it ends, how long it is,
->   since when and whether it is growing.
-> - **[Motorway pages](#-motorway-pages) you can navigate.** "Around you" within a
->   radius you choose, panels in order of usefulness with how fresh each one is,
->   search as you type, the towns along the route with their official websites, and
->   the crossing motorways, each with its own traffic light and a link to its page.
-> - **Four more charging operators with live availability**: eliso, ELU Mobility's
->   charging park at Krautheim (up to 400 kW), TC-Backend and Chargepool.
-> - **The Autobahn GmbH's short-duration works (AkD)** in `find_roadworks_ahead` and
->   `check_road_status`: the night closures planned for the coming days, each with its
->   own window, never counted as a closure before it begins.
-> - **Roadworks on Bundes-, Landes- and Kreisstraßen in Hessen** (Hessen Mobil) and in
->   **North Rhine-Westphalia** (Straßen.NRW), and **VBN's own punctuality feed** for
->   Niedersachsen and Bremen where the national feed is thin.
-> - **DWD weather warnings in every language**: the DWD's own English text in English,
->   and on viafrei.de the binding German original beside our labelled translation in
->   the other twenty languages. **Fifteen more site languages**: viafrei.de now speaks
->   twenty-two.
-> - **MCP done by the book.** Errors carry the codes the specification assigns
->   (`-32602`, `-32002`, `-32600`), `logging/setLevel` is honoured, an unsupported
->   method is a 405 with `Allow`, and a refused Origin or Host is a 403 before any
->   session is touched.
+> - **Every road entry answers five questions.** In `check_autobahn_traffic`,
+>   `check_road_status` and `find_roadworks_ahead` each jam, closure and works site
+>   now carries an `entry`: where it is (the stretch between two junctions, with the
+>   nearest town and Land), which way, when (and whether it runs now), what it means
+>   for a driver (full closure, one lane, hard shoulder, ramp) and the work in plain
+>   words, with map links. A project name is never given as the place.
+> - **Charging by operator and power band.** `find_charging_station` takes
+>   `operator` ("EnBW", "Tesla", "Aral pulse") and `max_power_kw` beside
+>   `min_power_kw`, so "an EnBW charger of 150 kW or more" or "DC between 50 and
+>   149 kW" is one question, and the answer says how many sites in the radius match.
+> - **Interchanges and replacement buses.** `get_train_departures` lists a station's
+>   U-Bahn, Stadtbahn and trams below its trains, with every line that calls there,
+>   and both departure tools label a rail replacement bus as one
+>   (`replacementBus: true`).
+> - **Parking as the operator publishes it**, with the operator's own status beside
+>   each figure ("almost full", "closed"), a figure that cannot be right said to be
+>   implausible, and a reading the publisher stopped updating dated as "last
+>   reported". New: **Konstanz** and **Wiesbaden** car parks with live occupancy, and
+>   the lorry park at **Autohof Thiersheim** on the A93.
+> - **Truck-parking occupancy for the motorway rest areas** from the Toll Collect
+>   Stellplatz-Informationsdienst (SID), under
+>   [ViaFrei's terms of use](https://viafrei.de/en/terms#sid), section 2: a client
+>   that supports MCP elicitation asks the user to accept them, and only then shows
+>   the figures. A client that cannot ask lists the lorry parks without them and says
+>   why. Never accept on the user's behalf.
+> - **[Station pages](#-station-and-exit-pages)**: every DB station has a page in 22
+>   languages, with departures and arrivals, platforms, lifts per platform, the
+>   U-Bahn and trams of an interchange, alerts, and the parking and charging at its
+>   door. **Every motorway exit** has a page of its own too.
+> - **Cards that stay current**: on viafrei.de a card refreshes in place (↻, and the
+>   live cards on their own at their data's pace), long lists page through twelve
+>   entries at a time, the home has a topic filter, and the charging cards take the
+>   same operator and power filters as the tool.
 >
 > Every source is listed, with what it feeds and what we hold back, in
 > [SOURCES.md](SOURCES.md). The [CHANGELOG](CHANGELOG.md) has the whole list.
@@ -86,12 +95,12 @@ comes back in the language you asked in.
 
 | when you're… | ask |
 |---|---|
-| 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *Does an ICE leave Tübingen Hbf in the next hour?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* |
+| 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *Does an ICE leave Tübingen Hbf in the next hour?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* · *Which U-Bahn and trams leave Berlin Alexanderplatz in the next minutes?* |
 | 🚗 **about to drive** | *Is the A7 clear right now?* · *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Vollsperrungen sind auf der A7 in den nächsten sieben Tagen geplant?* · *Welche Baustellen gibt es in München?* · *How is the traffic on the A3 around Köln?* · *Ist die Fehmarnsundbrücke wegen Wind gesperrt?* · *Which detours are signed near Hamburg Hbf?* |
 | 🚚 **driving a lorry** | *Darf der Lang-Lkw auf die A7?* · *Which height limits are there for lorries in Bremen?* · *Gibt es Lkw-Durchfahrtsverbote bei Bielefeld?* · *Wann ist der nächste Lkw-Fahrverbotstag?* · *Gilt am 31. Oktober in Niedersachsen Lkw-Fahrverbot?* · *Welche Durchfahrtshöhen gibt es am Kölner Dom?* · *Where are the lorry bans in Dresden?* |
 | 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Is traffic backed up on the Cologne motorway ring — A1, A3 or A4?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
-| ⚡ **driving electric or on hydrogen** | *Where can I charge with Type 2 near Leipzig?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* · *Where can I fill up a hydrogen lorry near Hamburg?* |
-| 🅿️ **parking** | *Is the P+R at Fröttmaning usually full in the morning?* · *Wie viele Plätze sind in den Kasseler Parkhäusern frei?* · *Is there a free disabled parking bay near Dortmund's Hansastraße?* · *Find a rest area with lorry parking on the A9* · *Rastplatz mit Dusche an der A7?* · *Where can I park on the street near Hamburg Rathaus?* |
+| ⚡ **driving electric or on hydrogen** | *Where can I charge with Type 2 near Leipzig?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* · *Is there an EnBW charger with 150 kW or more in Stuttgart?* · *Where can I fill up a hydrogen lorry near Hamburg?* |
+| 🅿️ **parking** | *Is the P+R at Fröttmaning usually full in the morning?* · *Wie viele Plätze sind in den Kasseler Parkhäusern frei?* · *Which car parks in Konstanz still have spaces?* · *How full are the lorry parks along the A9?* · *Is there a free disabled parking bay near Dortmund's Hansastraße?* · *Find a rest area with lorry parking on the A9* · *Rastplatz mit Dusche an der A7?* · *Where can I park on the street near Hamburg Rathaus?* |
 | ⛽ **filling up** | *Where is diesel cheapest near Kassel?* · *Welche Tankstellen gibt es in Weimar?* |
 | ♿ **travelling step-free** | *Funktioniert der Aufzug am Bahnhof Köln Messe/Deutz?* · *Is Tübingen Hbf step-free?* · *Ist die Bushaltestelle Ludgeriplatz in Münster barrierefrei?* · *Which platforms at Leipzig Hbf are step-free?* |
 | 🌦️ **watching the weather** | *Gibt es eine Unwetterwarnung für Freiburg?* · *Is the road near Garmisch going to be icy this morning?* |
@@ -120,9 +129,16 @@ North Rhine-Westphalia's towns (SEVAS), Köln, Dresden, the Frankfurt RheinMain
 region (ivm) and Bremen; elsewhere the answer says it holds no data, which is never
 a clearance, and the long-lorry network covers the whole country. Departures cover
 every German stop from the timetable; a live delay appears where a realtime feed
-carries that trip, and otherwise the answer says the time is the plan. Live
+carries that trip, and otherwise the answer says the time is the plan; a railway
+station's board also lists its U-Bahn and trams from the timetable. Live
 parking and charging occupancy exist only where the operator publishes them, and
-an answer never reads "no data" as free. A parking site's amenities (WC, shower,
+an answer never reads "no data" as free. A parking figure is shown as published,
+with the operator's status beside it; a reading the publisher stopped updating says
+when it was last reported, and one that cannot be right is called implausible.
+Truck-parking occupancy at the motorway rest areas (Toll Collect's SID) is shown
+only after the user accepts ViaFrei's terms of use, section 2, in the question the
+client asks; a client that cannot ask gets the lorry parks without it. A parking
+site's amenities (WC, shower,
 restaurant and more) are the ones its own publisher states; many state none, and an
 amenity nobody stated is unknown, not absent. A motorway's traffic light is green
 only when every source it reads is current and reports nothing, and even then it is
@@ -143,9 +159,11 @@ roads and around a place it watches closures and restrictions only, and says so.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first four were asked of **server 2.3.23 on 2026-10-25
-between 15:04 and 15:06 Berlin time**, the day it went live; an "As of" time earlier
-than that is the time the source was last read. The next three were asked of server
+are not mock-ups. The first five were asked of **server 2.4.3 on 2026-10-27
+between 16:00 and 16:02 Berlin time**, the day it went live; an "As of" time earlier
+than that is the time the source was last read. The next four were asked of server
+2.3.23 on 2026-10-25 between 15:04 and 15:06 Berlin time, the day it went live.
+The next three were asked of server
 2.3.18 on 2026-10-24 at 00:20 Berlin time. The next five were asked of server 2.3.12 on 2026-10-22
 between 08:50 and 09:20 Berlin time; an "As of" time earlier than that is the
 time the source was last read. The next nine were asked of server 2.2.14 on
@@ -162,6 +180,147 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🚦 "How is the A3 right now?"</b> — <code>check_autobahn_traffic</code> with <code>roads: ["A3"]</code>, <code>language: "en"</code></summary>
+
+```text
+A3 — traffic light red: full closure (and 109 more reasons).
+A3, road-wide: 11 jams, 4 closures, 104 roadworks sites; plus police/Land messages: 3 jams, 6 restrictions, 8 roadworks sites, 6 reports; announced from 18:00: 49 closures, 110 roadworks sites — As of 16:01. Traffic state at 127 measuring sites (NRW, as of 15:58): 29 standstill, 5 slow, 29 heavy, 64 free-flowing; standstill or slow near Bonn/Siegburg, Duisburg-Wedau, Köln-Dellbrück; …
+• Traffic jam (Stau): A3, end of the jam 2.7 km past AS Leverkusen-Zentrum, about 10.0 km long, growing (about 8.9 km 17 min ago), since 15:39, +57 min — between junction Leverkusen-Zentrum and junction Königsforst, towards Frankfurt — Provider text (German): "A3 | Leverkusen-Zentrum - Königsforst · Oberhausen -> Frankfurt — […] Angespannte Verkehrslage […] …"
+• Traffic jam (Stau): A3, end of the jam 0.8 km past AS Iggensbach, about 6.6 km long, since 15:25, +18 min — between junction Iggensbach and junction Hengersberg, towards Nürnberg — …
+…
+Source: Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de) · Verkehrslage Nordrhein-Westfalen: © Die Autobahn GmbH des Bundes 2026 — GeoNutzV, Daten verändert (…) · TMC Location Code List (LCL 22.0): Bundesanstalt für Straßenwesen (BASt), CC BY 4.0 (…), bearbeitet (…) · …
+```
+And the first jam's `entry` in the structured result, new in 2.4.1 (the map links
+shortened):
+
+```json
+"entry": {
+  "where": { "kind": "pair",
+    "from": { "name": "Köln-Mülheim", "number": "25", "type": "AS" },
+    "to": { "name": "Leverkusen-Zentrum", "number": "24", "type": "AS" },
+    "town": { "name": "Leverkusen", "ags": "05316000" },
+    "land": { "ags": "05", "name": "North Rhine-Westphalia" },
+    "placedBy": "ViaFrei" },
+  "direction": { "kind": "toward", "toward": "Frankfurt" },
+  "when": { "from": "2026-10-27T15:39+01:00", "to": null, "running": true, "moreWindows": 0 },
+  "impact": [ { "code": "jam" } ],
+  "what": { "kind": "Traffic jam (Stau)", "measure": null, "terms": [] },
+  "at": { "lat": 51.00005, "lon": 7.01323 },
+  "maps": { "osm": "https://www.openstreetmap.org/?mlat=51.00005&mlon=7.01323…", "google": "…" }
+}
+```
+Every jam, closure and works site of the three road tools carries the same five
+answers: where (the junction pair, the town and the Land), which way, when, what it
+means for a driver and what the work is. `where` places the entry's own point (`at`,
+here the end of the jam, 2.7 km past Leverkusen-Zentrum) between the two junctions
+around it, while the publisher's title above names the whole stretch the jam covers.
+An assistant can say where, which way and since when without parsing the publisher's
+text, and link the map.
+*Edited: the condition notes that open the answer, the rest of the first jam's
+provider text, the third jam, the short-duration works listed after it, and most of
+the source line omitted.*
+</details>
+
+<details>
+<summary><b>⚡ "Is there an EnBW charger with 150 kW or more in Stuttgart?"</b> — <code>find_charging_station</code> with <code>place: "Stuttgart"</code>, <code>operator: "EnBW"</code>, <code>min_power_kw: 150</code>, <code>language: "en"</code></summary>
+
+```text
+Charging around Stuttgart (within 10 km, ≥ 150 kW, operator EnBW), nearest first, sites wholly out of order last:
+1. Rotebühlstr. 30, 70178 Stuttgart (ENBW) — 0.7 km, CCS2, up to 300 kW, 0.79 €/kWh, status from 2026-10-24 02:22 — possibly out of date
+2. Keplerstraße 7, 70174 Stuttgart (ENBW) — 0.7 km, CCS2, up to 300 kW, 0.79 €/kWh, status from 2026-10-24 04:47 — possibly out of date
+3. Am Neckartor 2, 70190 Stuttgart (ENBW) — 1.5 km, CCS2, up to 300 kW, 0.79 €/kWh, no status data
+…
+Only a few operators publish live occupancy; "no status data" means unknown, not free.
+
+Source: Ladepunkte: EnBW AG via Mobilithek, CC BY 4.0, bearbeitet (…) · Ladepunkt-Verfügbarkeit: EnBW AG via Mobilithek, CC BY 4.0, bearbeitet (…) · …
+```
+New in 2.4.3: `operator` and `max_power_kw`. Spellings of one brand match together
+(the register's "ENBW" above), and the structured result says how many of the radius's
+sites the filter kept (`sitesMatching` 10 of `sitesInRadius` 1,580 here). Where no
+site matches, the answer says how many it looked at and suggests widening the radius
+or dropping the filter. A status older than its feed's own window is shown with its
+time, never as free.
+*Edited: two more sites, the site ids for `watch_situation` and most of the source
+line omitted.*
+</details>
+
+<details>
+<summary><b>🚇 "What leaves Berlin Alexanderplatz now?"</b> — <code>get_train_departures</code> with <code>station: "Berlin Alexanderplatz"</code>, <code>language: "en"</code></summary>
+
+```text
+Departures from Berlin Alexanderplatz (next 60 minutes):
+16:02 S9 → Flughafen BER (S-Bahn), platform 3, on time
+16:03 S9 → Berlin-Spandau (S), platform 4, on time
+16:05 S3 → Berlin Charlottenburg (S), platform 4, on time
+…
+U-Bahn, Stadtbahn and tram at this station (DELFI timetable; realtime where DELFI GTFS-RT reports it):
+16:01 tram M4 → S Hackescher Markt (Berlin) (per timetable, platform Pos. 11)
+16:01 U5 → U Hönow (Berlin) (per timetable, platform 2 (U5))
+16:02 U2 → S+U Pankow (Berlin) (per timetable, platform 2 (U2))
+…
+Lines here: metro: U2, U5, U8 · tram: M4, M5, M6 · bus: 025, 060, 065, 070, 100, 157, 170, 200, …
+
+Source: Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · Bahnhofsdaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet (…) · Haltestellendaten: DELFI e.V. (zentrales Haltestellenverzeichnis), CC BY 4.0, bearbeitet (…) · As of 16:00
+```
+New in 2.4.3: a railway station that is also an interchange lists its U-Bahn,
+Stadtbahn and trams below the trains, from the timetable with realtime where the feed
+reports it, and names every line that calls there. One question about the station
+answers for all of it.
+*Edited: seven more trains, seven more U-Bahn and tram departures and most of the bus
+lines omitted.*
+</details>
+
+<details>
+<summary><b>🅿️ "Which car parks in Konstanz still have spaces?"</b> — <code>find_parking</code> with <code>place: "Konstanz"</code>, <code>kind: "car_park"</code>, <code>language: "en"</code></summary>
+
+```text
+Parking around Konstanz (within 10 km), nearest first:
+1. Fischmarkt — Car park (Parkhaus), 0.2 km, 161 spaces, 15 free, 90.68 % occupied, operator's status: almost full (as of 15:52), Facilities: not reported
+   Nearby per OpenStreetMap (straight line): restaurant 30 m · shop 30 m · café 40 m · snack bar 120 m · toilet 210 m
+2. Altstadt — Car park (Parkhaus), 0.3 km, 359 spaces, 15 free, 95.82 % occupied, operator's status: almost full (as of 15:52), Facilities: not reported
+3. Marktstätte — Car park (Parkhaus), 0.4 km, 277 spaces, 93 free, 66.43 % occupied, operator's status: spaces available (as of 15:52), Facilities: not reported
+4. Augustiner / Karstadt — Car park (Parkhaus), 0.4 km, reported closed (as of 2026-10-22 14:12, 122 h 48 min ago), Facilities: not reported
+5. Benediktinerplatz — Car park (Parkhaus), 0.7 km, 40 spaces, last reported 16 free, 60 % occupied, operator's status: spaces available (as of 2026-10-22 14:12, 122 h 48 min ago), Facilities: not reported
+…
+Source: Parkhäuser Konstanz: Stadt Konstanz via Mobilithek, Datensatz „Parkdaten Stadt Konstanz statisch“, CC BY 4.0, bearbeitet (…) · Parkhaus-Belegung Konstanz: Stadt Konstanz via Mobilithek, Datensatz „Parkdaten Stadt Konstanz dynamisch“, CC BY 4.0, bearbeitet (…) · OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 (…) · …
+Where no "free" count is shown the operator publishes no occupancy — it does not mean the site is full.
+```
+New in 2.4.2 and 2.4.3: the city of Konstanz's own car-park feed (Wiesbaden's joined
+in the same release), and every figure as the operator publishes it, with the
+operator's status beside it. Rows 4 and 5 show the honest part: their last reading is
+five days old, so they say "reported closed" and "last reported" with the time, and
+are never presented as current. MobiData BW's bundle carries some of the same lots;
+a lot both publish is listed once.
+*Edited: the nearby lines of rows 2 to 5, the chargers near each site, the
+OpenStreetMap notice and car-park list, and most of the source line omitted.*
+</details>
+
+<details>
+<summary><b>🚚 "How full are the lorry parks along the A9?"</b> — <code>find_parking</code> with <code>road: "A9"</code>, <code>kind: "truck"</code>, <code>language: "en"</code></summary>
+
+```text
+Parking along the A9:
+…
+2. 24-TOTAL Autohof Leipzig Flughafen — Lorry parking (Lkw-Parkplatz), 151 spaces, 151 of them for lorries, no occupancy published, Facilities: not reported
+3. Aral Autohof Bad Berneck — Lorry parking (Lkw-Parkplatz), 220 spaces, 120 of them for lorries, no occupancy published, Facilities: not reported
+…
+Truck-parking occupancy (Toll Collect, SID) is given only after accepting ViaFrei's terms of use, section 2 (https://viafrei.de/en/terms#sid); this client cannot ask for acceptance (MCP elicitation); it is available in a client that can, or on viafrei.de with "Show occupancy". The lorry parks above are therefore listed without it.
+
+Source: Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de) · LKW-Parken: © Lkw-Parken BAB Deutschland / Bundesministerium für Verkehr (BMV) 2026 — GeoNutzV, Daten verändert (…) · …
+```
+New in 2.4.3. The Toll Collect Stellplatz-Informationsdienst publishes the occupancy
+of the motorway rest areas, and its terms require that everyone who receives the
+figures is bound by them. So the server asks first: a client that supports MCP
+elicitation shows the user the question, and the figures follow only on an explicit
+yes. This capture came from a client that cannot ask, so the answer lists the lorry
+parks without the figures and says where to get them. An assistant must never accept
+for the user.
+*Edited: three more lorry parks, the nearby lines, the OpenStreetMap notice, the
+line saying the list is in name order, most of the source line and the closing
+sentence on missing free counts omitted.*
+</details>
+
+<details>
 <summary><b>🚦 "Is the A7 clear right now?"</b> — <code>check_autobahn_traffic</code> with <code>roads: ["A7"]</code>, <code>language: "en"</code></summary>
 
 ```text
@@ -1080,7 +1239,14 @@ rules, so a card and an assistant asked about the same place say the same thing:
   states for that Gemeinde, and lines suggesting what to ask your assistant to
   watch.
 
-Each station on the transit card has a line of its own: how many of its lifts and
+Since 2.4.2 every card refreshes in place (the ↻ on its heading, and the live
+cards on their own at the pace of their data) without reloading the page, long
+cards page through to their end, and a topic filter with *All* and *None* chooses
+which cards the home shows; it works without JavaScript and never hides a warning
+silently. A visitor outside Germany is shown the nearest German town near the
+border, or Germany as a whole when too far away.
+
+Each station on the transit card has a line of its own, linking its station page: how many of its lifts and
 escalators run, each one out of service by name, the platforms the timetable marks
 step-free, and the car parks and P+R sites within 300 m. The weather card shows
 the nearest road-weather station's next six hours, and the fuel card names the two
@@ -1138,7 +1304,8 @@ What the A7's page holds, from top to bottom:
   page, and to its official website where Wikidata states one.
 - **The crossing motorways**: each interchange and triangle names the motorways it
   meets, each linked to that motorway's page centred on the same junction, with the
-  traffic light that page shows there.
+  traffic light that page shows there. Since 2.4.3 the page also names the related
+  motorways it does not cross, such as a spur or the road that bridges a gap in it.
 
 - **One sentence about the road**, built from its own data: from Füssen to
   Flensburg/Harrislee, about 928 km on the schematic line, the Länder it crosses in
@@ -1157,7 +1324,12 @@ What the A7's page holds, from top to bottom:
   rather than drawing across it.
 - **What is reported now**: closures, jams and roadworks under their own heading,
   then the **full closures planned for the next seven days**, soonest first, each
-  with the signed detour where Baden-Württemberg publishes one.
+  with the signed detour where Baden-Württemberg publishes one. Since 2.4 every
+  entry says where it is (the stretch between two junctions, the nearest town and
+  Land, each a link), in which direction, when (with the weekday and "runs now" or
+  "in 6 days"), what it means for a driver and what the work is in plain words, with
+  a map link. Long cards show twelve entries and fetch the rest when you open the
+  fold; without JavaScript the same fold is a link.
 - **The junction strip**: every junction, interchange and triangle in order, with
   its counts. A form filters the page by stretch (from, to), direction and layer,
   and works without JavaScript. Each interchange names and links the motorways it
@@ -1171,7 +1343,9 @@ What the A7's page holds, from top to bottom:
   says how many sites state any ("34 of 50 sites state any facilities — for the rest
   they are unknown, not ruled out"). A second group of filters uses what
   OpenStreetMap shows near a site, with its licence line, and never counts it as
-  the site's own.
+  the site's own. The occupancy of the rest areas from Toll Collect's
+  Stellplatz-Informationsdienst appears only after you press "Show occupancy" and
+  so accept the [terms of use](https://viafrei.de/en/terms#sid), section 2.
 - **Along the road**: the police and Land traffic messages for the Länder that
   publish them, Schleswig-Holstein's bridge states, the signed detours of North
   Rhine-Westphalia, Baden-Württemberg and Hamburg, Brandenburg's border crossings,
@@ -1180,12 +1354,15 @@ What the A7's page holds, from top to bottom:
   carried by several sources is shown once, with all of them.
 - **Charging**: the chargers along the road with their status, the sites by power
   class, and the **longest stretch with no charger of 150 kW or more**. It says
-  where chargers are, never that one is free unless its operator says so.
+  where chargers are, never that one is free unless its operator says so. Since
+  2.4.3 a filter bar narrows the card by operator, plug, power band and "free now",
+  with counts, the same rule `find_charging_station` uses.
 - **Weather**: the DWD's official warnings along the road and the road-surface
   forecast of its road-weather stations.
 - **Traffic cameras**, as links to the publisher's images.
-- **Fuel prices**, only when you click: the page itself carries none, and the
-  click loads at most ten stations, each price with its time and the MTS-K note.
+- **Fuel prices**, loaded by your browser when the fuel card comes into view: the
+  page's HTML carries none, a crawler never sees one, and the card shows at most ten
+  stations, each price with its time and the MTS-K note.
 - **On every motorway**: the lorry ban, dated for the Länder this road crosses
   (whether it holds now, until when, and the next ban days), the advisory speed,
   the rescue lane and the emergency numbers, in the same words `get_driving_rules`
@@ -1207,9 +1384,43 @@ motorway sitemaps list every page in every language, and
 [llms.txt](https://viafrei.de/llms.txt) and
 [llms-full.txt](https://viafrei.de/llms-full.txt) describe the pages;
 llms-full.txt also lists every motorway page in English and German. [robots.txt](https://viafrei.de/robots.txt) keeps the AI training and
-corpus crawlers off the fuel and place pages, names them one by one, and leaves
-the motorway pages open to every crawler. The fuel prices are a click no crawler
-follows.
+corpus crawlers off the fuel page, names them one by one, and leaves the motorway
+pages open to every crawler, the place pages since 2.4.0, and the station and exit
+pages from their first release. No fuel price is in
+any page's HTML: a reader's browser asks for the prices when the card comes into
+view, and that address is closed to every crawler.
+
+## 🚉 Station and exit pages
+
+**Every railway station in the DB station directory has a page**, 5,409 of them, in
+the same 22 languages: the index is at
+**[viafrei.de/en/station](https://viafrei.de/en/station)**, and a station is its name
+as an address, so Berlin Alexanderplatz is
+**[viafrei.de/en/station/berlin-alexanderplatz](https://viafrei.de/en/station/berlin-alexanderplatz)**.
+A station page shows, from the same data the tools read:
+
+- **the departure board and the arrivals**, with platform, delay and cancellations,
+  a "my platform" choice and a destination filter (`?platform=`, `?to=`), and the
+  live part refreshed in place;
+- **at an interchange, its U-Bahn, Stadtbahn and trams**, and every line that calls
+  there;
+- **the lifts and escalators**, each joined to the platforms it serves, with the
+  ones out of service named;
+- **the service alerts** that concern it;
+- **parking and charging at its door**, with the same filters as the charging card;
+- **around the station**: pharmacies, food, cash machines and hotels nearby, the
+  motorways and the other stations near it.
+
+Its title carries the station's own facts from DB's station data.
+
+**Every motorway exit has a page of its own** since 2.4.1, under its motorway: the A3's
+junction Breitscheid is
+[viafrei.de/en/autobahn/a3/exit-16-breitscheid](https://viafrei.de/en/autobahn/a3/exit-16-breitscheid).
+It is the motorway's page opened at that junction, with its title and a map above
+the fold: the traffic light, what is reported, the junction's surroundings, parking,
+charging, the towns along the route and the questions your assistant can answer
+there. The exits
+with enough to say are listed in their own sitemaps, about 1,700 per language.
 
 ## 🔌 Connect in one minute
 
@@ -1296,15 +1507,15 @@ Restart the client and ask one of the questions above.
 
 <!-- catalogue:begin — generated by scripts/gen-readme-catalogue.mjs from catalogue.json; do not edit by hand -->
 
-**22 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.4.0, snapshot of 2026-10-25. Each line is the server's own words; the full parameters are in [API.md](API.md).
+**22 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.4.3, snapshot of 2026-10-27. Each line is the server's own words; the full parameters are in [API.md](API.md).
 
 #### 🚗 On the road
 
 | tool | what it answers |
 |---|---|
-| [`check_autobahn_traffic`](API.md#check_autobahn_traffic--autobahn-traffic) — Autobahn traffic | Per motorway (≤ 5): an Ampel verdict, then jams, closures and roadworks in force now, with delay/speed. |
+| [`check_autobahn_traffic`](API.md#check_autobahn_traffic--autobahn-traffic) — Autobahn traffic | Per motorway (≤ 5): an Ampel verdict, then jams, closures, roadworks in force now, with place/delay/speed/map. |
 | [`check_road_status`](API.md#check_road_status--road-status-and-closures) — Road status and closures | If a motorway/B/Land road (NI, NW, HE, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/soon; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). |
-| [`find_roadworks_ahead`](API.md#find_roadworks_ahead--planned-roadworks) — Planned roadworks | Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, NW, HE, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: section, restriction, dates. |
+| [`find_roadworks_ahead`](API.md#find_roadworks_ahead--planned-roadworks) — Planned roadworks | Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, NW, HE, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: where, impact, dates, map links. |
 | [`find_parking`](API.md#find_parking--parking-nearby) — Parking nearby | Parking near a place, a coordinate or along one motorway: lorry parks, car parks, P+R and disabled-badge bays, with total spaces, stated amenities (WC, shower) and published free spaces. |
 
 #### 🚆 Public transport
@@ -1320,7 +1531,7 @@ Restart the client and ask one of the questions above.
 
 | tool | what it answers |
 |---|---|
-| [`find_charging_station`](API.md#find_charging_station--ev-charging-nearby) — EV charging nearby | Returns EV charging sites near a place or coordinate with operator, connector types, maximum power, price per kWh where published, and how many points are free right now where the operator publishes live status. |
+| [`find_charging_station`](API.md#find_charging_station--ev-charging-nearby) — EV charging nearby | Returns EV charging sites near a place or coordinate: operator, plugs, max power, price per kWh where published, and how many points are free now where the operator publishes live status. |
 | [`find_cheapest_fuel`](API.md#find_cheapest_fuel--cheapest-fuel-nearby) — Cheapest fuel nearby | Returns the cheapest stations for one fuel grade near a place or coordinate: price per litre, brand, address, distance, open state. |
 | [`find_fuel_station`](API.md#find_fuel_station--find-a-filling-station) — Find a filling station | Finds filling stations around a place or coordinate under any combination of filters — grade, brand, name, open now, open at a time you name, open 24 h — sorted by distance, price or name. |
 | [`find_hydrogen_station`](API.md#find_hydrogen_station--hydrogen-stations-nearby) — Hydrogen stations nearby | Returns hydrogen (H2) filling stations near a place or coordinate, nearest first, with operator, address, pumps (700 bar car, 350 bar truck/bus), opening hours where published and the age of the record. |
@@ -1570,6 +1781,15 @@ licence breach rather than a style problem:
   catalogue records name no licence version, so do not rely on one for a
   derivative; [SOURCES.md](SOURCES.md) has the detail, and also covers the two
   share-alike databases under the ODbL (OpenStreetMap and one lorry-park operator).
+
+A third condition applies to one source only. **Truck-parking occupancy from Toll
+Collect's Stellplatz-Informationsdienst (SID)** comes with terms that bind everyone
+who receives the figures: they may be inaccurate, incomplete or out of date, there
+is no warranty, and nobody may use them to identify a vehicle or a person. ViaFrei
+passes them on only to a user who has accepted
+[its terms of use, section 2](https://viafrei.de/en/terms#sid), which carry those
+conditions. If you build on ViaFrei, let the user answer that question, never answer
+it for them, and show the condition sentence the result carries with every figure.
 
 See also [NOTICE](NOTICE) and [LICENSE](LICENSE).
 

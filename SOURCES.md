@@ -8,24 +8,23 @@ why, and the **attribution line** that has to travel with the answer. The lines 
 shortened by one part here, for a reason given where they are printed.
 
 It is not only a credits page. Several of these licences put obligations on
-**you**, the person or product that receives a tool result, and two of them can be
-breached without noticing. Those two come first, before the catalogue.
+**you**, the person or product that receives a tool result, and three of them can be
+breached without noticing. Those three come first, before the catalogue.
 
 The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.3.23 on 2026-10-25**: 251 sources, fourteen
-more than at server 2.3.18. 236 of them are held and answering, 10 are planned
-(licence read, nothing ingested yet) and five are discontinued. The fourteen new rows
-are four charging operators with live availability (eliso, ELU Mobility, TC-Backend's
-own feed and Chargepool), the Autobahn GmbH's short-duration works (AkD) and its
-strategic routing, Hessen Mobil's two roadworks feeds, Straßen.NRW's roadworks off the
-motorways, and two backup feeds that stand behind sources already shown (planned
-works in Mecklenburg-Vorpommern and the per-lane traffic state in NRW). Two rows
-changed status, from planned to held: the NRW traffic-information feed and the
-Landesmeldestelle Hamburg's own feed, both now ingested as backups for the police
-messages we already show. No attribution line of an existing row changed. The website also
+with that resource as served by server 2.4.3 on 2026-10-27**: 259 sources, eight
+more than at server 2.3.23. 242 of them are held and answering, 12 are planned
+(licence read, nothing ingested yet) and five are discontinued. The eight new rows
+are the car parks of **Konstanz** and **Wiesbaden** with their live occupancy (two
+feeds each), the lorry park at **Autohof Thiersheim** on the A93, the truck-parking
+occupancy of the motorway rest areas from **Toll Collect's Stellplatz-Informationsdienst
+(SID)**, which comes with conditions of its own ([below](#truck-parking-occupancy-comes-with-terms-the-user-accepts)),
+and two **planned** rows, VBN's Connect timetable and realtime for Niedersachsen and
+Bremen. No row changed status. One attribution line changed: the Autobahn GmbH's
+14-day roadworks feed now ends ", bearbeitet". The website also
 uses four sources the server's register does not list, named
 [near the end](#the-websites-own-sources). Whatever the surfaces say, the answer you hold is the thing to read:
 `_meta.sources` and the attribution lines on it are produced from the same result
@@ -33,7 +32,7 @@ you are looking at.
 
 ---
 
-## Two obligations that bind the reader
+## Three obligations that bind the reader
 
 ### Fuel prices are consumer information only
 
@@ -140,6 +139,36 @@ to the contact address in the Impressum on viafrei.de.
 
 If that is not what you want for your product, ask for the same answer from a
 source that is not BY-SA, or keep the two apart.
+
+### Truck-parking occupancy comes with terms the user accepts
+
+The occupancy of the motorway rest areas comes from the **Stellplatz-Informationsdienst
+(SID)** of Toll Collect GmbH, published through the national access point under
+Toll Collect's *Nutzungsbedingungen, Stellplatz-Informationsdienst, Version 1.0,
+Stand 10.04.2026*. Those terms allow free use, commercial use included, and
+redistribution, but they ask three things that travel with the figures:
+
+- **the source on every use** (Ziffer 4.2), which is the attribution line;
+- **a notice to every recipient** that the figures can be inaccurate, incomplete or
+  out of date (Ziffer 4.3, 8.7), and no use of them to identify a vehicle or a
+  person (Ziffer 4.1);
+- **that everyone the data is passed to is bound by those conditions** (Ziffer 4.3).
+
+The last one is why ViaFrei shows no SID figure to anyone who has not accepted
+[ViaFrei's terms of use, section 2](https://viafrei.de/en/terms#sid), which carry
+those conditions. In an MCP client the server asks the user through **MCP
+elicitation** and gives the figures only on an explicit yes; a client that cannot ask
+gets the lorry parks without them and is told why. On viafrei.de the figures appear
+after "Show occupancy". Every SID figure carries this condition sentence, and it is
+to be shown with it:
+
+```
+Truck-parking occupancy: Toll Collect GmbH, Stellplatz-Informationsdienst (SID) via Mobilithek. The figures may be inaccurate, incomplete or out of date; no warranty. ViaFrei's terms of use, section 2, apply: https://viafrei.de/en/terms#sid
+```
+
+What that means for you: **never accept the question on the user's behalf**, show the
+sentence with every figure, and if you pass the figures on, pass the conditions on
+with them. Terms: <https://company.toll-collect.de/static/media/dokumente/sid/agb-sid.pdf>
 
 ### And one that applies if you get an OpenStreetMap-derived result back
 
@@ -259,8 +288,8 @@ The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.3.23,
-2026-10-25), it exposes twenty-two tools, twenty of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.4.3,
+2026-10-27), it exposes twenty-two tools, twenty of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
@@ -315,7 +344,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_roadworks_nrw_lvz` | Arbeitsstellen Nordrhein-Westfalen (ohne Autobahnen): Landesbetrieb Straßenbau Nordrhein-Westfalen via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `mobilithek_los_nrw` | Verkehrslage Nordrhein-Westfalen: © Die Autobahn GmbH des Bundes 2026 — GeoNutzV, Daten verändert | GeoNutzV | held |
 | `mobilithek_los_nrw_lanes` | Verkehrslage Nordrhein-Westfalen: © Die Autobahn GmbH des Bundes 2026 — GeoNutzV, Daten verändert | GeoNutzV | held (backup) |
-| `mobilithek_ald_14d` | Arbeitsstellen auf Autobahnen (14 Tage): Die Autobahn GmbH des Bundes \| MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei | "eingeschränkte Nutzung, kostenfrei", no licence text — see below | held |
+| `mobilithek_ald_14d` | Arbeitsstellen auf Autobahnen (14 Tage): Die Autobahn GmbH des Bundes \| MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei, bearbeitet | "eingeschränkte Nutzung, kostenfrei", no licence text — see below | held |
 | `mobilithek_roadworks_akd` | Arbeitsstellen kürzerer Dauer auf Autobahnen (geplant): Die Autobahn GmbH des Bundes \| MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei | "eingeschränkte Nutzung, kostenfrei", no licence text, **plus a condition note** — see below | held |
 | `mobilithek_routing_bab` | Strategisches Routing: Die Autobahn des Bundes GmbH via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
 | `mobilithek_roadworks_he` | Arbeitsstellen Hessen: Hessen Mobil (Daten verändert) via Mobilithek, GeoNutzV | GeoNutzV | held |
@@ -373,6 +402,8 @@ feed, live, in the resource `viafrei://coverage`.
 | `vrn_rt` | Echtzeitdaten: Verkehrsverbund Rhein-Neckar GmbH (VRN), CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `vbn_siri_et` | Echtzeitdaten: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „SIRI-ET Niedersachsen und Bremen“, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mvv_bus_load` | Auslastung Regionalbus: Münchner Verkehrs- und Tarifverbund GmbH (MVV) via opendata-oepnv.de, CC BY, bearbeitet | CC BY (version unstated) | held |
+| `mobilithek_connect_gtfs` | Fahrplan Connect: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „GTFS Datensatz Connect (Niedersachsen und Bremen)“, CC BY 4.0, bearbeitet | CC BY 4.0 | planned |
+| `mobilithek_connect_gtfs_rt` | Echtzeit Connect: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „GTFS-RT Datensatz Connect (Niedersachsen und Bremen)“, CC BY 4.0, bearbeitet | CC BY 4.0 | planned |
 | **Station lifts, escalators and step-free access** — feeds `check_station_facilities` (lifts, escalators, platforms, surveys, acoustic signals nearby) and the step-free line that ends a `get_departures` board; site: the station lines on the transit card | | | |
 | `db_fasta` | Aufzüge und Fahrtreppen: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_openstation_netex` | Aufzüge, Fahrtreppen und Bahnsteige (Bestand): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
@@ -457,10 +488,12 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_truckpark_static_geonutzv` | LKW-Parken: © Lkw-Parken BAB Deutschland / Bundesministerium für Verkehr (BMV) 2026 — GeoNutzV, Daten verändert | GeoNutzV | held |
 | `mobilithek_park_bosch_static` | Lkw-Parken: Bosch Service Solutions via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_park_bosch_dyn` | Lkw-Parken (Belegung): Bosch Service Solutions via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `mobilithek_park_thiersheim_static` | Lkw-Parken: Bosch Service Solutions (Autohof Thiersheim) via Mobilithek, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_park_christophorus` | Lkw-Parken: Florence Knuellwald GmbH (Christophorus Parking) via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
 | `mobilithek_park_christophorus_occ` | Lkw-Parken (Belegung): Florence Knuellwald GmbH (Christophorus Parking) via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
 | `mobilithek_park_trucklounge` | Lkw-Parken: ENMO GmbH & Co.KG (Trucklounge Ecopark) via Mobilithek — enthält Daten aus „Trucklounge Ecopark“, Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/), bearbeitet | **ODbL 1.0** | held |
 | `mobilithek_park_trucklounge_occ` | Lkw-Parken (Belegung): ENMO GmbH & Co.KG (Trucklounge Ecopark) via Mobilithek — enthält Daten aus „Trucklounge Ecopark (dynamisch)“, Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/), bearbeitet | **ODbL 1.0** | held |
+| `toll_collect_sid` | Lkw-Stellplätze: Toll Collect GmbH, Stellplatz-Informationsdienst (SID) via Mobilithek, Nutzungsbedingungen Version 1.0 (Stand 10.04.2026) | **Toll Collect SID terms 1.0** — see the top of the page | held — shown only after the user accepts ViaFrei's terms of use, section 2 |
 | `mobilithek_park_koeln_static` | Parkhäuser: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `mobilithek_park_koeln_dyn` | Parkhaus-Belegung: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `mobilithek_park_nrw_parken` | Parkhäuser NRW: NRW.Mobidrom via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
@@ -475,6 +508,10 @@ feed, live, in the resource `viafrei://coverage`.
 | `leipzig_pr_belegung` | Park+Ride-Belegung Leipzig — Parkdaten: Stadt Leipzig, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
 | `mobilithek_park_kassel_static` | Parkhäuser Kassel: Stadt Kassel, Straßenverkehrs- und Tiefbauamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0, by the city's terms of use — see below | held |
 | `mobilithek_park_kassel_dyn` | Parkhaus-Belegung Kassel: Stadt Kassel, Straßenverkehrs- und Tiefbauamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0, by the city's terms of use — see below | held |
+| `mobilithek_park_wiesbaden_static` | Parkhäuser Wiesbaden: Landeshauptstadt Wiesbaden, Tiefbau- und Vermessungsamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0, by the city's terms of use | held |
+| `mobilithek_park_wiesbaden_dyn` | Parkhaus-Belegung Wiesbaden: Landeshauptstadt Wiesbaden, Tiefbau- und Vermessungsamt via Mobilithek, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0, by the city's terms of use | held |
+| `mobilithek_park_konstanz_static` | Parkhäuser Konstanz: Stadt Konstanz via Mobilithek, Datensatz „Parkdaten Stadt Konstanz statisch“, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `mobilithek_park_konstanz_dyn` | Parkhaus-Belegung Konstanz: Stadt Konstanz via Mobilithek, Datensatz „Parkdaten Stadt Konstanz dynamisch“, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `muc_parken_parkhaeuser` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | held |
 | `muc_parken_pr` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | held |
 | `muc_parken_prognosen` | Datenquelle: dl-de/by-2-0: Landeshauptstadt München – opendata.muenchen.de (bearbeitet) | dl-de/by-2-0 | held |
@@ -846,6 +883,9 @@ part of OpenStreetMap, "genügt eine Nennung der Deutschen Bahn AG in der Liste 
 Beitragenden". That is a relaxation **for OSM**, not permission to drop the line
 from your own results.
 
+Since server 2.4.2 the station data also builds viafrei.de's station pages, one per
+station in DB's directory, each carrying the Bahnhofsdaten line.
+
 A fourth, **DB BahnPark** (station car parks, Datenlizenz Deutschland –
 Namensnennung 2.0), is **discontinued**: its licence was read, and the publisher
 closed the route to the data on 2026-09-22. Nothing is held, and no answer names it.
@@ -1140,7 +1180,19 @@ carries the line of every publisher it lists.
 
 - **Lorry parking**: the motorway lorry-parking file (GeoNutzV, line above), Bosch
   Service Solutions (CC BY 4.0, with occupancy), Christophorus Parking
-  (dl-de/by-2-0) and Trucklounge Ecopark (ODbL, see the top of the page).
+  (dl-de/by-2-0) and Trucklounge Ecopark (ODbL, see the top of the page). Since
+  server 2.4.3 also the lorry park at **Autohof Thiersheim** on the A93 (Bosch
+  Service Solutions, CC BY 4.0): 55 lorry spaces and its charge, placed at the
+  access point because the publisher's own position is zero, and its street and
+  house number put back in order, hence ", bearbeitet". Its occupancy feed is
+  planned, not ingested.
+- **Truck-parking occupancy of the motorway rest areas** from Toll Collect's
+  Stellplatz-Informationsdienst (SID, published with the Federal Ministry for
+  Transport, BALM, Die Autobahn GmbH and BASt), since server 2.4.3: the occupancy
+  and the publisher's status per rest area, beside the rest areas of the
+  lorry-parking file. We keep the site, the counts, the
+  status and the time, and drop the operator's contact details. Shown only on the
+  conditions [at the top of the page](#truck-parking-occupancy-comes-with-terms-the-user-accepts).
 - **City car parks with live occupancy**: Köln, Dortmund and Wuppertal (DL-DE
   Zero), the NRW bundle, Hamburg and Münster (dl-de/by-2-0), since server 2.1
   **Kassel**'s ten car parks (dl-de/by-2-0 by the city's terms of use, as for its
@@ -1148,7 +1200,17 @@ carries the line of every publisher it lists.
   listed as a car park), and fifteen cities and
   operators in Baden-Württemberg through MobiData BW's ParkAPI (Karlsruhe CC BY 4.0,
   the others dl-de/by-2-0). A Wuppertal answer carries two lines, because its live
-  counts are matched to the NRW bundle's facility rows.
+  counts are matched to the NRW bundle's facility rows. Since server 2.4.2 also
+  **Konstanz** (the city's own feeds, CC BY 4.0) and **Wiesbaden** (the Landeshauptstadt,
+  dl-de/by-2-0 by incorporation in the city's terms of use). Konstanz's lots are also
+  in MobiData BW's bundle: the city's row is shown and the bundle's copy of the same
+  lot is folded into it and credited beside it.
+- **Every figure as published**, since server 2.4.3: the free count, the occupied
+  share and the operator's own status word ("almost full", "closed") side by side.
+  A figure that cannot be right (a negative count, a share of 1,000 % or more) is
+  said to be implausible rather than shown as a reading, a reading stamped in the
+  future is dated by when we received it, and a reading the publisher has stopped
+  updating is "last reported" with its time, never current.
 - **Park and ride**: P+R NRW (CC BY-SA, see the top of the page), Hamburg,
   **Leipzig**, where the city publishes live free spaces per site (dl-de/by-2-0),
   and since server 2.2.9 **Kiel** (below). **Berlin's park-and-ride sites** (the
@@ -1519,21 +1581,22 @@ the server does not, and none of them is in any tool answer or has a row in
 Leaving a dataset out is as much a part of using open data lawfully as using one.
 
 **Planned, not ingested.** The twelve `planned` rows above have had their licence
-read and hold no data: Köln's traffic situation (two feeds), Schleswig-Holstein's
-road weather (two feeds) and its lorry parks (two feeds), the two NRW
-traffic-information feeds and the Hamburg police feed on the access point (the
-Hamburg messages already reach us through the NRW bundle), Dortmund's
-access-point occupancy feed (the city's own portal answers instead), the lorry park
-at the Thiersheim truck stop, and Kiel's old-town car parks.
+read and nothing answers from them: Köln's traffic situation (two feeds),
+Schleswig-Holstein's road weather (two feeds) and its lorry parks (two feeds), the
+NRW single traffic messages, Dortmund's access-point occupancy feed (the city's own
+portal answers instead), the occupancy of the Thiersheim lorry park (its static
+table answers since server 2.4.3), Kiel's old-town car parks, and VBN's Connect
+timetable and realtime for Niedersachsen and Bremen (two feeds, licence read and
+approved, not yet answering).
 
 **Discontinued.** DB BahnPark, above, and smartlab's four charging publications
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; see the
 charging section for the dated grace window.
 
-**Held back.** Nothing at server 2.3.23. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.4.3. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.3.23. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.4.3. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1594,12 +1657,13 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.3.23 on 2026-10-25, not typed: every id it
+  by line with it as served by server 2.4.3 on 2026-10-27, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
-  fetch through. No row was added at 2.3.12 or 2.3.18; the fourteen added at 2.3.23
-  and the 25 added at 2.2.14 were taken from the same resource.
+  fetch through. No row was added at 2.3.12 or 2.3.18; the eight added in 2.4.2 and
+  2.4.3, the fourteen added at 2.3.23 and the 25 added at 2.2.14 were taken from the
+  same resource.
 - Every row in our internal register records the licence, the operative sentence,
   the date it was read and who may do what with the data. Rows are re-verified
   **quarterly** and whenever a provider announces a change.

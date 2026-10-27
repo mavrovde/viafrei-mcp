@@ -9,7 +9,7 @@ the server's own text, reproduced verbatim, because that text is what an
 assistant reads when it decides which tool to call; paraphrasing it here would
 document a different server.
 
-**It is a dated snapshot, taken on 2026-10-25.** Generating this file makes
+**It is a dated snapshot, taken on 2026-10-27.** Generating this file makes
 it impossible for the document and the snapshot to disagree — CI regenerates and
 compares — but it cannot keep the snapshot from ageing against the live server,
 because a capture is a point in time. **The source of truth is the running
@@ -17,11 +17,11 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.4.0 |
+| Server | `viafrei` 2.4.3 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
-| Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-25 |
+| Captured from | `https://mcp.viafrei.de/mcp` on 2026-10-27 |
 | Surface | 22 tools, 10 resources, 2 resource templates, 9 prompts |
 | Parameter schemas | JSON Schema draft-07 |
 | Capabilities | `tools`, `resources`, `prompts`, `logging` |
@@ -58,7 +58,7 @@ language the person is writing in rather than relying on the default.
 
 The server's own instructions to a connecting client, verbatim:
 
-> ViaFrei gives AI assistants real-time awareness of Germany: live motorway traffic, closures and roadworks (plus Land and city traffic messages where a feed carries them), fuel prices, EV charging, parking, train and public-transport departures, regional public-transport punctuality and service alerts, station lifts and escalators and DWD weather warnings; and, as reference data, places and addresses and the curated German driving rules. Every tool takes a `language` argument that defaults to German ("de"): set it on every call to the language the user writes in — "en" for English — or an English question is answered in German. Always show the attribution line of a result to the user, and when a result carries `_meta.purposeNote` or `_meta.conditionNote`, show that sentence verbatim as well — it is a legal condition of the data, not a caption. Times are Europe/Berlin; the rules answers carry a review date and are informational, not legal advice. ViaFrei is in beta: sources are still being added and answers and coverage can change, so when a decision depends on a closure, a departure or a price, tell the user to confirm it with the source the attribution line names.
+> ViaFrei gives AI assistants real-time awareness of Germany: live motorway traffic, closures and roadworks (plus Land and city traffic messages where a feed carries them), fuel prices, EV charging, parking, train and public-transport departures, regional public-transport punctuality and service alerts, station lifts and escalators and DWD weather warnings; and, as reference data, places and addresses and the curated German driving rules. Every tool takes a `language` argument that defaults to German ("de"): set it on every call to the language the user writes in — "en" for English — or an English question is answered in German. Always show the attribution line of a result to the user, and when a result carries `_meta.purposeNote` or `_meta.conditionNote`, show that sentence verbatim as well — it is a legal condition of the data, not a caption. Truck-parking occupancy from the Toll Collect SID is given only after the user accepts ViaFrei's terms of use, section 2, in the question the client shows (MCP elicitation); never accept on the user's behalf. Times are Europe/Berlin; the rules answers carry a review date and are informational, not legal advice. ViaFrei is in beta: sources are still being added and answers and coverage can change, so when a decision depends on a closure, a departure or a price, tell the user to confirm it with the source the attribution line names.
 
 ## Tools
 
@@ -66,7 +66,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Per motorway (≤ 5): an Ampel verdict, then jams, closures and roadworks in force now, with delay/speed. Use when asked about a named motorway now: frei/clear (Ampel), Stau, a delay, how it looks, or a LIST of closures; name every motorway (Munich→Berlin: A9). Do NOT use for open/closed/gesperrt/passable, even now, a closure with no time word or a later one (tonight, weekend), or a town, no motorway — check_road_status; Baustellen dated or geplant — find_roadworks_ahead; a named city street: not held; fuel (find_cheapest_fuel), trains (get_train_departures). ~5 min old. Show attribution.
+> Per motorway (≤ 5): an Ampel verdict, then jams, closures, roadworks in force now, with place/delay/speed/map. Use when asked about a named motorway now: frei/clear (Ampel), Stau, a delay, how it looks, or a LIST of closures; name every motorway (Munich→Berlin: A9). Do NOT use for open/closed/gesperrt/passable, even now, a closure with no time word or a later one (tonight, weekend), or a town, no motorway — check_road_status; Baustellen dated or geplant — find_roadworks_ahead; a named city street: not held; fuel (find_cheapest_fuel), trains (get_train_departures). ~5 min old. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -210,7 +210,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, NW, HE, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: section, restriction, dates. Use when a date or window is named, it says geplant, or how long a site lasts ("Baustellen auf der A7 in den Sommerferien?"). ONE road/place per call. Do NOT use when more than one motorway is named, for the situation this minute, or for Baustellen with neither date nor geplant — all three are check_autobahn_traffic; whether a road is open — check_road_status. ≤ 92 days, max 20 sites. Show attribution.
+> Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, NW, HE, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: where, impact, dates, map links. Use when a date or window is named, it says geplant, or how long a site lasts ("Baustellen auf der A7 in den Sommerferien?"). ONE road/place per call. Do NOT use when more than one motorway is named, for the situation this minute, or for Baustellen with neither date nor geplant — all three are check_autobahn_traffic; whether a road is open — check_road_status. ≤ 92 days, max 20 sites. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -232,7 +232,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Returns EV charging sites near a place or coordinate with operator, connector types, maximum power, price per kWh where published, and how many points are free right now where the operator publishes live status. Use when an EV driver asks where to charge ("Wo kann ich laden?", "CCS 150 kW near Leipzig", "ist gerade eine Säule frei?"). Do NOT use for petrol or diesel — call find_cheapest_fuel; for E-Kennzeichen or Ladekarte rules — call get_driving_rules. Radius ≤ 25 km, ≤ 10 sites; availability is missing for most operators and is then unknown, never free. Show the attribution line.
+> Returns EV charging sites near a place or coordinate: operator, plugs, max power, price per kWh where published, and how many points are free now where the operator publishes live status. Filters: plug, power (min/max kW), operator, free now. Use when an EV driver asks where to charge ("Wo kann ich laden?", "CCS 150 kW near Leipzig", "ist gerade eine Säule frei?"). Do NOT use for petrol or diesel (find_cheapest_fuel) or E-Kennzeichen rules (get_driving_rules). Radius ≤ 25 km, ≤ 10 sites; availability is missing for most operators and is then unknown, never free. Show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -241,8 +241,10 @@ The server's own instructions to a connecting client, verbatim:
 | `lat` | number | no | — | min -90; max 90 |
 | `limit` | integer | no | `5` | min 1; max 10 |
 | `lon` | number | no | — | min -180; max 180 |
+| `max_power_kw` | number | no | — | min 1; max 1000 |
 | `min_power_kw` | number | no | — | min 1; max 1000 |
 | `only_available` | boolean | no | `false` | — |
+| `operator` | string | no | — | min length 1; max length 80 |
 | `place` | string | no | — | min length 1; max length 120 |
 | `radius_km` | number | no | `10` | min 1; max 25 |
 
@@ -251,8 +253,10 @@ The server's own instructions to a connecting client, verbatim:
 - **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.
 - **`limit`** — How many lines to return, nearest first (1–10, default 5). Places within 50 m that read alike are folded into one line that says how many units it holds; structuredContent.sites has one entry per place of the lines shown, with siteIds naming every record of that place, so it can be longer than limit.
 - **`lon`** — Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use place.
+- **`max_power_kw`** — Only charging points of at most this many kW (1–1000). Use for a normal AC post ("normale AC-Säule", "Wallbox": 22) or, with min_power_kw, a band (50 and 149 = DC fast but not HPC). Never below min_power_kw. Omit unless the person set an upper limit.
 - **`min_power_kw`** — Only charging points of at least this many kW (1–1000). Use when the person names a number or asks for fast charging: 50 = DC fast (a bare "fast"/"schnell"/"Schnelllader"), 150 = HPC ("HPC", "ultra", "ultraschnell"), 300 = the fastest posts in Germany. Omit for "where can I charge" — 11 kW overnight is a valid answer to that question.
 - **`only_available`** — When true, return only sites with at least one point reported FREE right now. Default false. Use it when the person asks what is free at this moment. Note that only some operators publish live status: the result always says how many nearby sites were dropped because their status is unknown, so the filter never silently hides a charger that may well be free.
+- **`operator`** — Only sites of this charge-point operator brand, as the person names it: "IONITY", "EnBW", "Tesla", "Aral pulse". Spellings of one brand match together ("EnBW mobility+ AG", "ENBW"); sites whose source names no operator are left out. Omit unless the person named an operator — a question about WHO operates the chargers sets none.
 - **`place`** — Where to look, as free text: a city ("München", "Munich"), a district or Kreis ("Kreis Fulda"), a Bundesland, a station or stop ("Hamburg Hbf"), a motorway junction ("AK Neufahrn"), or a street address with a house number ("Bahnhofstraße 12, 36037 Fulda"). A motorway number alone ("A7") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.
 - **`radius_km`** — Search radius around the place in kilometres (1–25, default 10). A charging stop is worth a detour, so this is wider than the fuel radius — but 25 km is the cap, and a larger circle is a dataset request rather than a driver's question.
 
@@ -480,7 +484,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Reaches a third-party source (open world). Idempotent: true. Destructive: false.
 
-> Next trains from a German railway station: platform, delay, cancellations. Use when asked when a train, S-Bahn or ICE leaves a named station, or if a train or line from it is late ("RE1 from Köln Hbf late?"); later today ("heute Abend") stays here. A line with no DEPARTURE station ("ist die S1 pünktlich?"; a destination, "nach …"/"zum …", is not one) — check_transit_disruption. Do NOT use for buses, trams, a non-railway stop, another day or a time over 2 h away — get_departures. Train type: categories (ICE/IC/RE/RB/S); no destination filter. ≤ 15 rows, ≤ 120 min. Show the attribution line.
+> Next trains from a German railway station: platform, delay, cancellations. Use when asked when a train, S-Bahn or ICE leaves a named station, or if a train or line from it is late; later today ("heute Abend") stays here. A line with no DEPARTURE station ("ist die S1 pünktlich?"; a destination, "nach …", is not one) — check_transit_disruption. Lists its U-Bahn and trams too. Do NOT use for one bus/tram/U-Bahn line, a non-railway stop, another day or over 2 h away — get_departures. Train type: categories (ICE/IC/RE/RB/S); no destination filter. ≤ 15 rows, ≤ 120 min. Show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -758,5 +762,5 @@ single call.
 ---
 
 Generated from `catalogue.json` by `scripts/gen-api-doc.mjs`. The snapshot was
-read from `https://mcp.viafrei.de/mcp` on 2026-10-25; no tool was invoked to
+read from `https://mcp.viafrei.de/mcp` on 2026-10-27; no tool was invoked to
 produce it, so no data provider was contacted.
