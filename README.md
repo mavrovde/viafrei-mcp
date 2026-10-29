@@ -50,13 +50,15 @@ on viafrei.de, with a map and a traffic light.
 > - **A sectioned track is that track.** Hamburg Hbf's "7A-D" is Gleis 7 in
 >   `get_train_departures` (`"place": "track"`) and on the station board, where it
 >   used to fall through as plain text ([example](#-real-answers)).
-> - **A departure keeps its own destination and delay.** Two departures of the same
->   line no longer swap them, and a town's station stays apart from a district of it.
+> - **A departure keeps its own destination and delay.** It no longer takes another
+>   departure's destination or delay, and a town's station stays apart from a
+>   district of it.
 > - **Translated maps speak their own language**: a mark's name is the row's own
 >   name, never a German label, and the position on a motorway page's "around you"
 >   map can be tapped.
-> - **Translated pages keep a place's name as it is**, and the connect pages in
->   Russian, Ukrainian, Bulgarian and Serbian are in their own language throughout.
+> - **The header of a translated page keeps a place's name untranslated**, and the
+>   connect pages in Russian, Ukrainian, Bulgarian and Serbian no longer leave the
+>   word "ID" in English.
 > - **Pages without a script keep their styles.**
 >
 > **Before that, since server 2.4.3 (server 2.4.4 to 2.4.9): live times for buses, trams and
@@ -230,12 +232,15 @@ it was sent, shortened where marked.
 "capped": {"shown":10,"more":13}, "interchange": U1, U2, U3, U4 and the buses, with their own departures
 …
 Source: Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · Bahnhofsdaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · … · Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet (…)
+The DELFI GTFS-RT realtime entries are licensed CC BY-SA (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (…): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution.
 ```
 New in 2.5.0: the RE1's platform "7A-D" — track 7, sections A to D, written without
-a space — is read as a track (`"place": "track"`), so the answer says Gleis 7A-D
-and a platform filter for track 7 finds it. Before 2.5.0 such a row fell through
-as plain text. Times are UTC in the structured result (shown at 17:48 Berlin, so
-the ICE 200 left 30 minutes late).
+a space — is read as a track (`"place": "track"`), so the English answer says "platform
+7A-D" and the German one "Gleis 7A-D". Before 2.5.0 such a row fell through as
+plain text. Times are UTC in the structured result: the ICE 200, planned at 17:22
+Berlin, was expected at 17:52, 30 minutes late. The U-Bahn departures of the
+interchange come in a list of their own, and because the realtime is DELFI's, the
+answer carries the share-alike sentence.
 *Edited: four of the ten departures shown, one line each, the station's other
 fields and the full attribution omitted.*
 </details>

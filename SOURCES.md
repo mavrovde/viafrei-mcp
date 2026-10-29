@@ -16,8 +16,9 @@ The authoritative, always-current register is the resource
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
 with that resource as served by server 2.5.0 on 2026-10-29**: 262 sources, the same
-rows as at server 2.4.9, whose one changed paragraph is the streets note
-([below](#and-the-streets-on-viafreides-maps)). Against server 2.4.3 there are three more. 247 of them are held (one of those, the streets, feeds
+rows as at server 2.4.9 (only the streets note changed,
+[below](#and-the-streets-on-viafreides-maps)), three more than at server 2.4.3.
+247 of the 262 are held (one of those, the streets, feeds
 only the site's maps), 10 are planned
 (licence read, nothing ingested yet) and five are discontinued. The three new rows
 are the Autobahn GmbH's **strategic routes for Bayern** and **Lower Saxony's traffic
