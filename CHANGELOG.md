@@ -50,14 +50,12 @@ resource was added, removed or renamed, and no argument or description changed.
 
 - **Road entries name their junctions in the direction of travel**, and a lorry park
   whose publisher gives a placeholder for its name is not given that as its name.
-- **A live figure lands on the departure going its way**: the two directions of a
-  line inside one town are no longer confused, and a station spelled two ways by two
-  feeds is one station.
 - **A guidance to the trade-fair car parks is never called a detour.**
 - **Faster answers.** Departures read the newest call per feed instead of hours of
-  readings; a place question reads the place register once; the charging radius
-  search, the lorry restrictions by place and the road read for a place answer
-  sooner; a place page's cards no longer wait for each other.
+  readings; the charging search reads the place register once for a place
+  question; the charging radius search, the lorry restrictions by place and the
+  road read for a place answer sooner; a place page's cards no longer wait for
+  each other.
 - **A station page is never an error because one part is slow**: that part loads in
   place, and a motorway page is no longer slow when its cache is renewed.
 - **A station board's split train is one row, arrivals carry their own platform,
