@@ -5,6 +5,76 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+The server moved from 2.4.4 to 2.4.9 while this package mirrored each version with no
+description. What those releases brought is described here. No tool, prompt or
+resource was added, removed or renamed, and no argument or description changed.
+
+### Added (server 2.4.4-2.4.9)
+
+- **Live departures in fourteen more regions.** DELFI's fourteen regional SIRI ET
+  feeds give `get_departures` and the departure cards on viafrei.de a live delay,
+  "on time" or a cancellation for buses, trams and the U-Bahn as well as trains. One
+  figure per departure, from the feed whose call agrees with where the departure is
+  going, and every feed that carried it credited. Since 2.4.5.
+- **VBN's Connect timetable and realtime for Niedersachsen and Bremen** (CC BY 4.0)
+  answer on the departure boards, kept apart from DELFI's share-alike feeds and
+  credited under their own lines. Since 2.4.5.
+- **Traffic strategies.** Lower Saxony's traffic strategies (DVL-NI, since 2.4.4) and
+  the Autobahn GmbH's strategic routes for Bayern (shown since 2.4.7) join its
+  national strategic routing in `check_autobahn_traffic`, `check_road_status` and the
+  road card, each called what its publisher calls it and shown only while switched.
+- **A traffic light and a map for every place** on viafrei.de: the motorway pages'
+  rule applied to the place's own cards, every reason linked to its row and marked on
+  a map of the place, one light per place. The map marks parking, charging,
+  stations and the DWD warning ring by kind, each mark a link to its row.
+- **OpenStreetMap streets on the maps.** The place, station and motorway maps draw
+  streets as thin lines under their marks, with their own ODbL credit and our offer
+  of the street database. Since 2.4.7.
+- **A site search that finds what you type**: districts, postcodes and streets,
+  points of interest by name (2.4.8), and a street with a house number typed without
+  a town (2.4.9). An address you pick heads the page with the address.
+- **Station pages for every railway station**, 6,513 of them, including the
+  stations DB's directory does not list, with board filters (mode, departures or
+  arrivals, platform, destination, time, disruptions, step-free), every lift and
+  escalator, the place cards and traffic light around the station, and a home-page
+  block of the stations most affected now.
+- **Police and Land traffic messages in the page's language** on viafrei.de,
+  machine-translated on our own server, labelled as ours and with the German
+  original beside them. Baden-Württemberg's messages stay German only.
+- **Your language, once**: a visitor arriving on a German page is sent to the same
+  page in their browser's language, and a choice in the language menu ends the
+  switching. The connect page gives every assistant its steps, links its official
+  guide and says how each was checked.
+
+### Fixed (server 2.4.4-2.4.9)
+
+- **Road entries name their junctions in the direction of travel**, and a lorry park
+  whose publisher gives a placeholder for its name is not given that as its name.
+- **A guidance to the trade-fair car parks is never called a detour.**
+- **Faster answers.** Departures read the newest call per feed instead of hours of
+  readings; the charging search reads the place register once for a place
+  question; the charging radius search, the lorry restrictions by place and the
+  road read for a place answer sooner; a place page's cards no longer wait for
+  each other.
+- **A station page is never an error because one part is slow**: that part loads in
+  place, and a motorway page is no longer slow when its cache is renewed.
+- **A station board's split train is one row, arrivals carry their own platform,
+  and only a real track number stands under "platform".**
+
+### Bridge
+
+- **README and SOURCES.md describe server 2.4.9.** The README's "New" box covers
+  the server releases 2.4.4 to 2.4.9 (live departures from DELFI's fourteen regional
+  SIRI ET feeds and VBN's Connect, the traffic strategies of Bayern and Lower Saxony,
+  the place traffic light and map, the streets on the maps, the site search, the
+  station pages for every railway station, translated traffic messages on the site)
+  and gained one answer captured from server 2.4.9 on 2026-10-29; the five answers
+  from 2.4.3 were asked again and answer in the same shape. The connect steps follow
+  the connect page of 2026-10-28. SOURCES.md was compared row by row with
+  `viafrei://attribution` as served by server 2.4.9: 262 sources, three more than at
+  2.4.3, two moved from planned to held, one line changed, and a section on the
+  streets the site's maps draw. No code change.
+
 ## [2.4.9] - 2026-10-29
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
