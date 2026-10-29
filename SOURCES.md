@@ -15,8 +15,10 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.4.9 on 2026-10-29**: 262 sources, three
-more than at server 2.4.3. 247 of them are held (one of those, the streets, feeds
+with that resource as served by server 2.5.0 on 2026-10-29**: 262 sources, the same
+rows as at server 2.4.9 (only the streets note changed,
+[below](#and-the-streets-on-viafreides-maps)), three more than at server 2.4.3.
+247 of the 262 are held (one of those, the streets, feeds
 only the site's maps), 10 are planned
 (licence read, nothing ingested yet) and five are discontinued. The three new rows
 are the Autobahn GmbH's **strategic routes for Bayern** and **Lower Saxony's traffic
@@ -267,8 +269,11 @@ database you use publicly, you owe your recipients the same.
 
 Since server 2.4.7 the place maps, the station maps and the motorway maps of
 viafrei.de draw **OpenStreetMap's streets** as thin lines under their own marks:
-trunk, primary, secondary, tertiary and residential roads, and never an
-OpenStreetMap motorway, because a motorway's line on our maps is BASt's. The lines
+trunk, primary, secondary, tertiary and residential roads on a place map, fewer
+classes on a wider frame and the trunk roads alone on a motorway's own map, and never
+an OpenStreetMap motorway, because a motorway's line on our maps is BASt's (the
+BASt Location Code List). The database still holds the motorway ways the extracts
+carry, and the export below holds them in full with the rest. The lines
 come from a sixth ODbL database of ours, built from the OpenStreetMap Germany
 extracts and never joined to our other OpenStreetMap databases or to any other
 source. **No MCP tool answers from it**, and no mark is placed on, filtered by or
@@ -326,7 +331,7 @@ The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.4.9,
+in the wiki. As of the capture shipped alongside this page (server 2.5.0,
 2026-10-29), it exposes twenty-two tools, twenty of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
