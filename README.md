@@ -44,7 +44,22 @@ on viafrei.de, with a map and a traffic light.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New since server 2.4.3 (server 2.4.4 to 2.4.9): live times for buses, trams and
+> **New in the 2.5 line (server 2.5.0): bug fixes only.** No tool, prompt or
+> resource was added, removed or renamed.
+>
+> - **A sectioned track is that track.** Hamburg Hbf's "7A-D" is Gleis 7 in
+>   `get_train_departures` (`"place": "track"`) and on the station board, where it
+>   used to fall through as plain text ([example](#-real-answers)).
+> - **A departure keeps its own destination and delay.** Two departures of the same
+>   line no longer swap them, and a town's station stays apart from a district of it.
+> - **Translated maps speak their own language**: a mark's name is the row's own
+>   name, never a German label, and the position on a motorway page's "around you"
+>   map can be tapped.
+> - **Translated pages keep a place's name as it is**, and the connect pages in
+>   Russian, Ukrainian, Bulgarian and Serbian are in their own language throughout.
+> - **Pages without a script keep their styles.**
+>
+> **Before that, since server 2.4.3 (server 2.4.4 to 2.4.9): live times for buses, trams and
 > the U-Bahn in fourteen more regions, a traffic light and a street map for every
 > place, a site search that finds a shop or a house number, and station pages that
 > load in place.**
@@ -180,8 +195,9 @@ roads and around a place it watches closures and restrictions only, and says so.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first was asked of **server 2.4.9 on 2026-10-29 at 06:55
-Berlin time**. The next five were asked of server
+are not mock-ups. The first was asked of **server 2.5.0 on 2026-10-29 at 17:48
+Berlin time**, the day it went live. The next was asked of server 2.4.9 that
+morning at 06:55. The next five were asked of server
 2.4.3 on 2026-10-27 between 16:00 and 16:02 Berlin time, the day it went live, and
 were asked again of server 2.4.9 on 2026-10-29 at 06:54: they answer in the same
 shape, and their figures belong to the moment they were first captured. An "As of"
@@ -204,6 +220,27 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🚆 "When does the next train leave Hamburg Hbf?"</b> — <code>get_train_departures</code> with <code>station: "Hamburg Hbf"</code>, <code>language: "en"</code></summary>
+
+```text
+{"line":"ICE 200","destination":"Hamburg-Altona","plannedAt":"…T16:22:00Z","delayMin":30,"platform":"13","place":"track"}
+{"line":"S3","destination":"Hamburg-Neugraben","plannedAt":"…T16:46:00Z","delayMin":4,"platform":"3","place":"track"}
+{"line":"ICE 1275","destination":"Berlin Gesundbrunnen","plannedAt":"…T16:51:00Z","delayMin":0,"platform":"8","place":"track"}
+{"line":"RE1","destination":"Büchen","plannedAt":"…T16:55:00Z","delayMin":0,"platform":"7A-D","place":"track"}
+"capped": {"shown":10,"more":13}, "interchange": U1, U2, U3, U4 and the buses, with their own departures
+…
+Source: Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · Bahnhofsdaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · … · Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet (…)
+```
+New in 2.5.0: the RE1's platform "7A-D" — track 7, sections A to D, written without
+a space — is read as a track (`"place": "track"`), so the answer says Gleis 7A-D
+and a platform filter for track 7 finds it. Before 2.5.0 such a row fell through
+as plain text. Times are UTC in the structured result (shown at 17:48 Berlin, so
+the ICE 200 left 30 minutes late).
+*Edited: four of the ten departures shown, one line each, the station's other
+fields and the full attribution omitted.*
+</details>
+
+<details>
 <summary><b>🚊 "Wann fährt die nächste Stadtbahn ab Hannover Kröpcke?"</b> — <code>get_departures</code> with <code>stop: "Hannover Kröpcke"</code>, <code>limit: 8</code>, <code>language: "en"</code></summary>
 
 ```text
