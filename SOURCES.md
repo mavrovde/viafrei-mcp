@@ -19,8 +19,8 @@ with that resource as served by server 2.4.9 on 2026-10-29**: 262 sources, three
 more than at server 2.4.3. 247 of them are held (one of those, the streets, feeds
 only the site's maps), 10 are planned
 (licence read, nothing ingested yet) and five are discontinued. The three new rows
-are **Bayern's strategic routes** and **Lower Saxony's traffic strategies (DVL-NI)**,
-which answer beside the Autobahn GmbH's strategic routing, and the **OpenStreetMap
+are the Autobahn GmbH's **strategic routes for Bayern** and **Lower Saxony's traffic
+strategies (DVL-NI)**, which answer beside the Autobahn GmbH's strategic routing, and the **OpenStreetMap
 streets** that viafrei.de's maps draw since 2.4.7, a share-alike database of its own
 that no tool answers from ([below](#and-the-streets-on-viafreides-maps)). Two rows
 changed status: **VBN's Connect timetable and realtime** for Niedersachsen and Bremen
@@ -142,7 +142,8 @@ instead, by the tool's own rule, and then carries no share-alike sentence. The t
 are never mixed into one figure.
 
 **Our side.** The server keeps the SIRI ET calls (with, since server 2.4.9, the
-newest of each call per feed taken from them, which the departures read) and the
+newest of each call per feed taken from them, which the departures read, and the
+pairs that link a call's EVA number to the timetable stop it was matched to) and the
 service alerts as two separate share-alike databases, joined to nothing else, and
 offers both, as CSV
 with a note of our alterations, under CC BY-SA 4.0 and free of charge, on request
@@ -807,14 +808,18 @@ Verkehrsmeldungen Rüsselsheim am Main: © Stadt Rüsselsheim am Main <Jahr> —
   Autobahn GmbH's recommendation and only while it is switched and the feed is
   current; it is never a route we compute, and never counted or put in the traffic
   light. Most of the time nothing is switched and nothing is said.
-- **Bayern's strategic routes and Lower Saxony's traffic strategies**, since server
-  2.4.4, are the same kind of recommendation. Bayern's (Die Autobahn GmbH, GeoNutzV,
-  with the year in its line) have so far been the guidance to the trade-fair car
+- **The strategic routes for Bayern and Lower Saxony's traffic strategies** are the
+  same kind of recommendation. Lower Saxony's answer since server 2.4.4; Bayern's,
+  read since 2.4.4, are shown since 2.4.7: each publication is valid for only a few
+  minutes, and until then it was read after that window had closed, so it never
+  reached an answer. Bayern's
+  (published by Die Autobahn GmbH, GeoNutzV, with the year in its line) have so far
+  been the guidance to the trade-fair car
   parks in München, and an answer calls them what the publisher calls them,
   guidance and never a detour. Lower Saxony's (NLStBV, Datenlizenz Deutschland – Zero 2.0) are the
   event and works strategies around Hannover, placed at their venue. Each is shown
-  only while its publisher has it switched on, in `check_road_status`, and never put
-  in a traffic light.
+  only while its publisher has it switched on, in `check_autobahn_traffic` and
+  `check_road_status` and on the road card, and never put in a traffic light.
 - **Hessen Mobil prescribes its source note.** Its two roadworks feeds (the works and
   the collected works) are under the GeoNutzV by the offer's own description, and the
   source note it prescribes is "Hessen Mobil (Daten verändert)", with a link to the
@@ -835,8 +840,8 @@ Echtzeitdaten: DELFI e.V. via Mobilithek, Datensätze „DELFI-Realtime SIRI ET�
 
 The second line covers DELFI's national SIRI ET dataset for rail and, since server
 2.4.5, its fourteen regional SIRI ET datasets (Berlin-Brandenburg, Bayern, Hessen,
-Rhein-Ruhr, Baden-Württemberg, Bremen/Niedersachsen/Hamburg, Oberelbe,
-Rhein-Neckar, Rhein-Sieg, Sachsen-Anhalt, Mecklenburg-Vorpommern,
+Rhein-Ruhr, Baden-Württemberg, Bremen/Niedersachsen/Hamburg/Rostock-VVW, Oberelbe,
+Rhein-Neckar-Dreieck, Rhein-Sieg, Sachsen-Anhalt, Mecklenburg-Vorpommern,
 Schleswig-Holstein, Saarland and Mittelthüringen), which carry every mode. Same
 publisher, same licence family, one line. Hessen's offer names CC BY-SA 4.0 and the
 other thirteen no version, so the line says "CC BY-SA" as the national one does.

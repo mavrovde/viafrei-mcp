@@ -51,16 +51,17 @@ on viafrei.de, with a map and a traffic light.
 >
 > - **Live departures in fourteen more regions.** DELFI's fourteen regional SIRI ET
 >   feeds (Berlin-Brandenburg, Bayern, Hessen, Rhein-Ruhr, Baden-Württemberg,
->   Bremen/Niedersachsen/Hamburg, Oberelbe, Rhein-Neckar, Rhein-Sieg,
+>   Bremen/Niedersachsen/Hamburg/Rostock-VVW, Oberelbe, Rhein-Neckar-Dreieck, Rhein-Sieg,
 >   Sachsen-Anhalt, Mecklenburg-Vorpommern, Schleswig-Holstein, Saarland and
 >   Mittelthüringen) now give `get_departures` and the departure cards on
 >   viafrei.de a live figure for buses, trams and the U-Bahn as well as trains, and
 >   VBN's Connect timetable and realtime answer in Niedersachsen and Bremen. One figure per
 >   departure, the one that agrees with where the departure is going, and every
 >   feed that carried it credited ([example](#-real-answers)).
-> - **Traffic strategies.** Bayern's strategic routes and Lower Saxony's traffic
->   strategies (DVL-NI) join the Autobahn GmbH's strategic routing in
->   `check_road_status` and on the road card, each called what its publisher calls it: a guidance to the
+> - **Traffic strategies.** Lower Saxony's traffic strategies (DVL-NI, since 2.4.4)
+>   and the Autobahn GmbH's strategic routes for Bayern (shown since 2.4.7) join its
+>   national strategic routing in `check_autobahn_traffic`, `check_road_status` and
+>   on the road card, each called what its publisher calls it: a guidance to the
 >   trade-fair car parks is never said as a detour.
 > - **Road entries name their junctions in the direction of travel**, and a lorry
 >   park whose publisher gives a placeholder for a name is not given that as its
@@ -137,8 +138,8 @@ Freiburg, Karlsruhe, Frankfurt, Berlin, Duisburg, Aachen, Ingolstadt, Köln,
 Münster, Dortmund, Stuttgart, München), the traffic reports some Länder and cities
 publish (Baden-Württemberg, Schleswig-Holstein, Berlin, Hamburg, Köln, Hannover,
 Kassel, Leipzig, Rüsselsheim am Main), and the state of Schleswig-Holstein's large
-bridges, and the traffic strategies the Autobahn GmbH, Bayern and Lower Saxony
-switch on, as their recommendation and only while switched; other city streets are
+bridges, and the traffic strategies the Autobahn GmbH (nationally and in Bayern)
+and Lower Saxony's NLStBV switch on, as their recommendation and only while switched; other city streets are
 not covered. Street detail around a place
 (signed detours, signal installations, on-street bays, loading bays, border
 crossings, winter service, pedestrian-zone entrances) exists only where a city or
