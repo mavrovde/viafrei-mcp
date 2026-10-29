@@ -15,8 +15,33 @@ reference was re-captured from the running server, and the probe reported the su
 **unchanged** — only the version string moved; the capture date is the same day.
 
 The server moved from 2.4.4 to 2.4.9 while this package mirrored each version with no
-description. What those releases brought is described here. No tool, prompt or
-resource was added, removed or renamed, and no argument or description changed.
+description. What those releases and server 2.5.0 brought is described here. No tool,
+prompt or resource was added, removed or renamed, and no argument or description
+changed.
+
+### Fixed (server 2.5.0)
+
+Server 2.5.0 fixes bugs only; no tool, prompt or resource was added, removed or
+renamed.
+
+- **A platform written with its section range and no space is read as its track**:
+  Hamburg Hbf's "7A-D" is a track in `get_train_departures` ("platform 7A-D" in
+  English, "Gleis 7A-D" in German) and on the station board, where such a row used to
+  fall through as plain text.
+- **A departure no longer takes the destination or the delay of another departure
+  of the same line**, and a town's station stays apart from a district of it.
+- **Translated motorway and place maps speak their own language**: a map mark's name
+  is the row's own name, never a German label, and the position on a motorway page's
+  "around you" map can be tapped.
+- **The header of a translated page keeps a place's name untranslated**, and the
+  connect pages in Russian, Ukrainian, Bulgarian and Serbian no longer leave the word
+  "ID" in English.
+- **Pages without a script keep their page styles.**
+- **The place echo names the server's place from the first render.**
+- **The OpenStreetMap streets note in `viafrei://attribution` no longer says the maps
+  draw motorways.**
+- **Ledger texts never keep an address**: errors and notes are masked before they are
+  cut.
 
 ### Added (server 2.4.4-2.4.9)
 
@@ -72,6 +97,10 @@ resource was added, removed or renamed, and no argument or description changed.
 
 ### Bridge
 
+- **README and SOURCES.md describe server 2.5.0** (#166): a "New in the 2.5 line" box,
+  one answer captured from server 2.5.0 on 2026-10-29 (Hamburg Hbf, the RE1's "7A-D"
+  read as a track), and SOURCES.md compared again with `viafrei://attribution`: the
+  same 262 rows as at 2.4.9, the streets note reworded. No code change.
 - **README and SOURCES.md describe server 2.4.9.** The README's "New" box covers
   the server releases 2.4.4 to 2.4.9 (live departures from DELFI's fourteen regional
   SIRI ET feeds and VBN's Connect, the traffic strategies of Bayern and Lower Saxony,
