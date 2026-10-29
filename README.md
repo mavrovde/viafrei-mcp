@@ -44,46 +44,62 @@ on viafrei.de, with a map and a traffic light.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in the 2.4 line (server 2.4.0 to 2.4.3): every road entry says where, which
-> way, when and what it means; charging by operator and power band; truck-parking
-> occupancy for the motorway rest areas; and a page for every railway station.**
+> **New since server 2.4.3 (server 2.4.4 to 2.4.9): live times for buses, trams and
+> the U-Bahn in fourteen more regions, a traffic light and a street map for every
+> place, a site search that finds a shop or a house number, and station pages that
+> load in place.**
 >
-> - **Every road entry answers five questions.** In `check_autobahn_traffic`,
->   `check_road_status` and `find_roadworks_ahead` each jam, closure and works site
->   now carries an `entry`: where it is (the stretch between two junctions, with the
->   nearest town and Land), which way, when (and whether it runs now), what it means
->   for a driver (full closure, one lane, hard shoulder, ramp) and the work in plain
->   words, with map links. A project name is never given as the place.
-> - **Charging by operator and power band.** `find_charging_station` takes
->   `operator` ("EnBW", "Tesla", "Aral pulse") and `max_power_kw` beside
->   `min_power_kw`, so "an EnBW charger of 150 kW or more" or "DC between 50 and
->   149 kW" is one question, and the answer says how many sites in the radius match.
-> - **Interchanges and replacement buses.** `get_train_departures` lists a station's
->   U-Bahn, Stadtbahn and trams below its trains, with every line that calls there,
->   and both departure tools label a rail replacement bus as one
->   (`replacementBus: true`).
-> - **Parking as the operator publishes it**, with the operator's own status beside
->   each figure ("almost full", "closed"), a figure that cannot be right said to be
->   implausible, and a reading the publisher stopped updating dated as "last
->   reported". New: **Konstanz** and **Wiesbaden** car parks with live occupancy, and
->   the lorry park at **Autohof Thiersheim** on the A93.
-> - **Truck-parking occupancy for the motorway rest areas** from the Toll Collect
->   Stellplatz-Informationsdienst (SID), under
->   [ViaFrei's terms of use](https://viafrei.de/en/terms#sid), section 2: a client
->   that supports MCP elicitation asks the user to accept them, and only then shows
->   the figures. A client that cannot ask lists the lorry parks without them and says
->   why. Never accept on the user's behalf.
-> - **[Station pages](#-station-and-exit-pages)**: every DB station has a page in 22
->   languages, with departures and arrivals, platforms, lifts per platform, the
->   U-Bahn and trams of an interchange, alerts, and the parking and charging at its
->   door. **Every motorway exit** has a page of its own too.
-> - **Cards that stay current**: on viafrei.de a card refreshes in place (↻, and the
->   live cards on their own at their data's pace), long lists page through twelve
->   entries at a time, the home has a topic filter, and the charging cards take the
->   same operator and power filters as the tool.
+> - **Live departures in fourteen more regions.** DELFI's fourteen regional SIRI ET
+>   feeds (Berlin-Brandenburg, Bayern, Hessen, Rhein-Ruhr, Baden-Württemberg,
+>   Bremen/Niedersachsen/Hamburg, Oberelbe, Rhein-Neckar, Rhein-Sieg,
+>   Sachsen-Anhalt, Mecklenburg-Vorpommern, Schleswig-Holstein, Saarland and
+>   Mittelthüringen) now give `get_departures` and the departure cards on
+>   viafrei.de a live figure for buses, trams and the U-Bahn as well as trains, and
+>   VBN's Connect timetable and realtime answer in Niedersachsen and Bremen. One figure per
+>   departure, the one that agrees with where the departure is going, and every
+>   feed that carried it credited ([example](#-real-answers)).
+> - **Traffic strategies.** Bayern's strategic routes and Lower Saxony's traffic
+>   strategies (DVL-NI) join the Autobahn GmbH's strategic routing in
+>   `check_road_status` and on the road card, each called what its publisher calls it: a guidance to the
+>   trade-fair car parks is never said as a detour.
+> - **Road entries name their junctions in the direction of travel**, and a lorry
+>   park whose publisher gives a placeholder for a name is not given that as its
+>   name.
+> - **A traffic light and a map for every place** on viafrei.de: the motorway
+>   page's rule applied to the place's own cards, every reason linked to its row and
+>   drawn on a map of the place, one light per place. The map marks parking,
+>   charging, stations and the weather ring by kind, and each mark links to its row.
+> - **Streets on the maps.** The place, station and motorway maps draw
+>   OpenStreetMap's streets as thin lines under their marks, with the line
+>   "Streets: © OpenStreetMap contributors, ODbL 1.0" and our offer of the street
+>   database beside it ([SOURCES.md](SOURCES.md#and-the-streets-on-viafreides-maps)).
+> - **A search that finds what you type.** The place search on viafrei.de finds
+>   districts, postcodes, streets, a street and house number typed without a town
+>   ("Wilhelmshöher Allee 100") and points of interest by name. An address you pick
+>   heads the page with the address, never with a shop at its door, and a point of
+>   interest you pick is the place, under its own name.
+> - **Station pages for every railway station**, 6,513 of them, including those
+>   DB's directory does not list, with filters for the board (mode, departures or
+>   arrivals, platform, destination, time, disruptions, step-free), every lift and
+>   escalator listed, the place cards and the place traffic light for the
+>   station's surroundings, and a home-page block of the stations most affected now.
+>   A slow part of a station page loads in place; the page itself never fails for it.
+> - **Police and Land traffic messages in your language** on viafrei.de's
+>   translated pages, machine-translated on our own server and labelled as ours,
+>   with the German original beside them. Baden-Württemberg's messages stay German
+>   only, because its terms bind them to the traffic-warning service's rules.
+> - **Your language, once.** A visitor who arrives on a German page is sent to the
+>   same page in their browser's language, and a choice in the language menu ends
+>   the switching for good. The [connect page](https://viafrei.de/en/connect) gives
+>   every assistant its steps, links its official guide and says how each was
+>   checked.
 >
-> Every source is listed, with what it feeds and what we hold back, in
-> [SOURCES.md](SOURCES.md). The [CHANGELOG](CHANGELOG.md) has the whole list.
+> No tool, prompt or resource was added, removed or renamed since 2.4.3. The 2.4.0
+> to 2.4.3 releases brought the five-question `entry` on every road item, charging
+> by operator and power band, truck-parking occupancy behind the user's acceptance,
+> and the [station and exit pages](#-station-and-exit-pages); the
+> [CHANGELOG](CHANGELOG.md) has the whole list. Every source is listed, with what it
+> feeds and what we hold back, in [SOURCES.md](SOURCES.md).
 
 ---
 
@@ -95,7 +111,7 @@ comes back in the language you asked in.
 
 | when you're… | ask |
 |---|---|
-| 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *Does an ICE leave Tübingen Hbf in the next hour?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* · *Which U-Bahn and trams leave Berlin Alexanderplatz in the next minutes?* |
+| 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *Does an ICE leave Tübingen Hbf in the next hour?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* · *Which U-Bahn and trams leave Berlin Alexanderplatz in the next minutes?* · *Wann fährt die nächste Stadtbahn ab Hannover Kröpcke?* |
 | 🚗 **about to drive** | *Is the A7 clear right now?* · *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Vollsperrungen sind auf der A7 in den nächsten sieben Tagen geplant?* · *Welche Baustellen gibt es in München?* · *How is the traffic on the A3 around Köln?* · *Ist die Fehmarnsundbrücke wegen Wind gesperrt?* · *Which detours are signed near Hamburg Hbf?* |
 | 🚚 **driving a lorry** | *Darf der Lang-Lkw auf die A7?* · *Which height limits are there for lorries in Bremen?* · *Gibt es Lkw-Durchfahrtsverbote bei Bielefeld?* · *Wann ist der nächste Lkw-Fahrverbotstag?* · *Gilt am 31. Oktober in Niedersachsen Lkw-Fahrverbot?* · *Welche Durchfahrtshöhen gibt es am Kölner Dom?* · *Where are the lorry bans in Dresden?* |
 | 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Is traffic backed up on the Cologne motorway ring — A1, A3 or A4?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
@@ -121,7 +137,9 @@ Freiburg, Karlsruhe, Frankfurt, Berlin, Duisburg, Aachen, Ingolstadt, Köln,
 Münster, Dortmund, Stuttgart, München), the traffic reports some Länder and cities
 publish (Baden-Württemberg, Schleswig-Holstein, Berlin, Hamburg, Köln, Hannover,
 Kassel, Leipzig, Rüsselsheim am Main), and the state of Schleswig-Holstein's large
-bridges; other city streets are not covered. Street detail around a place
+bridges, and the traffic strategies the Autobahn GmbH, Bayern and Lower Saxony
+switch on, as their recommendation and only while switched; other city streets are
+not covered. Street detail around a place
 (signed detours, signal installations, on-street bays, loading bays, border
 crossings, winter service, pedestrian-zone entrances) exists only where a city or
 Land publishes it, and the answer names which. Lorry restrictions by place cover
@@ -129,7 +147,9 @@ North Rhine-Westphalia's towns (SEVAS), Köln, Dresden, the Frankfurt RheinMain
 region (ivm) and Bremen; elsewhere the answer says it holds no data, which is never
 a clearance, and the long-lorry network covers the whole country. Departures cover
 every German stop from the timetable; a live delay appears where a realtime feed
-carries that trip, and otherwise the answer says the time is the plan; a railway
+carries that trip (DELFI's national rail feed and, since 2.4.5, its fourteen
+regional feeds for every mode, its GTFS-RT, and VBB, VRN and VBN, with VBN's Connect
+in Niedersachsen and Bremen), and otherwise the answer says the time is the plan; a railway
 station's board also lists its U-Bahn and trams from the timetable. Live
 parking and charging occupancy exist only where the operator publishes them, and
 an answer never reads "no data" as free. A parking figure is shown as published,
@@ -159,9 +179,12 @@ roads and around a place it watches closures and restrictions only, and says so.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first five were asked of **server 2.4.3 on 2026-10-27
-between 16:00 and 16:02 Berlin time**, the day it went live; an "As of" time earlier
-than that is the time the source was last read. The next four were asked of server
+are not mock-ups. The first was asked of **server 2.4.9 on 2026-10-29 at 06:55
+Berlin time**. The next five were asked of server
+2.4.3 on 2026-10-27 between 16:00 and 16:02 Berlin time, the day it went live, and
+were asked again of server 2.4.9 on 2026-10-29 at 06:54: they answer in the same
+shape, and their figures belong to the moment they were first captured. An "As of"
+time earlier than a capture is the time the source was last read. The next four were asked of server
 2.3.23 on 2026-10-25 between 15:04 and 15:06 Berlin time, the day it went live.
 The next three were asked of server
 2.3.18 on 2026-10-24 at 00:20 Berlin time. The next five were asked of server 2.3.12 on 2026-10-22
@@ -180,6 +203,39 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🚊 "Wann fährt die nächste Stadtbahn ab Hannover Kröpcke?"</b> — <code>get_departures</code> with <code>stop: "Hannover Kröpcke"</code>, <code>limit: 8</code>, <code>language: "en"</code></summary>
+
+```text
+Departures from Hannover Kröpcke — timetable with realtime, 06:55 to 07:55:
+06:56 metro 1 → Laatzen, platform #3/SB, on time
+06:56 metro 4 → Hannover Roderbruch, platform #5/SB, on time
+06:56 metro 7 → Hannover Wettbergen, platform #1/SB, on time
+06:57 metro 1 → Langenhagen, platform #4/SB, +2 min (expected 06:59)
+06:57 bus 100 → Hannover August-Holweg-Platz, stand Bus18, on time
+06:57 bus 120 → Hannover Ahlem, stand Bus17, on time
+06:57 metro 4 → Garbsen, platform SB6, on time
+06:57 metro 7 → Hannover Misburg, platform #2/SB, +1 min (expected 06:58)
+… and 148 more in the window.
+…
+Source: Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet (…) · … · Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet (…) · Echtzeitdaten: DELFI e.V. via Mobilithek, Datensätze „DELFI-Realtime SIRI ET“ (Bahndaten und 14 Regionen), CC BY-SA, bearbeitet (…) · As of 06:55
+The realtime figures from DELFI GTFS-RT and DELFI SIRI ET are licensed CC BY-SA (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (…): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution.
+```
+New in 2.4.5: the Stadtbahn and the buses carry a live figure. In the structured
+result seven of these eight departures have `"source": "delfi_siri_et"`, DELFI's SIRI ET,
+which since 2.4.5 includes fourteen regional feeds that carry buses, trams and the
+Stadtbahn as well as trains, and one has
+`"source": "delfi_rt_tu"`, the GTFS-RT Trip Updates. Each departure gets one figure,
+from the feed whose call agrees with where it is going; a departure no live feed
+covers says "timetable". The same question about Bremen Hauptbahnhof also credits
+VBN's Connect timetable and realtime, which answer for Niedersachsen and Bremen since
+2.4.5. Live figures from DELFI are share-alike, and the answer says so in a sentence
+of its own.
+*Edited: the stop id for `watch_situation` and the stops read with it, the
+administrative-units credit, the line on where the realtime comes from and how far
+the timetable reaches, and the URIs omitted.*
+</details>
+
+<details>
 <summary><b>🚦 "How is the A3 right now?"</b> — <code>check_autobahn_traffic</code> with <code>roads: ["A3"]</code>, <code>language: "en"</code></summary>
 
 ```text
@@ -1246,6 +1302,20 @@ which cards the home shows; it works without JavaScript and never hides a warnin
 silently. A visitor outside Germany is shown the nearest German town near the
 border, or Germany as a whole when too far away.
 
+Since 2.4.5 the first screen says which place it shows ("Live for Kassel ▾", with
+*All of Germany* beside it), and the place search finds districts, postcodes and
+streets, since 2.4.8 points of interest by name, and since 2.4.9 a street with a
+house number typed without a town. A place page carries a **traffic light for the place**:
+the motorway pages' rule applied to the place's own cards, with each reason linked
+to its row and drawn on a map of the place. The map marks parking, charging,
+stations and the DWD warning ring by kind, each mark a link to its row, and since
+2.4.7 it draws OpenStreetMap's streets under the marks. When the topic filter hides
+a card, its marks leave the map and the light says it took a reason from a hidden
+card. On 2026-10-29 the page for Kassel read "Traffic light: Yellow", with a DWD
+level-1 fog warning and roadworks narrowing the road as its reasons, and a 5 km map
+with 17 marks. The light is one per place: the Autobahn card on a place page no
+longer shows one of its own.
+
 Each station on the transit card has a line of its own, linking its station page: how many of its lifts and
 escalators run, each one out of service by name, the platforms the timetable marks
 step-free, and the car parks and P+R sites within 300 m. The weather card shows
@@ -1301,7 +1371,7 @@ What the A7's page holds, from top to bottom:
   with the matching junctions.
 - **The towns along the route**: every town within reach of an exit, in road order,
   at its nearest exit, the large ones first, each linking to its exit and to its place
-  page, and to its official website where Wikidata states one.
+  page on viafrei.de, and to its official website where Wikidata states one.
 - **The crossing motorways**: each interchange and triangle names the motorways it
   meets, each linked to that motorway's page centred on the same junction, with the
   traffic light that page shows there. Since 2.4.3 the page also names the related
@@ -1321,7 +1391,10 @@ What the A7's page holds, from top to bottom:
   Code List, closures solid, roadworks hatched, jams with their delay. A map zoomed
   below 25 km also draws the Land and Kreis borders from the BKG's VG250. Where the
   list has no course for a stretch the line breaks, and the page names the break
-  rather than drawing across it.
+  rather than drawing across it. Since 2.4.7 the map also draws OpenStreetMap's
+  streets as thin lines under its marks (never an OpenStreetMap motorway: the
+  motorway is BASt's line), with the streets' own credit and our offer of the street
+  database beside it; no mark is placed on or measured along a street.
 - **What is reported now**: closures, jams and roadworks under their own heading,
   then the **full closures planned for the next seven days**, soonest first, each
   with the signed detour where Baden-Württemberg publishes one. Since 2.4 every
@@ -1392,26 +1465,35 @@ view, and that address is closed to every crawler.
 
 ## 🚉 Station and exit pages
 
-**Every railway station in the DB station directory has a page**, 5,409 of them, in
-the same 22 languages: the index is at
+**Every railway station has a page**, 6,513 of them on 2026-10-29, in the same 22
+languages: the stations in DB's station directory and, since 2.4.5, the ones it does
+not list, found in the timetable. The index is at
 **[viafrei.de/en/station](https://viafrei.de/en/station)**, and a station is its name
 as an address, so Berlin Alexanderplatz is
 **[viafrei.de/en/station/berlin-alexanderplatz](https://viafrei.de/en/station/berlin-alexanderplatz)**.
 A station page shows, from the same data the tools read:
 
 - **the departure board and the arrivals**, with platform, delay and cancellations,
-  a "my platform" choice and a destination filter (`?platform=`, `?to=`), and the
-  live part refreshed in place;
+  and since 2.4.5 filters for mode, departures or arrivals, platform or stand,
+  destination, time, disruptions only and step-free only, which since 2.4.6 apply as
+  you choose them. Only a real track number stands under "platform", a train that
+  splits is one row, and every station a row names links to its page. The live part
+  refreshes in place;
 - **at an interchange, its U-Bahn, Stadtbahn and trams**, and every line that calls
   there;
-- **the lifts and escalators**, each joined to the platforms it serves, with the
-  ones out of service named;
+- **the lifts and escalators**, every one of them, each joined to the platforms it
+  serves, with the ones out of service named;
 - **the service alerts** that concern it;
 - **parking and charging at its door**, with the same filters as the charging card;
-- **around the station**: pharmacies, food, cash machines and hotels nearby, the
-  motorways and the other stations near it.
+- **around the station**: since 2.4.5 the place cards of the station's own
+  position and the place traffic light with its map, and pharmacies, food, cash
+  machines and hotels nearby, the motorways and the other stations near it.
 
-Its title carries the station's own facts from DB's station data.
+Every block says how fresh it is, with the same sign as the motorway panels. A part
+that is slow to answer loads in place, and the page is never an error because of
+it. The home page has a block of the **stations most affected right now**, with a
+station search beside it. Each page's title names departures, platforms, lifts and
+disruptions in its language, and its heading names the station with its town.
 
 **Every motorway exit has a page of its own** since 2.4.1, under its motorway: the A3's
 junction Breitscheid is
@@ -1434,12 +1516,18 @@ negotiate. Step-by-step guides for each assistant:
 claude mcp add --transport http viafrei https://mcp.viafrei.de/mcp
 ```
 
-**Claude (desktop app and claude.ai), ChatGPT and other apps that take a connector URL** —
-add a custom connector with this address (in Claude: Settings → Connectors → *Add custom connector*;
-in ChatGPT the connector settings need developer mode):
+**claude.ai and the Claude desktop app** — Customize → Connectors → "+ Add" → *Add
+custom connector*, name it ViaFrei and paste this address as the server URL. The
+connector lives in your Claude account, so the desktop app has it too:
 ```
 https://mcp.viafrei.de/mcp
 ```
+
+**ChatGPT** — Plugins → "+" → *Add custom MCP server*, name it ViaFrei, paste the
+address under "Connection", authentication none, then *Create as a plugin*; in a new
+chat type @ and pick ViaFrei. Custom MCP servers work in ChatGPT on the web, for Pro
+users and in Business and Enterprise/Edu workspaces, not in the mobile apps and not
+on Free or Plus.
 
 **Cursor, and any client with an `mcpServers` file that takes a `url`**, over HTTP:
 ```json
@@ -1450,6 +1538,21 @@ https://mcp.viafrei.de/mcp
 ```json
 { "servers": { "viafrei": { "type": "http", "url": "https://mcp.viafrei.de/mcp" } } }
 ```
+For **GitHub Copilot** in VS Code, *MCP: Add Server* → HTTP → the address → server
+ID `viafrei` → *Global* → *Copilot Global* writes the same entry to Copilot's own
+configuration.
+
+**Gemini CLI**, **OpenAI Codex**, **Windsurf** and **Mistral Le Chat**:
+```bash
+gemini mcp add --scope user --transport http viafrei https://mcp.viafrei.de/mcp
+codex mcp add viafrei --url https://mcp.viafrei.de/mcp
+```
+Windsurf takes `{ "mcpServers": { "viafrei": { "serverUrl": "https://mcp.viafrei.de/mcp" } } }`
+in its `mcp_config.json`, and Le Chat a *Custom MCP Connector* with the address and
+no authentication. The [connect page](https://viafrei.de/en/connect) has the steps
+for each, a link to each client's official guide and how each was checked: on
+2026-10-28 claude.ai, Claude Code, Gemini CLI, the MCP Inspector and this bridge were
+connected for real, and the others were checked against their official guides.
 
 **Clients that speak only stdio** — for example Claude Desktop's config file
 (`claude_desktop_config.json`, opened from Settings → Developer → *Edit Config*).

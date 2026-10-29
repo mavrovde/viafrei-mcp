@@ -15,17 +15,19 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.4.3 on 2026-10-27**: 259 sources, eight
-more than at server 2.3.23. 242 of them are held and answering, 12 are planned
-(licence read, nothing ingested yet) and five are discontinued. The eight new rows
-are the car parks of **Konstanz** and **Wiesbaden** with their live occupancy (two
-feeds each), the lorry park at **Autohof Thiersheim** on the A93, the truck-parking
-occupancy of the motorway rest areas from **Toll Collect's Stellplatz-Informationsdienst
-(SID)**, which comes with conditions of its own ([below](#truck-parking-occupancy-comes-with-terms-the-user-accepts)),
-and two **planned** rows, VBN's Connect timetable and realtime for Niedersachsen and
-Bremen. No row changed status. One attribution line changed: the Autobahn GmbH's
-14-day roadworks feed now ends ", bearbeitet". The website also
-uses four sources the server's register does not list, named
+with that resource as served by server 2.4.9 on 2026-10-29**: 262 sources, three
+more than at server 2.4.3. 247 of them are held (one of those, the streets, feeds
+only the site's maps), 10 are planned
+(licence read, nothing ingested yet) and five are discontinued. The three new rows
+are **Bayern's strategic routes** and **Lower Saxony's traffic strategies (DVL-NI)**,
+which answer beside the Autobahn GmbH's strategic routing, and the **OpenStreetMap
+streets** that viafrei.de's maps draw since 2.4.7, a share-alike database of its own
+that no tool answers from ([below](#and-the-streets-on-viafreides-maps)). Two rows
+changed status: **VBN's Connect timetable and realtime** for Niedersachsen and Bremen
+went from planned to held and answer since 2.4.5. One attribution line changed:
+DELFI's SIRI ET line now names the national rail dataset and its fourteen regional
+datasets, which carry buses, trams and the U-Bahn too, and no longer says "Schiene".
+The website also uses five sources the server's register does not list, named
 [near the end](#the-websites-own-sources). Whatever the surfaces say, the answer you hold is the thing to read:
 `_meta.sources` and the attribution lines on it are produced from the same result
 you are looking at.
@@ -86,12 +88,15 @@ Commons **Attribution-ShareAlike** licence, and there are **four** such feeds
 behind the answers:
 
 - the GTFS-RT Trip Updates (the live forecast per trip) — **CC BY-SA, no version stated**;
-- the SIRI ET rail realtime — **CC BY-SA, no version stated**;
+- the SIRI ET realtime — the national rail dataset and, since server 2.4.5, its
+  fourteen regional datasets for every mode — **CC BY-SA, no version stated** (one
+  regional offer, Hessen's, names 4.0);
 - the two disruption feeds, GTFS-RT Service Alerts and SIRI SX — **CC BY-SA 4.0**.
 
 Not all public-transport data is share-alike. DELFI's static timetable and its
-stop directory are **CC BY 4.0**, and so is VBB's own realtime feed, which answers
-for Berlin and Brandenburg. The line on the answer says which one you have.
+stop directory are **CC BY 4.0**, and so are VBB's own realtime feed, which answers
+for Berlin and Brandenburg, and VBN's Connect timetable and realtime for Niedersachsen
+and Bremen. The line on the answer says which one you have.
 
 **Where the version is unstated, this page does not invent one** — see the
 section on the realtime feeds below for what the catalogue and the access point
@@ -121,7 +126,11 @@ version. Share-alike means the obligation travels:
 `get_departures` carries **one live figure** where a live feed holds one — a delay,
 "on time" or a cancellation — so buses, trams and the U-Bahn show live delays.
 SIRI ET is used first, then the GTFS-RT Trip Updates; otherwise the row shows the
-timetable time and says it is the plan. `get_train_departures` shows the same two
+timetable time and says it is the plan. Since server 2.4.5 the fourteen regional
+SIRI ET datasets give buses, trams and the U-Bahn a live figure in most regions, and
+a figure is given only to the departure whose call agrees with where it is going;
+every feed that carried a departure is credited, CC BY ones (VBN's Connect, for
+example) under their own lines and without the share-alike sentence. `get_train_departures` shows the same two
 feeds in a block of their own when DB Timetables has no realtime for the station.
 The timetable decides which departure a figure is about: a figure and the plan
 meet in the answer and are never stored together. The Trip Updates also feed the
@@ -132,8 +141,10 @@ punctuality figure for a place in Berlin or Brandenburg comes from VBB's CC BY f
 instead, by the tool's own rule, and then carries no share-alike sentence. The two
 are never mixed into one figure.
 
-**Our side.** The server keeps the SIRI ET calls and the service alerts as two
-separate share-alike databases, joined to nothing else, and offers both, as CSV
+**Our side.** The server keeps the SIRI ET calls (with, since server 2.4.9, the
+newest of each call per feed taken from them, which the departures read) and the
+service alerts as two separate share-alike databases, joined to nothing else, and
+offers both, as CSV
 with a note of our alterations, under CC BY-SA 4.0 and free of charge, on request
 to the contact address in the Impressum on viafrei.de.
 
@@ -251,6 +262,32 @@ contents of the database and our alterations, under ODbL 1.0, free of charge, fr
 the contact address in the Impressum on viafrei.de. If you keep such rows in a
 database you use publicly, you owe your recipients the same.
 
+### And the streets on viafrei.de's maps
+
+Since server 2.4.7 the place maps, the station maps and the motorway maps of
+viafrei.de draw **OpenStreetMap's streets** as thin lines under their own marks:
+trunk, primary, secondary, tertiary and residential roads, and never an
+OpenStreetMap motorway, because a motorway's line on our maps is BASt's. The lines
+come from a sixth ODbL database of ours, built from the OpenStreetMap Germany
+extracts and never joined to our other OpenStreetMap databases or to any other
+source. **No MCP tool answers from it**, and no mark is placed on, filtered by or
+measured along a street: the streets are a layer of their own under the marks.
+
+The map is a Produced Work under ODbL § 4.3, so every map that draws a street
+carries the line, linked to the licence, exactly when a street is in its frame:
+
+```
+Straßen: © OpenStreetMap-Mitwirkende, ODbL 1.0
+```
+
+The street database itself is used publicly through those maps, so the same § 4.6
+offer stands beside the line on every such map: its complete contents as CSV, with
+our alterations, under ODbL 1.0, free of charge on request to the contact address in
+the Impressum on viafrei.de. The place maps read the same streets grouped per square
+kilometre, one database in a second arrangement, and the export holds all of it.
+This binds you only if you take the streets off our maps into a database of your
+own; reading a map carries no obligation beyond the credit on it.
+
 ---
 
 ## The catalogue
@@ -288,8 +325,8 @@ The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.4.3,
-2026-10-27), it exposes twenty-two tools, twenty of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.4.9,
+2026-10-29), it exposes twenty-two tools, twenty of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
@@ -347,6 +384,8 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_ald_14d` | Arbeitsstellen auf Autobahnen (14 Tage): Die Autobahn GmbH des Bundes \| MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei, bearbeitet | "eingeschränkte Nutzung, kostenfrei", no licence text — see below | held |
 | `mobilithek_roadworks_akd` | Arbeitsstellen kürzerer Dauer auf Autobahnen (geplant): Die Autobahn GmbH des Bundes \| MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei | "eingeschränkte Nutzung, kostenfrei", no licence text, **plus a condition note** — see below | held |
 | `mobilithek_routing_bab` | Strategisches Routing: Die Autobahn des Bundes GmbH via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held |
+| `mobilithek_routing_bayern` | Strategisches Routing Bayern: © Die Autobahn GmbH des Bundes 2026 — GeoNutzV, Daten verändert | GeoNutzV | held |
+| `mobilithek_routing_dvl_ni` | Verkehrsstrategien Niedersachsen (DVL-NI): Niedersächsische Landesbehörde für Straßenbau und Verkehr via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `mobilithek_roadworks_he` | Arbeitsstellen Hessen: Hessen Mobil (Daten verändert) via Mobilithek, GeoNutzV | GeoNutzV | held |
 | `mobilithek_roadworks_he_gesammelt` | Arbeitsstellen Hessen (gesammelt): Hessen Mobil (Daten verändert) via Mobilithek, GeoNutzV | GeoNutzV | held |
 | `kiel_baustellen` | Baustellen: © Landeshauptstadt Kiel, Amt für Bauordnung, Vermessung und Geoinformation, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
@@ -389,11 +428,11 @@ feed, live, in the resource `viafrei://coverage`.
 | `lorry_dresden_verbotszonen` | Lkw-Verbotszonen: Landeshauptstadt Dresden (Quelle: Geodaten Sachsen), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 **plus a condition of use** | held |
 | `lorry_dresden_vorrangrouten` | Lkw-Vorrangroutennetz: Landeshauptstadt Dresden (Quelle: Geodaten Sachsen), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
 | `lorry_hh_gst_netz` | Großraum- und Schwertransport-Netz Hamburg: Freie und Hansestadt Hamburg, Landesbetrieb Verkehr (LBV), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 **plus a condition of use** | held |
-| **Rail and public transport** — feeds `get_train_departures` (the DELFI timetable also answers an empty or unreadable board), `get_departures`, `check_transit_disruption` (VBN's share where DELFI's trips in Niedersachsen and Bremen are mostly untimed), `watch_situation`; site: the transit card (live departures, the district's punctuality, VBB's in Berlin and Brandenburg) | | | |
+| **Rail and public transport** — feeds `get_train_departures` (the DELFI timetable also answers an empty or unreadable board), `get_departures`, `check_transit_disruption` (VBN's share where DELFI's trips in Niedersachsen and Bremen are mostly untimed), `watch_situation`; site: the transit card (live departures, the district's punctuality, VBB's in Berlin and Brandenburg), the station pages, and the home's block of the stations most affected now | | | |
 | `db_timetables` | Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `delfi_static` | Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `delfi_rt_tu` | Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | held |
-| `delfi_siri_et` | Echtzeitdaten Schiene: DELFI e.V. via Mobilithek, Datensatz „DELFI-Realtime SIRI ET Bahndaten“, CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | held |
+| `delfi_siri_et` | Echtzeitdaten: DELFI e.V. via Mobilithek, Datensätze „DELFI-Realtime SIRI ET“ (Bahndaten und 14 Regionen), CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | held |
 | `vbb_rt` | Echtzeitdaten: VBB Verkehrsverbund Berlin-Brandenburg GmbH, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `delfi_rt_sa` | Störungsmeldungen: DELFI e.V. via Mobilithek, Datensatz „DELFI-Datensatz GTFS-RT Service Alerts“, CC BY-SA 4.0, bearbeitet | **CC BY-SA 4.0** | held |
 | `delfi_siri_sx` | Störungsmeldungen: DELFI e.V. via Mobilithek, Datensatz „DELFI-Datensatz SIRI SX“, CC BY-SA 4.0, bearbeitet | **CC BY-SA 4.0** | held |
@@ -402,8 +441,8 @@ feed, live, in the resource `viafrei://coverage`.
 | `vrn_rt` | Echtzeitdaten: Verkehrsverbund Rhein-Neckar GmbH (VRN), CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `vbn_siri_et` | Echtzeitdaten: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „SIRI-ET Niedersachsen und Bremen“, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mvv_bus_load` | Auslastung Regionalbus: Münchner Verkehrs- und Tarifverbund GmbH (MVV) via opendata-oepnv.de, CC BY, bearbeitet | CC BY (version unstated) | held |
-| `mobilithek_connect_gtfs` | Fahrplan Connect: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „GTFS Datensatz Connect (Niedersachsen und Bremen)“, CC BY 4.0, bearbeitet | CC BY 4.0 | planned |
-| `mobilithek_connect_gtfs_rt` | Echtzeit Connect: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „GTFS-RT Datensatz Connect (Niedersachsen und Bremen)“, CC BY 4.0, bearbeitet | CC BY 4.0 | planned |
+| `mobilithek_connect_gtfs` | Fahrplan Connect: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „GTFS Datensatz Connect (Niedersachsen und Bremen)“, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `mobilithek_connect_gtfs_rt` | Echtzeit Connect: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „GTFS-RT Datensatz Connect (Niedersachsen und Bremen)“, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | **Station lifts, escalators and step-free access** — feeds `check_station_facilities` (lifts, escalators, platforms, surveys, acoustic signals nearby) and the step-free line that ends a `get_departures` board; site: the station lines on the transit card | | | |
 | `db_fasta` | Aufzüge und Fahrtreppen: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_openstation_netex` | Aufzüge, Fahrtreppen und Bahnsteige (Bestand): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
@@ -562,6 +601,8 @@ feed, live, in the resource `viafrei://coverage`.
 | `bkg_gvisys` | Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0, Datenquellen: https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_gn250.pdf (Daten verändert) | dl-de/by-2-0 | held |
 | `geonames` | Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet | CC BY 4.0 | held |
 | `osm` | OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | held |
+| **Streets on the maps** — feeds no tool; site: the streets drawn under the marks of the place, station and motorway maps ([below](#and-the-streets-on-viafreides-maps)) | | | |
+| `osm_streets` | Straßen: © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | held |
 | **Low-emission zones** — feeds `get_driving_rules` (with a place or a coordinate) and `describe_location`; site: the low-emission-zone line in the rules block of the place pages | | | |
 | `berlin_umweltzone` | Umweltzone: Land Berlin, Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `aachen_umweltzone` | Umweltzone: Stadt Aachen (2026), Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
@@ -766,6 +807,14 @@ Verkehrsmeldungen Rüsselsheim am Main: © Stadt Rüsselsheim am Main <Jahr> —
   Autobahn GmbH's recommendation and only while it is switched and the feed is
   current; it is never a route we compute, and never counted or put in the traffic
   light. Most of the time nothing is switched and nothing is said.
+- **Bayern's strategic routes and Lower Saxony's traffic strategies**, since server
+  2.4.4, are the same kind of recommendation. Bayern's (Die Autobahn GmbH, GeoNutzV,
+  with the year in its line) have so far been the guidance to the trade-fair car
+  parks in München, and an answer calls them what the publisher calls them,
+  guidance and never a detour. Lower Saxony's (NLStBV, Datenlizenz Deutschland – Zero 2.0) are the
+  event and works strategies around Hannover, placed at their venue. Each is shown
+  only while its publisher has it switched on, in `check_road_status`, and never put
+  in a traffic light.
 - **Hessen Mobil prescribes its source note.** Its two roadworks feeds (the works and
   the collected works) are under the GeoNutzV by the offer's own description, and the
   source note it prescribes is "Hessen Mobil (Daten verändert)", with a link to the
@@ -781,8 +830,16 @@ Bedingungen zulässig". We name the publisher anyway, as for the CC0 feeds.
 
 ```
 Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet
-Echtzeitdaten Schiene: DELFI e.V. via Mobilithek, Datensatz „DELFI-Realtime SIRI ET Bahndaten“, CC BY-SA, bearbeitet
+Echtzeitdaten: DELFI e.V. via Mobilithek, Datensätze „DELFI-Realtime SIRI ET“ (Bahndaten und 14 Regionen), CC BY-SA, bearbeitet
 ```
+
+The second line covers DELFI's national SIRI ET dataset for rail and, since server
+2.4.5, its fourteen regional SIRI ET datasets (Berlin-Brandenburg, Bayern, Hessen,
+Rhein-Ruhr, Baden-Württemberg, Bremen/Niedersachsen/Hamburg, Oberelbe,
+Rhein-Neckar, Rhein-Sieg, Sachsen-Anhalt, Mecklenburg-Vorpommern,
+Schleswig-Holstein, Saarland and Mittelthüringen), which carry every mode. Same
+publisher, same licence family, one line. Hessen's offer names CC BY-SA 4.0 and the
+other thirteen no version, so the line says "CC BY-SA" as the national one does.
 
 **The version is an open question, and this page will not invent one.** The
 GovData catalogue record for the Trip Updates carries the *unversioned* licence URI
@@ -1126,11 +1183,13 @@ site's parking card lists up to five named OpenStreetMap car parks beside the
 car parks whose operators publish free spaces, under the same ODbL line. Since
 2.1.15 every motorway page lists the OpenStreetMap car parks at its junctions (at
 most three per junction, within 1 km) in a block of its own with the ODbL notice
-and the offer. **The motorway map draws no OpenStreetMap data at all**: its base
-is the BKG's VG2500, [below](#the-websites-own-sources), and not the national
+and the offer. **The maps draw nothing from these three tables**: their base is the
+BKG's VG2500 and VG250, [below](#the-websites-own-sources), and not the national
 boundary we hold from OpenStreetMap, because drawing that boundary would make it
 part of an answer and the map a Produced Work from our ODbL database. The boundary
-stays what it was: a filter, never shown.
+stays what it was: a filter, never shown. The one OpenStreetMap layer a map draws,
+since server 2.4.7, is the streets, from a separate database of their own
+([above](#and-the-streets-on-viafreides-maps)).
 
 Our ODbL § 4.6 offer is [above](#and-one-that-applies-if-you-get-an-openstreetmap-derived-result-back).
 
@@ -1495,6 +1554,15 @@ survey states what is built, not whether a lift is working now.
   to DELFI's. Such an answer carries their line and no share-alike sentence,
   because they are CC BY and not CC BY-SA. If you store them, keep them apart from
   DELFI's rows.
+- **VBN's Connect timetable and realtime** (Niedersachsen and Bremen, CC BY 4.0,
+  through the access point), since server 2.4.5, on the departure boards of
+  `get_departures` and the transit card. Connect has its own stop and trip ids, so
+  its timetable is kept as a timetable of its own and its realtime in rows of its
+  own, never written into DELFI's. A departure Connect and a DELFI feed both carry
+  is shown once, with one figure taken whole from one feed (never a figure computed
+  from both), and every feed that carried it is credited under its own line, so no
+  CC BY figure ends up inside a share-alike one and no share-alike figure under a
+  CC BY line. The operators Connect names are shown as it publishes them.
 - **How full an MVV regional bus usually is** (Münchner Verkehrs- und Tarifverbund
   via opendata-oepnv.de, CC BY with no version stated), beside a departure in
   `get_departures` and on the transit card. These are typical values from MVV's
@@ -1518,9 +1586,9 @@ survey states what is built, not whether a lift is working now.
 ## The website's own sources
 
 viafrei.de reads the same data as the server: its cards, place pages and motorway
-pages are built from the sources above and carry their lines. It uses four sources
-the server does not, and none of them is in any tool answer or has a row in
-`viafrei://attribution`:
+pages are built from the sources above and carry their lines. It uses five sources
+the server does not, and none of them is in any tool answer or has a row of its own
+in `viafrei://attribution`:
 
 - **BKG VG2500** ("Verwaltungsgebiete 1 : 2 500 000", Produktstand 31.12.2025),
   under **Datenlizenz Deutschland – Namensnennung 2.0**, new with the motorway
@@ -1550,8 +1618,11 @@ the server does not, and none of them is in any tool answer or has a row in
   BASt states that neither it nor the ministry warrants that the list is correct
   or complete, which is one reason the line is drawn schematically and every
   break in it is named rather than bridged. The map draws only the sources whose
-  licence lets a map carry them: never OpenStreetMap, Trucklounge, P+R NRW or a
-  fuel price. Licence: <https://www.govdata.de/dl-de/by-2-0> · product:
+  licence lets a map carry them: never OpenStreetMap's addresses, places or car
+  parks, Trucklounge, P+R NRW or a fuel price. OpenStreetMap's streets, drawn since
+  server 2.4.7 as a layer of their own under the marks, are the one OpenStreetMap
+  layer, with their own line and offer
+  ([above](#and-the-streets-on-viafreides-maps)). Licence: <https://www.govdata.de/dl-de/by-2-0> · product:
   <https://gdz.bkg.bund.de>
 - **BKG VG250** ("Verwaltungsgebiete 1 : 250 000"), under the same **Datenlizenz
   Deutschland – Namensnennung 2.0**, since server 2.3.23. VG2500 is too coarse for a
@@ -1575,28 +1646,39 @@ the server does not, and none of them is in any tool answer or has a row in
   (a German address range maps to a point rounded to about a kilometre), stores no
   lookup, and credits DB-IP with a link where it uses the result, as the licence
   asks.
+- **Opus-MT** (Language Technology Research Group, University of Helsinki; CC BY
+  4.0, some models Apache-2.0), since server 2.4.4: the translation models that turn
+  police, Land and city traffic messages into the language of a translated page.
+  They run on our own server; no message is sent to an outside service. A
+  translation is labelled as ours and machine-made, the publisher's attribution
+  line stays as the publisher prescribes it, and the German original is always
+  linked beside it. A message is translated only where its licence permits an
+  adaptation: Baden-Württemberg's traffic messages, whose terms bind the recipient
+  to the rules of the traffic-warning service, stay German only. The register names
+  the models and their credit in a note of its own, and the page credits them
+  exactly when a translation is shown. MCP answers are not translated this way:
+  a message in a tool answer is the publisher's German text, labelled as such.
 
 ## What we hold back, and why
 
 Leaving a dataset out is as much a part of using open data lawfully as using one.
 
-**Planned, not ingested.** The twelve `planned` rows above have had their licence
+**Planned, not ingested.** The ten `planned` rows above have had their licence
 read and nothing answers from them: Köln's traffic situation (two feeds),
 Schleswig-Holstein's road weather (two feeds) and its lorry parks (two feeds), the
 NRW single traffic messages, Dortmund's access-point occupancy feed (the city's own
 portal answers instead), the occupancy of the Thiersheim lorry park (its static
-table answers since server 2.4.3), Kiel's old-town car parks, and VBN's Connect
-timetable and realtime for Niedersachsen and Bremen (two feeds, licence read and
-approved, not yet answering).
+table answers since server 2.4.3), and Kiel's old-town car parks. VBN's Connect
+timetable and realtime, planned at 2.4.3, answer since 2.4.5.
 
 **Discontinued.** DB BahnPark, above, and smartlab's four charging publications
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; see the
 charging section for the dated grace window.
 
-**Held back.** Nothing at server 2.4.3. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.4.9. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.4.3. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.4.9. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1632,6 +1714,9 @@ row at 2.2.14, answer now.
   GmbH's 14-day roadworks feed and, since server 2.3.21, its short-duration works
   (AkD), both used in answers only and on the conditions
   [described above](#roadworks-and-traffic-messages-beyond-the-motorway-interface).
+  Hessen Mobil's route recommendations of the Verkehrsmanagementzentrale RheinMain
+  are in the same class: the reader exists, and nothing is polled, stored or shown
+  while the offer states no terms.
 - **Two charge-point offers the access point marks non-public**: not polled,
   stored or shown, although the same operator's public offers are read.
 - **A charge-point operator republished by MobiData BW** whose origin offer could
@@ -1657,13 +1742,13 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.4.3 on 2026-10-27, not typed: every id it
+  by line with it as served by server 2.4.9 on 2026-10-29, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
-  fetch through. No row was added at 2.3.12 or 2.3.18; the eight added in 2.4.2 and
-  2.4.3, the fourteen added at 2.3.23 and the 25 added at 2.2.14 were taken from the
-  same resource.
+  fetch through. No row was added at 2.3.12 or 2.3.18; the three added between
+  2.4.4 and 2.4.9, the eight added in 2.4.2 and 2.4.3, the fourteen added at 2.3.23
+  and the 25 added at 2.2.14 were taken from the same resource.
 - Every row in our internal register records the licence, the operative sentence,
   the date it was read and who may do what with the data. Rows are re-verified
   **quarterly** and whenever a provider announces a change.

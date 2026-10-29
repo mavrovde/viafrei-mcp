@@ -5,6 +5,20 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+### Bridge
+
+- **README and SOURCES.md describe server 2.4.9.** The README's "New" box covers
+  the server releases 2.4.4 to 2.4.9 (live departures from DELFI's fourteen regional
+  SIRI ET feeds and VBN's Connect, the traffic strategies of Bayern and Lower Saxony,
+  the place traffic light and map, the streets on the maps, the site search, the
+  station pages for every railway station, translated traffic messages on the site)
+  and gained one answer captured from server 2.4.9 on 2026-10-29; the five answers
+  from 2.4.3 were asked again and answer in the same shape. The connect steps follow
+  the connect page of 2026-10-28. SOURCES.md was compared row by row with
+  `viafrei://attribution` as served by server 2.4.9: 262 sources, three more than at
+  2.4.3, two moved from planned to held, one line changed, and a section on the
+  streets the site's maps draw. No code change.
+
 ## [2.4.9] - 2026-10-29
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
