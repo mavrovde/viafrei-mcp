@@ -21,7 +21,7 @@ traffic and roadworks, fuel, charging, parking and weather. One MCP. No API key.
 [![no API key](https://img.shields.io/badge/API%20key-none-brightgreen)](#-connect-in-one-minute)
 [![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-6f42c1)](https://modelcontextprotocol.io)
 
-**[viafrei.de](https://viafrei.de/en)** · [Connect your assistant](https://viafrei.de/en/connect) · [For developers](https://viafrei.de/en/developers) · [For businesses](https://viafrei.de/en/business) · [All tools](#-everything-it-can-do) · [API reference](API.md)
+**[viafrei.de](https://viafrei.de/en)** · [Connect your assistant](https://viafrei.de/en/connect) · [For developers](https://viafrei.de/en/developers) · [For businesses](https://viafrei.de/en/business) · [All tools](#-everything-it-can-do) · [API reference](API.md) · [REST API (in design)](https://github.com/mavrovde/viafrei-api)
 
 </div>
 
@@ -1765,6 +1765,11 @@ How well it answers, measured: [test rounds](https://github.com/mavrovde/viafrei
 
 ## 🛠️ For developers
 
+> **Not building for an AI assistant?** The same live data is coming as a keyed REST API,
+> designed in the open at **[viafrei-api](https://github.com/mavrovde/viafrei-api)**: feature-first
+> endpoints, OpenAPI 3.1, attribution on every response. Follow the design in its
+> [wiki](https://github.com/mavrovde/viafrei-api/wiki).
+
 **It's plain MCP over HTTP.** You can call it without an SDK:
 
 ```bash
@@ -1900,6 +1905,9 @@ client that started it finds out.
   dispatchers' briefings, customer service and step-free station checks.
 - **Read the business page:** [viafrei.de/en/business](https://viafrei.de/en/business).
   It covers six use cases and how to work with us.
+- **A REST API is on the way.** For systems that do not speak MCP,
+  [viafrei-api](https://github.com/mavrovde/viafrei-api) is being designed in public:
+  API keys, rate limits and priority tiers, and the same licence rules on every response.
 
 ## ⚖️ Using the data you get back
 
