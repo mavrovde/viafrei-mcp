@@ -623,8 +623,8 @@ The server's own instructions to a connecting client, verbatim:
 - **`viafrei://rules/electric-driving`** — What an electric car needs in Germany: the E-Kennzeichen and why its privileges differ per city, the green plaque, the right to ad-hoc card payment, plug standards, how prices are shown, etiquette and what to do in an emergency.
 - **`viafrei://status/feeds`** — Per feed: is it still arriving? green (a cycle inside the feed's own freshness window), red (stale or errored) or grey (never ran here). Subscribe to be told when a feed changes colour.
 - **`viafrei://watches`** — The watches THIS conversation has open, with what each one is watching and when it expires. Session-scoped: another conversation's watches are not listed and cannot be reached.
-- **`viafrei://gazetteer`** — What the place index (gazetteer_places) holds: rows and last load per source and kind, how many carry an English name, and the sixteen Länder it can name — the coverage behind find_place/find_poi/find_nearby's place answers.
-- **`viafrei://addresses`** — What the OSM-derived address table (osm_addresses) holds per Bundesland — the Länder and each one's extract date read from the rows, the row counts estimated from the planner's statistics and labelled so — plus the ODbL § 4.6 offer owed to anyone who receives an address-derived result.
+- **`viafrei://gazetteer`** — What the place index holds: rows and last load per source and kind, how many carry an English name, and the sixteen Länder it can name — the coverage behind find_place/find_poi/find_nearby's place answers.
+- **`viafrei://addresses`** — What the OSM-derived address index holds per Bundesland — the Länder and each one's extract date read from the rows, the row counts estimated from the planner's statistics and labelled so — plus the ODbL § 4.6 offer owed to anyone who receives an address-derived result.
 
 ## Resource templates
 

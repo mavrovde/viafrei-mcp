@@ -3501,8 +3501,8 @@ are opt-in or invisible.
   was written while fixing that one and caught in review. The platform's own
   wording is "a result about a
   place **from our own gazetteer**, a station or a motorway is not built from
-  OpenStreetMap". Place resolution falls through the gazetteer to `osm_pois` and
-  then `osm_addresses`, so **every** tool that takes a `place` can return an
+  OpenStreetMap". Place resolution falls through the gazetteer to OpenStreetMap points of interest and
+  then OpenStreetMap addresses, so **every** tool that takes a `place` can return an
   OSM-derived answer: measured on 2026-09-27, a weather warning for
   `Zeiss-Großplanetarium` named `["dwd","osm"]` and carried the line, and one for
   `Allianz Arena` named `["osm"]` alone. Both places on this page now carry the
