@@ -1717,14 +1717,14 @@
       "uri": "viafrei://gazetteer",
       "name": "gazetteer",
       "title": "Gazetteer coverage",
-      "description": "What the place index (gazetteer_places) holds: rows and last load per source and kind, how many carry an English name, and the sixteen Länder it can name — the coverage behind find_place/find_poi/find_nearby's place answers.",
+      "description": "What the place index holds: rows and last load per source and kind, how many carry an English name, and the sixteen Länder it can name — the coverage behind find_place/find_poi/find_nearby's place answers.",
       "mimeType": "application/json"
     },
     {
       "uri": "viafrei://addresses",
       "name": "addresses",
       "title": "Address coverage",
-      "description": "What the OSM-derived address table (osm_addresses) holds per Bundesland — the Länder and each one's extract date read from the rows, the row counts estimated from the planner's statistics and labelled so — plus the ODbL § 4.6 offer owed to anyone who receives an address-derived result.",
+      "description": "What the OSM-derived address index holds per Bundesland — the Länder and each one's extract date read from the rows, the row counts estimated from the planner's statistics and labelled so — plus the ODbL § 4.6 offer owed to anyone who receives an address-derived result.",
       "mimeType": "application/json"
     }
   ],
