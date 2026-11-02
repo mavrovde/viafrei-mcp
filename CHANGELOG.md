@@ -12,7 +12,7 @@ relays to. The running server reports 2.5.3 while the registry's latest is 2.5.1
 this release moves the package to the server's number and carries whatever had been
 waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
 reference was re-captured from the running server, and eleven tools differ from the
-2.5.0 snapshot — `check_autobahn_traffic`, `find_cheapest_fuel`, `find_fuel_station`,
+2.5.1 snapshot — `check_autobahn_traffic`, `find_cheapest_fuel`, `find_fuel_station`,
 `find_parking`, `check_road_status`, `find_charging_station`, `find_hydrogen_station`,
 `find_nearby`, `find_sharing`, `get_driving_rules` and `check_weather_warnings`. In
 each, only the description of the `place` argument changed, as of server 2.5.2: a
