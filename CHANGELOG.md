@@ -107,7 +107,7 @@ a coordinate (below). 2.5.3 changes the website only: the tools answer as in 2.5
   were rewritten to match, and two answers captured from server 2.5.2 on 2026-11-02
   were added, with the two refusals of a place given with a coordinate. SOURCES.md was compared again with `viafrei://attribution`: the same
   262 rows, one status changed (VIZ.NRW's single NRW traffic messages, planned
-  until 2.5.2, are held). No code change.
+  until 2.5.1, held since 2.5.2). No code change.
 
 ## [2.5.1] - 2026-10-30
 

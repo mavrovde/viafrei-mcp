@@ -1675,7 +1675,7 @@ Dortmund's access-point occupancy feed (the city's own
 portal answers instead), the occupancy of the Thiersheim lorry park (its static
 table answers since server 2.4.3), and Kiel's old-town car parks. VBN's Connect
 timetable and realtime, planned at 2.4.3, answer since 2.4.5, and the NRW single
-traffic messages, planned until 2.5.0, are held as a backup since 2.5.2.
+traffic messages, planned until 2.5.1, are held as a backup since 2.5.2.
 
 **Discontinued.** DB BahnPark, above, and smartlab's four charging publications
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; see the

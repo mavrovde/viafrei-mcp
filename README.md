@@ -214,7 +214,7 @@ it was sent, shortened where marked.
 
 ```text
 "roads": ["A7"]
-"counts": {"jams":0,"closures":12,"roadworks":88,"announcedClosures":18,"announcedRoadworks":115,"announcedFrom":"…T05:00:00Z"}
+"counts": {"jams":0,"warnings":0,"closures":12,"roadworks":88,"announcedClosures":18,"announcedRoadworks":115,"announcedWarnings":0,"announcedFrom":"2026-11-02T05:00:00.000Z"}
 "ampel": {"lamp":"red","scope":"road","reasonsTotal":122} — full closure · full closure · police/Land message: animals on the road · 10 × a junction ramp closed · 20 × DWD warning Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) (FROST), placement on the road by ViaFrei · slippery road forecast (road-weather station Hittistetten Bruecke) · …
 {"kind":"closure","title":"A7, AS Bispingen bis AS Garlstorf, km 44,5-37,0, Grundinstandsetzung","gist":"Closure on the A7; since 2026-10-13, until 19:00, whole measure until 2028-10-29.","entry":{"where":{"kind":"at","junction":{"name":"Egestorf","number":"41","type":"AS"},"land":{"name":"Lower Saxony"}},"impact":[{"code":"ramp_closed"}]}}
 …
