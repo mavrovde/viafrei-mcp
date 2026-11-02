@@ -11,23 +11,16 @@ a Changelog and the versions follow Semantic Versioning.
 relays to. The running server reports 2.5.3 while the registry's latest is 2.5.1, so
 this release moves the package to the server's number and carries whatever had been
 waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
-reference was re-captured from the running server, and the probe reported the surface
-**CHANGED** — the automation knows what moved, not what it means:
-
-- tools: check_autobahn_traffic differs between the server and the snapshot
-- tools: find_cheapest_fuel differs between the server and the snapshot
-- tools: find_fuel_station differs between the server and the snapshot
-- tools: find_parking differs between the server and the snapshot
-- tools: check_road_status differs between the server and the snapshot
-- tools: find_charging_station differs between the server and the snapshot
-- tools: find_hydrogen_station differs between the server and the snapshot
-- tools: find_nearby differs between the server and the snapshot
-- tools: find_sharing differs between the server and the snapshot
-- tools: get_driving_rules differs between the server and the snapshot
-- tools: check_weather_warnings differs between the server and the snapshot
-
-**A person must describe the change above before this merges.** A release note that
-lists a tool name without saying what it does misleads the reader it exists for.
+reference was re-captured from the running server, and eleven tools differ from the
+2.5.0 snapshot — `check_autobahn_traffic`, `find_cheapest_fuel`, `find_fuel_station`,
+`find_parking`, `check_road_status`, `find_charging_station`, `find_hydrogen_station`,
+`find_nearby`, `find_sharing`, `get_driving_rules` and `check_weather_warnings`. In
+each, only the description of the `place` argument changed, as of server 2.5.2: a
+place and lat+lon may now be given together, and then the coordinate answers with the
+place as its label; the call is refused only when the two are further apart than the
+tool searches — `radius_km` for `check_autobahn_traffic`, 10 km plus the town's
+extent for `get_driving_rules`. Nothing else in their schemas, names or annotations
+moved.
 
 The server moved from 2.5.0 to 2.5.3. This package mirrored 2.5.1 with no
 description; what 2.5.1, 2.5.2 and 2.5.3 bring is described here. No tool, prompt or
