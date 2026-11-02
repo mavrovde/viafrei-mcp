@@ -5,6 +5,23 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.5.3] - 2026-11-02
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.5.3 while the registry's latest is 2.5.1, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and eleven tools differ from the
+2.5.1 snapshot — `check_autobahn_traffic`, `find_cheapest_fuel`, `find_fuel_station`,
+`find_parking`, `check_road_status`, `find_charging_station`, `find_hydrogen_station`,
+`find_nearby`, `find_sharing`, `get_driving_rules` and `check_weather_warnings`. In
+each, only the description of the `place` argument changed, as of server 2.5.2: a
+place and lat+lon may now be given together, and then the coordinate answers with the
+place as its label; the call is refused only when the two are further apart than the
+tool searches — `radius_km` for `check_autobahn_traffic`, 10 km plus the town's
+extent for `get_driving_rules`. Nothing else in their schemas, names or annotations
+moved.
+
 The server moved from 2.5.0 to 2.5.3. This package mirrored 2.5.1 with no
 description; what 2.5.1, 2.5.2 and 2.5.3 bring is described here. No tool, prompt or
 resource was added, removed or renamed. In 2.5.2 the description of the place
@@ -3968,6 +3985,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.5.3]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.3
 [2.5.1]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.1
 [2.5.0]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.0
 [2.4.9]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.4.9
