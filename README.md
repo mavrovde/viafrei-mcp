@@ -79,7 +79,7 @@ one search away from the box in the site's header.
 >   page with a question about that page ready for your assistant. The
 >   [connect page](https://viafrei.de/en/connect) now also says how ViaFrei works on
 >   a phone.
-> - **A place and a coordinate together** (2.5.3). The tools that take a `place`
+> - **A place and a coordinate together** (2.5.2). The tools that take a `place`
 >   used to refuse a call that also carried `lat`/`lon`. Now the coordinate answers
 >   and the place is its label while the two lie within the tool's search reach of
 >   each other; further apart, the call is refused with the distance between them.
@@ -183,8 +183,8 @@ roads and around a place it watches closures and restrictions only, and says so.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first two were asked of **server 2.5.2 on 2026-11-02 between
-03:56 and 04:00 Berlin time**, in the night before 2.5.3 went live. The next was
+are not mock-ups. The first three were asked of **server 2.5.2 on 2026-11-02 between
+03:56 and 04:10 Berlin time**, in the night before 2.5.3 went live. The next was
 asked of server 2.5.0 on 2026-10-29 at 17:48 Berlin time, the day it went live. The
 next was asked of server 2.4.9 that
 morning at 06:55. The next five were asked of server
@@ -252,6 +252,22 @@ is older than its feed's window, so it is shown as possibly out of date.
 *Edited: one line per site with the address object written as one line, the
 per-point list, the site identifiers and the source feed fields omitted, and the
 source line shortened.*
+</details>
+
+<details>
+<summary><b>📍 "Chargers in Weinsberg" — from a phone that is in Hamburg</b> — <code>find_charging_station</code> with <code>place: "Weinsberg"</code>, <code>lat: 53.5511</code>, <code>lon: 9.9937</code>, <code>language: "en"</code></summary>
+
+```text
+"isError": true
+"_meta": {"errorCode":"invalid_input","errorReason":"place_and_coords"}
+The place "Weinsberg" is 492 km from lat/lon — further than the 15 km searched here. Ask the person which one they mean, and pass only the place OR lat+lon.
+```
+New in 2.5.2: a place and a coordinate may come together. Within the tool's search
+reach of each other the coordinate answers and the place is its label; 492 km apart,
+as here, the call is refused with the distance, and `_meta.errorReason` names the
+rule. The same tool given `lat` without `lon` answers `"errorReason":"half_coordinate"`
+and "lat and lon go together: give both, or give place instead."
+*Not edited.*
 </details>
 
 <details>

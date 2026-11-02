@@ -7,9 +7,9 @@ a Changelog and the versions follow Semantic Versioning.
 
 The server moved from 2.5.0 to 2.5.3. This package mirrored 2.5.1 with no
 description; what 2.5.1, 2.5.2 and 2.5.3 bring is described here. No tool, prompt or
-resource was added, removed or renamed. In 2.5.3 the description of the place
+resource was added, removed or renamed. In 2.5.2 the description of the place
 argument changed in the tools that take a place, because a place may now come with
-a coordinate (below).
+a coordinate (below). 2.5.3 changes the website only: the tools answer as in 2.5.2.
 
 ### Added (server 2.5.2–2.5.3)
 
@@ -53,7 +53,7 @@ a coordinate (below).
 
 ### Changed (server 2.5.2–2.5.3)
 
-- **A place and a coordinate can be given together** (2.5.3). The tools that take a
+- **A place and a coordinate can be given together** (2.5.2). The tools that take a
   `place` used to refuse a call carrying both `place` and `lat`/`lon` ("they can
   disagree"), which is what an assistant does when it knows where you are and hears
   "in Fulda" as well. Now the coordinate answers and the place is its label, as
@@ -64,12 +64,15 @@ a coordinate (below).
   a call with neither a place nor a coordinate is told to ask the person for a town,
   a postcode or their position. `check_transit_disruption`'s `region` beside a
   coordinate is still refused, because a region is an area rather than a point.
-- **A refusal names which rule refused it** (2.5.3). Besides `_meta.errorCode`, an
+- **A refusal names which rule refused it** (2.5.2). Besides `_meta.errorCode`, an
   `invalid_input` about how the place, stop or station was given now carries
   `_meta.errorReason`, one of
   `place_missing`, `place_and_coords`, `half_coordinate`, `road_not_point` or
   `two_ways_in`, so a client can tell "no place given" from "two ways in that may
-  disagree" without parsing the sentence.
+  disagree" without parsing the sentence. Asked live of 2.5.2, `find_charging_station`
+  with `place: "Weinsberg"` and a coordinate in Hamburg answered `place_and_coords`:
+  "The place "Weinsberg" is 492 km from lat/lon — further than the 15 km searched
+  here", and `lat` alone answered `half_coordinate`.
 - **The road tools read a motorway number the way the site search does** (2.5.2):
   `"A07"` is the A7, like `"A 7"` and `"a7"`.
 - **The place bar is part of the page**, not a dialog (2.5.2): the search box, your
@@ -102,7 +105,7 @@ a coordinate (below).
   server releases 2.5.1 to 2.5.3 (the site search, the interchange pages, the place
   box, the redesigned cards, a place given with a coordinate), its site sections
   were rewritten to match, and two answers captured from server 2.5.2 on 2026-11-02
-  were added. SOURCES.md was compared again with `viafrei://attribution`: the same
+  were added, with the two refusals of a place given with a coordinate. SOURCES.md was compared again with `viafrei://attribution`: the same
   262 rows, one status changed (VIZ.NRW's single NRW traffic messages, planned
   until 2.5.2, are held). No code change.
 
