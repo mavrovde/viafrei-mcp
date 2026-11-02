@@ -17,12 +17,12 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.5.3 |
+| Server | `viafrei` 2.5.4 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
 | Captured from | `https://mcp.viafrei.de/mcp` on 2026-11-02 |
-| Surface | 22 tools, 10 resources, 2 resource templates, 9 prompts |
+| Surface | 23 tools, 10 resources, 2 resource templates, 9 prompts |
 | Parameter schemas | JSON Schema draft-07 |
 | Capabilities | `tools`, `resources`, `prompts`, `logging` |
 
@@ -31,7 +31,7 @@ No API key. No account. No sign-up.
 ## Contents
 
 - [How to read a result](#how-to-read-a-result)
-- [Tools](#tools) — 22
+- [Tools](#tools) — 23
 - [Resources](#resources) — 10
 - [Resource templates](#resource-templates) — 2
 - [Prompts](#prompts) — 9
@@ -232,10 +232,11 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Returns EV charging sites near a place or coordinate: operator, plugs, max power, price per kWh where published, and how many points are free now where the operator publishes live status. Filters: plug, power (min/max kW), operator, free now. Use when an EV driver asks where to charge ("Wo kann ich laden?", "CCS 150 kW near Leipzig", "ist gerade eine Säule frei?"). Do NOT use for petrol or diesel (find_cheapest_fuel) or E-Kennzeichen rules (get_driving_rules). Radius ≤ 25 km, ≤ 10 sites; availability is missing for most operators and is then unknown, never free. Show the attribution line.
+> Returns EV charging sites near a place or coordinate: operator, plugs, max power, price per kWh where published, and points free now where live status is published. Filters: plug, power (min/max kW), operator, free now, conditions (24/7, card, free of charge, public). Use when an EV driver asks where to charge ("Wo kann ich laden?", "CCS 150 kW near Leipzig", "ist gerade eine Säule frei?"). Do NOT use for petrol or diesel (find_cheapest_fuel) or E-Kennzeichen rules (get_driving_rules). Radius ≤ 25 km, ≤ 10 sites; missing availability is unknown, never free. Show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
+| `conditions` | array of string | no | — | min 1 item(s); max 4 item(s); each item: one of `"open247"`, `"card"`, `"free"`, `"public"` |
 | `connector` | string | no | — | one of `"ccs2"`, `"type2"`, `"chademo"` |
 | `language` | string | no | `"de"` | one of `"de"`, `"en"` |
 | `lat` | number | no | — | min -90; max 90 |
@@ -248,6 +249,7 @@ The server's own instructions to a connecting client, verbatim:
 | `place` | string | no | — | min length 1; max length 120 |
 | `radius_km` | number | no | `10` | min 1; max 25 |
 
+- **`conditions`** — Only sites with ONE point that meets every listed term: "open247" (open around the clock, "rund um die Uhr", "24/7"), "card" (pay by credit or debit card at the charger, "mit Karte zahlen"), "free" (free of charge, "kostenlos"), "public" (open to the public, not customers only). Example: ["open247"]. Only the Bundesnetzagentur charging register states these; a site that states nothing is left out and counted, never assumed. Omit unless the person asked for one.
 - **`connector`** — Plug the car needs: "ccs2" (CCS Combo 2 — the DC fast-charging standard on almost every European EV), "type2" (Typ 2 / Mennekes, the AC socket) or "chademo" (older Japanese DC, e.g. Nissan Leaf). Omit unless the person named their plug or their car model — filtering on a guess hides chargers they could have used.
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.
@@ -283,6 +285,28 @@ The server's own instructions to a connecting client, verbatim:
 - **`place`** — Where to look, as free text: a city ("München", "Munich"), a district or Kreis ("Kreis Fulda"), a Bundesland, a station or stop ("Hamburg Hbf"), a motorway junction ("AK Neufahrn"), or a street address with a house number ("Bahnhofstraße 12, 36037 Fulda"). A motorway number alone ("A7") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.
 - **`radius_km`** — Search radius around place or lat+lon in kilometres (1–150, default 50). Hydrogen stations are few, so the default is wide; when none is inside, the answer still names the nearest one beyond. Example: 50
 - **`vehicle`** — Which pump the vehicle needs: "car" (Pkw — 700 bar, e.g. Toyota Mirai, Hyundai Nexo; a few sites also offer 350 bar for cars) or "truck" (Lkw or bus — 350 bar). Omit unless the person said what they drive.
+
+### `find_speed_cameras` — Speed enforcement locations (planning)
+
+**Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
+
+> Returns a town's published speed-enforcement locations (fixed and red-light cameras, section control, announced mobile checks, measuring sites) by kind and street, with the § 23 Abs. 1c StVO notice. Use when someone plans a trip and asks where speed cameras are ("Blitzer Köln"). Planning only — show the notice verbatim. If they say they are driving now: show the notice, offer the list for before the trip or a stop. Never read locations to a driver, never a live warning. Do NOT use for speed limits (get_driving_rules) or roadworks (check_road_status). Area ≤ 25 km. Shows the attribution line.
+
+| parameter | type | required | default | constraints |
+| --- | --- | --- | --- | --- |
+| `language` | string | no | `"de"` | one of `"de"`, `"en"` |
+| `lat` | number | no | — | min -90; max 90 |
+| `limit` | integer | no | `20` | min 1; max 50 |
+| `lon` | number | no | — | min -180; max 180 |
+| `place` | string | no | — | min length 1; max length 120 |
+| `radius_km` | number | no | `5` | min 1; max 25 |
+
+- **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
+- **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.
+- **`limit`** — How many locations to list (1–50, default 20); the answer says how many more the area holds.
+- **`lon`** — Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use place.
+- **`place`** — Where to look, as free text: a city ("München", "Munich"), a district or Kreis ("Kreis Fulda"), a Bundesland, a station or stop ("Hamburg Hbf"), a motorway junction ("AK Neufahrn"), or a street address with a house number ("Bahnhofstraße 12, 36037 Fulda"). A motorway number alone ("A7") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.
+- **`radius_km`** — The area around place or lat+lon, in kilometres (1–25, default 5). An area, not an order: the list is never sorted by distance. Example: 5
 
 ### `find_place` — Look up a place
 
@@ -376,18 +400,18 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Overview of what is around a place or coordinate: nearby fuel stations, EV charging, parking, the nearest railway station and motorway junction, each with its distance. Use when someone asks "what is around me" or "what is near <place>" — a broad look, not one category in depth. Do NOT use for a fuel grade's price (find_cheapest_fuel), charger/connector status (find_charging_station), parking kind/occupancy (find_parking), a NAME lookup (find_place/find_poi/find_address), or a coordinate's address (describe_location). Radius ≤ 15 km, up to 3 per category. Shows each source's attribution.
+> Overview of what is around a place or coordinate: fuel, EV charging, parking, nearest railway station and motorway junction, with distances; everyday places (shop, pharmacy, cash, food, hotel, workshop, police) only when named in categories. Use when asked "what is around me". Do NOT use for a fuel grade's price (find_cheapest_fuel), charger status (find_charging_station), parking occupancy (find_parking), a NAME lookup (find_place/find_poi/find_address), or a coordinate's address (describe_location). Radius ≤ 15 km, up to 3 per category (5 per need). Shows each source's attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
-| `categories` | array of string | no | — | min 1 item(s); each item: one of `"fuel"`, `"charging"`, `"parking"`, `"station"`, `"junction"` |
+| `categories` | array of string | no | — | min 1 item(s); each item: one of `"fuel"`, `"charging"`, `"parking"`, `"station"`, `"junction"`, `"groceries"`, `"health"`, `"money"`, `"food"`, `"lodging"`, `"garage"`, `"safety"` |
 | `language` | string | no | `"de"` | one of `"de"`, `"en"` |
 | `lat` | number | no | — | min -90; max 90 |
 | `lon` | number | no | — | min -180; max 180 |
 | `place` | string | no | — | min length 1; max length 120 |
 | `radius_km` | number | no | `5` | min 1; max 15 |
 
-- **`categories`** — Which categories to include: "fuel", "charging", "parking", "station" (railway station), "junction" (motorway junction). Omit for all five. Pass a subset only when the person named one — otherwise the full picture is the point of this tool.
+- **`categories`** — Which categories to include: "fuel", "charging", "parking", "station" (railway station), "junction" (motorway junction) — omit for these five. Everyday places from OpenStreetMap only when named: "groceries", "health" (pharmacy, doctor, hospital), "money" (cash machine, bank, post office), "food", "lodging", "garage" (car repair, tyres, car wash), "safety" (police, toilets); each uses its own radius (1–2 km, widened up to 5 km where fewer than three are near), not radius_km.
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.
 - **`lon`** — Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use place.
@@ -508,22 +532,28 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Scheduled departures from any German stop — bus, tram, U-Bahn, S-Bahn, train, ferry. Use when asked when a bus, tram, U-/Stadtbahn or ferry goes ("welche Bahnen" at a Hbf too), or for another DAY or a time over 2 h away: "Wann fährt der nächste Bus ab Fulda Bahnhof?" Do NOT use for a railway station's trains now or later today — get_train_departures. Plan times, with a live delay or cancellation per row where held; regional punctuality check_transit_disruption. No A-to-B journeys: say so, no call. Holds ≥ 48 h ahead, ≤ 3 days; further out, say so. 15 per call. Show the attribution line.
+> Scheduled departures from any German stop — bus, tram, U-/S-Bahn, train, ferry — or the nearest stops around a place ("Abfahrten in der Nähe"). Use when asked when a bus, tram, U-/Stadtbahn or ferry goes ("welche Bahnen" at a Hbf too), or for another DAY or a time over 2 h away: "Wann fährt der nächste Bus ab Fulda Bahnhof?" Do NOT use for a rail station's trains today: get_train_departures. Plan times with live delay/cancellation where held; punctuality: check_transit_disruption. No A-to-B journeys: say so, no call. Holds ≥ 48 h ahead, ≤ 3 days. 15 per call. Show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
 | `duration_min` | integer | no | `60` | min 5; max 1440 |
 | `language` | string | no | `"de"` | one of `"de"`, `"en"` |
+| `lat` | number | no | — | min -90; max 90 |
 | `limit` | integer | no | `10` | min 1; max 15 |
+| `lon` | number | no | — | min -180; max 180 |
 | `modes` | array of string | no | — | min 1 item(s); each item: one of `"rail"`, `"subway"`, `"tram"`, `"bus"`, `"ferry"` |
+| `place` | string | no | — | min length 1; max length 120 |
 | `stop` | string | no | — | min length 2; max length 120 |
 | `stop_id` | string | no | — | min length 3; max length 64 |
 | `when` | string | no | — | format `date-time`; pattern (288 characters — see the description; the `format` above is the short answer) |
 
 - **`duration_min`** — How far past that moment to look, in minutes (5–1440, default 60). Small for "what goes now", a few hours for an evening. To look further ahead (the timetable reaches at least 48 h), move `when` instead of widening this: a window of a whole day returns at most 15 rows and would answer about the wrong half of it.
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
+- **`lat`** — Latitude in WGS 84, e.g. 50.551 — with lon, the nearest stops around a point the caller already holds. Use place for a named place.
 - **`limit`** — How many departures to return, earliest first (1–15, default 10). The result always says how many more were in the window.
+- **`lon`** — Longitude in WGS 84, e.g. 9.676. Use with lat.
 - **`modes`** — Keep only these kinds of service: "bus", "tram", "subway" (U-Bahn), "rail" (every train, including S-Bahn and regional) or "ferry". Omit it unless the person named a kind — "nur Busse", "welche Tram". Several are allowed, which is what "die Busse und Bahnen vor dem Hbf" means. An S-Bahn is "rail": the feed does not always distinguish it, and the line name ("S 6") says which it is.
+- **`place`** — A place to list the nearest stops around, when the person names no one stop: a town, district or address ("Bahnhofstraße 12, Fulda", "Köln-Ehrenfeld"). Lists the nearest stops within 5 km with their next departures, as viafrei.de's place page does. Give exactly one of stop, stop_id, place or lat+lon.
 - **`stop`** — The stop, as the person says it: "Fulda, Bahnhof", "München, Marienplatz", "Köln, Hbf", "Hamburg, Rathausmarkt" (town first). Include the town when the person did — half the names in Germany exist in twenty towns, and a bare "Bahnhof" or "Hauptbahnhof" comes back as a list of candidates to choose from, so call it and let the result ask. Pass their words; do not guess an id. Give either stop OR the stop id, never both.
 - **`stop_id`** — The stop's timetable id, exactly as a previous result of this tool gave it ("de:06631:1234"). It skips the name lookup and is exact — use it for a follow-up about a stop this tool has already named, and for one the person picked out of a candidate list.
 - **`when`** — Start of the window as an ISO-8601 instant with an offset ("2026-10-02T07:30:00+02:00"). Leave it out for "now". Convert the person's words yourself — "morgen früh", "tonight" — and pass the instant; the answer is always rendered in Europe/Berlin.
