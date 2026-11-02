@@ -15,20 +15,15 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.5.0 on 2026-10-29**: 262 sources, the same
-rows as at server 2.4.9 (only the streets note changed,
-[below](#and-the-streets-on-viafreides-maps)), three more than at server 2.4.3.
-247 of the 262 are held (one of those, the streets, feeds
-only the site's maps), 10 are planned
-(licence read, nothing ingested yet) and five are discontinued. The three new rows
-are the Autobahn GmbH's **strategic routes for Bayern** and **Lower Saxony's traffic
-strategies (DVL-NI)**, which answer beside the Autobahn GmbH's strategic routing, and the **OpenStreetMap
-streets** that viafrei.de's maps draw since 2.4.7, a share-alike database of its own
-that no tool answers from ([below](#and-the-streets-on-viafreides-maps)). Two rows
-changed status: **VBN's Connect timetable and realtime** for Niedersachsen and Bremen
-went from planned to held and answer since 2.4.5. One attribution line changed:
-DELFI's SIRI ET line now names the national rail dataset and its fourteen regional
-datasets, which carry buses, trams and the U-Bahn too, and no longer says "Schiene".
+with that resource as served by server 2.5.2 on 2026-11-02**: 262 sources, the same
+rows and the same attribution lines as at server 2.5.0, and the same rows as at server
+2.4.9 (only the streets note changed then,
+[below](#and-the-streets-on-viafreides-maps)). 248 of the 262 are held (one of those,
+the streets, feeds only the site's maps), 9 are planned (licence read, nothing
+ingested yet) and five are discontinued. One row changed status: **North
+Rhine-Westphalia's single traffic messages** (VIZ.NRW, Einzelmeldungen) went from
+planned to held, as a further backup twin of the NRW traffic messages: a message
+both carry is shown once and credits both. Server 2.5.3 adds and removes no source.
 The website also uses five sources the server's register does not list, named
 [near the end](#the-websites-own-sources). Whatever the surfaces say, the answer you hold is the thing to read:
 `_meta.sources` and the attribution lines on it are produced from the same result
@@ -372,7 +367,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_traffic_koeln_static` | Verkehrslage Köln (Streckenabschnitte): Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
 | `mobilithek_traffic_koeln_dyn` | Verkehrslage Köln: Stadt Köln via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
 | `mobilithek_traffic_nrw` | Verkehrsinformationen NRW: Landesbetrieb Straßenbau NRW (VIZ.NRW) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held (backup) |
-| `mobilithek_traffic_nrw_einzel` | Verkehrsinformationen NRW (Einzelmeldungen): Landesbetrieb Straßenbau NRW (VIZ.NRW) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
+| `mobilithek_traffic_nrw_einzel` | Verkehrsinformationen NRW (Einzelmeldungen): Landesbetrieb Straßenbau NRW (VIZ.NRW) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held (backup) |
 | `mobilithek_traffic_hamburg` | Verkehrsmeldungen Hamburg: Polizei Hamburg – Landesmeldestelle via Mobilithek, Open Data (freie Nutzung) | "Open Data (freie Nutzung)" — see below | held (backup) |
 | `mobilithek_roadweather_sh_static` | Straßenwetter Schleswig-Holstein (Messstellen): Landesbetrieb Straßenbau und Verkehr Schleswig-Holstein (LBV.SH) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
 | `mobilithek_roadweather_sh_dyn` | Straßenwetter Schleswig-Holstein: Landesbetrieb Straßenbau und Verkehr Schleswig-Holstein (LBV.SH) via Mobilithek, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | planned |
@@ -1673,22 +1668,23 @@ in `viafrei://attribution`:
 
 Leaving a dataset out is as much a part of using open data lawfully as using one.
 
-**Planned, not ingested.** The ten `planned` rows above have had their licence
+**Planned, not ingested.** The nine `planned` rows above have had their licence
 read and nothing answers from them: Köln's traffic situation (two feeds),
-Schleswig-Holstein's road weather (two feeds) and its lorry parks (two feeds), the
-NRW single traffic messages, Dortmund's access-point occupancy feed (the city's own
+Schleswig-Holstein's road weather (two feeds) and its lorry parks (two feeds),
+Dortmund's access-point occupancy feed (the city's own
 portal answers instead), the occupancy of the Thiersheim lorry park (its static
 table answers since server 2.4.3), and Kiel's old-town car parks. VBN's Connect
-timetable and realtime, planned at 2.4.3, answer since 2.4.5.
+timetable and realtime, planned at 2.4.3, answer since 2.4.5, and the NRW single
+traffic messages, planned until 2.5.0, are held as a backup since 2.5.2.
 
 **Discontinued.** DB BahnPark, above, and smartlab's four charging publications
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; see the
 charging section for the dated grace window.
 
-**Held back.** Nothing at server 2.4.9. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.5.2. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.4.9. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.5.2. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1752,7 +1748,7 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.4.9 on 2026-10-29, not typed: every id it
+  by line with it as served by server 2.5.2 on 2026-11-02, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
