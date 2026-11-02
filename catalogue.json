@@ -1,11 +1,11 @@
 {
   "$comment": "Captured from the PRODUCTION ViaFrei MCP server with initialize, tools/list, resources/list, resources/templates/list and prompts/list. No tool was invoked, so no data provider was contacted. ONE field is removed rather than stored: every tool's inputSchema carried a $schema URI naming the JSON Schema draft-07 dialect. It is dropped because storing it would put a host on this repository's allow-list that nothing else needs, and the dialect is a property of every draft-07 schema rather than a fact about this catalogue - API.md states it in words instead. Nothing else is altered: every tool, parameter, constraint, resource, template and prompt is as the server returned it. A SECOND substitution, for a different reason: two input schemas carried a 288-character regular expression validating an ISO-8601 date including leap years. Each is stored as patternLength rather than as its text, because such a regex spells its arithmetic as character classes of selected digits, and the leak sweep that guards this repository cannot tell a class of five digits from a five-digit internal value. The two ways to keep the text would both have been falsehoods - narrowing the sweep for every file, or an allow-list entry claiming a character class is a number this project publishes - so the text is not kept. Nothing about the constraint is hidden by this: API.md already summarised a pattern of over 60 characters by its length, which is what a reader gets either way, and the server hands anyone the full expression in tools/list.",
-  "capturedAt": "2026-10-30",
+  "capturedAt": "2026-11-02",
   "source": "https://mcp.viafrei.de/mcp",
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.5.1",
+    "version": "2.5.3",
     "title": "ViaFrei",
     "description": "The German Real-Time Mobility Context Platform for AI. ViaFrei gives AI assistants real-time awareness of Germany. Trains and buses, traffic and roadworks, fuel, charging, parking and weather. One MCP. No API key. No sign-up."
   },
@@ -41,7 +41,7 @@
             "description": "Autobahn numbers, e.g. [\"A9\"] or [\"A8\", \"A99\", \"A9\"] (1–5 per call). Name every motorway on the route so the whole drive is briefed in one call — \"A9\", \"A 9\" and \"a9\" are the same road. Results are grouped per road, in the order you list them."
           },
           "place": {
-            "description": "Optional: the town, junction or address the person is at or asks about (\"A1 bei Köln\", \"A3 near Frankfurt\"). Then each road's events within radius_km come first, nearest first, and the headline counts them with the road-wide total beside it. Omit it for the whole road. Give either place OR lat+lon, never both.",
+            "description": "Optional: the town, junction or address the person is at or asks about (\"A1 bei Köln\", \"A3 near Frankfurt\"). Then each road's events within radius_km come first, nearest first, and the headline counts them with the road-wide total beside it. Omit it for the whole road. Given with lat+lon, lat+lon is searched around and the place is its label, unless the two lie further apart than radius_km.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
@@ -127,7 +127,7 @@
         "type": "object",
         "properties": {
           "place": {
-            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.",
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
@@ -197,7 +197,7 @@
         "type": "object",
         "properties": {
           "place": {
-            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.",
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
@@ -303,7 +303,7 @@
         "type": "object",
         "properties": {
           "place": {
-            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.",
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
@@ -416,7 +416,7 @@
             "pattern": "^(?:[ABab] ?\\d{1,3}|[LlSs] ?\\d{1,4})$"
           },
           "place": {
-            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.",
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
@@ -540,7 +540,7 @@
         "type": "object",
         "properties": {
           "place": {
-            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.",
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
@@ -632,7 +632,7 @@
         "type": "object",
         "properties": {
           "place": {
-            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.",
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
@@ -962,7 +962,7 @@
         "type": "object",
         "properties": {
           "place": {
-            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.",
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
@@ -1030,7 +1030,7 @@
         "type": "object",
         "properties": {
           "place": {
-            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.",
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
@@ -1116,7 +1116,7 @@
             "maxLength": 60
           },
           "place": {
-            "description": "A street address, district, station or other point (\"Alexanderplatz, Berlin\", \"Kölner Dom\") to check against the published low-emission-zone boundaries: inside, outside with the distance, or unknown. Give either place OR lat+lon, never both.",
+            "description": "A street address, district, station or other point (\"Alexanderplatz, Berlin\", \"Kölner Dom\") to check against the published low-emission-zone boundaries: inside, outside with the distance, or unknown. Given with lat+lon, lat+lon is checked and the place is its label, unless the two lie further apart than 10 km plus the town's extent.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
@@ -1215,7 +1215,7 @@
         "type": "object",
         "properties": {
           "place": {
-            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. Give either place OR lat+lon, never both.",
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.",
             "type": "string",
             "minLength": 1,
             "maxLength": 120
