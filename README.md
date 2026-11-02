@@ -37,87 +37,73 @@ nearest fast charger is (and whether it is free, where the operator publishes
 that), which hydrogen station takes a lorry, whether the lift at your station
 works and whether the road ahead is forecast to freeze — from official German open data, live, with the source named
 in every answer. And every German motorway has a [live page of its own](#-motorway-pages)
-on viafrei.de, with a map and a traffic light.
+on viafrei.de, with a map and a traffic light, and so does every
+[railway station and every Autobahnkreuz](#-station-and-exit-pages), all of them
+one search away from the box in the site's header.
 
 > **Beta.** ViaFrei is being stabilised: sources are still being added, and
 > answers and coverage can change. The answers are written by an AI assistant
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in the 2.5 line (server 2.5.0): bug fixes only.** No tool, prompt or
-> resource was added, removed or renamed.
+> **New in server 2.5.1 to 2.5.3: a search in every header, a page for every
+> Autobahnkreuz, a place box that knows the motorways, redesigned cards, and a place
+> that may come with a coordinate.** No tool, prompt or resource was added, removed
+> or renamed.
 >
-> - **A sectioned track is that track.** Hamburg Hbf's "7A-D" is Gleis 7 in
->   `get_train_departures` (`"place": "track"`) and on the station board, where it
->   used to fall through as plain text ([example](#-real-answers)).
-> - **A departure keeps its own destination and delay.** It no longer takes another
->   departure's destination or delay, and a town's station stays apart from a
->   district of it.
-> - **Translated maps speak their own language**: a mark's name is the row's own
->   name, never a German label, and the position on a motorway page's "around you"
->   map can be tapped.
-> - **The header of a translated page keeps a place's name untranslated**, and the
->   connect pages in Russian, Ukrainian, Bulgarian and Serbian no longer leave the
->   word "ID" in English.
-> - **Pages without a script keep their styles.**
+> - **A site search in every page's header.** One box at the top of every page of
+>   viafrei.de (the fuel price page excepted), and a search page of its own,
+>   [viafrei.de/en/search](https://viafrei.de/en/search). It finds motorways in any
+>   spelling ("A 7", "BAB 7", "Autobahn 7", "A07"), places, stations, junctions,
+>   areas, points of interest and the site's own pages, grouped by kind. "Kreuz" and
+>   "Dreieck" ask for an interchange, and since 2.5.3 "AS" and "Anschlussstelle" for
+>   an exit, so "AS Dresden-Neustadt" finds the exit.
+> - **One page for every Autobahnkreuz and Autobahndreieck**, named the way people
+>   search for it: "Kreuz Weinsberg (Weinsberger Kreuz)" in German, "Weinsberg
+>   interchange" in English, at one address for all the motorways it joins
+>   ([more](#-station-and-exit-pages)).
+> - **The home's place box finds motorways and junctions** (2.5.3). "A4", "Autobahn
+>   4" or "Dreieck Heumar" used to find no place; now the suggestions list the
+>   motorway, then the motorways and junctions the query begins, then the places,
+>   and a motorway or junction line opens its page.
+> - **The place bar is part of the page**: the search box, your recent places as
+>   chips, "Use my location" on a row of its own, and one "All of Germany" choice in
+>   the headline. Going back restores the place you had chosen.
+> - **Redesigned cards.** Fuel as a price table per station, charging as one block
+>   per site (operator, power class, plugs, live status in the tool's own words),
+>   every stop in full on the buses-and-trains card, the motorway pages' road
+>   weather with each forecast slot's air temperature and rain or snow, and on every
+>   card one short sources line with the full credits behind a fold.
+> - **A "Next" row** ends the first answer of every place, motorway, exit and
+>   interchange page: the roads its cards name, and a link that opens the connect
+>   page with a question about that page ready for your assistant. The
+>   [connect page](https://viafrei.de/en/connect) now also says how ViaFrei works on
+>   a phone.
+> - **A place and a coordinate together** (2.5.2). The tools that take a `place`
+>   used to refuse a call that also carried `lat`/`lon`. Now the coordinate answers
+>   and the place is its label while the two lie within the tool's search reach of
+>   each other; further apart, the call is refused with the distance between them.
+>   That refusal, and the other argument refusals about how a place, stop or station
+>   was given, name their rule in `_meta.errorReason`.
+> - **The road tools read `"A07"` as the A7**, the same rule the site search uses
+>   ([example](#-real-answers)).
+> - **North Rhine-Westphalia's single traffic messages** are held as a second backup
+>   of its police and Land messages, credited beside them
+>   ([SOURCES.md](SOURCES.md)).
 >
-> **Before that, since server 2.4.3 (server 2.4.4 to 2.4.9): live times for buses, trams and
-> the U-Bahn in fourteen more regions, a traffic light and a street map for every
-> place, a site search that finds a shop or a house number, and station pages that
-> load in place.**
->
-> - **Live departures in fourteen more regions.** DELFI's fourteen regional SIRI ET
->   feeds (Berlin-Brandenburg, Bayern, Hessen, Rhein-Ruhr, Baden-Württemberg,
->   Bremen/Niedersachsen/Hamburg/Rostock-VVW, Oberelbe, Rhein-Neckar-Dreieck, Rhein-Sieg,
->   Sachsen-Anhalt, Mecklenburg-Vorpommern, Schleswig-Holstein, Saarland and
->   Mittelthüringen) now give `get_departures` and the departure cards on
->   viafrei.de a live figure for buses, trams and the U-Bahn as well as trains, and
->   VBN's Connect timetable and realtime answer in Niedersachsen and Bremen. One figure per
->   departure, the one that agrees with where the departure is going, and every
->   feed that carried it credited ([example](#-real-answers)).
-> - **Traffic strategies.** Lower Saxony's traffic strategies (DVL-NI, since 2.4.4)
->   and the Autobahn GmbH's strategic routes for Bayern (shown since 2.4.7) join its
->   national strategic routing in `check_autobahn_traffic`, `check_road_status` and
->   on the road card, each called what its publisher calls it: a guidance to the
->   trade-fair car parks is never said as a detour.
-> - **Road entries name their junctions in the direction of travel**, and a lorry
->   park whose publisher gives a placeholder for a name is not given that as its
->   name.
-> - **A traffic light and a map for every place** on viafrei.de: the motorway
->   page's rule applied to the place's own cards, every reason linked to its row and
->   drawn on a map of the place, one light per place. The map marks parking,
->   charging, stations and the weather ring by kind, and each mark links to its row.
-> - **Streets on the maps.** The place, station and motorway maps draw
->   OpenStreetMap's streets as thin lines under their marks, with the line
->   "Streets: © OpenStreetMap contributors, ODbL 1.0" and our offer of the street
->   database beside it ([SOURCES.md](SOURCES.md#and-the-streets-on-viafreides-maps)).
-> - **A search that finds what you type.** The place search on viafrei.de finds
->   districts, postcodes, streets, a street and house number typed without a town
->   ("Wilhelmshöher Allee 100") and points of interest by name. An address you pick
->   heads the page with the address, never with a shop at its door, and a point of
->   interest you pick is the place, under its own name.
-> - **Station pages for every railway station**, 6,513 of them, including those
->   DB's directory does not list, with filters for the board (mode, departures or
->   arrivals, platform, destination, time, disruptions, step-free), every lift and
->   escalator listed, the place cards and the place traffic light for the
->   station's surroundings, and a home-page block of the stations most affected now.
->   A slow part of a station page loads in place; the page itself never fails for it.
-> - **Police and Land traffic messages in your language** on viafrei.de's
->   translated pages, machine-translated on our own server and labelled as ours,
->   with the German original beside them. Baden-Württemberg's messages stay German
->   only, because its terms bind them to the traffic-warning service's rules.
-> - **Your language, once.** A visitor who arrives on a German page is sent to the
->   same page in their browser's language, and a choice in the language menu ends
->   the switching for good. The [connect page](https://viafrei.de/en/connect) gives
->   every assistant its steps, links its official guide and says how each was
->   checked.
->
-> No tool, prompt or resource was added, removed or renamed since 2.4.3. The 2.4.0
-> to 2.4.3 releases brought the five-question `entry` on every road item, charging
-> by operator and power band, truck-parking occupancy behind the user's acceptance,
-> and the [station and exit pages](#-station-and-exit-pages); the
-> [CHANGELOG](CHANGELOG.md) has the whole list. Every source is listed, with what it
-> feeds and what we hold back, in [SOURCES.md](SOURCES.md).
+> **Before that:** server 2.5.0 fixed bugs only (a sectioned track such as Hamburg
+> Hbf's "7A-D" is read as that track, a departure keeps its own destination and
+> delay, translated maps and headers speak their own language). Server 2.4.4 to
+> 2.4.9 brought live times for buses, trams and the U-Bahn from DELFI's fourteen
+> regional SIRI ET feeds and VBN's Connect, the traffic strategies of Bayern and
+> Lower Saxony, a traffic light and a street map for every place, a place search that
+> finds a shop or a house number, station pages for every railway station, and
+> police and Land traffic messages translated on the site. The 2.4.0 to 2.4.3
+> releases brought the five-question `entry` on every road item, charging by operator
+> and power band, truck-parking occupancy behind the user's acceptance, and the
+> [station and exit pages](#-station-and-exit-pages); the [CHANGELOG](CHANGELOG.md)
+> has the whole list. Every source is listed, with what it feeds and what we hold
+> back, in [SOURCES.md](SOURCES.md).
 
 ---
 
@@ -197,8 +183,10 @@ roads and around a place it watches closures and restrictions only, and says so.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first was asked of **server 2.5.0 on 2026-10-29 at 17:48
-Berlin time**, the day it went live. The next was asked of server 2.4.9 that
+are not mock-ups. The first three were asked of **server 2.5.2 on 2026-11-02 between
+03:56 and 04:10 Berlin time**, in the night before 2.5.3 went live. The next was
+asked of server 2.5.0 on 2026-10-29 at 17:48 Berlin time, the day it went live. The
+next was asked of server 2.4.9 that
 morning at 06:55. The next five were asked of server
 2.4.3 on 2026-10-27 between 16:00 and 16:02 Berlin time, the day it went live, and
 were asked again of server 2.4.9 on 2026-10-29 at 06:54: they answer in the same
@@ -222,6 +210,67 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🚦 "Is the A07 clear right now?"</b> — <code>check_autobahn_traffic</code> with <code>roads: ["A07"]</code>, <code>limit: 3</code>, <code>language: "en"</code></summary>
+
+```text
+"roads": ["A7"]
+"counts": {"jams":0,"warnings":0,"closures":12,"roadworks":88,"announcedClosures":18,"announcedRoadworks":115,"announcedWarnings":0,"announcedFrom":"2026-11-02T05:00:00.000Z"}
+"ampel": {"lamp":"red","scope":"road","reasonsTotal":122} — full closure · full closure · police/Land message: animals on the road · 10 × a junction ramp closed · 20 × DWD warning Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) (FROST), placement on the road by ViaFrei · slippery road forecast (road-weather station Hittistetten Bruecke) · …
+{"kind":"closure","title":"A7, AS Bispingen bis AS Garlstorf, km 44,5-37,0, Grundinstandsetzung","gist":"Closure on the A7; since 2026-10-13, until 19:00, whole measure until 2028-10-29.","entry":{"where":{"kind":"at","junction":{"name":"Egestorf","number":"41","type":"AS"},"land":{"name":"Lower Saxony"}},"impact":[{"code":"ramp_closed"}]}}
+…
+Source: Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de) · Datenbasis: Deutscher Wetterdienst, zusammengefasst (…) · … · Verkehrsmeldungen Schleswig-Holstein: Landesmeldestelle Polizei Schleswig-Holstein via Mobilithek, Open Data (freie Nutzung) (…) · Arbeitsstellen kürzerer Dauer auf Autobahnen (geplant): Die Autobahn GmbH des Bundes | MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei (…) · …
+The road-weather station data are unverified point measurements and do not reflect conditions on a road section; … Planned short-duration roadworks are planned at short notice and often changed; …
+```
+New in 2.5.2: `"A07"` is read as the A7 (`"roads": ["A7"]`), by the same rule the
+site search uses for "A 7", "BAB 7" or "Autobahn 7". The schema of this tool takes
+`A` and a number, with or without a space; the site search also takes the longer
+spellings. At four in the morning the A7 had no jam, but its light was red for two
+full closures and an animal on the road, and 18 closures were announced from 06:00
+Berlin time (`announcedFrom` is UTC). Times in the structured result are UTC unless
+they carry their own offset, as `gist` and `entry` do.
+*Edited: the three events cut to the first one, its `entry` shortened to where and
+impact, the reason list, the police/Land messages and the planned short-duration
+works shortened, the event identifiers and most of the source line omitted.*
+</details>
+
+<details>
+<summary><b>⚡ "Where can I charge at 150 kW or more near Weinsberg?"</b> — <code>find_charging_station</code> with <code>place: "Weinsberg"</code>, <code>min_power_kw: 150</code>, <code>limit: 3</code>, <code>language: "en"</code></summary>
+
+```text
+{"name":"VOLLERT STATION HYC","operator":"ChargePoint","address":"Stadtseestraße 12, 74189 Weinsberg","distanceKm":0.7,"connectors":["CCS2"],"maxPowerKw":150,"powerClass":"hpc","pricePerKwh":0.595,"availability":{"unknown":2,"total":2}}
+{"operator":"ENBW","address":"Am Autobahnkreuz 9-13, 74189 Weinsberg","distanceKm":1.7,"connectors":["CCS2"],"maxPowerKw":300,"powerClass":"hpc","pricePerKwh":0.79,"availability":{"unknown":4,"total":4}}
+{"operator":"ENBW","address":"Am Autobahnkreuz 2, 74248 Ellhofen","distanceKm":1.8,"connectors":["CCS2"],"maxPowerKw":300,"powerClass":"hpc","pricePerKwh":0.79,"availability":{"stale":24,"total":24},"staleStatusAsOf":"2026-11-01T07:39:10Z"}
+…
+Source: Ladepunkte: Eco-Movement via Mobilithek, CC BY 4.0, bearbeitet (…) · Ladepunkte: EnBW AG via Mobilithek, CC BY 4.0, bearbeitet (…) · Ladepunkt-Verfügbarkeit: EnBW AG via Mobilithek, CC BY 4.0, bearbeitet (…) · Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0 (…)
+```
+The two EnBW sites stand on the street named after the Weinsberger Kreuz, beside
+the interchange. `powerClass` is the class the charging card prints beside each site
+since 2.5.2: `ac` up to 22 kW, `dc` above that, `hpc` from 150 kW. No operator here published a live status that
+night: the first two sites say `unknown`, which is never free, and the third
+reports 24 points whose last status, from the morning before (08:39 Berlin time),
+is older than its feed's window, so it is shown as possibly out of date.
+*Edited: one line per site with the address object written as one line, the
+per-point list, the site identifiers and the source feed fields omitted, and the
+source line shortened.*
+</details>
+
+<details>
+<summary><b>📍 "Chargers in Weinsberg" — from a phone that is in Hamburg</b> — <code>find_charging_station</code> with <code>place: "Weinsberg"</code>, <code>lat: 53.5511</code>, <code>lon: 9.9937</code>, <code>language: "en"</code></summary>
+
+```text
+"isError": true
+"_meta": {"errorCode":"invalid_input","errorReason":"place_and_coords"}
+The place "Weinsberg" is 492 km from lat/lon — further than the 15 km searched here. Ask the person which one they mean, and pass only the place OR lat+lon.
+```
+New in 2.5.2: a place and a coordinate may come together. Within the tool's search
+reach of each other the coordinate answers and the place is its label; 492 km apart,
+as here, the call is refused with the distance, and `_meta.errorReason` names the
+rule. The same tool given `lat` without `lon` answers `"errorReason":"half_coordinate"`
+and "lat and lon go together: give both, or give place instead."
+*Not edited.*
+</details>
+
+<details>
 <summary><b>🚆 "When does the next train leave Hamburg Hbf?"</b> — <code>get_train_departures</code> with <code>station: "Hamburg Hbf"</code>, <code>language: "en"</code></summary>
 
 ```text
@@ -1323,10 +1372,16 @@ rules, so a card and an assistant asked about the same place say the same thing:
 - **charging**: one charger published by two feeds is one row, a site whose every
   point is closed is not listed, and each row says "1 of 2 free (as of 22:21)",
   "occupied", "out of service", "possibly out of date" or "no status data", which
-  is unknown and never free;
+  is unknown and never free. Since 2.5.2 the card shows one block per site under a
+  summary line: the operator, the power with its class (AC up to 22 kW, DC above,
+  HPC from 150 kW, the `powerClass` of `find_charging_station`), the plugs and the
+  live status in the tool's own words;
+- **fuel**: since 2.5.2 a small price table per station, the cheapest price marked
+  in its cell and the brand as a text badge;
 - **transit**: Berlin and Brandenburg take their punctuality from VBB's own live
   feed, a railway station's realtime calls are matched through the national stop
-  directory, and shared bikes within 1 km are listed with their stations;
+  directory, and shared bikes within 1 km are listed with their stations. Since
+  2.5.2 every stop is listed in full, up to eight, the railway station first;
 - **roads**: the Land traffic feeds and roadworks registers answer a place as they
   do in `check_road_status`, every row says where it is, a city's own street
   messages are not crowded out by the motorways, Hamburg places name up to two
@@ -1345,10 +1400,17 @@ which cards the home shows; it works without JavaScript and never hides a warnin
 silently. A visitor outside Germany is shown the nearest German town near the
 border, or Germany as a whole when too far away.
 
-Since 2.4.5 the first screen says which place it shows ("Live for Kassel ▾", with
-*All of Germany* beside it), and the place search finds districts, postcodes and
-streets, since 2.4.8 points of interest by name, and since 2.4.9 a street with a
-house number typed without a town. A place page carries a **traffic light for the place**:
+The first screen says which place it shows, and since 2.5.2 the place bar is part
+of the page rather than a dialog: a search box, your recent places as chips that
+change the page in place, and "Use my location" on a row of its own above the
+search (2.5.3). "All of Germany" is one choice, in the headline; going back restores
+the place you had chosen. The place search finds districts, postcodes and streets,
+since 2.4.8 points of interest by name, since 2.4.9 a street with a house number
+typed without a town, and since 2.5.3 motorways and junctions: "A4", "Autobahn 4" or
+"Dreieck Heumar" list the motorway and the junctions first, each opening its page,
+then the places. Every card ends with one short sources line naming the providers in
+view, keeps the notes that must be seen in view, and puts the full credits behind a
+fold (2.5.2). A place page carries a **traffic light for the place**:
 the motorway pages' rule applied to the place's own cards, with each reason linked
 to its row and drawn on a map of the place. The map marks parking, charging,
 stations and the DWD warning ring by kind, each mark a link to its row, and since
@@ -1384,6 +1446,12 @@ spelling such as `A 7`, `a07` or `BAB7` takes you to the same page.
 
 What the A7's page holds, from top to bottom:
 
+- **What is reported now, in one line**, since 2.5.2: the counts of the road's
+  closures, jams and roadworks with their time, the junctions where something is
+  reported named and linked, and a **Next** row: the roads the page's cards name,
+  and one link that opens the connect page with a question about this page ready
+  for your assistant. Place, exit and interchange pages end their first answer
+  with the same row.
 - **A traffic light** for the whole road, by the same rule `check_autobahn_traffic`
   uses, with its reasons listed and linked to their rows ("Jam, 47 min delay ·
   Bad Bramstedt - Kaltenkirchen · Flensburg → Hamburg"), and a short "how the
@@ -1411,7 +1479,8 @@ What the A7's page holds, from top to bottom:
   case and the usual abbreviations (AS, AK, AD, Kreuz, Dreieck) folded, each hit
   linking to its row. Without JavaScript the same search is a plain form. The index
   search also takes a town or a junction: "Kassel" lists the A7, the A44 and the A49
-  with the matching junctions.
+  with the matching junctions. Since 2.5.2 the box in every page's header searches
+  the whole site.
 - **The towns along the route**: every town within reach of an exit, in road order,
   at its nearest exit, the large ones first, each linking to its exit and to its place
   page on viafrei.de, and to its official website where Wikidata states one.
@@ -1498,7 +1567,8 @@ near the place, nearest junction first, each linked to its page.
 description in each of the 22 languages ("A7 Germany: traffic jams, roadworks, map"), the
 motorway sitemaps list every page in every language, and
 [llms.txt](https://viafrei.de/llms.txt) and
-[llms-full.txt](https://viafrei.de/llms-full.txt) describe the pages;
+[llms-full.txt](https://viafrei.de/llms-full.txt) describe the pages, since 2.5.2
+every kind of page on the site with an English and a German example;
 llms-full.txt also lists every motorway page in English and German. [robots.txt](https://viafrei.de/robots.txt) keeps the AI training and
 corpus crawlers off the fuel page, names them one by one, and leaves the motorway
 pages open to every crawler, the place pages since 2.4.0, and the station and exit
@@ -1546,6 +1616,28 @@ the fold: the traffic light, what is reported, the junction's surroundings, park
 charging, the towns along the route and the questions your assistant can answer
 there. The exits
 with enough to say are listed in their own sitemaps, about 1,700 per language.
+Since 2.5.2 an exit page's map frames the junction and its neighbouring junctions,
+at most 20 km across, instead of the whole motorway.
+
+**Every Autobahnkreuz and Autobahndreieck has one page** since 2.5.2, named the way
+people search for it. An interchange used to be an exit page of each motorway it
+joins, named after the motorway ("A6 Weinsberg"), so a search for "Weinsberger
+Kreuz" found nothing and the same interchange stood at two unrelated addresses. Now
+its page is called "Kreuz Weinsberg (Weinsberger Kreuz)" in German and "Weinsberg
+interchange" in English, links the other motorways it meets, and one address is the
+canonical one, the one the sitemaps list: the Weinsberger Kreuz is
+[viafrei.de/en/autobahn/a6/exit-38-weinsberg](https://viafrei.de/en/autobahn/a6/exit-38-weinsberg),
+and the A81's page for the same interchange points search engines there. On
+2026-11-02 at about 04:00 it opened with "At Weinsberg interchange on the A6,
+reported now: 1 roadworks (as of 03:52)", followed by its Next row and the A6's
+traffic light, yellow for a DWD level-1 weather warning and roadworks narrowing
+the road.
+
+**The site search** in every page's header (the fuel price page excepted) and at
+[viafrei.de/en/search](https://viafrei.de/en/search) finds all of these: motorways
+in any spelling ("A 7", "BAB 7", "Autobahn 7", "A07"), places, stations, junctions
+("Weinsberger Kreuz", and since 2.5.3 "AS Dresden-Neustadt" for an exit), areas,
+points of interest and the site's own pages, grouped by kind, best group first.
 
 ## 🔌 Connect in one minute
 
@@ -1571,6 +1663,14 @@ address under "Connection", authentication none, then *Create as a plugin*; in a
 chat type @ and pick ViaFrei. Custom MCP servers work in ChatGPT on the web, for Pro
 users and in Business and Enterprise/Edu workspaces, not in the mobile apps and not
 on Free or Plus.
+
+**On a phone** (Android, iPhone) — most assistant apps cannot add a connector inside
+the app. Set it up once in a browser (the phone's browser works too): for Claude,
+claude.ai → Customize → Connectors → "+ Add" → *Add custom connector*, the address
+above, *Continue*. Then sign in to the Claude app with the same account and switch
+ViaFrei on under "+" → Connectors in a chat. The
+[connect page](https://viafrei.de/en/connect) has these steps with pictures, and
+says for the other assistants what their official guides allow on a phone.
 
 **Cursor, and any client with an `mcpServers` file that takes a `url`**, over HTTP:
 ```json

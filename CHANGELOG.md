@@ -5,6 +5,110 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+The server moved from 2.5.0 to 2.5.3. This package mirrored 2.5.1 with no
+description; what 2.5.1, 2.5.2 and 2.5.3 bring is described here. No tool, prompt or
+resource was added, removed or renamed. In 2.5.2 the description of the place
+argument changed in the tools that take a place, because a place may now come with
+a coordinate (below). 2.5.3 changes the website only: the tools answer as in 2.5.2.
+
+### Added (server 2.5.2–2.5.3)
+
+- **A site search in every page's header.** viafrei.de has one search box at the top
+  of every page (the fuel price page excepted, which runs no script) and a search
+  page of its own, [viafrei.de/en/search](https://viafrei.de/en/search). It finds
+  motorways in any spelling ("A 7", "BAB 7", "Autobahn 7", "A07"), places, stations,
+  junctions, areas, points of interest and the site's own pages, grouped by kind,
+  best group first. Since 2.5.3 "AS" and "Anschlussstelle" ask for an exit, so "AS
+  Dresden-Neustadt" finds the exit, as "Kreuz" and "Dreieck" ask for an interchange.
+- **One page for every Autobahnkreuz and Autobahndreieck**, named the way people
+  search for it: "Kreuz Weinsberg (Weinsberger Kreuz)" in German, "Weinsberg
+  interchange" in English. An interchange used to be an exit page of each motorway
+  it joins, under two unrelated addresses; now every motorway's page for it points
+  search engines at one address, the one listed in the sitemaps, and links the
+  other motorways it meets.
+- **The home's place box finds motorways and junctions** (2.5.3). Typing "A4",
+  "A 4", "Autobahn 4" or "Dreieck Heumar" used to answer that no place of that name
+  exists; the suggestions now list the motorway first, then the motorways it begins
+  and the junctions, then the places, each line opening the motorway's or the
+  exit's page. A query that names no road is answered exactly as before.
+- **Redesigned cards on viafrei.de.** The fuel card is a small price table per
+  station, the cheapest price marked, the charging card one block per site
+  (operator, power with its AC, DC or high-power class, plugs, live status beside
+  the same words the tool uses), the buses-and-trains card lists every stop in full (up to eight, the railway station
+  first), and the road weather on the motorway pages shows each forecast slot's air
+  temperature and rain or snow.
+- **One sources line on every card**: a short line naming the providers in view,
+  the notes that must stay visible kept in view, and the full credits behind a
+  fold that opens without JavaScript.
+- **A "Next" row** at the end of the first answer of every place, motorway, exit and
+  interchange page: the roads its cards name, and one link that opens the connect
+  page with a question about that page ready to ask your assistant. A motorway page
+  now opens with today's counts and names the junctions where something is
+  reported.
+- **The connect page says how ViaFrei works on a phone**, with pictures of the steps.
+- **North Rhine-Westphalia's single traffic messages** (VIZ.NRW's
+  "Einzelmeldungen", dl-de/zero-2-0) are held as a second backup of the NRW police
+  and Land messages: a message both carry is shown once, crediting both, and the
+  backup answers alone while the main feed cannot be read.
+
+### Changed (server 2.5.2–2.5.3)
+
+- **A place and a coordinate can be given together** (2.5.2). The tools that take a
+  `place` used to refuse a call carrying both `place` and `lat`/`lon` ("they can
+  disagree"), which is what an assistant does when it knows where you are and hears
+  "in Fulda" as well. Now the coordinate answers and the place is its label, as
+  long as the two lie within the tool's own search reach of each other (a town's
+  extent added); further apart, the call is refused, saying how many kilometres
+  separate them and asking which one is meant. A Land or Kreis beside a coordinate
+  is judged by whether the point lies inside it. The place descriptions say so, and
+  a call with neither a place nor a coordinate is told to ask the person for a town,
+  a postcode or their position. `check_transit_disruption`'s `region` beside a
+  coordinate is still refused, because a region is an area rather than a point.
+- **A refusal names which rule refused it** (2.5.2). Besides `_meta.errorCode`, an
+  `invalid_input` about how the place, stop or station was given now carries
+  `_meta.errorReason`, one of
+  `place_missing`, `place_and_coords`, `half_coordinate`, `road_not_point` or
+  `two_ways_in`, so a client can tell "no place given" from "two ways in that may
+  disagree" without parsing the sentence. Asked live of 2.5.2, `find_charging_station`
+  with `place: "Weinsberg"` and a coordinate in Hamburg answered `place_and_coords`:
+  "The place "Weinsberg" is 492 km from lat/lon — further than the 15 km searched
+  here", and `lat` alone answered `half_coordinate`.
+- **The road tools read a motorway number the way the site search does** (2.5.2):
+  `"A07"` is the A7, like `"A 7"` and `"a7"`.
+- **The place bar is part of the page**, not a dialog (2.5.2): the search box, your
+  recent places as chips, and since 2.5.3 "Use my location" on a row of its own
+  above the search rather than beside the box, where it read as the search button.
+  "All of Germany" is one control, the choice in the page's headline; the second
+  "All of Germany" chip below it is gone (2.5.3).
+- **An exit page's map** frames the junction and its neighbours, at most 20 km
+  across, instead of the whole motorway.
+- **The files for AI tools**, [llms.txt](https://viafrei.de/llms.txt) and
+  [llms-full.txt](https://viafrei.de/llms-full.txt), describe every kind of page on
+  the site, with an English and a German example of each.
+- **A click between ViaFrei's own pages keeps its referrer**; other sites still get
+  none.
+
+### Fixed (server 2.5.1–2.5.2)
+
+- **Place and station pages stay available when one network floods them** (2.5.1):
+  those pages are limited per network, so a scraper rotating thousands of addresses
+  cannot slow them for everyone else. Search engines and every other page are not
+  affected.
+- **Going back restores the place you had chosen**, because the choice of position
+  is written in one place only.
+- **A station page shows its parking and charging first**, and its area cards wait
+  for the page's own deadline.
+
+### Bridge
+
+- **README and SOURCES.md describe server 2.5.3.** The README's "New" box covers the
+  server releases 2.5.1 to 2.5.3 (the site search, the interchange pages, the place
+  box, the redesigned cards, a place given with a coordinate), its site sections
+  were rewritten to match, and two answers captured from server 2.5.2 on 2026-11-02
+  were added, with the two refusals of a place given with a coordinate. SOURCES.md was compared again with `viafrei://attribution`: the same
+  262 rows, one status changed (VIZ.NRW's single NRW traffic messages, planned
+  until 2.5.1, held since 2.5.2). No code change.
+
 ## [2.5.1] - 2026-10-30
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
