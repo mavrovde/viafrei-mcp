@@ -5,7 +5,7 @@
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.5.7",
+    "version": "2.5.8",
     "title": "ViaFrei",
     "description": "The German Real-Time Mobility Context Platform for AI. ViaFrei gives AI assistants real-time awareness of Germany. Trains and buses, traffic and roadworks, fuel, charging, parking and weather. One MCP. No API key. No sign-up."
   },
@@ -26,19 +26,41 @@
   "tools": [
     {
       "name": "check_autobahn_traffic",
-      "description": "Per motorway (≤ 5): an Ampel verdict, then jams, closures, roadworks in force now, with place/delay/speed/map. Use when asked about a named motorway now: frei/clear (Ampel), Stau, a delay, how it looks, or a LIST of closures; name every motorway (Munich→Berlin: A9). Do NOT use for open/closed/gesperrt/passable, even now, a closure with no time word or a later one (tonight, weekend), or a town, no motorway — check_road_status; Baustellen dated or geplant — find_roadworks_ahead; a named city street: not held; fuel (find_cheapest_fuel), trains (get_train_departures). ~5 min old. Show attribution.",
+      "description": "Per motorway (≤ 5), or one Bundesland's motorways with land: an Ampel, then jams, closures, roadworks in force, with place/delay/speed/map. Use when asked about a named motorway now: frei/clear (Ampel), Stau, delay, how it looks, or a LIST of closures; name every motorway (Munich→Berlin: A9). Do NOT use for open/closed/gesperrt/passable, even now, a closure with no time word or a later one (tonight, weekend), or a town, no motorway — check_road_status; Baustellen dated or geplant — find_roadworks_ahead; a named city street: not held; trains (get_train_departures). ~5 min old. Show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "roads": {
+            "description": "Autobahn numbers, e.g. [\"A9\"] or [\"A8\", \"A99\", \"A9\"] (1–5 per call). Name every motorway on the route so the whole drive is briefed in one call — \"A9\", \"A 9\" and \"a9\" are the same road. Results are grouped per road, in the order you list them. Give roads or land, not both.",
             "minItems": 1,
             "maxItems": 5,
             "type": "array",
             "items": {
               "type": "string",
               "pattern": "^[Aa] ?\\d{1,3}$"
-            },
-            "description": "Autobahn numbers, e.g. [\"A9\"] or [\"A8\", \"A99\", \"A9\"] (1–5 per call). Name every motorway on the route so the whole drive is briefed in one call — \"A9\", \"A 9\" and \"a9\" are the same road. Results are grouped per road, in the order you list them."
+            }
+          },
+          "land": {
+            "description": "Optional, instead of roads: one Bundesland, and the answer is the motorways of the whole Land as its page shows them — counts, the longest jams, each motorway with something in force. Use it instead of roads and place when the question names a Land (\"Stau in Bayern?\", \"Autobahnen in NRW\"). For Berlin, Hamburg and Bremen only when the question names the Land; a city's traffic is check_road_status. Not with roads, place, lat/lon or radius_km.",
+            "type": "string",
+            "enum": [
+              "schleswig-holstein",
+              "hamburg",
+              "niedersachsen",
+              "bremen",
+              "nordrhein-westfalen",
+              "hessen",
+              "rheinland-pfalz",
+              "baden-wuerttemberg",
+              "bayern",
+              "saarland",
+              "berlin",
+              "brandenburg",
+              "mecklenburg-vorpommern",
+              "sachsen",
+              "sachsen-anhalt",
+              "thueringen"
+            ]
           },
           "place": {
             "description": "Optional: the town, junction or address the person is at or asks about (\"A1 bei Köln\", \"A3 near Frankfurt\"). Then each road's events within radius_km come first, nearest first, and the headline counts them with the road-wide total beside it. Omit it for the whole road. Given with lat+lon, lat+lon is searched around and the place is its label, unless the two lie further apart than radius_km.",
@@ -104,10 +126,7 @@
             "type": "string",
             "maxLength": 256
           }
-        },
-        "required": [
-          "roads"
-        ]
+        }
       },
       "annotations": {
         "title": "Autobahn traffic",
@@ -1347,7 +1366,7 @@
     },
     {
       "name": "get_train_departures",
-      "description": "Next trains from a German railway station: platform, delay, cancellations. Use when asked when a train, S-Bahn or ICE leaves a named station, or if a train or line from it is late; later today (\"heute Abend\") stays here. A line with no DEPARTURE station (\"ist die S1 pünktlich?\"; a destination, \"nach …\", is not one) — check_transit_disruption. Lists its U-Bahn and trams too. Do NOT use for one bus/tram/U-Bahn line, a non-railway stop, another day or over 2 h away — get_departures. Train type: categories (ICE/IC/RE/RB/S); no destination filter. ≤ 15 rows, ≤ 120 min. Show the attribution line.",
+      "description": "Next trains at a German railway station: platform, delay, cancellations. Use when asked when a train, S-Bahn or ICE leaves a named station, or if a train or line from it is late; later today (\"heute Abend\") stays here. A line with no DEPARTURE station (\"ist die S1 pünktlich?\"; a destination, \"nach …\", is not one) — check_transit_disruption. Lists U-Bahn and trams too. Do NOT use for one bus/tram/U-Bahn line, a non-railway stop, another day or over 2 h — get_departures. Types ICE/IC/RE/RB/S; no destination filter; whole station: describe_station. ≤ 15 rows, ≤ 120 min. Show the attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1515,7 +1534,7 @@
     },
     {
       "name": "check_station_facilities",
-      "description": "Whether the lifts and escalators of a railway station or Köln Stadtbahn stop work now: each one, its place, state and reason. Another tram, U-Bahn or bus stop (named with its city: \"Stuttgart Charlottenplatz\") gets its step-free survey where one exists. Use when asked about step-free access, broken lifts, wheelchair or pram: \"Funktioniert der Aufzug am Kölner Hbf?\", \"is the lift at Hamburg Hbf working?\". Do NOT use for departures, platforms or delays — call get_train_departures (trains) or get_departures (bus, tram, U-Bahn). At most 50, broken first. Results carry their attribution line.",
+      "description": "Whether the lifts and escalators of a railway station or Köln Stadtbahn stop work now: each with place, state, reason. Another tram, U-Bahn or bus stop (named with its city: \"Stuttgart Charlottenplatz\") gets its step-free survey where one exists. Use when asked about step-free access, broken lifts, wheelchair or pram: \"Funktioniert der Aufzug am Kölner Hbf?\", \"is the lift at Hamburg Hbf working?\". Do NOT use for departures, platforms or delays: get_train_departures (trains), get_departures (bus/tram/U-Bahn); whole station: describe_station. At most 50, broken first. Show the attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1563,6 +1582,52 @@
         "readOnlyHint": true,
         "idempotentHint": true,
         "openWorldHint": true,
+        "destructiveHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "describe_station",
+      "description": "One German railway station as its viafrei.de page shows it: address, step-free platforms now, lifts and escalators (out of service first), platforms, the next departures with live delays, service alerts, parking and charging. Use when asked about a station as a whole: \"Was gibt es am Bahnhof Köln Hbf?\", \"tell me about Leipzig Hbf\", \"is Hannover Hbf step-free today?\". Do NOT use for one lift (check_station_facilities), one train's delay or platform (get_train_departures) or a bus stop (get_departures). Show the attribution line.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "station": {
+            "description": "The railway station, as the person says it: \"Köln Hbf\", \"Leipzig Hauptbahnhof\", \"Munich Central\". If the name fits several stations, call anyway: the result lists them and asks which. Give either station OR eva_no, never both.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "eva_no": {
+            "description": "The station's EVA number (6–8 digits, e.g. 8000207 for Köln Hbf), when a previous result gave you one: exact, no name lookup.",
+            "type": "string",
+            "pattern": "^\\d{6,8}$"
+          },
+          "departures": {
+            "default": 10,
+            "description": "How many of the next departures to include (0–10, default 10, as many as the station page shows at least). 0 leaves the board out — for \"tell me about the station\" without trains.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "language": {
+            "default": "de",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "type": "string",
+            "enum": [
+              "de",
+              "en"
+            ]
+          }
+        }
+      },
+      "annotations": {
+        "title": "Describe a railway station",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
         "destructiveHint": false
       },
       "execution": {
