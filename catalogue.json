@@ -1,11 +1,11 @@
 {
   "$comment": "Captured from the PRODUCTION ViaFrei MCP server with initialize, tools/list, resources/list, resources/templates/list and prompts/list. No tool was invoked, so no data provider was contacted. ONE field is removed rather than stored: every tool's inputSchema carried a $schema URI naming the JSON Schema draft-07 dialect. It is dropped because storing it would put a host on this repository's allow-list that nothing else needs, and the dialect is a property of every draft-07 schema rather than a fact about this catalogue - API.md states it in words instead. Nothing else is altered: every tool, parameter, constraint, resource, template and prompt is as the server returned it. A SECOND substitution, for a different reason: two input schemas carried a 288-character regular expression validating an ISO-8601 date including leap years. Each is stored as patternLength rather than as its text, because such a regex spells its arithmetic as character classes of selected digits, and the leak sweep that guards this repository cannot tell a class of five digits from a five-digit internal value. The two ways to keep the text would both have been falsehoods - narrowing the sweep for every file, or an allow-list entry claiming a character class is a number this project publishes - so the text is not kept. Nothing about the constraint is hidden by this: API.md already summarised a pattern of over 60 characters by its length, which is what a reader gets either way, and the server hands anyone the full expression in tools/list.",
-  "capturedAt": "2026-11-02",
+  "capturedAt": "2026-11-03",
   "source": "https://mcp.viafrei.de/mcp",
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.5.3",
+    "version": "2.5.5",
     "title": "ViaFrei",
     "description": "The German Real-Time Mobility Context Platform for AI. ViaFrei gives AI assistants real-time awareness of Germany. Trains and buses, traffic and roadworks, fuel, charging, parking and weather. One MCP. No API key. No sign-up."
   },
@@ -535,7 +535,7 @@
     },
     {
       "name": "find_charging_station",
-      "description": "Returns EV charging sites near a place or coordinate: operator, plugs, max power, price per kWh where published, and how many points are free now where the operator publishes live status. Filters: plug, power (min/max kW), operator, free now. Use when an EV driver asks where to charge (\"Wo kann ich laden?\", \"CCS 150 kW near Leipzig\", \"ist gerade eine Säule frei?\"). Do NOT use for petrol or diesel (find_cheapest_fuel) or E-Kennzeichen rules (get_driving_rules). Radius ≤ 25 km, ≤ 10 sites; availability is missing for most operators and is then unknown, never free. Show the attribution line.",
+      "description": "Returns EV charging sites near a place or coordinate: operator, plugs, max power, price per kWh where published, and points free now where live status is published. Filters: plug, power (min/max kW), operator, free now, conditions (24/7, card, free of charge, public). Use when an EV driver asks where to charge (\"Wo kann ich laden?\", \"CCS 150 kW near Leipzig\", \"ist gerade eine Säule frei?\"). Do NOT use for petrol or diesel (find_cheapest_fuel) or E-Kennzeichen rules (get_driving_rules). Radius ≤ 25 km, ≤ 10 sites; missing availability is unknown, never free. Show the attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -599,6 +599,21 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 80
+          },
+          "conditions": {
+            "description": "Only sites with ONE point that meets every listed term: \"open247\" (open around the clock, \"rund um die Uhr\", \"24/7\"), \"card\" (pay by credit or debit card at the charger, \"mit Karte zahlen\"), \"free\" (free of charge, \"kostenlos\"), \"public\" (open to the public, not customers only). Example: [\"open247\"]. Only the Bundesnetzagentur charging register states these; a site that states nothing is left out and counted, never assumed. Omit unless the person asked for one.",
+            "minItems": 1,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "open247",
+                "card",
+                "free",
+                "public"
+              ]
+            }
           },
           "only_available": {
             "default": false,
@@ -684,6 +699,66 @@
       },
       "annotations": {
         "title": "Hydrogen stations nearby",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "find_speed_cameras",
+      "description": "Returns a town's published speed-enforcement locations (fixed and red-light cameras, section control, announced mobile checks, measuring sites) by kind and street, with the § 23 Abs. 1c StVO notice. Use when someone plans a trip and asks where speed cameras are (\"Blitzer Köln\"). Planning only — show the notice verbatim. If they say they are driving now: show the notice, offer the list for before the trip or a stop. Never read locations to a driver, never a live warning. Do NOT use for speed limits (get_driving_rules) or roadworks (check_road_status). Area ≤ 25 km. Shows the attribution line.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "description": "Where to look, as free text: a city (\"München\", \"Munich\"), a district or Kreis (\"Kreis Fulda\"), a Bundesland, a station or stop (\"Hamburg Hbf\"), a motorway junction (\"AK Neufahrn\"), or a street address with a house number (\"Bahnhofstraße 12, 36037 Fulda\"). A motorway number alone (\"A7\") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "lat": {
+            "description": "Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.",
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lon": {
+            "description": "Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use place.",
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "language": {
+            "default": "de",
+            "description": "Set this on every call to the language the person is writing in: \"en\" if they wrote English, \"de\" if they wrote German. Do not leave it out: it defaults to German (\"de\"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.",
+            "type": "string",
+            "enum": [
+              "de",
+              "en"
+            ]
+          },
+          "radius_km": {
+            "default": 5,
+            "description": "The area around place or lat+lon, in kilometres (1–25, default 5). An area, not an order: the list is never sorted by distance. Example: 5",
+            "type": "number",
+            "minimum": 1,
+            "maximum": 25
+          },
+          "limit": {
+            "default": 20,
+            "description": "How many locations to list (1–50, default 20); the answer says how many more the area holds.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        }
+      },
+      "annotations": {
+        "title": "Speed enforcement locations (planning)",
         "readOnlyHint": true,
         "idempotentHint": true,
         "openWorldHint": false,
@@ -957,7 +1032,7 @@
     },
     {
       "name": "find_nearby",
-      "description": "Overview of what is around a place or coordinate: nearby fuel stations, EV charging, parking, the nearest railway station and motorway junction, each with its distance. Use when someone asks \"what is around me\" or \"what is near <place>\" — a broad look, not one category in depth. Do NOT use for a fuel grade's price (find_cheapest_fuel), charger/connector status (find_charging_station), parking kind/occupancy (find_parking), a NAME lookup (find_place/find_poi/find_address), or a coordinate's address (describe_location). Radius ≤ 15 km, up to 3 per category. Shows each source's attribution.",
+      "description": "Overview of what is around a place or coordinate: fuel, EV charging, parking, nearest railway station and motorway junction, with distances; everyday places (shop, pharmacy, cash, food, hotel, workshop, police) only when named in categories. Use when asked \"what is around me\". Do NOT use for a fuel grade's price (find_cheapest_fuel), charger status (find_charging_station), parking occupancy (find_parking), a NAME lookup (find_place/find_poi/find_address), or a coordinate's address (describe_location). Radius ≤ 15 km, up to 3 per category (5 per need). Shows each source's attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -996,7 +1071,7 @@
             "maximum": 15
           },
           "categories": {
-            "description": "Which categories to include: \"fuel\", \"charging\", \"parking\", \"station\" (railway station), \"junction\" (motorway junction). Omit for all five. Pass a subset only when the person named one — otherwise the full picture is the point of this tool.",
+            "description": "Which categories to include: \"fuel\", \"charging\", \"parking\", \"station\" (railway station), \"junction\" (motorway junction) — omit for these five. Everyday places from OpenStreetMap only when named: \"groceries\", \"health\" (pharmacy, doctor, hospital), \"money\" (cash machine, bank, post office), \"food\", \"lodging\", \"garage\" (car repair, tyres, car wash), \"police\" (police stations), \"toilets\" (public toilets) (\"safety\", the former name for both, still answers as both); each uses its own radius (1–2 km, widened up to 5 km where fewer than three are near), not radius_km.",
             "minItems": 1,
             "type": "array",
             "items": {
@@ -1006,7 +1081,16 @@
                 "charging",
                 "parking",
                 "station",
-                "junction"
+                "junction",
+                "groceries",
+                "health",
+                "money",
+                "food",
+                "lodging",
+                "garage",
+                "police",
+                "toilets",
+                "safety"
               ]
             }
           }
@@ -1338,7 +1422,7 @@
     },
     {
       "name": "get_departures",
-      "description": "Scheduled departures from any German stop — bus, tram, U-Bahn, S-Bahn, train, ferry. Use when asked when a bus, tram, U-/Stadtbahn or ferry goes (\"welche Bahnen\" at a Hbf too), or for another DAY or a time over 2 h away: \"Wann fährt der nächste Bus ab Fulda Bahnhof?\" Do NOT use for a railway station's trains now or later today — get_train_departures. Plan times, with a live delay or cancellation per row where held; regional punctuality check_transit_disruption. No A-to-B journeys: say so, no call. Holds ≥ 48 h ahead, ≤ 3 days; further out, say so. 15 per call. Show the attribution line.",
+      "description": "Scheduled departures from any German stop — bus, tram, U-/S-Bahn, train, ferry — or the nearest stops around a place (\"Abfahrten in der Nähe\"). Use when asked when a bus, tram, U-/Stadtbahn or ferry goes (\"welche Bahnen\" at a Hbf too), or for another DAY or a time over 2 h away: \"Wann fährt der nächste Bus ab Fulda Bahnhof?\" Do NOT use for a rail station's trains today: get_train_departures. Plan times with live delay/cancellation where held; punctuality: check_transit_disruption. No A-to-B journeys: say so, no call. Holds ≥ 48 h ahead, ≤ 3 days. 15 per call. Show the attribution line.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1353,6 +1437,24 @@
             "type": "string",
             "minLength": 3,
             "maxLength": 64
+          },
+          "place": {
+            "description": "A place to list the nearest stops around, when the person names no one stop: a town, district or address (\"Bahnhofstraße 12, Fulda\", \"Köln-Ehrenfeld\"). Lists the nearest stops within 5 km with their next departures, as viafrei.de's place page does. Give exactly one of stop, stop_id, place or lat+lon.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "lat": {
+            "description": "Latitude in WGS 84, e.g. 50.551 — with lon, the nearest stops around a point the caller already holds. Use place for a named place.",
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lon": {
+            "description": "Longitude in WGS 84, e.g. 9.676. Use with lat.",
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
           },
           "when": {
             "description": "Start of the window as an ISO-8601 instant with an offset (\"2026-10-02T07:30:00+02:00\"). Leave it out for \"now\". Convert the person's words yourself — \"morgen früh\", \"tonight\" — and pass the instant; the answer is always rendered in Europe/Berlin.",

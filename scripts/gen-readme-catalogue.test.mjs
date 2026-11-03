@@ -79,6 +79,7 @@ ok('an abbreviation does not end the first sentence', firstSentence('Returns bik
 ok('e.g. and z. B. do not end it either', firstSentence('Returns A, e.g. B, z. B. C. Then D.') === 'Returns A, e.g. B, z. B. C.');
 ok('the English word no ends a sentence; the abbreviation No. does not', firstSentence('Answers yes or no. Use when X.') === 'Answers yes or no.' && firstSentence('Reads No. 5 first. Then Y.') === 'Reads No. 5 first.');
 ok('a word merely ending like an abbreviation still ends it', firstSentence('Returns the vca. Then D.') === 'Returns the vca.');
+ok('a German legal citation (§ 23 Abs. 1c StVO) does not end it', firstSentence('Returns X, with the § 23 Abs. 1c StVO notice. Use when Y.') === 'Returns X, with the § 23 Abs. 1c StVO notice.');
 ok('a pipe in a description cannot break the table', !renderSection({ ...real, tools: real.tools.map((t, i) => (i === 0 ? { ...t, description: 'A | B. C.' } : t)) }).includes('| A | B.'));
 ok('splice replaces only the section', spliceReadme(`top\n${BEGIN}\nold\n${END}\nbottom`, `${BEGIN}\nnew\n${END}`) === `top\n${BEGIN}\nnew\n${END}\nbottom`);
 
