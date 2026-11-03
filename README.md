@@ -343,8 +343,8 @@ Where no "free" count is shown the operator publishes no occupancy — it does n
 New in 2.5.4: the Stadtwerke Trier's car parks, Trier's first parking source. At 03:20
 the newest reading was from the afternoon before, so every count says "last reported"
 with its age instead of passing as current. The charger named beside each site is
-credited to ladenetz.de, one of smartlab's two charging publications that ended on
-2026-10-19: until 17 November 2026 a site no other feed carries still answers with its
+credited to ladenetz.de, one of smartlab's four charging publications that ended on
+2026-10-19: at server 2.5.5, until 17 November 2026, a site no other feed carries still answers with its
 place, plugs and power, dated, and never with a status ([SOURCES.md](SOURCES.md)).
 *Edited: two of the four sites shown, OpenStreetMap's own car-park list and its
 notice omitted, the source line shortened.*
