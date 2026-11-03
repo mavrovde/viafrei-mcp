@@ -115,6 +115,11 @@ answers from the running server 2.5.5 on 2026-11-03.
   19 live calls for a re-check).
 - **The README generator reads "Abs." as an abbreviation**, so the first sentence
   of `find_speed_cameras` is no longer cut at "§ 23 Abs."; a self-test case pins it.
+- **The leak sweep allows the public numbers the new answers carry**: a Leipzig
+  postcode, the Köln district code and three of its stop-id parts, and two Trier
+  car-park numbers. The postcode was already in older README answers in the
+  history, so the sixteen historical blobs that held it now declare one
+  recorded number each instead of two.
 
 ## [2.5.3] - 2026-11-02
 
