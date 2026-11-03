@@ -46,61 +46,69 @@ one search away from the box in the site's header.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in server 2.5.1 to 2.5.3: a search in every header, a page for every
-> Autobahnkreuz, a place box that knows the motorways, redesigned cards, and a place
-> that may come with a coordinate.** No tool, prompt or resource was added, removed
-> or renamed.
+> **New in server 2.5.4 and 2.5.5: published speed-camera locations for planning,
+> everyday needs near a place, departures around a place, charging by terms of use,
+> Trier's car parks, and bus and train cards that read like a departure board.** One
+> tool was added, `find_speed_cameras`; none was renamed or removed.
 >
-> - **A site search in every page's header.** One box at the top of every page of
->   viafrei.de (the fuel price page excepted), and a search page of its own,
->   [viafrei.de/en/search](https://viafrei.de/en/search). It finds motorways in any
->   spelling ("A 7", "BAB 7", "Autobahn 7", "A07"), places, stations, junctions,
->   areas, points of interest and the site's own pages, grouped by kind. "Kreuz" and
->   "Dreieck" ask for an interchange, and since 2.5.3 "AS" and "Anschlussstelle" for
->   an exit, so "AS Dresden-Neustadt" finds the exit.
-> - **One page for every Autobahnkreuz and Autobahndreieck**, named the way people
->   search for it: "Kreuz Weinsberg (Weinsberger Kreuz)" in German, "Weinsberg
->   interchange" in English, at one address for all the motorways it joins
->   ([more](#-station-and-exit-pages)).
-> - **The home's place box finds motorways and junctions** (2.5.3). "A4", "Autobahn
->   4" or "Dreieck Heumar" used to find no place; now the suggestions list the
->   motorway, then the motorways and junctions the query begins, then the places,
->   and a motorway or junction line opens its page.
-> - **The place bar is part of the page**: the search box, your recent places as
->   chips, "Use my location" on a row of its own, and one "All of Germany" choice in
->   the headline. Going back restores the place you had chosen.
-> - **Redesigned cards.** Fuel as a price table per station, charging as one block
->   per site (operator, power class, plugs, live status in the tool's own words),
->   every stop in full on the buses-and-trains card, the motorway pages' road
->   weather with each forecast slot's air temperature and rain or snow, and on every
->   card one short sources line with the full credits behind a fold.
-> - **A "Next" row** ends the first answer of every place, motorway, exit and
->   interchange page: the roads its cards name, and a link that opens the connect
->   page with a question about that page ready for your assistant. The
->   [connect page](https://viafrei.de/en/connect) now also says how ViaFrei works on
->   a phone.
-> - **A place and a coordinate together** (2.5.2). The tools that take a `place`
->   used to refuse a call that also carried `lat`/`lon`. Now the coordinate answers
->   and the place is its label while the two lie within the tool's search reach of
->   each other; further apart, the call is refused with the distance between them.
->   That refusal, and the other argument refusals about how a place, stop or station
->   was given, name their rule in `_meta.errorReason`.
-> - **The road tools read `"A07"` as the A7**, the same rule the site search uses
+> - **Published speed-enforcement locations, for planning only.** The new tool
+>   [`find_speed_cameras`](API.md#find_speed_cameras--speed-enforcement-locations-planning)
+>   and a card on the place pages list what four towns publish: the fixed and
+>   red-light cameras of Düsseldorf and of Karlsruhe (with Rheinstetten), Köln's
+>   table of measuring sites (a published measuring site, never called a fixed
+>   camera), and Aachen's log of this year's mobile checks, for the town as a whole.
+>   They are listed by kind and street, never by distance. Every answer, every
+>   empty answer and every refusal opens with the § 23 Abs. 1c StVO notice: a
+>   driver may not use such a function while driving, so the list is for before the
+>   trip or a stop, and `watch_situation` refuses to watch for speed cameras
 >   ([example](#-real-answers)).
-> - **North Rhine-Westphalia's single traffic messages** are held as a second backup
->   of its police and Land messages, credited beside them
->   ([SOURCES.md](SOURCES.md)).
+> - **Everyday needs near a place.** `find_nearby` answers, when they are named in
+>   `categories`, `groceries`, `health` (pharmacy, doctor, hospital), `money` (cash
+>   machine, bank, post office), `food`, `lodging`, `garage` (repair, tyres, car
+>   wash), `police` and `toilets`, up to five each, from OpenStreetMap, each in its
+>   own radius of 1 to 2 km, widened up to 5 km where fewer than three are near. The
+>   place pages show the same places as cards. Server 2.5.4 had one `safety` need for
+>   police and public toilets together; 2.5.5 made them two, `needs.police` and
+>   `needs.toilets`, and still answers `safety` as both.
+> - **Departures around a place.** `get_departures` takes a `place` or `lat`/`lon`
+>   as well as a stop, and then answers with the nearest stops within 5 km and
+>   their next departures in the coming hour, the same stops, departures and credits
+>   as the place page's card.
+> - **Charging by terms of use.** `find_charging_station` and the charging card
+>   filter for `conditions`: open around the clock, card payment at the charger,
+>   free of charge, open to the public. Only the Bundesnetzagentur's charging
+>   register states these terms, so a site that states nothing is left out and
+>   counted, never assumed to qualify.
+> - **Trier's car parks with their free spaces**: 29 car parks and lots of the
+>   Stadtwerke Trier, 28 of them placed, in `find_parking` and on the parking card,
+>   the first parking source for Trier ([SOURCES.md](SOURCES.md)).
+> - **The bus and train card, stop by stop.** Each stop is a small departure board
+>   (the countdown over the clock, the line as a badge, the destination, the
+>   platform, the state as a word and a symbol), its facilities folded underneath
+>   with what is out of service, and chips over the stops to show one kind of
+>   service. The station pages' board is drawn as a platform display, with
+>   departures and arrivals on two tabs, and its columns keep one line each on a
+>   phone (fixed in 2.5.5).
+> - **One card format everywhere.** The motorway pages' fuel, charging, weather
+>   warning and road-weather cards, and the station page's departure rows, are drawn
+>   like the place pages' cards, and the fuel card can be sorted by your grade.
+> - **Fixed:** a 22 kW AC charger (and a Type 2-only site up to 43.5 kW) is no
+>   longer labelled DC; one departure published twice under two spellings of its
+>   line or stop ("RE5" and "RE 5 (RRX)") is listed once, in every departure tool
+>   and on every board.
 >
-> **Before that:** server 2.5.0 fixed bugs only (a sectioned track such as Hamburg
-> Hbf's "7A-D" is read as that track, a departure keeps its own destination and
-> delay, translated maps and headers speak their own language). Server 2.4.4 to
-> 2.4.9 brought live times for buses, trams and the U-Bahn from DELFI's fourteen
-> regional SIRI ET feeds and VBN's Connect, the traffic strategies of Bayern and
-> Lower Saxony, a traffic light and a street map for every place, a place search that
-> finds a shop or a house number, station pages for every railway station, and
-> police and Land traffic messages translated on the site. The 2.4.0 to 2.4.3
-> releases brought the five-question `entry` on every road item, charging by operator
-> and power band, truck-parking occupancy behind the user's acceptance, and the
+> **Before that:** server 2.5.1 to 2.5.3 brought a search box in every page's header,
+> one page for every Autobahnkreuz and Autobahndreieck, a place box that finds
+> motorways and junctions, redesigned cards, and a place that may come with a
+> coordinate (refused with the distance and `_meta.errorReason` when the two are too
+> far apart). Server 2.5.0 fixed bugs only (a sectioned track such as Hamburg Hbf's
+> "7A-D" is read as that track). Server 2.4.4 to 2.4.9 brought live times for buses,
+> trams and the U-Bahn from DELFI's fourteen regional SIRI ET feeds and VBN's
+> Connect, the traffic strategies of Bayern and Lower Saxony, a traffic light and a
+> street map for every place, station pages for every railway station, and police and
+> Land traffic messages translated on the site. The 2.4.0 to 2.4.3 releases brought
+> the five-question `entry` on every road item, charging by operator and power band,
+> truck-parking occupancy behind the user's acceptance, and the
 > [station and exit pages](#-station-and-exit-pages); the [CHANGELOG](CHANGELOG.md)
 > has the whole list. Every source is listed, with what it feeds and what we hold
 > back, in [SOURCES.md](SOURCES.md).
@@ -115,16 +123,17 @@ comes back in the language you asked in.
 
 | when you're… | ask |
 |---|---|
-| 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *Does an ICE leave Tübingen Hbf in the next hour?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* · *Which U-Bahn and trams leave Berlin Alexanderplatz in the next minutes?* · *Wann fährt die nächste Stadtbahn ab Hannover Kröpcke?* |
+| 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *What leaves from the stops near Köln-Ehrenfeld?* · *Does an ICE leave Tübingen Hbf in the next hour?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* · *Which U-Bahn and trams leave Berlin Alexanderplatz in the next minutes?* · *Wann fährt die nächste Stadtbahn ab Hannover Kröpcke?* |
 | 🚗 **about to drive** | *Is the A7 clear right now?* · *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Vollsperrungen sind auf der A7 in den nächsten sieben Tagen geplant?* · *Welche Baustellen gibt es in München?* · *How is the traffic on the A3 around Köln?* · *Ist die Fehmarnsundbrücke wegen Wind gesperrt?* · *Which detours are signed near Hamburg Hbf?* |
+| 🗺️ **planning a trip** | *Ich plane eine Fahrt nach Düsseldorf: Wo stehen dort feste Blitzer?* · *Which speed-camera locations does Karlsruhe publish?* — for planning only: the answer opens with the § 23 Abs. 1c StVO notice, and a driver may not use it while driving |
 | 🚚 **driving a lorry** | *Darf der Lang-Lkw auf die A7?* · *Which height limits are there for lorries in Bremen?* · *Gibt es Lkw-Durchfahrtsverbote bei Bielefeld?* · *Wann ist der nächste Lkw-Fahrverbotstag?* · *Gilt am 31. Oktober in Niedersachsen Lkw-Fahrverbot?* · *Welche Durchfahrtshöhen gibt es am Kölner Dom?* · *Where are the lorry bans in Dresden?* |
 | 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Is traffic backed up on the Cologne motorway ring — A1, A3 or A4?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
-| ⚡ **driving electric or on hydrogen** | *Where can I charge with Type 2 near Leipzig?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* · *Is there an EnBW charger with 150 kW or more in Stuttgart?* · *Where can I fill up a hydrogen lorry near Hamburg?* |
-| 🅿️ **parking** | *Is the P+R at Fröttmaning usually full in the morning?* · *Wie viele Plätze sind in den Kasseler Parkhäusern frei?* · *Which car parks in Konstanz still have spaces?* · *How full are the lorry parks along the A9?* · *Is there a free disabled parking bay near Dortmund's Hansastraße?* · *Find a rest area with lorry parking on the A9* · *Rastplatz mit Dusche an der A7?* · *Where can I park on the street near Hamburg Rathaus?* |
+| ⚡ **driving electric or on hydrogen** | *Where can I charge with Type 2 near Leipzig?* · *Which fast chargers near Leipzig are open around the clock and take a card?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* · *Is there an EnBW charger with 150 kW or more in Stuttgart?* · *Where can I fill up a hydrogen lorry near Hamburg?* |
+| 🅿️ **parking** | *Is the P+R at Fröttmaning usually full in the morning?* · *Wie viele Plätze sind in den Kasseler Parkhäusern frei?* · *Which car parks in Trier have spaces?* · *Which car parks in Konstanz still have spaces?* · *How full are the lorry parks along the A9?* · *Is there a free disabled parking bay near Dortmund's Hansastraße?* · *Find a rest area with lorry parking on the A9* · *Rastplatz mit Dusche an der A7?* · *Where can I park on the street near Hamburg Rathaus?* |
 | ⛽ **filling up** | *Where is diesel cheapest near Kassel?* · *Welche Tankstellen gibt es in Weimar?* |
 | ♿ **travelling step-free** | *Funktioniert der Aufzug am Bahnhof Köln Messe/Deutz?* · *Is Tübingen Hbf step-free?* · *Ist die Bushaltestelle Ludgeriplatz in Münster barrierefrei?* · *Which platforms at Leipzig Hbf are step-free?* |
 | 🌦️ **watching the weather** | *Gibt es eine Unwetterwarnung für Freiburg?* · *Is the road near Garmisch going to be icy this morning?* |
-| 📍 **looking for a place** | *What is the address of the Elbphilharmonie in Hamburg?* · *Welche Apotheken gibt es in Fulda?* · *My satnav shows 50.1109, 8.6821 — what address is that?* |
+| 📍 **looking for a place** | *What is the address of the Elbphilharmonie in Hamburg?* · *Welche Apotheken gibt es in Fulda?* · *Where is the nearest police station and public toilet in Fulda?* · *My satnav shows 50.1109, 8.6821 — what address is that?* |
 | 🇩🇪 **new to German roads** | *Do I need an emission sticker for Stuttgart?* · *Is Marienplatz in Munich inside the low-emission zone?* · *Liegt Essen Hbf in der Umweltzone?* · *Is there a speed limit on the Autobahn?* |
 | ⏳ **waiting for news** | *Tell me as soon as the closure on the A7 is lifted.* · *Tell me when a jam builds up on the A7.* · *Sag mir Bescheid, wenn in Köln ein Viertel oder mehr der Bus- und Bahnfahrten verspätet ist.* · *Warn me when a DWD severe-weather warning comes into force for Cologne.* |
 
@@ -171,7 +180,11 @@ not all of Germany. A charger's live status counts as current only while it is
 younger than its feed's own window; older, it is shown with its time as possibly
 out of date. Hydrogen stations are H2 Mobility's published list: pumps and
 opening hours, but no availability, price or working state, so check before you
-drive. Places and addresses come from OpenStreetMap, so what is not
+drive. Speed-camera locations are what four towns publish (Düsseldorf, Karlsruhe
+with Rheinstetten, Köln and Aachen), for planning only; a town not among them
+answers that nothing is published there, which never means that nobody checks.
+Places and addresses, and the everyday needs near a place (shops, pharmacies,
+police, toilets and the rest), come from OpenStreetMap, so what is not
 mapped there cannot be found, and ratings are not part of it. A **watch** lives in
 the conversation that opened it: the server keeps every change there, and your
 assistant shows it when you ask, or on its own if your client supports MCP
@@ -183,8 +196,10 @@ roads and around a place it watches closures and restrictions only, and says so.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first three were asked of **server 2.5.2 on 2026-11-02 between
-03:56 and 04:10 Berlin time**, in the night before 2.5.3 went live. The next was
+are not mock-ups. The first five were asked of **server 2.5.5 on 2026-11-03 at 03:20
+Berlin time**, in the night after it went live. The next three were asked of server
+2.5.2 on 2026-11-02 between 03:56 and 04:10 Berlin time, in the night before 2.5.3
+went live. The next was
 asked of server 2.5.0 on 2026-10-29 at 17:48 Berlin time, the day it went live. The
 next was asked of server 2.4.9 that
 morning at 06:55. The next five were asked of server
@@ -210,6 +225,132 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🗺️ "I'm planning a drive to Düsseldorf: where are the fixed speed cameras?"</b> — <code>find_speed_cameras</code> with <code>place: "Düsseldorf"</code>, <code>limit: 6</code>, <code>language: "en"</code></summary>
+
+```text
+Note on use (§ 23 Abs. 1c StVO): a person driving a vehicle may not, while driving, operate or use any technical device or app function that shows or disrupts traffic enforcement. This also applies to a passenger's smartphone if the driver benefits from it (OLG Karlsruhe). A violation costs €75 and one point in Flensburg. This information is meant only for planning before setting off or during a stop. The locations come from official and open sources and may be incomplete or out of date; mobile checks are possible at any time and anywhere. Always keep to the speed limit in force. Not legal advice.
+The notice in its original wording (German):
+Hinweis zur Nutzung (§ 23 Abs. 1c StVO): Wer ein Fahrzeug führt, darf während der Fahrt kein technisches Gerät und keine App-Funktion betreiben oder nutzen, die Verkehrsüberwachungsmaßnahmen anzeigt oder stört. …
+
+Speed enforcement — published locations for Düsseldorf (radius 5 km), by kind and street:
+Fixed cameras:
+- Auf´m Hennekamp, Düsseldorf — speed · 50 km/h
+- Brehmplatz, Düsseldorf — red light
+- Dreherstraße 225, Düsseldorf — speed · 50 km/h
+- Kö-Bogen Tunnel, Düsseldorf — speed · 50 km/h
+- Mörsenbroicher Ei, Düsseldorf — speed and red light · 50 km/h
+- Rheinufertunnel Nord, Düsseldorf — speed · 60 km/h
+… and 6 more locations in this area.
+Stand Stationäre Verkehrsüberwachung Düsseldorf: read 2026-11-02, data as of 2024-03-13
+
+Source: Stationäre Verkehrsüberwachung Düsseldorf: Landeshauptstadt Düsseldorf – Ordnungsamt, Datenlizenz Deutschland – Zero – Version 2.0 (…) · Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0 (…) · As of 2026-11-02 18:45
+```
+New in 2.5.4. The notice comes first, in the answer's language with the German
+original beside it, and again as `_meta.conditionNote`, which an assistant is asked to
+show verbatim; the structured result says `"planningOnly": true`. The list is in the
+order of kind and street, never of distance, and says when the source was last read
+and the date the publisher gives its data. Düsseldorf's file is the city's own list of
+its stationary speed and red-light enforcement; Köln's tables are measuring sites and
+are said as such, and Aachen's is a log of this year's mobile checks for the town as a
+whole.
+*Edited: the German notice cut after its first sentence, and the URIs omitted.*
+</details>
+
+<details>
+<summary><b>⚡ "Which fast chargers near Leipzig are open around the clock and take a card?"</b> — <code>find_charging_station</code> with <code>place: "Leipzig"</code>, <code>min_power_kw: 150</code>, <code>conditions: ["open247", "card"]</code>, <code>limit: 3</code>, <code>language: "en"</code></summary>
+
+```text
+Charging around Leipzig (within 10 km, ≥ 150 kW, open 24/7, card at the charger), nearest first, sites wholly out of order last:
+1. Friedrich-Ebert-Str. 51, 04109 Leipzig (Stadtwerke Leipzig GmbH) — 1.1 km, CCS2, up to 170 kW, no status data, per charging point register
+2. Hauptmannstr. 6, 04109 Leipzig (Stadtwerke Leipzig GmbH) — 1.3 km, CCS2, up to 150 kW, no status data, per charging point register
+3. Am Sportforum 2, 04105 Leipzig (Stadtwerke Leipzig GmbH) — 1.8 km, CCS2, up to 180 kW, no status data, per charging point register
+Only a few operators publish live occupancy; "no status data" means unknown, not free.
+Price per kWh: not published for any of these sites (in the data we hold).
+Charging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness.
+Only the Bundesnetzagentur charging register states these terms; sites that state nothing are left out, not ruled out.
+
+Source: Ladesäulenregister: Bundesnetzagentur.de, CC BY 4.0, bearbeitet (…) · Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0 (…) · As of 03:20
+```
+New in 2.5.4: the `conditions` argument. Of 657 sites within 10 km, 14 met both terms
+and the power (`"sitesMatching": 14`), and the three nearest are listed. Every one of
+them comes from the Bundesnetzagentur's register, because no other source states
+these terms; a site that states nothing is not offered as matching.
+*Not edited, except the URIs.*
+</details>
+
+<details>
+<summary><b>🚓 "Where is the nearest police station and public toilet in Fulda?"</b> — <code>find_nearby</code> with <code>place: "Fulda"</code>, <code>categories: ["police", "toilets"]</code>, <code>language: "en"</code></summary>
+
+```text
+Near Fulda (within 5 km):
+- police (within 2.0 km): Stadtwache Fulda - Polizei, police (0.2 km); Stadtwache Fulda - Ordnungspolizei, police (0.2 km); Bundespolizeirevier Fulda, police (0.6 km); Polizeistation Fulda, police (1.8 km); Polizeipräsidium Osthessen, police (1.8 km)
+- public toilets (within 2.0 km): öffentliches BWC, toilets (0.1 km); öffentliches BWC, toilets (0.2 km); Rail & Fresh, toilets (0.6 km); Öffentliche Toilette, toilets (0.7 km)
+
+Source: OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 (…) · Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0 (…)
+```
+New in 2.5.4, split in 2.5.5: police and public toilets are two needs, each in its own
+radius (2 km here, wider in a village, and the answer says so), up to five each. The
+structured result carries them as `needs.police` and `needs.toilets`. The call asked
+for a third need, `health`, whose doctors' practices are left out here.
+*Edited: the `health` line omitted, the URIs omitted.*
+</details>
+
+<details>
+<summary><b>🚉 "What leaves from the stops near Köln-Ehrenfeld?"</b> — <code>get_departures</code> with <code>place: "Köln-Ehrenfeld"</code>, <code>language: "en"</code></summary>
+
+```text
+The nearest stops around Köln-Ehrenfeld (within 5 km) with their next departures until 04:20:
+Köln Ehrenfeld Bf Ehrenfeld (11 m) — stop_id de:05315:14201:2:21:
+  03:34 S19 → Hennef Bf, platform 1, +6 min (expected 03:40)
+  03:46 S19 → Düren, Bf, platform 2, on time
+  03:54 S19 → Troisdorf Bf, platform 1, no forecast
+Köln Ehrenfeld Venloer Str./Gürtel (0.1 km) — stop_id de:05315:14211:1:11:
+  no departure until 04:20
+…
+Köln Müngersdorf Technologiepark S-Bahn (2.1 km) — stop_id de:05315:13501:7:71:
+  03:18 S19 → Kerpen Horrem Bf, platform 2, +3 min (expected 03:21)
+  03:31 S19 → Hennef Bf, platform 1, +7 min (expected 03:38)
+…
+More departures of one stop: get_departures with its stop_id.
+
+Source: Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet (…) · Echtzeitdaten: DELFI e.V. via Mobilithek, Datensätze „DELFI-Realtime SIRI ET“ (Bahndaten und 14 Regionen), CC BY-SA, bearbeitet (…) · …
+The realtime figures from DELFI GTFS-RT and DELFI SIRI ET are licensed CC BY-SA (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (…): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution.
+```
+New in 2.5.4: a `place` (or `lat`/`lon`) instead of a stop. The answer is the place
+page's card in words: the nearest stops of each kind, three departures for the nearest
+stop that has any and two for each other, in the next hour, each with the `stop_id`
+to ask about one stop in full. It was asked at 03:20 Berlin time, so most of the city's
+stops had nothing before 04:20. Asked this way, `limit`, which applies to one named
+stop, is refused with a sentence saying so.
+*Edited: three of the eight stops shown, the line naming what "timetable" means and
+the URIs omitted.*
+</details>
+
+<details>
+<summary><b>🅿️ "Which car parks in Trier have spaces?"</b> — <code>find_parking</code> with <code>place: "Trier"</code>, <code>limit: 4</code>, <code>language: "en"</code></summary>
+
+```text
+Parking around Trier (within 10 km), nearest first:
+1. DE - SWT TR PlazaCarree (8471) — Car park (Parkhaus), 0.2 km, 205 spaces, last reported 112 free, 45.37 % occupied, operator's status: spaces available (as of 2026-11-02 12:58, 14 h 22 min ago), Facilities: not reported
+   Nearby per OpenStreetMap (straight line): restaurant 10 m · snack bar 100 m · café 110 m · shop 120 m
+   Nearby (straight line): EV charger 22.1 kW, 140 m (Ladenetz)
+…
+3. DE - SWT TR Hauptmarkt (1257) — Car park (Parkhaus), 0.2 km, 328 spaces, last reported 109 free, 66.77 % occupied, operator's status: spaces available (as of 2026-11-02 12:58, 14 h 22 min ago), Facilities: not reported
+…
+Source: Parkhäuser und Parkplätze Trier: SWT Anstalt des öffentlichen Rechts der Stadt Trier via Mobilithek, Datensatz „Parkdatenerfassung Stadt Trier statisch (SWT)“, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert (…) · Parkhaus-Belegung Trier: SWT Anstalt des öffentlichen Rechts der Stadt Trier … · …
+Where no "free" count is shown the operator publishes no occupancy — it does not mean the site is full.
+```
+New in 2.5.4: the Stadtwerke Trier's car parks, Trier's first parking source. At 03:20
+the newest reading was from the afternoon before, so every count says "last reported"
+with its age instead of passing as current. The charger named beside each site is
+credited to ladenetz.de, one of smartlab's two charging publications that ended on
+2026-10-19: until 17 November 2026 a site no other feed carries still answers with its
+place, plugs and power, dated, and never with a status ([SOURCES.md](SOURCES.md)).
+*Edited: two of the four sites shown, OpenStreetMap's own car-park list and its
+notice omitted, the source line shortened.*
+</details>
+
+<details>
 <summary><b>🚦 "Is the A07 clear right now?"</b> — <code>check_autobahn_traffic</code> with <code>roads: ["A07"]</code>, <code>limit: 3</code>, <code>language: "en"</code></summary>
 
 ```text
@@ -1375,20 +1516,32 @@ rules, so a card and an assistant asked about the same place say the same thing:
   is unknown and never free. Since 2.5.2 the card shows one block per site under a
   summary line: the operator, the power with its class (AC up to 22 kW, DC above,
   HPC from 150 kW, the `powerClass` of `find_charging_station`), the plugs and the
-  live status in the tool's own words;
+  live status in the tool's own words. Since 2.5.4 it filters by terms of use (open
+  24/7, card at the charger, free of charge, public), as the tool's `conditions` do;
 - **fuel**: since 2.5.2 a small price table per station, the cheapest price marked
-  in its cell and the brand as a text badge;
+  in its cell and the brand as a text badge, and since 2.5.4 one button per grade
+  sorts it by yours (kept on your device only after you click);
 - **transit**: Berlin and Brandenburg take their punctuality from VBB's own live
   feed, a railway station's realtime calls are matched through the national stop
   directory, and shared bikes within 1 km are listed with their stations. Since
-  2.5.2 every stop is listed in full, up to eight, the railway station first;
+  2.5.2 every stop is listed in full, up to eight, the railway station first, and
+  since 2.5.4 each stop is a small departure board (the countdown over the clock,
+  the line as a badge, the destination, the platform, the state as a word and a
+  symbol) with its facilities folded underneath and chips that show one kind of
+  service; `get_departures` with a `place` answers with the same stops and rows;
 - **roads**: the Land traffic feeds and roadworks registers answer a place as they
   do in `check_road_status`, every row says where it is, a city's own street
   messages are not crowded out by the motorways, Hamburg places name up to two
   traffic cameras (as links, never an image), and every source behind a row or a
   count is credited;
 - **parking**: Trucklounge's lorry parks and the P+R NRW sites appear in blocks of
-  their own, each with its licence's own sentence;
+  their own, each with its licence's own sentence, and since 2.5.4 Trier's car parks
+  carry their free spaces;
+- **everyday needs** (since 2.5.4): groceries, health, money, food, lodging, garage,
+  and since 2.5.5 police and public toilets as two cards, each in its own radius,
+  the same places `find_nearby` lists when the need is named;
+- **speed cameras** (since 2.5.4): the published locations of Düsseldorf,
+  Karlsruhe, Köln and Aachen, for planning, under the § 23 Abs. 1c StVO notice;
 - **the place page** adds the low-emission-zone sentence `get_driving_rules`
   states for that Gemeinde, and lines suggesting what to ask your assistant to
   watch.
@@ -1574,7 +1727,14 @@ corpus crawlers off the fuel page, names them one by one, and leaves the motorwa
 pages open to every crawler, the place pages since 2.4.0, and the station and exit
 pages from their first release. No fuel price is in
 any page's HTML: a reader's browser asks for the prices when the card comes into
-view, and that address is closed to every crawler.
+view, and that address is closed to every crawler. Since 2.5.4 a search engine's
+reads wait on a database pool of their own, so a crawl never slows a visitor's
+page, and no crawler is refused.
+
+**One card format** (2.5.4): a motorway page's fuel, charging, weather-warning and
+road-weather cards are drawn like the place pages' cards, with the same short
+sources line and the full credits behind a fold, so the same thing looks the same
+on a place, a motorway and a station page.
 
 ## 🚉 Station and exit pages
 
@@ -1591,7 +1751,11 @@ A station page shows, from the same data the tools read:
   destination, time, disruptions only and step-free only, which since 2.4.6 apply as
   you choose them. Only a real track number stands under "platform", a train that
   splits is one row, and every station a row names links to its page. The live part
-  refreshes in place;
+  refreshes in place. Since 2.5.4 the board is drawn as a platform display (white
+  on navy, delays in amber, the track in a white square), with departures and
+  arrivals on two tabs that, without JavaScript, are two tables under their own
+  headings; since 2.5.5 its columns keep one line each on a phone. One departure
+  published twice under two spellings ("RE5" and "RE 5 (RRX)") is one row;
 - **at an interchange, its U-Bahn, Stadtbahn and trams**, and every line that calls
   there;
 - **the lifts and escalators**, every one of them, each joined to the platforms it
@@ -1599,8 +1763,9 @@ A station page shows, from the same data the tools read:
 - **the service alerts** that concern it;
 - **parking and charging at its door**, with the same filters as the charging card;
 - **around the station**: since 2.4.5 the place cards of the station's own
-  position and the place traffic light with its map, and pharmacies, food, cash
-  machines and hotels nearby, the motorways and the other stations near it.
+  position and the place traffic light with its map, the everyday needs nearby
+  (since 2.5.5 police and public toilets as two cards), the motorways and the
+  other stations near it.
 
 Every block says how fresh it is, with the same sign as the motorway panels. A part
 that is slow to answer loads in place, and the page is never an error because of
@@ -1753,7 +1918,7 @@ Restart the client and ask one of the questions above.
 
 <!-- catalogue:begin — generated by scripts/gen-readme-catalogue.mjs from catalogue.json; do not edit by hand -->
 
-**22 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.5.3, snapshot of 2026-11-02. Each line is the server's own words; the full parameters are in [API.md](API.md).
+**23 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.5.5, snapshot of 2026-11-03. Each line is the server's own words; the full parameters are in [API.md](API.md).
 
 #### 🚗 On the road
 
@@ -1763,13 +1928,14 @@ Restart the client and ask one of the questions above.
 | [`check_road_status`](API.md#check_road_status--road-status-and-closures) — Road status and closures | If a motorway/B/Land road (NI, NW, HE, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/soon; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). |
 | [`find_roadworks_ahead`](API.md#find_roadworks_ahead--planned-roadworks) — Planned roadworks | Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, NW, HE, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: where, impact, dates, map links. |
 | [`find_parking`](API.md#find_parking--parking-nearby) — Parking nearby | Parking near a place, a coordinate or along one motorway: lorry parks, car parks, P+R and disabled-badge bays, with total spaces, stated amenities (WC, shower) and published free spaces. |
+| [`find_speed_cameras`](API.md#find_speed_cameras--speed-enforcement-locations-planning) — Speed enforcement locations (planning) | Returns a town's published speed-enforcement locations (fixed and red-light cameras, section control, announced mobile checks, measuring sites) by kind and street, with the § 23 Abs. 1c StVO notice. |
 
 #### 🚆 Public transport
 
 | tool | what it answers |
 |---|---|
 | [`get_train_departures`](API.md#get_train_departures--train-departures) — Train departures | Next trains from a German railway station: platform, delay, cancellations. |
-| [`get_departures`](API.md#get_departures--scheduled-departures-bus-tram-train) — Scheduled departures (bus, tram, train) | Scheduled departures from any German stop — bus, tram, U-Bahn, S-Bahn, train, ferry. |
+| [`get_departures`](API.md#get_departures--scheduled-departures-bus-tram-train) — Scheduled departures (bus, tram, train) | Scheduled departures from any German stop — bus, tram, U-/S-Bahn, train, ferry — or the nearest stops around a place ("Abfahrten in der Nähe"). |
 | [`check_transit_disruption`](API.md#check_transit_disruption--public-transport-disruption-in-a-region) — Public-transport disruption in a region | How punctual public transport is now in one German region: the share of trips ever >5 min late, trips skipping a stop, trips cancelled, the trend and the service alerts in force there (diversions, closed stops). |
 | [`check_station_facilities`](API.md#check_station_facilities--station-lifts-and-escalators) — Station lifts and escalators | Whether the lifts and escalators of a railway station or Köln Stadtbahn stop work now: each one, its place, state and reason. |
 
@@ -1777,7 +1943,7 @@ Restart the client and ask one of the questions above.
 
 | tool | what it answers |
 |---|---|
-| [`find_charging_station`](API.md#find_charging_station--ev-charging-nearby) — EV charging nearby | Returns EV charging sites near a place or coordinate: operator, plugs, max power, price per kWh where published, and how many points are free now where the operator publishes live status. |
+| [`find_charging_station`](API.md#find_charging_station--ev-charging-nearby) — EV charging nearby | Returns EV charging sites near a place or coordinate: operator, plugs, max power, price per kWh where published, and points free now where live status is published. |
 | [`find_cheapest_fuel`](API.md#find_cheapest_fuel--cheapest-fuel-nearby) — Cheapest fuel nearby | Returns the cheapest stations for one fuel grade near a place or coordinate: price per litre, brand, address, distance, open state. |
 | [`find_fuel_station`](API.md#find_fuel_station--find-a-filling-station) — Find a filling station | Finds filling stations around a place or coordinate under any combination of filters — grade, brand, name, open now, open at a time you name, open 24 h — sorted by distance, price or name. |
 | [`find_hydrogen_station`](API.md#find_hydrogen_station--hydrogen-stations-nearby) — Hydrogen stations nearby | Returns hydrogen (H2) filling stations near a place or coordinate, nearest first, with operator, address, pumps (700 bar car, 350 bar truck/bus), opening hours where published and the age of the record. |
@@ -1790,7 +1956,7 @@ Restart the client and ask one of the questions above.
 | [`find_poi`](API.md#find_poi--find-a-named-place) — Find a named place | Finds a business or landmark by name or kind — company, shop, clinic, hotel, hostel — with address, category and coordinate. |
 | [`find_address`](API.md#find_address--look-up-a-street-address) — Look up a street address | Looks up a street address: its coordinate, and the named OpenStreetMap objects at it (company, shop, office) or that none are. |
 | [`describe_location`](API.md#describe_location--describe-a-coordinate) — Describe a coordinate | Turns a coordinate into words: the nearest address, settlement and motorway junction with their distances, and the Gemeinde, Kreis and Land the point lies in; also any low-emission zone. |
-| [`find_nearby`](API.md#find_nearby--what-is-nearby) — What is nearby | Overview of what is around a place or coordinate: nearby fuel stations, EV charging, parking, the nearest railway station and motorway junction, each with its distance. |
+| [`find_nearby`](API.md#find_nearby--what-is-nearby) — What is nearby | Overview of what is around a place or coordinate: fuel, EV charging, parking, nearest railway station and motorway junction, with distances; everyday places (shop, pharmacy, cash, food, hotel, workshop, police) only when named in categories. |
 
 #### 🚲 Sharing
 
@@ -1901,7 +2067,7 @@ curl -s https://mcp.viafrei.de/mcp \
 - **Results are written to be read aloud.** A tool answers in sentences an
   assistant can pass on, says what it does not know ("no status data means
   unknown, not free"), and ends with the source line.
-- **Annotated honestly.** Twenty of the twenty-two tools are read-only and
+- **Annotated honestly.** Twenty-one of the twenty-three tools are read-only and
   idempotent (`readOnlyHint`, `idempotentHint`), so a client can call them
   without a confirmation prompt. The two watch tools are not, because opening
   or stopping a watch changes what the server will tell you later, and their

@@ -19,8 +19,102 @@ reference was re-captured from the running server, and the probe reported the su
 - tools: find_nearby differs between the server and the snapshot
 - tools: get_departures differs between the server and the snapshot
 
-**A person must describe the change above before this merges.** A release note that
-lists a tool name without saying what it does misleads the reader it exists for.
+**Speed-camera locations for planning, everyday needs and departures near a place.**
+The server moved from 2.5.3 to 2.5.5. One tool was added, `find_speed_cameras`; none was renamed or removed. `find_charging_station`
+gained an argument (`conditions`), `get_departures` gained three (`place`, `lat`,
+`lon`), and `find_nearby`'s `categories` gained nine values (eight needs, and
+`safety`, the 2.5.4 name for two of them); their descriptions say so. No prompt or
+resource was added, removed or renamed. The examples below were checked against
+answers from the running server 2.5.5 on 2026-11-03.
+
+### Added (server 2.5.4–2.5.5)
+
+- **`find_speed_cameras` — published speed-enforcement locations, for planning
+  only** (2.5.4). It lists what four towns publish: the fixed and red-light cameras
+  of Düsseldorf and of Karlsruhe (with Rheinstetten), Köln's tables of measuring
+  sites (never called fixed cameras, because the publisher does not say whether a
+  camera stands there) and Aachen's log of this year's mobile checks, for the town as
+  a whole. The list is ordered by kind and street, never by distance, and says when
+  each source was last read and the date its publisher gives. Every answer, every
+  empty answer and every refusal opens with the § 23 Abs. 1c StVO notice, in the
+  answer's language with the German original beside it and as
+  `_meta.conditionNote`: a driver may not use such a function while driving. The
+  tool's description tells the assistant to offer the list for before the trip or a
+  stop when the person says they are driving, and never to read locations to a
+  driver; `watch_situation` refuses to watch for speed cameras. The place pages of
+  viafrei.de carry the same list as a card, under the same notice.
+- **Everyday needs near a place** (2.5.4, split in 2.5.5). `find_nearby` answers
+  `groceries`, `health`, `money`, `food`, `lodging`, `garage`, `police` and
+  `toilets` when they are named in `categories`, up to five each from OpenStreetMap,
+  each in its own radius of 1 to 2 km, widened up to 5 km where fewer than three are
+  near; the five categories it had before are still the default. The place pages show
+  the same places as cards.
+- **`get_departures` around a place or a position** (2.5.4). Given `place` or
+  `lat`/`lon` instead of a stop, it answers with the nearest stops within 5 km and
+  their next departures in the coming hour — three for the nearest stop that has
+  any, two for each other — each stop with its `stop_id` for a follow-up. The stops,
+  the departures and the credits are those of the place page's card. `limit`, which
+  applies to one named stop, is refused in that mode with a sentence saying so.
+- **Charging by terms of use** (2.5.4). `find_charging_station` takes `conditions`
+  (`open247`, `card`, `free`, `public`), and the charging card filters the same way.
+  Only the Bundesnetzagentur's charging register states these terms, so a site that
+  states nothing is left out and counted, never assumed to qualify.
+- **Trier's car parks with their free spaces** (2.5.4): the 29 car parks and lots of
+  the Stadtwerke Trier, 28 of them placed, in `find_parking` and on the parking
+  card, Trier's first parking source.
+- **On viafrei.de** (2.5.4): the bus and train card lists each stop as a small
+  departure board (the countdown over the clock, the line as a badge, the
+  destination, the platform, the state as a word and a symbol) with its facilities
+  folded underneath and chips that show one kind of service; the station board is
+  drawn as a platform display, with departures and arrivals on two tabs; the fuel
+  card sorts by your grade, the choice kept on your device only after you click.
+
+### Changed (server 2.5.4–2.5.5)
+
+- **Police and public toilets are two needs** (2.5.5). Server 2.5.4 answered them
+  together as `safety`; 2.5.5 answers `police` and `toilets`, as two cards on the
+  place pages and as `needs.police` and `needs.toilets` in `find_nearby`'s result,
+  where 2.5.4 carried `needs.safety`. `safety` is still accepted as a category and
+  answered as both, so no call is refused; a client that read `needs.safety` reads
+  the two new keys.
+- **One card format everywhere** (2.5.4). A motorway page's fuel, charging,
+  weather-warning and road-weather cards, and a station page's departure rows, are
+  drawn like the place pages' cards, with the same short sources line and the full
+  credits behind a fold.
+- **Search engines read from a database pool of their own** (2.5.4), so a crawl
+  never slows a visitor's page; no crawler is refused.
+
+### Fixed (server 2.5.4–2.5.5)
+
+- **A 22 kW AC charger is no longer labelled DC** (2.5.4): a point published as
+  22.08 kW, and a Type 2-only site up to 43.5 kW, is AC in `find_charging_station`
+  and on the card.
+- **One departure is listed once** (2.5.4): "RE5" and "RE 5 (RRX)", or "Hbf" and
+  "Hauptbahnhof", at the same minute and platform are one row, in every departure
+  tool and on every board.
+- **The station board's columns keep one line each on a phone** (2.5.5), instead of
+  collapsing to one letter a line.
+- **Smaller fixes on the site** (2.5.4): a quiet motorway's "nothing reported" line
+  stays compact on a phone, the fuel card says "loading" only while the prices are
+  being read, the place pill links to the place its text names, a 404 page's own
+  scripts run, and a parking publisher's delay line appears only on a card that
+  lists one of its sites.
+
+### Bridge
+
+- **README and SOURCES.md describe server 2.5.5.** The README's "New" box covers
+  server 2.5.4 and 2.5.5, its place, station and motorway sections were brought up
+  to date, five answers captured from server 2.5.5 on 2026-11-03 were added (speed
+  cameras in Düsseldorf, chargers with terms of use, police and toilets in Fulda,
+  departures around Köln-Ehrenfeld, car parks in Trier), and `find_speed_cameras`
+  is in the catalogue's "On the road" group. SOURCES.md was compared again with
+  `viafrei://attribution`: 268 rows, the 262 of server 2.5.2 unchanged in line and
+  status, and six added (the four towns' speed-enforcement locations and Trier's
+  two parking rows), with a section of its own on the speed-camera sources and their
+  notice; its tool counts are those of the 2.5.5 snapshot (23 tools, 21 read-only,
+  19 live calls for a re-check).
+- **The README generator reads "Abs." as an abbreviation**, so the first sentence
+  of `find_speed_cameras` is no longer cut at "§ 23 Abs."; a self-test case pins it.
 
 ## [2.5.3] - 2026-11-02
 
