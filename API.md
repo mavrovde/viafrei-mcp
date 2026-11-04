@@ -9,7 +9,7 @@ the server's own text, reproduced verbatim, because that text is what an
 assistant reads when it decides which tool to call; paraphrasing it here would
 document a different server.
 
-**It is a dated snapshot, taken on 2026-11-03.** Generating this file makes
+**It is a dated snapshot, taken on 2026-11-04.** Generating this file makes
 it impossible for the document and the snapshot to disagree — CI regenerates and
 compares — but it cannot keep the snapshot from ageing against the live server,
 because a capture is a point in time. **The source of truth is the running
@@ -17,11 +17,11 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.5.8 |
+| Server | `viafrei` 2.5.9 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
-| Captured from | `https://mcp.viafrei.de/mcp` on 2026-11-03 |
+| Captured from | `https://mcp.viafrei.de/mcp` on 2026-11-04 |
 | Surface | 24 tools, 10 resources, 2 resource templates, 9 prompts |
 | Parameter schemas | JSON Schema draft-07 |
 | Capabilities | `tools`, `resources`, `prompts`, `logging` |
@@ -251,7 +251,7 @@ The server's own instructions to a connecting client, verbatim:
 | `place` | string | no | — | min length 1; max length 120 |
 | `radius_km` | number | no | `10` | min 1; max 25 |
 
-- **`conditions`** — Only sites with ONE point that meets every listed term: "open247" (open around the clock, "rund um die Uhr", "24/7"), "card" (pay by credit or debit card at the charger, "mit Karte zahlen"), "free" (free of charge, "kostenlos"), "public" (open to the public, not customers only). Example: ["open247"]. Only the Bundesnetzagentur charging register states these; a site that states nothing is left out and counted, never assumed. Omit unless the person asked for one.
+- **`conditions`** — Only sites with ONE point that meets every listed term: "open247" (open around the clock, "rund um die Uhr", "24/7"), "card" (pay by credit or debit card at the charger, "mit Karte zahlen"), "free" (free of charge, "kostenlos"), "public" (open to the public, not customers only). Example: ["open247"]. The Bundesnetzagentur charging register states these, and "free" also an operator's published ad-hoc tariff of 0 no older than 90 days; a site that states nothing is left out and counted, never assumed. Omit unless the person asked for one.
 - **`connector`** — Plug the car needs: "ccs2" (CCS Combo 2 — the DC fast-charging standard on almost every European EV), "type2" (Typ 2 / Mennekes, the AC socket) or "chademo" (older Japanese DC, e.g. Nissan Leaf). Omit unless the person named their plug or their car model — filtering on a guess hides chargers they could have used.
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.
@@ -812,5 +812,5 @@ single call.
 ---
 
 Generated from `catalogue.json` by `scripts/gen-api-doc.mjs`. The snapshot was
-read from `https://mcp.viafrei.de/mcp` on 2026-11-03; no tool was invoked to
+read from `https://mcp.viafrei.de/mcp` on 2026-11-04; no tool was invoked to
 produce it, so no data provider was contacted.
