@@ -74,7 +74,7 @@ one search away from the box in the site's header.
 >   place with the traffic light every two minutes; a site search that also finds
 >   Bundes- and Landesstraßen ("B 51", "L 249") and suggests without waiting on a slow
 >   read; and recent places in the header's place bar that each open their own place,
->   and a station chosen from the search opening as the station, not as its town.
+>   and a station chosen from the search remembered as that station, reopening its page.
 >
 > **Before that, server 2.5.4 and 2.5.5:** published speed-camera locations for
 > planning, everyday needs near a place, departures around a place, charging by terms
@@ -1923,8 +1923,8 @@ Since 2.5.8 it also finds the Bundes- and Landesstraßen: "B 51" opens that road
 page, and "L 249", a number several Länder use, offers one result per Land. The search and the MCP tools read the same
 words for junctions and stations, and the header's suggestions leave out a part that
 is slow to answer and say so, instead of waiting for it. A place picked from the
-header's recent places opens that place, and a station chosen from the search opens
-as the station, not as the town around it.
+header's recent places opens that place, and a station chosen from the search is
+remembered as that station, so its recent entry reopens the station's page.
 
 ## 🔌 Connect in one minute
 

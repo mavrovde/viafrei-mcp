@@ -64,8 +64,8 @@ change. No prompt or resource was added, removed or renamed.
   answer in time is left out and said to be missing. The site search and the MCP
   tools read one shared list of junction and station words.
 - **The header's place bar**: a recent place opens the place it names, a station
-  chosen from the search opens as the station rather than its town, and the rows look the same on a phone
-  and a desktop.
+  chosen from the search is remembered as that station and reopens its page, and the
+  rows look the same on a phone and a desktop.
 
 ### Fixed (server 2.5.8)
 
