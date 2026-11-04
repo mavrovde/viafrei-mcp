@@ -17,12 +17,12 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.5.7 |
+| Server | `viafrei` 2.5.8 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
 | Captured from | `https://mcp.viafrei.de/mcp` on 2026-11-03 |
-| Surface | 23 tools, 10 resources, 2 resource templates, 9 prompts |
+| Surface | 24 tools, 10 resources, 2 resource templates, 9 prompts |
 | Parameter schemas | JSON Schema draft-07 |
 | Capabilities | `tools`, `resources`, `prompts`, `logging` |
 
@@ -31,7 +31,7 @@ No API key. No account. No sign-up.
 ## Contents
 
 - [How to read a result](#how-to-read-a-result)
-- [Tools](#tools) — 23
+- [Tools](#tools) — 24
 - [Resources](#resources) — 10
 - [Resource templates](#resource-templates) — 2
 - [Prompts](#prompts) — 9
@@ -66,29 +66,31 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Per motorway (≤ 5): an Ampel verdict, then jams, closures, roadworks in force now, with place/delay/speed/map. Use when asked about a named motorway now: frei/clear (Ampel), Stau, a delay, how it looks, or a LIST of closures; name every motorway (Munich→Berlin: A9). Do NOT use for open/closed/gesperrt/passable, even now, a closure with no time word or a later one (tonight, weekend), or a town, no motorway — check_road_status; Baustellen dated or geplant — find_roadworks_ahead; a named city street: not held; fuel (find_cheapest_fuel), trains (get_train_departures). ~5 min old. Show attribution.
+> Per motorway (≤ 5), or one Bundesland's motorways with land: an Ampel, then jams, closures, roadworks in force, with place/delay/speed/map. Use when asked about a named motorway now: frei/clear (Ampel), Stau, delay, how it looks, or a LIST of closures; name every motorway (Munich→Berlin: A9). Do NOT use for open/closed/gesperrt/passable, even now, a closure with no time word or a later one (tonight, weekend), or a town, no motorway — check_road_status; Baustellen dated or geplant — find_roadworks_ahead; a named city street: not held; trains (get_train_departures). ~5 min old. Show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
-| `roads` | array of string | **yes** | — | min 1 item(s); max 5 item(s); each item: pattern `^[Aa] ?\d{1,3}$` |
 | `cursor` | string | no | — | max length 256 |
 | `kinds` | array of string | no | `["warning","closure","roadworks"]` | min 1 item(s); each item: one of `"warning"`, `"roadworks"`, `"closure"` |
+| `land` | string | no | — | one of `"schleswig-holstein"`, `"hamburg"`, `"niedersachsen"`, `"bremen"`, `"nordrhein-westfalen"`, `"hessen"`, `"rheinland-pfalz"`, `"baden-wuerttemberg"`, `"bayern"`, `"saarland"`, `"berlin"`, `"brandenburg"`, `"mecklenburg-vorpommern"`, `"sachsen"`, `"sachsen-anhalt"`, `"thueringen"` |
 | `language` | string | no | `"de"` | one of `"de"`, `"en"` |
 | `lat` | number | no | — | min -90; max 90 |
 | `limit` | integer | no | `10` | min 1; max 50 |
 | `lon` | number | no | — | min -180; max 180 |
 | `place` | string | no | — | min length 1; max length 120 |
 | `radius_km` | integer | no | `25` | min 1; max 100 |
+| `roads` | array of string | no | — | min 1 item(s); max 5 item(s); each item: pattern `^[Aa] ?\d{1,3}$` |
 
-- **`roads`** — Autobahn numbers, e.g. ["A9"] or ["A8", "A99", "A9"] (1–5 per call). Name every motorway on the route so the whole drive is briefed in one call — "A9", "A 9" and "a9" are the same road. Results are grouped per road, in the order you list them.
 - **`cursor`** — Pagination cursor from a previous result's _meta.nextCursor. Omit for the first page.
 - **`kinds`** — Which event kinds to return: warning = live traffic (jams, slow traffic, hazards), closure = full closures, roadworks = construction sites. Set it when the SUBJECT of the question is one of those categories by name: "Baustellen auf der A8?" is ["roadworks"], "welche Sperrungen sind in diesem Moment gemeldet?" is ["closure"]. Omit it when the question is how the road IS — Stau, frei, a delay, "wie sieht es aus", "everything"; the German "Stau?" is the idiom for the whole picture, and a filter nobody asked for hides the closure on the same stretch. Whether a closure question is this tool's at all is decided by two things, and the noun (Sperrung, Vollsperrung, closure) is neither. FIRST THE CLOCK: only a question about this minute (jetzt, gerade, in diesem Moment, right now, at this very minute) can be this tool's — with no time word at all, or for a later window (tonight, heute Abend, am Wochenende, the coming days), it is check_road_status. SECOND, WHAT IS ASKED, which the clock cannot see: what is REPORTED or in force on a named motorway is this tool ("which closures are in force on the A100 at this very minute?"), while whether the road is OPEN or passable is check_road_status AT ANY CLOCK — "ist die A8 offen", "ist die A3 in diesem Moment gesperrt?", "komme ich da durch?" — and so is a closure asked around a town instead of on a motorway number. Baustellen with a date or the word geplant are find_roadworks_ahead. Default: all three.
+- **`land`** — Optional, instead of roads: one Bundesland, and the answer is the motorways of the whole Land as its page shows them — counts, the longest jams, each motorway with something in force. Use it instead of roads and place when the question names a Land ("Stau in Bayern?", "Autobahnen in NRW"). For Berlin, Hamburg and Bremen only when the question names the Land; a city's traffic is check_road_status. Not with roads, place, lat/lon or radius_km.
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.
 - **`limit`** — Maximum events to return across all roads (1–50, default 10). Each road's most important item comes first, in the order you listed the roads, so every road with something in force is on the first page when limit is at least the number of roads; after that jams, then closures, other reports, then roadworks, the roads taking turns within each. Only what is in force now is listed — closures announced for later are counted apart in the headline.
 - **`lon`** — Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use place.
 - **`place`** — Optional: the town, junction or address the person is at or asks about ("A1 bei Köln", "A3 near Frankfurt"). Then each road's events within radius_km come first, nearest first, and the headline counts them with the road-wide total beside it. Omit it for the whole road. Given with lat+lon, lat+lon is searched around and the place is its label, unless the two lie further apart than radius_km.
 - **`radius_km`** — Radius around place or lat+lon in km (1–100, default 25). Ignored without a place.
+- **`roads`** — Autobahn numbers, e.g. ["A9"] or ["A8", "A99", "A9"] (1–5 per call). Name every motorway on the route so the whole drive is briefed in one call — "A9", "A 9" and "a9" are the same road. Results are grouped per road, in the order you list them. Give roads or land, not both.
 
 ### `find_cheapest_fuel` — Cheapest fuel nearby
 
@@ -508,7 +510,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Reaches a third-party source (open world). Idempotent: true. Destructive: false.
 
-> Next trains from a German railway station: platform, delay, cancellations. Use when asked when a train, S-Bahn or ICE leaves a named station, or if a train or line from it is late; later today ("heute Abend") stays here. A line with no DEPARTURE station ("ist die S1 pünktlich?"; a destination, "nach …", is not one) — check_transit_disruption. Lists its U-Bahn and trams too. Do NOT use for one bus/tram/U-Bahn line, a non-railway stop, another day or over 2 h away — get_departures. Train type: categories (ICE/IC/RE/RB/S); no destination filter. ≤ 15 rows, ≤ 120 min. Show the attribution line.
+> Next trains at a German railway station: platform, delay, cancellations. Use when asked when a train, S-Bahn or ICE leaves a named station, or if a train or line from it is late; later today ("heute Abend") stays here. A line with no DEPARTURE station ("ist die S1 pünktlich?"; a destination, "nach …", is not one) — check_transit_disruption. Lists U-Bahn and trams too. Do NOT use for one bus/tram/U-Bahn line, a non-railway stop, another day or over 2 h — get_departures. Types ICE/IC/RE/RB/S; no destination filter; whole station: describe_station. ≤ 15 rows, ≤ 120 min. Show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -562,7 +564,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Reaches a third-party source (open world). Idempotent: true. Destructive: false.
 
-> Whether the lifts and escalators of a railway station or Köln Stadtbahn stop work now: each one, its place, state and reason. Another tram, U-Bahn or bus stop (named with its city: "Stuttgart Charlottenplatz") gets its step-free survey where one exists. Use when asked about step-free access, broken lifts, wheelchair or pram: "Funktioniert der Aufzug am Kölner Hbf?", "is the lift at Hamburg Hbf working?". Do NOT use for departures, platforms or delays — call get_train_departures (trains) or get_departures (bus, tram, U-Bahn). At most 50, broken first. Results carry their attribution line.
+> Whether the lifts and escalators of a railway station or Köln Stadtbahn stop work now: each with place, state, reason. Another tram, U-Bahn or bus stop (named with its city: "Stuttgart Charlottenplatz") gets its step-free survey where one exists. Use when asked about step-free access, broken lifts, wheelchair or pram: "Funktioniert der Aufzug am Kölner Hbf?", "is the lift at Hamburg Hbf working?". Do NOT use for departures, platforms or delays: get_train_departures (trains), get_departures (bus/tram/U-Bahn); whole station: describe_station. At most 50, broken first. Show the attribution line.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -577,6 +579,24 @@ The server's own instructions to a connecting client, verbatim:
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`limit`** — How many facilities to list (1–50, default 20). Out-of-service equipment is listed first and the counts in the summary always cover ALL of them, so a shorter list never hides a broken lift.
 - **`station`** — The railway station — or Köln Stadtbahn stop — as the person says it: "Köln Hbf", "Hamburg Hbf", "Munich Central", "Neumarkt Köln". Pass their words — English names and "central station" are understood. If the name fits several stations the result lists them and asks which; do not guess one yourself. Give either station OR eva_no, never both.
+
+### `describe_station` — Describe a railway station
+
+**Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
+
+> One German railway station as its viafrei.de page shows it: address, step-free platforms now, lifts and escalators (out of service first), platforms, the next departures with live delays, service alerts, parking and charging. Use when asked about a station as a whole: "Was gibt es am Bahnhof Köln Hbf?", "tell me about Leipzig Hbf", "is Hannover Hbf step-free today?". Do NOT use for one lift (check_station_facilities), one train's delay or platform (get_train_departures) or a bus stop (get_departures). Show the attribution line.
+
+| parameter | type | required | default | constraints |
+| --- | --- | --- | --- | --- |
+| `departures` | integer | no | `10` | min 0; max 10 |
+| `eva_no` | string | no | — | pattern `^\d{6,8}$` |
+| `language` | string | no | `"de"` | one of `"de"`, `"en"` |
+| `station` | string | no | — | min length 1; max length 120 |
+
+- **`departures`** — How many of the next departures to include (0–10, default 10, as many as the station page shows at least). 0 leaves the board out — for "tell me about the station" without trains.
+- **`eva_no`** — The station's EVA number (6–8 digits, e.g. 8000207 for Köln Hbf), when a previous result gave you one: exact, no name lookup.
+- **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
+- **`station`** — The railway station, as the person says it: "Köln Hbf", "Leipzig Hauptbahnhof", "Munich Central". If the name fits several stations, call anyway: the result lists them and asks which. Give either station OR eva_no, never both.
 
 ### `watch_situation` — Watch for a change
 

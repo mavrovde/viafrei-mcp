@@ -15,19 +15,21 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.5.5 on 2026-11-03**: 268 sources, the 262
-of server 2.5.2 with the same attribution lines and the same status, and six added in
-server 2.5.4. 254 of the 268 are held (one of those, the streets, feeds only the
-site's maps), 9 are planned (licence read, nothing ingested yet) and five are
-discontinued. The six new rows are the **speed-enforcement locations** that four
-towns publish (Aachen, Düsseldorf, Karlsruhe and Köln), which feed the new tool
-`find_speed_cameras`, and the **Stadtwerke Trier's car parks** and their free
-spaces, two rows ([below](#speed-enforcement-locations--four-towns-for-planning-only)
-and [in the parking section](#parking--many-publishers--six-licences)). Server 2.5.5
-adds and removes no source. smartlab's four charging publications (ladenetz.de and
-ladebusiness) stay **discontinued** as they were at 2.5.2: their publisher ended them
-on 2026-10-19, and at server 2.5.5 the sites only they carry still answer with their
-place, plugs and power, dated and without a status, until 17 November 2026
+with that resource as served by server 2.5.8 on 2026-11-04**: 269 sources, the 268
+of server 2.5.5 and one added in server 2.5.8. 255 of the 269 are held (two of those
+feed no tool: the streets, drawn on the site's maps, and the area of each Land, shown
+on the Land pages), 9 are planned (licence read, nothing
+ingested yet) and five are discontinued. The new row is the **area of each
+Bundesland** from the Statistisches Bundesamt's Gemeindeverzeichnis, shown on the
+new Land pages of viafrei.de and in no tool's answer
+([below](#destatis--the-area-of-each-land--dl-deby-2-0)). Two lines changed in
+server 2.5.7: MobiData BW's parking rows for **Heidelberg and Konstanz** are now
+credited under CC BY 4.0, the licence both cities now state for their own data
+([the parking section](#parking--many-publishers--six-licences)). smartlab's four
+charging publications (ladenetz.de and ladebusiness) stay **discontinued**: their
+publisher ended them on 2026-10-19, and since server 2.5.6 the sites only they
+carried no longer answer at all; the grace window that was to run until 17 November
+2026 was ended early
 ([the charging section](#charging-data--cc-by-40-cc0-10-and-dl-deby-2-0)).
 The website also uses five sources the server's register does not list, named
 [near the end](#the-websites-own-sources). Whatever the surfaces say, the answer you hold is the thing to read:
@@ -290,7 +292,9 @@ The street database itself is used publicly through those maps, so the same § 4
 offer stands beside the line on every such map: its complete contents as CSV, with
 our alterations, under ODbL 1.0, free of charge on request to the contact address in
 the Impressum on viafrei.de. The place maps read the same streets grouped per square
-kilometre, one database in a second arrangement, and the export holds all of it.
+kilometre, one database in a second arrangement, and since server 2.5.6 the wider maps
+(a frame more than 20 km across) read them grouped per 10-kilometre square, a third
+arrangement of the same database; the export holds all of it.
 This binds you only if you take the streets off our maps into a database of your
 own; reading a map carries no obligation beyond the credit on it.
 
@@ -331,12 +335,12 @@ The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.5.5,
-2026-11-03), it exposes twenty-three tools, twenty-one of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.5.8,
+2026-11-03), it exposes twenty-four tools, twenty-two of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
-deactivated. That would now mean **nineteen** live calls, the read-only tools
+deactivated. That would now mean **twenty** live calls, the read-only tools
 minus the two fuel tools, and it would measure less than a full round does.
 
 Publication rhythm and freshness are not in the table: the server reports them per
@@ -572,8 +576,8 @@ feed, live, in the resource `viafrei://coverage`.
 | `parkapi_bw_vrs` | Parkdaten: Verband Region Stuttgart via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
 | `parkapi_bw_mannheim` | Parkdaten: Stadt Mannheim via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
 | `parkapi_bw_stuttgart` | Parkdaten: Stadt Stuttgart via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
-| `parkapi_bw_heidelberg` | Parkdaten: Stadt Heidelberg via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
-| `parkapi_bw_konstanz` | Parkdaten: Stadt Konstanz via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
+| `parkapi_bw_heidelberg` | Parkdaten: Stadt Heidelberg via MobiData BW, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `parkapi_bw_konstanz` | Parkdaten: Stadt Konstanz via MobiData BW, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `parkapi_bw_buchen` | Parkdaten: Stadt Buchen via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
 | `parkapi_bw_aalen` | Parkdaten: Stadt Aalen via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
 | `parkapi_bw_ulm` | Parkdaten: Stadt Ulm via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
@@ -610,8 +614,9 @@ feed, live, in the resource `viafrei://coverage`.
 | **Weather** — feeds `check_weather_warnings` (the DWD's own English text with `language: "en"`), `watch_situation`, and the motorway traffic light (DWD warnings and the road-surface forecast); site: the weather card (the German original beside our labelled translation on the translated pages), road-surface forecast included, and the motorway pages (warnings along the road, the road-surface forecast per station) | | | |
 | `dwd` | Quelle: Deutscher Wetterdienst | CC BY 4.0 | held |
 | `dwd_road` | Quelle: Deutscher Wetterdienst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder | CC BY 4.0 **plus a condition of use** | held |
-| **Places and addresses** — feeds every tool that takes a `place`, and `find_place`, `find_poi`, `find_address`, `describe_location`, `find_nearby` (since server 2.5.4 also its everyday needs: groceries, health, money, food, lodging, garage, police and toilets), and what OpenStreetMap shows near a site in `find_parking`; site: the place search, the place pages (since 2.5.4 the everyday-need cards) and the place name in the place bar | | | |
+| **Places and addresses** — feeds every tool that takes a `place`, and `find_place`, `find_poi`, `find_address`, `describe_location`, `find_nearby` (since server 2.5.4 also its everyday needs: groceries, health, money, food, lodging, garage, police and toilets), and what OpenStreetMap shows near a site in `find_parking`; site: the place search, the place pages (since 2.5.4 the everyday-need cards), the place name in the place bar, and the area on the Land pages (Destatis, no tool) | | | |
 | `bkg_gvisys` | Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0, Datenquellen: https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_gn250.pdf (Daten verändert) | dl-de/by-2-0 | held |
+| `destatis_gv_laender` | Fläche: © Statistisches Bundesamt (Destatis), Gemeindeverzeichnis, Stand 31.12.2024 | dl-de/by-2-0 | held |
 | `geonames` | Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet | CC BY 4.0 | held |
 | `osm` | OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | held |
 | **Streets on the maps** — feeds no tool; site: the streets drawn under the marks of the place, station and motorway maps ([below](#and-the-streets-on-viafreides-maps)) | | | |
@@ -1114,11 +1119,11 @@ Eco-Movement's availability feeds are CC BY 4.0.
   their availability.
 - **smartlab's ladenetz.de and ladebusiness publications are discontinued.** The
   publisher ended all four (master data and availability) on 2026-10-19; the data
-  is now published through e-clearing.net, which we read. A site that no other feed
-  carries answers through 17 Nov 2026 (the last day, Berlin time) with its place,
-  plugs and power and its own credit line, dated "last published", and never with
-  an availability. After that day it no longer answers. The rows are kept, closed,
-  so a credit already given can still be traced.
+  is now published through e-clearing.net, which we read. Until server 2.5.5 a site
+  that no other feed carried still answered, dated "last published" and never with
+  an availability, in a grace window meant to run until 17 Nov 2026; since server
+  2.5.6 the window is ended and those sites no longer answer, in the tools or on the
+  cards. The rows are kept, closed, so a credit already given can still be traced.
 - **A frozen availability feed is not shown as current.** An availability feed that
   has answered only "unchanged" for far longer than its own rhythm is reported as
   such, and a status is judged by its own time, so an old one never reads as "free
@@ -1246,6 +1251,21 @@ Verwaltungseinheiten: © BKG (Jahr des letzten Datenbezugs) dl-de/by-2-0, Datenq
 Licence: <https://www.govdata.de/dl-de/by-2-0> ·
 product: <https://gdz.bkg.bund.de>
 
+### Destatis — the area of each Land · dl-de/by-2-0
+
+The Land pages of viafrei.de (new in server 2.5.8) give each Bundesland's area as the
+Statistisches Bundesamt prints it in its Gemeindeverzeichnis table of the Länder with
+their capitals, area, population and density, as of 31.12.2024, to two decimals as
+printed. Nothing is rounded or recomputed, so the line carries no "bearbeitet". It is
+held as a fixed table, not a feed, and checked against each new edition. No tool
+answers with an area.
+
+```
+Fläche: © Statistisches Bundesamt (Destatis), Gemeindeverzeichnis, Stand 31.12.2024
+```
+
+Licence: <https://www.govdata.de/dl-de/by-2-0>
+
 ### GeoNames — place gazetteer · CC BY 4.0
 
 ```
@@ -1287,8 +1307,8 @@ carries the line of every publisher it lists.
   **Kassel**'s ten car parks (dl-de/by-2-0 by the city's terms of use, as for its
   traffic messages; the city's area totals, the sum of several car parks, are not
   listed as a car park), and fifteen cities and
-  operators in Baden-Württemberg through MobiData BW's ParkAPI (Karlsruhe CC BY 4.0,
-  the others dl-de/by-2-0). A Wuppertal answer carries two lines, because its live
+  operators in Baden-Württemberg through MobiData BW's ParkAPI (Karlsruhe, and since
+  server 2.5.7 Heidelberg and Konstanz, CC BY 4.0, the others dl-de/by-2-0). A Wuppertal answer carries two lines, because its live
   counts are matched to the NRW bundle's facility rows. Since server 2.4.2 also
   **Konstanz** (the city's own feeds, CC BY 4.0) and **Wiesbaden** (the Landeshauptstadt,
   dl-de/by-2-0 by incorporation in the city's terms of use). Konstanz's lots are also
@@ -1742,13 +1762,13 @@ timetable and realtime, planned at 2.4.3, answer since 2.4.5, and the NRW single
 traffic messages, planned until 2.5.1, are held as a backup since 2.5.2.
 
 **Discontinued.** DB BahnPark, above, and smartlab's four charging publications
-(ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; see the
-charging section for the dated grace window.
+(ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; since
+server 2.5.6 the sites only they carried no longer answer (see the charging section).
 
-**Held back.** Nothing at server 2.5.5. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.5.8. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.5.5. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.5.8. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1812,11 +1832,11 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.5.5 on 2026-11-03, not typed: every id it
+  by line with it as served by server 2.5.8 on 2026-11-04, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
-  fetch through. No row was added at 2.3.12 or 2.3.18; the six added in 2.5.4, the three added between
+  fetch through. No row was added at 2.3.12 or 2.3.18; the one added in 2.5.8, the six added in 2.5.4, the three added between
   2.4.4 and 2.4.9, the eight added in 2.4.2 and 2.4.3, the fourteen added at 2.3.23
   and the 25 added at 2.2.14 were taken from the same resource.
 - Every row in our internal register records the licence, the operative sentence,

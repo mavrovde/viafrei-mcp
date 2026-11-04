@@ -5,6 +5,102 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.5.8] - 2026-11-03
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.5.8 while the registry's latest is 2.5.7, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**CHANGED** — the automation knows what moved, not what it means:
+
+- tools: the server has describe_station, the snapshot does not
+- tools: check_autobahn_traffic differs between the server and the snapshot
+- tools: get_train_departures differs between the server and the snapshot
+- tools: check_station_facilities differs between the server and the snapshot
+
+**A whole railway station in one answer, one Bundesland's motorways, and pages for
+every Land, fuel station and charging site.** The server moved from 2.5.7 to 2.5.8.
+One tool was added, `describe_station`; none was renamed or removed.
+`check_autobahn_traffic` gained an argument (`land`), and `roads` is no longer
+required, because a call gives either `roads` or `land`. The descriptions of
+`get_train_departures` and `check_station_facilities` were shortened and now send a
+question about a station as a whole to `describe_station`; their arguments did not
+change. No prompt or resource was added, removed or renamed.
+
+### Added (server 2.5.8)
+
+- **`describe_station` — one railway station as its page on viafrei.de shows it**:
+  the address, the platforms that are step-free now, the lifts and escalators (out of
+  service first), the platforms with their heights, the next departures with live
+  delays (`departures`, 0 to 10, default 10), the service alerts, and parking and
+  charging at the station, each block with its own "As of" time and a link to the
+  station page. A station is named with `station` or, from an earlier answer, by its
+  `eva_no`; a name that fits several stations is answered with the candidates.
+  Read-only and idempotent.
+- **`check_autobahn_traffic` by Bundesland.** `land` (one of the sixteen Länder)
+  answers with the motorways of the whole Land as its new page shows them: the
+  counts of closures, warnings and roadworks, the longest jams and each motorway with
+  something in force, paged with `cursor`. It is given instead of `roads`, `place`,
+  `lat`/`lon` and `radius_km`, and says how an event is placed in a Land (by the
+  nearest town, so near a border it can be the neighbouring Land).
+- **On viafrei.de**: a page for each of the sixteen Länder and an index of them, with
+  the motorways now, facts (the area from the Statistisches Bundesamt among them) and
+  the largest towns; a page for every fuel station and every charging site, linked
+  from the fuel and charging cards and from the answers of `find_fuel_station`,
+  `find_cheapest_fuel` and `find_charging_station`; the Land pages and each kind of
+  station page in sitemaps of their own; and a site search that finds the Bundes- and
+  Landesstraßen ("B 51" opens its page; "L 249", a number several Länder use, offers
+  one result per Land).
+- **Maps that show the road.** Closures, roadworks and jams are drawn along the road
+  between the two ends the publisher gives, a station's map marks its lifts, every
+  map says how fresh it is, and the traffic light and the map of a place or a station
+  refresh in place every two minutes. A map that is not ready in time is shown as its
+  text, so the page never waits for it.
+
+### Changed (server 2.5.8)
+
+- **The header's suggestions do not wait for a slow read**: a part that does not
+  answer in time is left out and said to be missing. The site search and the MCP
+  tools read one shared list of junction and station words.
+- **The header's place bar**: a recent place opens the place it names, a station
+  chosen from the search is remembered as that station and reopens its page, and the
+  rows look the same on a phone and a desktop.
+
+### Fixed (server 2.5.8)
+
+- **Lift states agree with the station page.** `check_station_facilities` judges the
+  lift and escalator states by the station page's rule; Leipzig Hbf's lifts were
+  counted differently by the two.
+- **Roadworks in big cities.** `check_road_status` and `find_roadworks_ahead` by
+  place again include the city and Land roadworks of large cities such as Berlin and
+  Köln, which a slow read had left out, with the total still counting the whole
+  radius.
+- **The weather card answers again**: the DWD warnings no longer time out while they
+  are loaded.
+- **A page opened directly**, from a bookmark or an app, is no longer refused while
+  automated traffic is being limited.
+- **Motorway branches** that begin at their own Autobahndreieck appear in their
+  motorway's list once more, and a traffic light whose reading is old turns grey
+  and shows when it was read.
+- **A station page fits a phone's width** again.
+
+### Bridge
+
+- **README and SOURCES.md describe server 2.5.8.** The README's "New" box covers
+  2.5.8, the station section and the site search were brought up to date, a
+  paragraph on the Land, fuel-station and charging-site pages was added, two
+  answers captured from server 2.5.8 on 2026-11-04 were added (Leipzig Hbf by
+  `describe_station`, Hessen's motorways by `check_autobahn_traffic` with `land`),
+  and `describe_station` is in the catalogue's "Public transport" group. SOURCES.md
+  was compared again with `viafrei://attribution`: 269 rows, one added (the area of
+  each Land, from the Statistisches Bundesamt, shown only on the Land pages), two
+  credit lines corrected that had changed in 2.5.7 (MobiData BW's Heidelberg and
+  Konstanz parking, now CC BY 4.0), the smartlab charging sites described as no
+  longer answering since 2.5.6, and the street maps' third arrangement of 2.5.6
+  named; its tool counts are those of the 2.5.8 snapshot (24 tools, 22 read-only, 20
+  live calls for a re-check).
+
 ## [2.5.7] - 2026-11-03
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
@@ -4119,6 +4215,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.5.8]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.8
 [2.5.7]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.7
 [2.5.6]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.6
 [2.5.5]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.5
