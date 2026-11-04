@@ -46,10 +46,40 @@ one search away from the box in the site's header.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in server 2.5.4 and 2.5.5: published speed-camera locations for planning,
-> everyday needs near a place, departures around a place, charging by terms of use,
-> Trier's car parks, and bus and train cards that read like a departure board.** One
-> tool was added, `find_speed_cameras`; none was renamed or removed.
+> **New in server 2.5.8: a whole railway station in one answer, one Bundesland's
+> motorways at a glance, and on viafrei.de a page for every Land, every fuel station
+> and every charging site.** One tool was added, `describe_station`; none was renamed
+> or removed.
+>
+> - **A whole station in one answer.** The new tool
+>   [`describe_station`](API.md#describe_station--describe-a-railway-station) answers
+>   one railway station as its page on viafrei.de shows it: the address, which
+>   platforms are step-free now, the lifts and escalators (out of service first), the
+>   platforms with their heights, the next departures with live delays, the service
+>   alerts, and parking and charging at the station, with a link to the station page
+>   ([example](#-real-answers)). One lift, one train's delay or a bus stop are still
+>   `check_station_facilities`, `get_train_departures` and `get_departures`.
+> - **One Bundesland's motorways.** `check_autobahn_traffic` takes `land` instead of
+>   `roads`: "Stau in Bayern?" is answered with the Land's counts of closures,
+>   warnings and roadworks, its longest jams and each motorway with something in
+>   force, as the Land's page shows it ([example](#-real-answers)).
+> - **Lift states agree with the station page.** `check_station_facilities` reads the
+>   lift and escalator states by the same rule as the station page, so the two no
+>   longer count a station's lifts differently.
+> - **On viafrei.de**: a page for each of the sixteen Länder and an index of them,
+>   with the motorways now, facts and the largest towns; a page for every fuel station
+>   and every charging site, linked from the cards and from the fuel and charging
+>   answers, each kind in its own sitemap; maps that draw closures, roadworks and jams
+>   along the road, mark a station's lifts and say how fresh they are, refreshing in
+>   place with the traffic light every two minutes; a site search that also finds
+>   Bundes- and Landesstraßen ("B 51", "L 249") and suggests without waiting on a slow
+>   read; and recent places in the header's place bar that each open their own place,
+>   with a station picked in the search kept as a station.
+>
+> **Before that, server 2.5.4 and 2.5.5:** published speed-camera locations for
+> planning, everyday needs near a place, departures around a place, charging by terms
+> of use, Trier's car parks, and bus and train cards that read like a departure board.
+> One tool was added then, `find_speed_cameras`. Server 2.5.6 and 2.5.7 added no tool.
 >
 > - **Published speed-enforcement locations, for planning only.** The new tool
 >   [`find_speed_cameras`](API.md#find_speed_cameras--speed-enforcement-locations-planning)
@@ -97,7 +127,7 @@ one search away from the box in the site's header.
 >   line or stop ("RE5" and "RE 5 (RRX)") is listed once, in every departure tool
 >   and on every board.
 >
-> **Before that:** server 2.5.1 to 2.5.3 brought a search box in every page's header,
+> Earlier: server 2.5.1 to 2.5.3 brought a search box in every page's header,
 > one page for every Autobahnkreuz and Autobahndreieck, a place box that finds
 > motorways and junctions, redesigned cards, and a place that may come with a
 > coordinate (refused with the distance and `_meta.errorReason` when the two are too
@@ -123,8 +153,8 @@ comes back in the language you asked in.
 
 | when you're… | ask |
 |---|---|
-| 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *What leaves from the stops near Köln-Ehrenfeld?* · *Does an ICE leave Tübingen Hbf in the next hour?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* · *Which U-Bahn and trams leave Berlin Alexanderplatz in the next minutes?* · *Wann fährt die nächste Stadtbahn ab Hannover Kröpcke?* |
-| 🚗 **about to drive** | *Is the A7 clear right now?* · *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Vollsperrungen sind auf der A7 in den nächsten sieben Tagen geplant?* · *Welche Baustellen gibt es in München?* · *How is the traffic on the A3 around Köln?* · *Ist die Fehmarnsundbrücke wegen Wind gesperrt?* · *Which detours are signed near Hamburg Hbf?* |
+| 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *What leaves from the stops near Köln-Ehrenfeld?* · *Does an ICE leave Tübingen Hbf in the next hour?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* · *Which U-Bahn and trams leave Berlin Alexanderplatz in the next minutes?* · *Wann fährt die nächste Stadtbahn ab Hannover Kröpcke?* · *Tell me about Leipzig Hbf* |
+| 🚗 **about to drive** | *Is the A7 clear right now?* · *Stau in Bayern?* · *How are the motorways in Hessen right now?* · *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Vollsperrungen sind auf der A7 in den nächsten sieben Tagen geplant?* · *Welche Baustellen gibt es in München?* · *How is the traffic on the A3 around Köln?* · *Ist die Fehmarnsundbrücke wegen Wind gesperrt?* · *Which detours are signed near Hamburg Hbf?* |
 | 🗺️ **planning a trip** | *Ich plane eine Fahrt nach Düsseldorf: Wo stehen dort feste Blitzer?* · *Which speed-camera locations does Karlsruhe publish?* — for planning only: the answer opens with the § 23 Abs. 1c StVO notice, and a driver may not use it while driving |
 | 🚚 **driving a lorry** | *Darf der Lang-Lkw auf die A7?* · *Which height limits are there for lorries in Bremen?* · *Gibt es Lkw-Durchfahrtsverbote bei Bielefeld?* · *Wann ist der nächste Lkw-Fahrverbotstag?* · *Gilt am 31. Oktober in Niedersachsen Lkw-Fahrverbot?* · *Welche Durchfahrtshöhen gibt es am Kölner Dom?* · *Where are the lorry bans in Dresden?* |
 | 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Is traffic backed up on the Cologne motorway ring — A1, A3 or A4?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
@@ -196,8 +226,9 @@ roads and around a place it watches closures and restrictions only, and says so.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first five were asked of **server 2.5.5 on 2026-11-03 at 03:20
-Berlin time**, in the night after it went live. The next three were asked of server
+are not mock-ups. The first two were asked of **server 2.5.8 on 2026-11-04 at 01:13
+Berlin time**, in the night after it went live. The next five were asked of server
+2.5.5 on 2026-11-03 at 03:20 Berlin time, in the night after it went live. The next three were asked of server
 2.5.2 on 2026-11-02 between 03:56 and 04:10 Berlin time, in the night before 2.5.3
 went live. The next was
 asked of server 2.5.0 on 2026-10-29 at 17:48 Berlin time, the day it went live. The
@@ -225,6 +256,73 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🚉 "Tell me about Leipzig Hbf."</b> — <code>describe_station</code> with <code>station: "Leipzig Hbf"</code>, <code>departures: 3</code>, <code>language: "en"</code></summary>
+
+```text
+Leipzig Hbf — Station page: https://viafrei.de/en/station/leipzig-hbf
+Willy-Brandt-Platz 5, 04109 Leipzig · Saxony · station category 1 (Bahnhofskategorie) · EVA 8010205
+
+Step-free now (As of 01:03):
+- step-free: Platform 1/2, Platform 6/7, Platform 8/8a/9, Platform 10/11, Platform 12/13, Platform 14/15, Platform 16/17, Platform 18/18a/19, Platform 20/21, Platform 22/23
+
+Lifts and escalators (As of 01:03):
+- Lift: state unknown
+- Escalator (Platform 1/2): state unknown
+…
+- Lift (Platform 1/2): working
+
+Platforms (As of 2026-11-03 03:39):
+- Platform 1/2: step-free, platform height 55 cm
+- Platform 6/7: step-free, platform height 76 cm
+…
+
+Departures (As of 01:13):
+- 01:14 16 → Dölitz: on time
+- 01:15 S3 → Halle (Saale) Hbf, Platform 2B-C: on time
+- 01:43 11 → Angerbrücke: on time
+
+Parking and charging:
+- per DB: car park, bicycle parking, car rental, taxi rank
+- Car parks and charging points nearby: find_parking or find_charging_station with lat 51.34547, lon 12.38206.
+
+Source: Bahnhofsdaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · Aufzüge, Fahrtreppen und Bahnsteige (Bestand): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 (…) · Aufzüge und Fahrtreppen (Status): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 (…) · Aufzüge und Fahrtreppen: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet (…) · Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet (…) · Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet (…) · Echtzeitdaten: DELFI e.V. via Mobilithek, Datensätze „DELFI-Realtime SIRI ET“ (Bahndaten und 14 Regionen), CC BY-SA, bearbeitet (…) · As of 01:13
+The DELFI SIRI ET and DELFI GTFS-RT realtime entries are licensed CC BY-SA (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution.
+```
+New in 2.5.8. One call answers what the station page shows, each block with its own
+"As of" time, and links the page. A lift whose state no source vouches for is said to
+be "state unknown", never "working". At 01:13 the next departures were the night's
+trams and one S-Bahn, because the board lists every mode the station serves. The
+parking and charging block names the two tools and the coordinates to ask with,
+rather than guessing a list.
+*Edited: six of the ten lifts and escalators and eight of the ten platforms omitted,
+and the URIs omitted.*
+</details>
+
+<details>
+<summary><b>🛣️ "How are the motorways in Hessen right now?"</b> — <code>check_autobahn_traffic</code> with <code>land: "hessen"</code>, <code>language: "en"</code></summary>
+
+```text
+Hesse, motorways now: 10 closures, 3 warnings, 150 roadworks sites — on A3, A4, A5, A7, A44, A45, A49, A60, A66, A67, A480, A485, A659, A661, A671.
+- A49 Brückenneubau (AS Edermünde (aus Richtung Felsberg) nach A49) — closure, 0.4 km, since 2026-10-19 00:00
+- A49 Brückenneubau (Gießen -> Kassel) — closure, 0.1 km, since 2026-10-19 00:00
+- A66 | Neuhof-Nord - Flieden (Fulda -> Frankfurt) — closure, 3.6 km, since 2026-11-03 22:00
+- A66 | Flieden - Fulda-Süd (Frankfurt -> Fulda) — closure, 3.6 km, since 2026-11-03 22:00
+- A661 Sperrung Richtungsfahrbahn (AS Frankfurt am Main-Eckenheim (aus Richtung Preungesheimer Dreieck)) — closure, 0.4 km, since 2025-09-01 00:00
+…
+153 more (next page: cursor).
+How an item is placed: in the Land of the nearest Gemeinde centre (BKG, within 20 km); near a Land border that can be the neighbouring Land.
+Page: https://viafrei.de/en/state/hessen
+
+Source: Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de) · Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0, Datenquellen: https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_gn250.pdf (Daten verändert) (…) · As of 01:09
+```
+New in 2.5.8: `land` instead of `roads`. The answer is the Land's motorways as its
+page on viafrei.de shows them: the counts first, then what is in force, the rest one
+`cursor` away. It says how an event is placed in a Land, because near a border the
+nearest town can lie in the neighbouring one.
+*Edited: five of the ten closures shown, and the URIs after the BKG line omitted.*
+</details>
+
+<details>
 <summary><b>🗺️ "I'm planning a drive to Düsseldorf: where are the fixed speed cameras?"</b> — <code>find_speed_cameras</code> with <code>place: "Düsseldorf"</code>, <code>limit: 6</code>, <code>language: "en"</code></summary>
 
 ```text
@@ -344,8 +442,9 @@ New in 2.5.4: the Stadtwerke Trier's car parks, Trier's first parking source. At
 the newest reading was from the afternoon before, so every count says "last reported"
 with its age instead of passing as current. The charger named beside each site is
 credited to ladenetz.de, one of smartlab's four charging publications that ended on
-2026-10-19: at server 2.5.5, until 17 November 2026, a site no other feed carries still answers with its
-place, plugs and power, dated, and never with a status ([SOURCES.md](SOURCES.md)).
+2026-10-19: at server 2.5.5 a site no other feed carried still answered with its
+place, plugs and power, dated, and never with a status; since server 2.5.6 such a site
+no longer answers ([SOURCES.md](SOURCES.md)).
 *Edited: two of the four sites shown, OpenStreetMap's own car-park list and its
 notice omitted, the source line shortened.*
 </details>
@@ -1773,6 +1872,23 @@ it. The home page has a block of the **stations most affected right now**, with 
 station search beside it. Each page's title names departures, platforms, lifts and
 disruptions in its language, and its heading names the station with its town.
 
+Since 2.5.8 the tool [`describe_station`](API.md#describe_station--describe-a-railway-station)
+answers a station as its page shows it, by the page's own rules, and links the page.
+The station map marks each lift at its own position, every map says how fresh it is,
+and the traffic light and the map refresh in place every two minutes; a map that is
+not ready in time is shown as its text instead, so the page never waits for it.
+
+**Every Bundesland has a page** since 2.5.8, in every language, with an index at
+**[viafrei.de/en/states](https://viafrei.de/en/states)**: Hessen is
+[viafrei.de/en/state/hessen](https://viafrei.de/en/state/hessen). It shows the Land's
+motorways as they are now (the counts, the longest jams and each motorway with
+something in force, the same answer `check_autobahn_traffic` gives with `land`), its
+facts, among them its area from the Statistisches Bundesamt, and its largest towns.
+**Every fuel station and every charging site has a page** too since 2.5.8, under
+`/en/fuel/…` and `/en/charging/…`, linked from the fuel and charging cards and from
+the answers of `find_fuel_station`, `find_cheapest_fuel` and `find_charging_station`;
+the Land pages and each kind of station page are listed in sitemaps of their own.
+
 **Every motorway exit has a page of its own** since 2.4.1, under its motorway: the A3's
 junction Breitscheid is
 [viafrei.de/en/autobahn/a3/exit-16-breitscheid](https://viafrei.de/en/autobahn/a3/exit-16-breitscheid).
@@ -1803,6 +1919,12 @@ the road.
 in any spelling ("A 7", "BAB 7", "Autobahn 7", "A07"), places, stations, junctions
 ("Weinsberger Kreuz", and since 2.5.3 "AS Dresden-Neustadt" for an exit), areas,
 points of interest and the site's own pages, grouped by kind, best group first.
+Since 2.5.8 it also finds the Bundes- and Landesstraßen: "B 51" opens that road's
+page and "L 249" lists each Land's L 249. The search and the MCP tools read the same
+words for junctions and stations, and the header's suggestions leave out a part that
+is slow to answer and say so, instead of waiting for it. A place picked from the
+header's recent places opens that place, and a station picked in the search is kept
+as a station.
 
 ## 🔌 Connect in one minute
 
@@ -1918,13 +2040,13 @@ Restart the client and ask one of the questions above.
 
 <!-- catalogue:begin — generated by scripts/gen-readme-catalogue.mjs from catalogue.json; do not edit by hand -->
 
-**23 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.5.7, snapshot of 2026-11-03. Each line is the server's own words; the full parameters are in [API.md](API.md).
+**24 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.5.8, snapshot of 2026-11-03. Each line is the server's own words; the full parameters are in [API.md](API.md).
 
 #### 🚗 On the road
 
 | tool | what it answers |
 |---|---|
-| [`check_autobahn_traffic`](API.md#check_autobahn_traffic--autobahn-traffic) — Autobahn traffic | Per motorway (≤ 5): an Ampel verdict, then jams, closures, roadworks in force now, with place/delay/speed/map. |
+| [`check_autobahn_traffic`](API.md#check_autobahn_traffic--autobahn-traffic) — Autobahn traffic | Per motorway (≤ 5), or one Bundesland's motorways with land: an Ampel, then jams, closures, roadworks in force, with place/delay/speed/map. |
 | [`check_road_status`](API.md#check_road_status--road-status-and-closures) — Road status and closures | If a motorway/B/Land road (NI, NW, HE, BW, MV, SN, TH; B also SH, BY, BE; pass Land/town as place) is open/closed/restricted now/soon; by place, jams, city/Land messages, Hamburg traffic cameras; lorry limits, Lang-Lkw (vehicle). |
 | [`find_roadworks_ahead`](API.md#find_roadworks_ahead--planned-roadworks) — Planned roadworks | Returns roadworks PLANNED on one motorway, one Bundes-/Landesstraße in NI, NW, HE, BW, MV, SN or TH (BY: B only), or city streets by place, in a date window: where, impact, dates, map links. |
 | [`find_parking`](API.md#find_parking--parking-nearby) — Parking nearby | Parking near a place, a coordinate or along one motorway: lorry parks, car parks, P+R and disabled-badge bays, with total spaces, stated amenities (WC, shower) and published free spaces. |
@@ -1934,10 +2056,11 @@ Restart the client and ask one of the questions above.
 
 | tool | what it answers |
 |---|---|
-| [`get_train_departures`](API.md#get_train_departures--train-departures) — Train departures | Next trains from a German railway station: platform, delay, cancellations. |
+| [`get_train_departures`](API.md#get_train_departures--train-departures) — Train departures | Next trains at a German railway station: platform, delay, cancellations. |
 | [`get_departures`](API.md#get_departures--scheduled-departures-bus-tram-train) — Scheduled departures (bus, tram, train) | Scheduled departures from any German stop — bus, tram, U-/S-Bahn, train, ferry — or the nearest stops around a place ("Abfahrten in der Nähe"). |
 | [`check_transit_disruption`](API.md#check_transit_disruption--public-transport-disruption-in-a-region) — Public-transport disruption in a region | How punctual public transport is now in one German region: the share of trips ever >5 min late, trips skipping a stop, trips cancelled, the trend and the service alerts in force there (diversions, closed stops). |
-| [`check_station_facilities`](API.md#check_station_facilities--station-lifts-and-escalators) — Station lifts and escalators | Whether the lifts and escalators of a railway station or Köln Stadtbahn stop work now: each one, its place, state and reason. |
+| [`check_station_facilities`](API.md#check_station_facilities--station-lifts-and-escalators) — Station lifts and escalators | Whether the lifts and escalators of a railway station or Köln Stadtbahn stop work now: each with place, state, reason. |
+| [`describe_station`](API.md#describe_station--describe-a-railway-station) — Describe a railway station | One German railway station as its viafrei.de page shows it: address, step-free platforms now, lifts and escalators (out of service first), platforms, the next departures with live delays, service alerts, parking and charging. |
 
 #### ⚡ Charging and fuel
 
@@ -2067,7 +2190,7 @@ curl -s https://mcp.viafrei.de/mcp \
 - **Results are written to be read aloud.** A tool answers in sentences an
   assistant can pass on, says what it does not know ("no status data means
   unknown, not free"), and ends with the source line.
-- **Annotated honestly.** Twenty-one of the twenty-three tools are read-only and
+- **Annotated honestly.** Twenty-two of the twenty-four tools are read-only and
   idempotent (`readOnlyHint`, `idempotentHint`), so a client can call them
   without a confirmation prompt. The two watch tools are not, because opening
   or stopping a watch changes what the server will tell you later, and their
