@@ -74,7 +74,7 @@ one search away from the box in the site's header.
 >   place with the traffic light every two minutes; a site search that also finds
 >   Bundes- and Landesstraßen ("B 51", "L 249") and suggests without waiting on a slow
 >   read; and recent places in the header's place bar that each open their own place,
->   with a station picked in the search kept as a station.
+>   and a station chosen from the search opening as the station, not as its town.
 >
 > **Before that, server 2.5.4 and 2.5.5:** published speed-camera locations for
 > planning, everyday needs near a place, departures around a place, charging by terms
@@ -228,11 +228,11 @@ roads and around a place it watches closures and restrictions only, and says so.
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
 are not mock-ups. The first two were asked of **server 2.5.8 on 2026-11-04 at 01:13
 Berlin time**, in the night after it went live. The next five were asked of server
-2.5.5 on 2026-11-03 at 03:20 Berlin time, in the night after it went live. The next three were asked of server
-2.5.2 on 2026-11-02 between 03:56 and 04:10 Berlin time, in the night before 2.5.3
-went live. The next was
-asked of server 2.5.0 on 2026-10-29 at 17:48 Berlin time, the day it went live. The
-next was asked of server 2.4.9 that
+2.5.5 on 2026-11-03 at 03:20 Berlin time, a few hours after that release reached
+production. The next three were asked of server 2.5.2 on 2026-11-02 between 03:56
+and 04:10 Berlin time, in the night before 2.5.3 went live. The next was asked of
+server 2.5.0 on 2026-10-29 at 17:48 Berlin time, the day it went live. The next was
+asked of server 2.4.9 that
 morning at 06:55. The next five were asked of server
 2.4.3 on 2026-10-27 between 16:00 and 16:02 Berlin time, the day it went live, and
 were asked again of server 2.4.9 on 2026-10-29 at 06:54: they answer in the same
@@ -1920,11 +1920,11 @@ in any spelling ("A 7", "BAB 7", "Autobahn 7", "A07"), places, stations, junctio
 ("Weinsberger Kreuz", and since 2.5.3 "AS Dresden-Neustadt" for an exit), areas,
 points of interest and the site's own pages, grouped by kind, best group first.
 Since 2.5.8 it also finds the Bundes- and Landesstraßen: "B 51" opens that road's
-page and "L 249" lists each Land's L 249. The search and the MCP tools read the same
+page, and "L 249", a number several Länder use, offers one result per Land. The search and the MCP tools read the same
 words for junctions and stations, and the header's suggestions leave out a part that
 is slow to answer and say so, instead of waiting for it. A place picked from the
-header's recent places opens that place, and a station picked in the search is kept
-as a station.
+header's recent places opens that place, and a station chosen from the search opens
+as the station, not as the town around it.
 
 ## 🔌 Connect in one minute
 

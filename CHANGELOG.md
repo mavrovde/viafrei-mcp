@@ -26,8 +26,7 @@ One tool was added, `describe_station`; none was renamed or removed.
 required, because a call gives either `roads` or `land`. The descriptions of
 `get_train_departures` and `check_station_facilities` were shortened and now send a
 question about a station as a whole to `describe_station`; their arguments did not
-change. No prompt or resource was added, removed or renamed. The README's new
-examples were checked against answers from the running server 2.5.8 on 2026-11-04.
+change. No prompt or resource was added, removed or renamed.
 
 ### Added (server 2.5.8)
 
@@ -51,7 +50,8 @@ examples were checked against answers from the running server 2.5.8 on 2026-11-0
   from the fuel and charging cards and from the answers of `find_fuel_station`,
   `find_cheapest_fuel` and `find_charging_station`; the Land pages and each kind of
   station page in sitemaps of their own; and a site search that finds the Bundes- and
-  Landesstraßen ("B 51" opens its page, "L 249" lists each Land's L 249).
+  Landesstraßen ("B 51" opens its page; "L 249", a number several Länder use, offers
+  one result per Land).
 - **Maps that show the road.** Closures, roadworks and jams are drawn along the road
   between the two ends the publisher gives, a station's map marks its lifts, every
   map says how fresh it is, and the traffic light and the map of a place or a station
@@ -64,7 +64,7 @@ examples were checked against answers from the running server 2.5.8 on 2026-11-0
   answer in time is left out and said to be missing. The site search and the MCP
   tools read one shared list of junction and station words.
 - **The header's place bar**: a recent place opens the place it names, a station
-  picked in the search is kept as a station, and the rows look the same on a phone
+  chosen from the search opens as the station rather than its town, and the rows look the same on a phone
   and a desktop.
 
 ### Fixed (server 2.5.8)
@@ -80,8 +80,9 @@ examples were checked against answers from the running server 2.5.8 on 2026-11-0
   are loaded.
 - **A page opened directly**, from a bookmark or an app, is no longer refused while
   automated traffic is being limited.
-- **A spur that leaves at its own Dreieck** is listed on its motorway again, and an
-  old traffic light is shown grey with its time.
+- **Motorway branches** that begin at their own Autobahndreieck appear in their
+  motorway's list once more, and a traffic light whose reading is old turns grey
+  and shows when it was read.
 - **A station page fits a phone's width** again.
 
 ### Bridge

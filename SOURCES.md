@@ -16,8 +16,9 @@ The authoritative, always-current register is the resource
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
 with that resource as served by server 2.5.8 on 2026-11-04**: 269 sources, the 268
-of server 2.5.5 and one added in server 2.5.8. 255 of the 269 are held (one of those,
-the streets, feeds only the site's maps), 9 are planned (licence read, nothing
+of server 2.5.5 and one added in server 2.5.8. 255 of the 269 are held (two of those
+feed no tool: the streets, drawn on the site's maps, and the area of each Land, shown
+on the Land pages), 9 are planned (licence read, nothing
 ingested yet) and five are discontinued. The new row is the **area of each
 Bundesland** from the Statistisches Bundesamt's Gemeindeverzeichnis, shown on the
 new Land pages of viafrei.de and in no tool's answer
@@ -613,7 +614,7 @@ feed, live, in the resource `viafrei://coverage`.
 | **Weather** — feeds `check_weather_warnings` (the DWD's own English text with `language: "en"`), `watch_situation`, and the motorway traffic light (DWD warnings and the road-surface forecast); site: the weather card (the German original beside our labelled translation on the translated pages), road-surface forecast included, and the motorway pages (warnings along the road, the road-surface forecast per station) | | | |
 | `dwd` | Quelle: Deutscher Wetterdienst | CC BY 4.0 | held |
 | `dwd_road` | Quelle: Deutscher Wetterdienst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder | CC BY 4.0 **plus a condition of use** | held |
-| **Places and addresses** — feeds every tool that takes a `place`, and `find_place`, `find_poi`, `find_address`, `describe_location`, `find_nearby` (since server 2.5.4 also its everyday needs: groceries, health, money, food, lodging, garage, police and toilets), and what OpenStreetMap shows near a site in `find_parking`; site: the place search, the place pages (since 2.5.4 the everyday-need cards) and the place name in the place bar | | | |
+| **Places and addresses** — feeds every tool that takes a `place`, and `find_place`, `find_poi`, `find_address`, `describe_location`, `find_nearby` (since server 2.5.4 also its everyday needs: groceries, health, money, food, lodging, garage, police and toilets), and what OpenStreetMap shows near a site in `find_parking`; site: the place search, the place pages (since 2.5.4 the everyday-need cards), the place name in the place bar, and the area on the Land pages (Destatis, no tool) | | | |
 | `bkg_gvisys` | Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0, Datenquellen: https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_gn250.pdf (Daten verändert) | dl-de/by-2-0 | held |
 | `destatis_gv_laender` | Fläche: © Statistisches Bundesamt (Destatis), Gemeindeverzeichnis, Stand 31.12.2024 | dl-de/by-2-0 | held |
 | `geonames` | Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet | CC BY 4.0 | held |
