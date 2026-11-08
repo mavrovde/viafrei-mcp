@@ -15,13 +15,21 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.5.8 on 2026-11-04**: 269 sources, the 268
-of server 2.5.5 and one added in server 2.5.8. 255 of the 269 are held (two of those
-feed no tool: the streets, drawn on the site's maps, and the area of each Land, shown
-on the Land pages), 9 are planned (licence read, nothing
-ingested yet) and five are discontinued. The new row is the **area of each
-Bundesland** from the Statistisches Bundesamt's Gemeindeverzeichnis, shown on the
-new Land pages of viafrei.de and in no tool's answer
+with that resource as served by server 2.5.20 on 2026-11-08**: 270 sources, the 269
+of server 2.5.8 and one added in server 2.5.14. 256 of the 270 are held (three of
+those feed no tool: the streets, drawn on the site's maps, the area of each Land,
+shown on the Land pages, and the match of tram stops to underground stations, which
+decides which stops have a station page), 9 are planned (licence read, nothing
+ingested yet) and five are discontinued. The new row is that match: which tram stops
+of the German stop register lie within 300 m of an **underground station mapped in
+OpenStreetMap**, a separate ODbL database of ours
+([below](#and-the-underground-stations-on-viafreides-station-pages)). One more
+change between 2.5.8 and 2.5.20 is not a new row: a charging site counts as **free of
+charge** also when its operator publishes an ad-hoc tariff of 0 that is at most 90
+days old
+([the charging section](#charging-data--cc-by-40-cc0-10-and-dl-deby-2-0)). The
+area of each Bundesland from the Statistisches Bundesamt, the row added in 2.5.8, is
+shown on the Land pages of viafrei.de and in no tool's answer
 ([below](#destatis--the-area-of-each-land--dl-deby-2-0)). Two lines changed in
 server 2.5.7: MobiData BW's parking rows for **Heidelberg and Konstanz** are now
 credited under CC BY 4.0, the licence both cities now state for their own data
@@ -298,6 +306,31 @@ arrangement of the same database; the export holds all of it.
 This binds you only if you take the streets off our maps into a database of your
 own; reading a map carries no obligation beyond the credit on it.
 
+### And the underground stations on viafrei.de's station pages
+
+Since server 2.5.14 viafrei.de has a station page for a **U-Bahn or Stadtbahn
+station** that is a tram stop in the German stop register (zHV): the stop gets a
+page when OpenStreetMap maps an underground station within 300 m of it, a U-Bahn
+station or a light-rail stop below ground. Which stop, which OpenStreetMap station,
+its kind and how far it lies is kept in a **seventh ODbL database** of ours, built
+from the OpenStreetMap Germany extracts and never joined to our other OpenStreetMap
+databases or to any other source. **No MCP tool answers from it.** The page's
+content (the station's name, its lines, its departures, its lifts) comes from the
+stop register, the timetable and the operators, never from OpenStreetMap; what
+OpenStreetMap decides is only that the page exists.
+
+A page that exists only because of the match, and every list on the site that names
+such a station, carries the line, linked to the licence:
+
+```
+Als U-Bahn- oder Stadtbahnstation erkannt mit Daten von OpenStreetMap: © OpenStreetMap-Mitwirkende, ODbL 1.0
+```
+
+and the same § 4.6 offer as for the streets: the complete contents of that database
+as CSV, with our alterations, under ODbL 1.0, free of charge on request to the
+contact address in the Impressum on viafrei.de. Reading a station page carries no
+obligation beyond the credit on it.
+
 ---
 
 ## The catalogue
@@ -335,8 +368,8 @@ The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.5.8,
-2026-11-03), it exposes twenty-four tools, twenty-two of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.5.20,
+2026-11-07), it exposes twenty-four tools, twenty-two of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
@@ -621,6 +654,8 @@ feed, live, in the resource `viafrei://coverage`.
 | `osm` | OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | held |
 | **Streets on the maps** — feeds no tool; site: the streets drawn under the marks of the place, station and motorway maps ([below](#and-the-streets-on-viafreides-maps)) | | | |
 | `osm_streets` | Straßen: © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | held |
+| **Underground stations** — feeds no tool; site: which tram stops have a station page as a U-Bahn or Stadtbahn station, and the lists that name such a station ([above](#and-the-underground-stations-on-viafreides-station-pages)) | | | |
+| `osm_underground_stations` | Als U-Bahn- oder Stadtbahnstation erkannt mit Daten von OpenStreetMap: © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | held |
 | **Low-emission zones** — feeds `get_driving_rules` (with a place or a coordinate) and `describe_location`; site: the low-emission-zone line in the rules block of the place pages | | | |
 | `berlin_umweltzone` | Umweltzone: Land Berlin, Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `aachen_umweltzone` | Umweltzone: Stadt Aachen (2026), Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
@@ -1093,12 +1128,17 @@ Eco-Movement's availability feeds are CC BY 4.0.
 - **Bundesnetzagentur** asks for a specific name: *"Als Namensnennung für Daten
   dieser Internetseite ist Bundesnetzagentur.de zu verwenden"*, and the line uses
   exactly that.
-  Since server 2.5.4 the register is also the one source of the **terms of use**
+  Since server 2.5.4 the register is also the source of the **terms of use**
   that `find_charging_station`'s `conditions` and the charging card filter on (open
   around the clock, card payment at the charger, free of charge, open to the
-  public): no operator feed states them, so a site from another feed, or one the
-  register states nothing for, is left out of a filtered answer and counted, never
-  assumed to qualify.
+  public). Since server 2.5.9 one term has a second source: a site counts as
+  **free of charge** also when its operator's own feed publishes an ad-hoc tariff
+  of 0 that is at most 90 days old. A site that states none of these, in the
+  register or in such a tariff, is left out of a filtered answer and counted,
+  never assumed to qualify. Since server 2.5.13 the plug filter, `mcs` (the
+  Megawatt Charging System of electric lorries) included, is decided point by
+  point, so an answer lists only the plugs a site's points actually carry, whichever feed lists
+  them.
 - **"Open Data (freie Nutzung)"** is the access point's label on some operators'
   feeds (EDRI's and ENERANDO's availability, Grid & Co.'s and Road's both feeds,
   Monta's master file, and since server 2.3.23 ELU Mobility's both feeds), with no
@@ -1181,7 +1221,7 @@ privacy rights (§ 2(b)(1)); neither are its photo links.
 OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0
 ```
 
-**Which answers carry it**, in the platform's own words as of server 2.1.8 (unchanged since 2.1.5):
+**Which answers carry it**, in the platform's own words as of server 2.1.8 (since then the list has grown: since server 2.5.14 it also names an OpenStreetMap underground station named in an answer, see below):
 *"Only results that contain a row of one of these two OSM tables carry this line —
 an input that resolved through them, a landmark offered beside a town of the same
 name, an OpenStreetMap car park listed in an answer, an OpenStreetMap motorway
@@ -1225,6 +1265,12 @@ part of an answer and the map a Produced Work from our ODbL database. The bounda
 stays what it was: a filter, never shown. The one OpenStreetMap layer a map draws,
 since server 2.4.7, is the streets, from a separate database of their own
 ([above](#and-the-streets-on-viafreides-maps)).
+
+Since server 2.5.14 `find_poi` can also name **U-Bahn stations and underground light-rail stops** from
+the same points of interest, each as OpenStreetMap maps it and with no departures,
+lifts or operator taken from the node; such an answer carries the same line. The
+station pages that exist because of an underground station are a separate database
+([above](#and-the-underground-stations-on-viafreides-station-pages)).
 
 Our ODbL § 4.6 offer is [above](#and-one-that-applies-if-you-get-an-openstreetmap-derived-result-back).
 
@@ -1765,10 +1811,10 @@ traffic messages, planned until 2.5.1, are held as a backup since 2.5.2.
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; since
 server 2.5.6 the sites only they carried no longer answer (see the charging section).
 
-**Held back.** Nothing at server 2.5.8. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.5.20. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.5.8. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.5.20. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1832,11 +1878,11 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.5.8 on 2026-11-04, not typed: every id it
+  by line with it as served by server 2.5.20 on 2026-11-08, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
-  fetch through. No row was added at 2.3.12 or 2.3.18; the one added in 2.5.8, the six added in 2.5.4, the three added between
+  fetch through. No row was added at 2.3.12 or 2.3.18; the one added in 2.5.14, the one added in 2.5.8, the six added in 2.5.4, the three added between
   2.4.4 and 2.4.9, the eight added in 2.4.2 and 2.4.3, the fourteen added at 2.3.23
   and the 25 added at 2.2.14 were taken from the same resource.
 - Every row in our internal register records the licence, the operative sentence,

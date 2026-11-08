@@ -46,10 +46,49 @@ one search away from the box in the site's header.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in server 2.5.8: a whole railway station in one answer, one Bundesland's
+> **New in server 2.5.9 to 2.5.20: lorry chargers, free charging from the
+> operator's own tariff, refusals that show the call to make instead, and on
+> viafrei.de a desktop dashboard, U-Bahn and Stadtbahn station pages and pages for
+> developers and businesses.** No tool was added, renamed or removed; one of the
+> twenty-four, `find_charging_station`, accepts one more plug.
+>
+> - **Chargers for electric lorries.** `find_charging_station` takes `connector: "mcs"`,
+>   the Megawatt Charging System that heavy electric lorries charge with
+>   ([example](#-real-answers)). The plug and MCS filters are decided point by point,
+>   so an answer lists only the plugs a site's points actually carry.
+> - **"Free of charge" from the operator's own price list too.** The `conditions`
+>   filter's `free` now also counts a site whose operator publishes an ad-hoc tariff
+>   of 0 that is at most 90 days old, beside what the Bundesnetzagentur's register
+>   states. A site that states nothing is still left out and counted, never assumed.
+> - **A refusal says what to ask instead.** A call that cannot be answered says why
+>   and what would work: a missing or invalid input ends with an example call, a
+>   point outside Germany asks for a German place, and `_meta.errorCode` (with
+>   `_meta.errorReason` where there is one) says which kind of refusal it is
+>   ([example](#-real-answers)).
+> - **Discovery on both hosts.** `viafrei.de/.well-known/mcp.json` and
+>   `mcp.viafrei.de/.well-known/mcp/server-card.json` serve the same server card,
+>   and `viafrei.de/.well-known/security.txt` (RFC 9116) names the contact.
+> - **On viafrei.de**: a [developers page](https://viafrei.de/en/developers) with a
+>   quickstart per client, a recorded try-it call and every tool with an example
+>   question, and a [business page](https://viafrei.de/en/business) with a table of
+>   what a business may do with each kind of source; at 1024 px and wider a
+>   dashboard layout (the items in one column, beside a map whose marks link back to
+>   them, and on the home a strip of the most affected motorways and stations);
+>   every page opening on a phone with what it is about, a card's credits folded with
+>   the figures they credit; station pages for U-Bahn and Stadtbahn stations, found
+>   through OpenStreetMap, each naming the nearby tram and bus stops with their live
+>   departures; departure boards that refresh every minute in place; "use my location"
+>   at a station, a fuel or charging station or a rest area opening that place's page;
+>   and shorter addresses for the fuel and charging pages, with every older address
+>   redirected.
+> - **Fixed:** a single misread date in a city's traffic message no longer stops that
+>   city's whole feed; the motorway messages of the national access point no longer
+>   wait behind the large feeds; central Köln is called Köln again; and the home's
+>   "most affected stations" block reads every regional realtime feed, not one.
+>
+> **Before that, server 2.5.8: a whole railway station in one answer, one Bundesland's
 > motorways at a glance, and on viafrei.de a page for every Land, every fuel station
-> and every charging site.** One tool was added, `describe_station`; none was renamed
-> or removed.
+> and every charging site.** One tool was added then, `describe_station`.
 >
 > - **A whole station in one answer.** The new tool
 >   [`describe_station`](API.md#describe_station--describe-a-railway-station) answers
@@ -76,7 +115,7 @@ one search away from the box in the site's header.
 >   read; and recent places in the header's place bar that each open their own place,
 >   and a station chosen from the search remembered as that station, reopening its page.
 >
-> **Before that, server 2.5.4 and 2.5.5:** published speed-camera locations for
+> **Earlier, server 2.5.4 and 2.5.5:** published speed-camera locations for
 > planning, everyday needs near a place, departures around a place, charging by terms
 > of use, Trier's car parks, and bus and train cards that read like a departure board.
 > One tool was added then, `find_speed_cameras`. Server 2.5.6 and 2.5.7 added no tool.
@@ -158,7 +197,7 @@ comes back in the language you asked in.
 | 🗺️ **planning a trip** | *Ich plane eine Fahrt nach Düsseldorf: Wo stehen dort feste Blitzer?* · *Which speed-camera locations does Karlsruhe publish?* — for planning only: the answer opens with the § 23 Abs. 1c StVO notice, and a driver may not use it while driving |
 | 🚚 **driving a lorry** | *Darf der Lang-Lkw auf die A7?* · *Which height limits are there for lorries in Bremen?* · *Gibt es Lkw-Durchfahrtsverbote bei Bielefeld?* · *Wann ist der nächste Lkw-Fahrverbotstag?* · *Gilt am 31. Oktober in Niedersachsen Lkw-Fahrverbot?* · *Welche Durchfahrtshöhen gibt es am Kölner Dom?* · *Where are the lorry bans in Dresden?* |
 | 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Is traffic backed up on the Cologne motorway ring — A1, A3 or A4?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
-| ⚡ **driving electric or on hydrogen** | *Where can I charge with Type 2 near Leipzig?* · *Which fast chargers near Leipzig are open around the clock and take a card?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* · *Is there an EnBW charger with 150 kW or more in Stuttgart?* · *Where can I fill up a hydrogen lorry near Hamburg?* |
+| ⚡ **driving electric or on hydrogen** | *Where can I charge with Type 2 near Leipzig?* · *Which fast chargers near Leipzig are open around the clock and take a card?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* · *Is there an EnBW charger with 150 kW or more in Stuttgart?* · *Where can I fill up a hydrogen lorry near Hamburg?* · *Where can my electric lorry charge near Munich?* · *Gibt es in Stuttgart kostenlose Ladesäulen?* |
 | 🅿️ **parking** | *Is the P+R at Fröttmaning usually full in the morning?* · *Wie viele Plätze sind in den Kasseler Parkhäusern frei?* · *Which car parks in Trier have spaces?* · *Which car parks in Konstanz still have spaces?* · *How full are the lorry parks along the A9?* · *Is there a free disabled parking bay near Dortmund's Hansastraße?* · *Find a rest area with lorry parking on the A9* · *Rastplatz mit Dusche an der A7?* · *Where can I park on the street near Hamburg Rathaus?* |
 | ⛽ **filling up** | *Where is diesel cheapest near Kassel?* · *Welche Tankstellen gibt es in Weimar?* |
 | ♿ **travelling step-free** | *Funktioniert der Aufzug am Bahnhof Köln Messe/Deutz?* · *Is Tübingen Hbf step-free?* · *Ist die Bushaltestelle Ludgeriplatz in Münster barrierefrei?* · *Which platforms at Leipzig Hbf are step-free?* |
@@ -226,8 +265,9 @@ roads and around a place it watches closures and restrictions only, and says so.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first two were asked of **server 2.5.8 on 2026-11-04 at 01:13
-Berlin time**, in the night after it went live. The next five were asked of server
+are not mock-ups. The first two were asked of **server 2.5.20 on 2026-11-08 at 11:34
+and 11:35 Berlin time**. The next two were asked of server 2.5.8 on 2026-11-04 at
+01:13 Berlin time, in the night after it went live. The next five were asked of server
 2.5.5 on 2026-11-03 at 03:20 Berlin time, a few hours after that release reached
 production. The next three were asked of server 2.5.2 on 2026-11-02 between 03:56
 and 04:10 Berlin time, in the night before 2.5.3 went live. The next was asked of
@@ -256,6 +296,39 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🚛 "Where can my electric lorry charge near Munich?"</b> — <code>find_charging_station</code> with <code>place: "München"</code>, <code>connector: "mcs"</code>, <code>radius_km: 25</code>, <code>limit: 3</code>, <code>language: "en"</code></summary>
+
+```text
+Charging around München (within 25 km, MCS), nearest first, sites wholly out of order last:
+1. MAN, Dr.-Ernst-Zimmermann-Allee 5, 85757 München/Karlsfeld, 85757 Karlsfeld (München) — 11.5 km, MCS, up to 500 kW, 0.79 €/kWh, out of order (as of 11:21)
+Every listed site reports all its matching points out of order.
+Site id for watch_situation (kind "charger"): 1 = 2720
+
+Source: Ladepunkte: Ampeco Ltd. (EDRI) via Mobilithek, CC0 1.0 (…) · Ladepunkt-Verfügbarkeit: Ampeco Ltd. (EDRI) via Mobilithek, Open Data (freie Nutzung) (…) · Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0, Datenquellen: https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_gn250.pdf (Daten verändert) (…) · As of 11:21
+```
+New in 2.5.13: `connector: "mcs"`, the Megawatt Charging System. Within 25 km of
+Munich one site had an MCS point, and its operator's live feed reported it out of
+order at that moment, which the answer says rather than hiding the site; the site id
+lets `watch_situation` report when it turns free. Asked the same of Hamburg and Kassel,
+the server answered that none of the 2838 and 643 sites within 25 km has one, and
+suggested widening the radius or dropping the filter.
+*Not edited, except the URIs.*
+</details>
+
+<details>
+<summary><b>❓ "Find me a fast charger."</b> (no place named) — <code>find_charging_station</code> with <code>min_power_kw: 150</code>, <code>language: "en"</code></summary>
+
+```text
+No place given. Ask the person where: a town, a postcode or their position. Then pass the town (or postcode and town, "36037 Fulda") as place, or their position as lat+lon — for example {"place": "Fulda"} or {"lat": 50.55, "lon": 9.68}.
+```
+New in 2.5.13: a refusal ends with a call that would work. The result is marked
+`isError`, and `_meta` says `"errorCode": "invalid_input"` and
+`"errorReason": "place_missing"`, so a client can tell a question it must ask the
+person from a fault of the server.
+*Not edited.*
+</details>
+
+<details>
 <summary><b>🚉 "Tell me about Leipzig Hbf."</b> — <code>describe_station</code> with <code>station: "Leipzig Hbf"</code>, <code>departures: 3</code>, <code>language: "en"</code></summary>
 
 ```text
@@ -1878,6 +1951,19 @@ The station map marks each lift at its own position, every map says how fresh it
 and the traffic light and the map refresh in place every two minutes; a map that is
 not ready in time is shown as its text instead, so the page never waits for it.
 
+Since 2.5.10 a station's board updates itself once a minute, but only while you can
+see the tab. Since 2.5.14 **U-Bahn and Stadtbahn stations have pages too**: a tram
+stop of the German stop register gets one when OpenStreetMap maps an underground
+station within 300 m of it, and such a page carries the OpenStreetMap line and the
+share-alike offer described in [SOURCES.md](SOURCES.md); its content (name, lines,
+departures, lifts) comes from the stop register, the timetable and the operators.
+Every station page also names the nearby tram and bus stops, each with its own live
+departures. "Use my location" at a station, a fuel or charging station or a rest area
+opens that place's own page; the position goes to the server inside the request, not in
+the address, and is not written to any log. Since 2.5.17, at 1024 px and wider, station, place and motorway pages
+are a dashboard: the items in one column and a map beside them that stays in view,
+each item linked to its mark.
+
 **Every Bundesland has a page** since 2.5.8, in every language, with an index at
 **[viafrei.de/en/states](https://viafrei.de/en/states)**: Hessen is
 [viafrei.de/en/state/hessen](https://viafrei.de/en/state/hessen). It shows the Land's
@@ -1888,6 +1974,10 @@ facts, among them its area from the Statistisches Bundesamt, and its largest tow
 `/en/fuel/…` and `/en/charging/…`, linked from the fuel and charging cards and from
 the answers of `find_fuel_station`, `find_cheapest_fuel` and `find_charging_station`;
 the Land pages and each kind of station page are listed in sitemaps of their own.
+Since 2.5.19 such a page's address is its description alone
+(`/de/charging/<operator>-<town>-<street>`), with a short key added only when two
+pages share a description, and every older address answers with a permanent
+redirect to the current one.
 
 **Every motorway exit has a page of its own** since 2.4.1, under its motorway: the A3's
 junction Breitscheid is
@@ -2040,7 +2130,7 @@ Restart the client and ask one of the questions above.
 
 <!-- catalogue:begin — generated by scripts/gen-readme-catalogue.mjs from catalogue.json; do not edit by hand -->
 
-**24 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.5.8, snapshot of 2026-11-03. Each line is the server's own words; the full parameters are in [API.md](API.md).
+**24 tools, 9 prompts, 10 resources and 2 resource templates** — server 2.5.20, snapshot of 2026-11-07. Each line is the server's own words; the full parameters are in [API.md](API.md).
 
 #### 🚗 On the road
 
@@ -2207,7 +2297,16 @@ curl -s https://mcp.viafrei.de/mcp \
   client that subscribes to that resource is told when it reports something new.
   It reaches no inbox and no phone.
 - **Machine-readable failures**, in the bridge too: one line on stderr and a
-  distinct exit code per cause (see below).
+  distinct exit code per cause (see below). On the server, a refusal carries
+  `isError` and `_meta.errorCode` (`invalid_input`, `not_found`, `out_of_coverage`
+  and the rest of a closed list), and an input it cannot use is answered with an
+  example call that would work.
+- **Discoverable.** The server card is served at
+  `https://mcp.viafrei.de/.well-known/mcp/server-card.json` and, the same document,
+  at `https://viafrei.de/.well-known/mcp.json`; `https://viafrei.de/.well-known/security.txt`
+  names the contact for security reports. The
+  [developers page](https://viafrei.de/en/developers) has a quickstart per client and
+  every tool with an example question.
 
 ### Bridge configuration
 

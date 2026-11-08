@@ -5,6 +5,84 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.5.20] - 2026-11-07
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.5.20 while the registry's latest is 2.5.8, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**CHANGED** — the automation knows what moved, not what it means:
+
+- tools: find_charging_station differs between the server and the snapshot
+
+**Lorry chargers, free charging from the operator's own tariff, and refusals that
+show the call to make.** The server moved from 2.5.8 to 2.5.20 in twelve patch
+releases. No tool, prompt or resource was added, removed or renamed.
+`find_charging_station` gained one value: `connector` accepts `"mcs"`, and the
+description of `conditions` now says where "free of charge" can also come from. No
+other argument changed.
+
+### Added (server 2.5.9 to 2.5.20)
+
+- **`connector: "mcs"` in `find_charging_station`**: the Megawatt Charging System,
+  the plug of heavy electric lorries, for a lorry or truck only. The plug filters
+  are decided point by point, so an answer lists only the plugs a site's points
+  actually carry.
+- **"Free of charge" from the operator's tariff.** `conditions: ["free"]` also
+  counts a site whose operator publishes an ad-hoc tariff of 0 that is at most 90
+  days old, beside the Bundesnetzagentur's register. A site that states nothing is
+  left out and counted, never assumed.
+- **Discovery on both hosts**: the server card at
+  `mcp.viafrei.de/.well-known/mcp/server-card.json` and `viafrei.de/.well-known/mcp.json`
+  is the same document, and `viafrei.de/.well-known/security.txt` (RFC 9116) names
+  the contact for security reports.
+- **On viafrei.de**: a page for developers (a quickstart per client, a recorded
+  try-it call, every tool with an example question) and one for businesses (what a
+  business may do with each class of source); a dashboard layout at 1024 px and
+  wider, with the list beside a map whose marks link to the rows; station pages for
+  U-Bahn and Stadtbahn stations, found through OpenStreetMap, each listing the tram
+  and bus stops around it with live departures; "use my location" at a station, a
+  fuel or charging station or a rest area opening that place's page.
+
+### Changed (server 2.5.9 to 2.5.20)
+
+- **Refusals say what would work.** An input that is missing or cannot be used is
+  answered with an example call, and the refusals (invalid input, not found, out of
+  coverage) are told apart from server faults by `_meta.errorCode`.
+- **Pages open with their answer on a phone**: a motorway, place or station page
+  starts with its traffic light, its count and the first items; credit lines fold
+  together with the figures they credit, never apart from them.
+- **Departure boards refresh every minute in place** while the page is open in
+  front of you.
+- **Shorter addresses for fuel and charging pages**: the description alone, a short
+  key only where two pages share one, and every older address redirected.
+
+### Fixed (server 2.5.9 to 2.5.20)
+
+- **One misread date no longer stops a city's traffic messages**: a demonstration
+  announced for one day was read as a closure ending as it began, and the whole run
+  was refused.
+- **Fast motorway messages no longer wait behind the large feeds** of the national
+  access point, so they refresh at their own rhythm again.
+- **The home's "most affected stations" block** reads every regional realtime feed,
+  counting a departure two feeds both report once.
+- **The city centre of Köln carries its own name once more**; a place page now
+  answers inside two seconds while its cards are still loading, and no sitemap part
+  times out any longer.
+
+### Bridge
+
+- **README and SOURCES.md describe server 2.5.20.** The README's "New" box covers
+  2.5.9 to 2.5.20, two answers captured from server 2.5.20 on 2026-11-08 were added
+  (an MCS charger near München, and a refusal with its example call), the station
+  section gained the U-Bahn and Stadtbahn pages, the minute refresh and the dashboard,
+  and the developers section names the error codes and the discovery files.
+  SOURCES.md was compared again with `viafrei://attribution`: 270 rows, one added
+  (which tram stops have an underground OpenStreetMap station, a seventh ODbL
+  database, with its own obligation section), and the charging section names the
+  operator tariff as a second source of "free of charge" and the `mcs` plug.
+
 ## [2.5.8] - 2026-11-03
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
@@ -4215,6 +4293,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.5.20]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.20
 [2.5.8]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.8
 [2.5.7]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.7
 [2.5.6]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.5.6
