@@ -27,7 +27,8 @@ other argument changed.
 
 - **`connector: "mcs"` in `find_charging_station`**: the Megawatt Charging System,
   the plug of heavy electric lorries, for a lorry or truck only. The plug filters
-  are decided point by point, so a site keeps the plugs its points really have.
+  are decided point by point, so an answer lists only the plugs a site's points
+  actually carry.
 - **"Free of charge" from the operator's tariff.** `conditions: ["free"]` also
   counts a site whose operator publishes an ad-hoc tariff of 0 that is at most 90
   days old, beside the Bundesnetzagentur's register. A site that states nothing is
@@ -52,7 +53,8 @@ other argument changed.
 - **Pages open with their answer on a phone**: a motorway, place or station page
   starts with its traffic light, its count and the first items; credit lines fold
   together with the figures they credit, never apart from them.
-- **Departure boards refresh every minute in place**, while the tab is visible.
+- **Departure boards refresh every minute in place** while the page is open in
+  front of you.
 - **Shorter addresses for fuel and charging pages**: the description alone, a short
   key only where two pages share one, and every older address redirected.
 

@@ -55,7 +55,7 @@ one search away from the box in the site's header.
 > - **Chargers for electric lorries.** `find_charging_station` takes `connector: "mcs"`,
 >   the Megawatt Charging System that heavy electric lorries charge with
 >   ([example](#-real-answers)). The plug and MCS filters are decided point by point,
->   so a site keeps exactly the plugs its points have.
+>   so an answer lists only the plugs a site's points actually carry.
 > - **"Free of charge" from the operator's own price list too.** The `conditions`
 >   filter's `free` now also counts a site whose operator publishes an ad-hoc tariff
 >   of 0 that is at most 90 days old, beside what the Bundesnetzagentur's register
@@ -72,11 +72,11 @@ one search away from the box in the site's header.
 >   quickstart per client, a recorded try-it call and every tool with an example
 >   question, and a [business page](https://viafrei.de/en/business) whose licence table
 >   says, per class of source, what a business may do with it; at 1024 px and wider a
->   dashboard layout (the list on the left, a map on the right whose marks are linked
->   to the rows, and on the home a strip of the most affected motorways and stations);
+>   dashboard layout (the items in one column, beside a map whose marks link back to
+>   them, and on the home a strip of the most affected motorways and stations);
 >   every page opening on a phone with what it is about, a card's credits folded with
 >   the figures they credit; station pages for U-Bahn and Stadtbahn stations, found
->   through OpenStreetMap, each listing the tram and bus stops around it with live
+>   through OpenStreetMap, each naming the nearby tram and bus stops with their live
 >   departures; departure boards that refresh every minute in place; "use my location"
 >   at a station, a fuel or charging station or a rest area opening that place's page;
 >   and shorter addresses for the fuel and charging pages, with every older address
@@ -1957,12 +1957,12 @@ stop of the German stop register gets one when OpenStreetMap maps an underground
 station within 300 m of it, and such a page carries the OpenStreetMap line and the
 share-alike offer described in [SOURCES.md](SOURCES.md); its content (name, lines,
 departures, lifts) comes from the stop register, the timetable and the operators.
-Every station page also lists the tram and bus stops around it with their live
+Every station page also names the nearby tram and bus stops, each with its own live
 departures. "Use my location" at a station, a fuel or charging station or a rest area
-opens that place's own page; the position is sent in the request body only and is
-never logged. Since 2.5.17, at 1024 px and wider, station, place and motorway pages
-are a dashboard: the list on the left and a map on the right that stays in view,
-each row linked to its mark.
+opens that place's own page; the position goes to the server inside the request, not in
+the address, and is not written to any log. Since 2.5.17, at 1024 px and wider, station, place and motorway pages
+are a dashboard: the items in one column and a map beside them that stays in view,
+each item linked to its mark.
 
 **Every Bundesland has a page** since 2.5.8, in every language, with an index at
 **[viafrei.de/en/states](https://viafrei.de/en/states)**: Hessen is

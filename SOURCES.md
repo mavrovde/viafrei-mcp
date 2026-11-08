@@ -1137,7 +1137,7 @@ Eco-Movement's availability feeds are CC BY 4.0.
   register or in such a tariff, is left out of a filtered answer and counted,
   never assumed to qualify. Since server 2.5.13 the plug filter, `mcs` (the
   Megawatt Charging System of electric lorries) included, is decided point by
-  point, so a site keeps exactly the plugs its points have, whichever feed lists
+  point, so an answer lists only the plugs a site's points actually carry, whichever feed lists
   them.
 - **"Open Data (freie Nutzung)"** is the access point's label on some operators'
   feeds (EDRI's and ENERANDO's availability, Grid & Co.'s and Road's both feeds,
