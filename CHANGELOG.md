@@ -67,8 +67,9 @@ other argument changed.
   access point, so they refresh at their own rhythm again.
 - **The home's "most affected stations" block** reads every regional realtime feed,
   counting a departure two feeds both report once.
-- **Central Köln is named Köln again**, place pages answer within two seconds while
-  their cards load, and every sitemap part answers in time.
+- **The city centre of Köln carries its own name once more**; a place page now
+  answers inside two seconds while its cards are still loading, and no sitemap part
+  times out any longer.
 
 ### Bridge
 

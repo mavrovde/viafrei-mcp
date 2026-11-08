@@ -70,8 +70,8 @@ one search away from the box in the site's header.
 >   and `viafrei.de/.well-known/security.txt` (RFC 9116) names the contact.
 > - **On viafrei.de**: a [developers page](https://viafrei.de/en/developers) with a
 >   quickstart per client, a recorded try-it call and every tool with an example
->   question, and a [business page](https://viafrei.de/en/business) whose licence table
->   says, per class of source, what a business may do with it; at 1024 px and wider a
+>   question, and a [business page](https://viafrei.de/en/business) with a table of
+>   what a business may do with each kind of source; at 1024 px and wider a
 >   dashboard layout (the items in one column, beside a map whose marks link back to
 >   them, and on the home a strip of the most affected motorways and stations);
 >   every page opening on a phone with what it is about, a card's credits folded with
@@ -1951,8 +1951,8 @@ The station map marks each lift at its own position, every map says how fresh it
 and the traffic light and the map refresh in place every two minutes; a map that is
 not ready in time is shown as its text instead, so the page never waits for it.
 
-Since 2.5.10 the departure board refreshes every minute in place, only while the tab
-is visible. Since 2.5.14 **U-Bahn and Stadtbahn stations have pages too**: a tram
+Since 2.5.10 a station's board updates itself once a minute, but only while you can
+see the tab. Since 2.5.14 **U-Bahn and Stadtbahn stations have pages too**: a tram
 stop of the German stop register gets one when OpenStreetMap maps an underground
 station within 300 m of it, and such a page carries the OpenStreetMap line and the
 share-alike offer described in [SOURCES.md](SOURCES.md); its content (name, lines,
