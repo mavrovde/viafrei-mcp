@@ -49,8 +49,8 @@ one search away from the box in the site's header.
 > **New in server 2.5.9 to 2.5.20: lorry chargers, free charging from the
 > operator's own tariff, refusals that show the call to make instead, and on
 > viafrei.de a desktop dashboard, U-Bahn and Stadtbahn station pages and pages for
-> developers and businesses.** No tool was added, renamed or removed; all twenty-four
-> stay as they were, and one gained an option.
+> developers and businesses.** No tool was added, renamed or removed; one of the
+> twenty-four, `find_charging_station`, accepts one more plug.
 >
 > - **Chargers for electric lorries.** `find_charging_station` takes `connector: "mcs"`,
 >   the Megawatt Charging System that heavy electric lorries charge with
