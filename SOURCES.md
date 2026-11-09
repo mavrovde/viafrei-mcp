@@ -15,16 +15,21 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.5.20 on 2026-11-08**: 270 sources, the 269
-of server 2.5.8 and one added in server 2.5.14. 256 of the 270 are held (three of
+with that resource as served by server 2.5.28 on 2026-11-09**: 272 sources, the 270
+of server 2.5.20 and two added in server 2.5.23. 258 of the 272 are held (four of
 those feed no tool: the streets, drawn on the site's maps, the area of each Land,
-shown on the Land pages, and the match of tram stops to underground stations, which
-decides which stops have a station page), 9 are planned (licence read, nothing
-ingested yet) and five are discontinued. The new row is that match: which tram stops
+shown on the Land pages, the match of tram stops to underground stations, which
+decides which stops have a station page, and DB InfraGO's railway network, drawn on
+the site's live map), 9 are planned (licence read, nothing ingested yet) and five are
+discontinued. The two rows of 2.5.23 are **VBB's register of lifts and entrances at
+Berlin and Brandenburg stops**, which `check_station_facilities` answers from
+([below](#step-free-access--surveys-and-openstreetmap)), and **DB InfraGO's railway
+network** (Bahn-Geodaten), the Bahn layer of the site's live map
+([below](#the-websites-own-sources)). The row of 2.5.14 is that match: which tram stops
 of the German stop register lie within 300 m of an **underground station mapped in
 OpenStreetMap**, a separate ODbL database of ours
 ([below](#and-the-underground-stations-on-viafreides-station-pages)). One more
-change between 2.5.8 and 2.5.20 is not a new row: a charging site counts as **free of
+change between 2.5.8 and 2.5.28 is not a new row: a charging site counts as **free of
 charge** also when its operator publishes an ad-hoc tariff of 0 that is at most 90
 days old
 ([the charging section](#charging-data--cc-by-40-cc0-10-and-dl-deby-2-0)). The
@@ -478,6 +483,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_speed_koeln` | Geschwindigkeitsüberwachung Köln: Stadt Köln, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | **Rail and public transport** — feeds `get_train_departures` (the DELFI timetable also answers an empty or unreadable board), `get_departures`, `check_transit_disruption` (VBN's share where DELFI's trips in Niedersachsen and Bremen are mostly untimed), `watch_situation`; site: the transit card (live departures, the district's punctuality, VBB's in Berlin and Brandenburg), the station pages, and the home's block of the stations most affected now | | | |
 | `db_timetables` | Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `dbinfrago_streckennetz` | Datenquelle: DB InfraGO AG, Bahn-Geodaten / 2026, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `delfi_static` | Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `delfi_rt_tu` | Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | held |
 | `delfi_siri_et` | Echtzeitdaten: DELFI e.V. via Mobilithek, Datensätze „DELFI-Realtime SIRI ET“ (Bahndaten und 14 Regionen), CC BY-SA, bearbeitet | **CC BY-SA**, no version stated | held |
@@ -500,6 +506,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `bfrk_oepnv` | Barrierefreiheit: NVBW Nahverkehrsgesellschaft Baden-Württemberg mbH (BFRK, Haltestellen) via MobiData BW, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
 | `dresden_bf_haltestellen` | Barrierefreiheit: Landeshauptstadt Dresden (Haltestellen Dresden – Barrierefreiheit), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
 | `muenster_bf_haltestellen` | Barrierefreie Bushaltestellen Münster — Datenquelle: Stadt Münster, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
+| `vbb_haltestellenzugaenge` | Aufzüge und Zugänge: VBB Verkehrsverbund Berlin-Brandenburg GmbH (Haltestellenzugänge), CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `tuc_vdv462` | Barrierefreiheit (aus OpenStreetMap): TU Chemnitz (OPENER next, osm2vdv462) via Mobilithek — © OpenStreetMap-Mitwirkende, Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/), bearbeitet | **ODbL 1.0** | held |
 | `frankfurt_lsa` | Ampeln (Lichtsignalanlagen, mit Akustik): Stadt Frankfurt am Main – Straßenverkehrsamt, www.frankfurt.de, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
 | **Fuel** — feeds `find_cheapest_fuel`, `find_fuel_station`, `find_nearby`; site: the fuel card, the fuel page, and the fuel button on a motorway page (loaded only on a click) | | | |
@@ -1636,6 +1643,14 @@ with the stop's step-free line.
   stop's answer, how many traffic signals within 300 m the city lists, and which of
   them have an acoustic signal for blind pedestrians. It is the city's list, never a
   claim that a signal has none.
+- **VBB's lifts and entrances** (VBB Verkehrsverbund Berlin-Brandenburg GmbH,
+  CC BY 4.0), since server 2.5.23: for a Berlin or Brandenburg stop, how many lifts
+  the register lists (counted by location) and how many entrances, and how many of
+  those have a lift: at U Hermannplatz, three lifts and eleven entrances, two of them
+  with a lift (asked on 2026-11-09). We read the register weekly, and the file it
+  serves today is dated 14 September 2022. It says where a lift is, never whether it
+  is working, and "Stufenfrei jetzt" is said only when a live source knows the lift
+  works.
 - **DB's platforms** come from DB InfraGO's inventory, [above](#station-lifts-and-escalators--three-publishers).
 
 A tram, U-Bahn or bus stop named with its city ("Stuttgart Charlottenplatz") is
@@ -1723,7 +1738,12 @@ published in our sources, which never means that nobody checks there.
 viafrei.de reads the same data as the server: its cards, place pages and motorway
 pages are built from the sources above and carry their lines. It uses five sources
 the server does not, and none of them is in any tool answer or has a row of its own
-in `viafrei://attribution`:
+in `viafrei://attribution`. One more, **DB InfraGO's railway network** (`dbinfrago_streckennetz`,
+CC BY 4.0, revision 2026-01-31), does have a row there although no tool answers
+from it: since server 2.5.23 it is the Bahn layer of the site's live map, its 29 901
+features simplified to one drawn path, with dots at DB's larger stations from the
+station register, and its line stands under the map whenever that layer is shown.
+The five:
 
 - **BKG VG2500** ("Verwaltungsgebiete 1 : 2 500 000", Produktstand 31.12.2025),
   under **Datenlizenz Deutschland – Namensnennung 2.0**, new with the motorway
@@ -1783,7 +1803,9 @@ in `viafrei://attribution`:
   asks.
 - **Opus-MT** (Language Technology Research Group, University of Helsinki; CC BY
   4.0, some models Apache-2.0), since server 2.4.4: the translation models that turn
-  police, Land and city traffic messages into the language of a translated page.
+  police, Land and city traffic messages into the language of a translated page;
+  since server 2.5.22 into every language the pages are offered in, over 21 language
+  pairs (18 models under Apache-2.0, three under CC BY 4.0).
   They run on our own server; no message is sent to an outside service. A
   translation is labelled as ours and machine-made, the publisher's attribution
   line stays as the publisher prescribes it, and the German original is always
@@ -1811,10 +1833,10 @@ traffic messages, planned until 2.5.1, are held as a backup since 2.5.2.
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; since
 server 2.5.6 the sites only they carried no longer answer (see the charging section).
 
-**Held back.** Nothing at server 2.5.20. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.5.28. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.5.20. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.5.28. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1878,11 +1900,11 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.5.20 on 2026-11-08, not typed: every id it
+  by line with it as served by server 2.5.28 on 2026-11-09, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
-  fetch through. No row was added at 2.3.12 or 2.3.18; the one added in 2.5.14, the one added in 2.5.8, the six added in 2.5.4, the three added between
+  fetch through. No row was added at 2.3.12 or 2.3.18; the two added in 2.5.23, the one added in 2.5.14, the one added in 2.5.8, the six added in 2.5.4, the three added between
   2.4.4 and 2.4.9, the eight added in 2.4.2 and 2.4.3, the fourteen added at 2.3.23
   and the 25 added at 2.2.14 were taken from the same resource.
 - Every row in our internal register records the licence, the operative sentence,
