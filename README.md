@@ -46,7 +46,38 @@ one search away from the box in the site's header.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in server 2.5.9 to 2.5.20: lorry chargers, free charging from the
+> **New in server 2.5.21 to 2.5.28: distances in metres, train boards that know
+> DB's horizon, lifts and entrances at Berlin and Brandenburg stops, and on
+> viafrei.de a live map and road messages in every page language.** No tool was
+> added, renamed or removed; there are still twenty-four.
+>
+> - **Distances in metres.** Every site in `find_charging_station` and every car park
+>   in `find_parking` carries `distanceM` beside `distanceKm`, and a main facility in
+>   `find_parking` carries `externalId`, the publisher's own id where it has one. Asked for 150 kW chargers near Leipzig
+>   Hbf on 2026-11-09, the nearest answered with `"distanceKm": 0.9, "distanceM": 920`.
+> - **A train board past DB's horizon says so.** `get_train_departures` asked about a
+>   window DB has not published yet answers `"dbTimetables": {"answered": false,
+>   "reason": "not_published"}` and lists the planned departures from the DELFI
+>   timetable instead, never "unreachable". A board for a later time names its own
+>   window.
+> - **Lifts and entrances in Berlin and Brandenburg.** `check_station_facilities`
+>   reads VBB's register of stop entrances: for U Hermannplatz on 2026-11-09,
+>   `"lifts": 3, "entrances": {"total": 11, "withLift": 2}`. The register says where a
+>   lift is, not whether it works, and the answer never calls a stop step-free
+>   because of it.
+> - **Sharper answers.** `find_parking` reads occupancy and the lorry-parking terms
+>   against the time of the request; the winter-tyre line follows the forecast, so ice
+>   on the road is no longer lost under a frost warning; a speed-camera search that finds none names the
+>   register it searched; and a point outside Germany is given no Bundesland.
+> - **On viafrei.de**: a live map with switchable layers for the motorways,
+>   roadworks, the railway network, weather warnings and delays, with a time slider;
+>   police, Land and city road messages machine-translated into every language the
+>   pages are offered in, the German original linked beside each; Land pages with
+>   questions to put to your AI; a station index that opens near you; a railway
+>   traffic light on station pages; "nearby" on every object page; and pages that
+>   open the same way everywhere, with the state, one sentence and its time first.
+>
+> **Before that, server 2.5.9 to 2.5.20: lorry chargers, free charging from the
 > operator's own tariff, refusals that show the call to make instead, and on
 > viafrei.de a desktop dashboard, U-Bahn and Stadtbahn station pages and pages for
 > developers and businesses.** No tool was added, renamed or removed; one of the
