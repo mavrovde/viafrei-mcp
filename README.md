@@ -46,7 +46,28 @@ one search away from the box in the site's header.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in server 2.5.21 to 2.5.28: distances in metres, train boards that know
+> **New in server 2.6.0 to 2.6.8: a new home for the server, reached through
+> Cloudflare, with the same address and the same tools.** No tool was added, renamed
+> or removed, and no input or answer changed shape; there are still twenty-four.
+>
+> - **Nothing to change on your side.** The endpoint is still
+>   `https://mcp.viafrei.de/mcp`, over Streamable HTTP, with no key and no sign-up,
+>   and this package still relays to it. Asked about the A8 at 17:40 on 2026-11-11,
+>   `check_autobahn_traffic` answered from the new server as before: a red traffic
+>   light, 3 jams, 3 closures and 55 roadworks sites, the worst jam
+>   Stuttgart → Karlsruhe at +27 min. `describe_station` for Köln Hbf four minutes
+>   later gave the station's rail lamp red, with 21 of its 71 trips in the window
+>   more than 5 min late.
+> - **A new server in Germany, delivered through Cloudflare.** Production moved to a
+>   server of Hetzner Online GmbH in Germany. Every address, the website and
+>   `mcp.viafrei.de` alike, now reaches it through Cloudflare's network as a reverse
+>   proxy, and the server accepts requests from Cloudflare only. Cloudflare does not
+>   cache the MCP endpoint's answers. The
+>   [privacy policy](https://viafrei.de/en/datenschutz) names both providers, what
+>   each one receives and for how long, and says plainly that there is no route to the
+>   tools that bypasses Cloudflare.
+>
+> **Before that, server 2.5.21 to 2.5.28: distances in metres, train boards that know
 > DB's horizon, lifts and entrances at Berlin and Brandenburg stops, and on
 > viafrei.de a live map and road messages in every page language.** No tool was
 > added, renamed or removed; there are still twenty-four.
