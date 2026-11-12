@@ -52,7 +52,7 @@ one search away from the box in the site's header.
 > removed, and there are still twenty-four tools.
 >
 > - **The tools answer as before.** Asked about the A7 at 19:41 on 2026-11-12,
->   `check_autobahn_traffic` gave the road a red traffic light, with 7 jams,
+>   `check_autobahn_traffic` answered with data as of 19:37: a red traffic light, 7 jams,
 >   21 closures and 100 roadworks sites, and +27 min both from Hannover towards
 >   Kassel and from Würzburg towards Fulda. `describe_station` for Hamburg Hbf in the
 >   same minute gave the rail lamp amber, with 1 of 72 departures cancelled, and named
@@ -62,9 +62,9 @@ one search away from the box in the site's header.
 >   error.
 > - **Search engines and AI crawlers read on a lane of their own.** A crawler the
 >   site can verify is served apart from visitors, so neither slows the other. When
->   that lane is full it gets the last copy of the page it was already given. Only a
->   page built for nobody in particular is ever kept for this: never one built from a
->   visitor's position, cookie or address, and never fuel prices.
+>   that lane is full it gets the last copy of that page we kept. A page is kept for
+>   this only when nothing about a visitor went into it (no location, cookie or
+>   address) and it shows no fuel prices.
 > - **robots.txt.** Meta's AI crawler is now treated like the other AI crawlers and
 >   no longer has a crawl delay. Google's fetchers that act on a person's request are
 >   no longer counted as Google's search crawler.
