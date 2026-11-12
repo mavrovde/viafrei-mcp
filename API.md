@@ -17,7 +17,7 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.6.12 |
+| Server | `viafrei` 2.6.13 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
@@ -470,18 +470,20 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> How punctual public transport is now in one German region: the share of trips ever >5 min late, trips skipping a stop, trips cancelled, the trend and the service alerts in force there (diversions, closed stops). Use when asked whether buses and trains run normally, or a strike, storm or works disrupt them. Do NOT use for a station's departures or a line from a named DEPARTURE station ("RE1 ab Köln Hbf verspätet?"; a destination, "nach …"/"zum …", is not one) — get_train_departures. No per-line figures. Window ≤ 120 min. CC BY-SA (DELFI) or CC BY 4.0 (VBB, Berlin/Brandenburg): show attribution.
+> Public-transport punctuality now in a German region: share of trips >5 min late, skipped stops, cancellations, trend, alerts in force. Use when asked if buses and trains run normally, a strike, storm or works disrupt them, or for a line with no place ("ist die RB33 pünktlich?" → line: answered where it runs, or asks which region). Do NOT use for a station's departures or a line from a named DEPARTURE station ("RE1 ab Köln Hbf?"; "nach …" is no station) — get_train_departures. Figures are region-wide. Window ≤ 120 min. CC BY-SA (DELFI) or CC BY 4.0 (VBB, Berlin/Brandenburg): show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
 | `language` | string | no | `"de"` | one of `"de"`, `"en"` |
 | `lat` | number | no | — | min -90; max 90 |
+| `line` | string | no | — | min length 1; max length 16 |
 | `lon` | number | no | — | min -180; max 180 |
 | `region` | string | no | — | min length 1; max length 120 |
 | `window_min` | integer | no | `60` | min 5; max 120 |
 
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use region.
+- **`line`** — A line name as on the vehicle, e.g. "RB33", "S1", "RE 1", "U6". Give it when the question names a line; with no region the answer covers the Kreise the line runs through, or names the regions where lines of that name run. With region, it is that region's line of the name.
 - **`lon`** — Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use region.
 - **`region`** — The German region to report on, as free text: a Bundesland ("Bayern", "Bavaria", "Nordrhein-Westfalen"), a city ("Hamburg", "Köln"), a Kreis ("Landkreis Fulda") or one of the conurbations Ruhrgebiet, Rhein-Ruhr and Rhein-Main. A town inside a Kreis is reported as that Kreis and the answer says so, because the data is filed at Kreis level. Not a stop, not a street, not an address. Give either region OR lat+lon, never both.
 - **`window_min`** — How many minutes back to look, 5–120 (default 60). The trend compares this window with the equally long one before it, so 60 means "the last hour against the hour before". Use a short window for "right now" and a long one for "has it been bad all morning".
@@ -582,7 +584,7 @@ The server's own instructions to a connecting client, verbatim:
 
 ### `describe_station` — Describe a railway station
 
-**Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
+**Read-only** — it changes nothing. Reaches a third-party source (open world). Idempotent: true. Destructive: false.
 
 > One German railway station as its viafrei.de page shows it: address, step-free platforms now, lifts and escalators (out of service first), platforms, the next departures with live delays, service alerts, parking and charging. Use when asked about a station as a whole: "Was gibt es am Bahnhof Köln Hbf?", "tell me about Leipzig Hbf", "is Hannover Hbf step-free today?". Do NOT use for one lift (check_station_facilities), one train's delay or platform (get_train_departures) or a bus stop (get_departures). Show the attribution line.
 

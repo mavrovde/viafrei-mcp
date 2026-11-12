@@ -5,7 +5,7 @@
   "protocolVersion": "2025-06-18",
   "serverInfo": {
     "name": "viafrei",
-    "version": "2.6.12",
+    "version": "2.6.13",
     "title": "ViaFrei",
     "description": "The German Real-Time Mobility Context Platform for AI. ViaFrei gives AI assistants real-time awareness of Germany. Trains and buses, traffic and roadworks, fuel, charging, parking and weather. One MCP. No API key. No sign-up."
   },
@@ -1261,7 +1261,7 @@
     },
     {
       "name": "check_transit_disruption",
-      "description": "How punctual public transport is now in one German region: the share of trips ever >5 min late, trips skipping a stop, trips cancelled, the trend and the service alerts in force there (diversions, closed stops). Use when asked whether buses and trains run normally, or a strike, storm or works disrupt them. Do NOT use for a station's departures or a line from a named DEPARTURE station (\"RE1 ab Köln Hbf verspätet?\"; a destination, \"nach …\"/\"zum …\", is not one) — get_train_departures. No per-line figures. Window ≤ 120 min. CC BY-SA (DELFI) or CC BY 4.0 (VBB, Berlin/Brandenburg): show attribution.",
+      "description": "Public-transport punctuality now in a German region: share of trips >5 min late, skipped stops, cancellations, trend, alerts in force. Use when asked if buses and trains run normally, a strike, storm or works disrupt them, or for a line with no place (\"ist die RB33 pünktlich?\" → line: answered where it runs, or asks which region). Do NOT use for a station's departures or a line from a named DEPARTURE station (\"RE1 ab Köln Hbf?\"; \"nach …\" is no station) — get_train_departures. Figures are region-wide. Window ≤ 120 min. CC BY-SA (DELFI) or CC BY 4.0 (VBB, Berlin/Brandenburg): show attribution.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1282,6 +1282,12 @@
             "type": "number",
             "minimum": -180,
             "maximum": 180
+          },
+          "line": {
+            "description": "A line name as on the vehicle, e.g. \"RB33\", \"S1\", \"RE 1\", \"U6\". Give it when the question names a line; with no region the answer covers the Kreise the line runs through, or names the regions where lines of that name run. With region, it is that region's line of the name.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16
           },
           "language": {
             "default": "de",
@@ -1628,7 +1634,7 @@
         "title": "Describe a railway station",
         "readOnlyHint": true,
         "idempotentHint": true,
-        "openWorldHint": false,
+        "openWorldHint": true,
         "destructiveHint": false
       },
       "execution": {
