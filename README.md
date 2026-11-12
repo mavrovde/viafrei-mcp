@@ -46,7 +46,30 @@ one search away from the box in the site's header.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in server 2.6.0 to 2.6.8: a new home for the server, reached through
+> **New in server 2.6.9 to 2.6.12: a steadier viafrei.de when it is busy, for
+> people and for the search engines and AI crawlers that read it.** The connector
+> itself is unchanged: no tool, input, answer shape or source was added, changed or
+> removed, and there are still twenty-four tools.
+>
+> - **The tools answer as before.** Asked about the A7 at 19:41 on 2026-11-12,
+>   `check_autobahn_traffic` answered with data as of 19:37: a red traffic light, 7 jams,
+>   21 closures and 100 roadworks sites, and +27 min both from Hannover towards
+>   Kassel and from Würzburg towards Fulda. `describe_station` for Hamburg Hbf in the
+>   same minute gave the rail lamp amber, with 1 of 72 departures cancelled, and named
+>   platform 13/14 as not step-free right now because its lift was out of service.
+> - **A busy place page no longer turns a person away.** While the site is under
+>   load, someone waiting for a place page gets a reduced version of it instead of an
+>   error.
+> - **Search engines and AI crawlers read on a lane of their own.** A crawler the
+>   site can verify is served apart from visitors, so neither slows the other. When
+>   that lane is full it gets the last copy of that page we kept. A page is kept for
+>   this only when nothing about a visitor went into it (no location, cookie or
+>   address) and it shows no fuel prices.
+> - **robots.txt.** Meta's AI crawler is now treated like the other AI crawlers and
+>   no longer has a crawl delay. Google's fetchers that act on a person's request are
+>   no longer counted as Google's search crawler.
+>
+> **Before that, server 2.6.0 to 2.6.8: a new home for the server, reached through
 > Cloudflare, with the same address and the same tools.** No tool was added, renamed
 > or removed, and no input or answer changed shape; there are still twenty-four.
 >

@@ -15,9 +15,9 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.6.8 on 2026-11-11**: 272 sources, the same
-272 as server 2.5.28. Server 2.6 moved to a new host and added, changed or retired no
-source: every line and every state below reads as it did at 2.5.28. The 272 are the
+with that resource as served by server 2.6.12 on 2026-11-12**: 272 sources, the same
+272 as server 2.5.28. Server 2.6 moved to a new host and, up to 2.6.12, added, changed
+or retired no source: every line and every state below reads as it did at 2.5.28. The 272 are the
 270 of server 2.5.20 and two added in server 2.5.23. 258 of the 272 are held (four of
 those feed no tool: the streets, drawn on the site's maps, the area of each Land,
 shown on the Land pages, the match of tram stops to underground stations, which
@@ -375,8 +375,8 @@ The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.6.8,
-2026-11-11), it exposes twenty-four tools, twenty-two of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.6.12,
+2026-11-12), it exposes twenty-four tools, twenty-two of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
@@ -1835,10 +1835,10 @@ traffic messages, planned until 2.5.1, are held as a backup since 2.5.2.
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; since
 server 2.5.6 the sites only they carried no longer answer (see the charging section).
 
-**Held back.** Nothing at server 2.6.8. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.6.12. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.6.8. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.6.12. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1902,7 +1902,7 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.6.8 on 2026-11-11, not typed: every id it
+  by line with it as served by server 2.6.12 on 2026-11-12, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
