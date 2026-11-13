@@ -9,7 +9,7 @@ the server's own text, reproduced verbatim, because that text is what an
 assistant reads when it decides which tool to call; paraphrasing it here would
 document a different server.
 
-**It is a dated snapshot, taken on 2026-11-12.** Generating this file makes
+**It is a dated snapshot, taken on 2026-11-13.** Generating this file makes
 it impossible for the document and the snapshot to disagree — CI regenerates and
 compares — but it cannot keep the snapshot from ageing against the live server,
 because a capture is a point in time. **The source of truth is the running
@@ -17,11 +17,11 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.6.12 |
+| Server | `viafrei` 2.6.14 |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
-| Captured from | `https://mcp.viafrei.de/mcp` on 2026-11-12 |
+| Captured from | `https://mcp.viafrei.de/mcp` on 2026-11-13 |
 | Surface | 24 tools, 10 resources, 2 resource templates, 9 prompts |
 | Parameter schemas | JSON Schema draft-07 |
 | Capabilities | `tools`, `resources`, `prompts`, `logging` |
@@ -292,7 +292,7 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> Returns a town's published speed-enforcement locations (fixed and red-light cameras, section control, announced mobile checks, measuring sites) by kind and street, with the § 23 Abs. 1c StVO notice. Use when someone plans a trip and asks where speed cameras are ("Blitzer Köln"). Planning only — show the notice verbatim. If they say they are driving now: show the notice, offer the list for before the trip or a stop. Never read locations to a driver, never a live warning. Do NOT use for speed limits (get_driving_rules) or roadworks (check_road_status). Area ≤ 25 km. Shows the attribution line.
+> A town's published speed-enforcement locations (fixed, red-light, section control, announced mobile checks, measuring sites) by kind and street plus OpenStreetMap's fixed cameras. § 23 Abs. 1c StVO binds a driver's device use, not publication. Use when someone planning a trip asks where speed cameras are ("Blitzer Köln"). Planning only: show the answer's StVO notice verbatim. To someone driving: the notice and the list for a stop. Never read locations to a driver or warn live. Do NOT use for speed limits (get_driving_rules) or roadworks (check_road_status). Area ≤ 25 km. Shows the attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
@@ -305,7 +305,7 @@ The server's own instructions to a connecting client, verbatim:
 
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use place.
-- **`limit`** — How many locations to list (1–50, default 20); the answer says how many more the area holds.
+- **`limit`** — How many locations to list in each block, the official lists and OpenStreetMap's (1–50, default 20); the answer says how many more the area holds.
 - **`lon`** — Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use place.
 - **`place`** — Where to look, as free text: a city ("München", "Munich"), a district or Kreis ("Kreis Fulda"), a Bundesland, a station or stop ("Hamburg Hbf"), a motorway junction ("AK Neufahrn"), or a street address with a house number ("Bahnhofstraße 12, 36037 Fulda"). A motorway number alone ("A7") resolves to the road, which has no single point — name a town or junction on it instead. Use this instead of coordinates whenever the person named a place. An address needs its town or postcode — a street and a number alone exist in many towns. A place or lat+lon is required (unless the tool names another way in, such as a road): when the person named neither, ask them for a town, a postcode or their position before calling. Given both, the answer is about lat+lon with the place as its label, and is refused only when the two lie further apart than the search reaches.
 - **`radius_km`** — The area around place or lat+lon, in kilometres (1–25, default 5). An area, not an order: the list is never sorted by distance. Example: 5
@@ -470,18 +470,20 @@ The server's own instructions to a connecting client, verbatim:
 
 **Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
 
-> How punctual public transport is now in one German region: the share of trips ever >5 min late, trips skipping a stop, trips cancelled, the trend and the service alerts in force there (diversions, closed stops). Use when asked whether buses and trains run normally, or a strike, storm or works disrupt them. Do NOT use for a station's departures or a line from a named DEPARTURE station ("RE1 ab Köln Hbf verspätet?"; a destination, "nach …"/"zum …", is not one) — get_train_departures. No per-line figures. Window ≤ 120 min. CC BY-SA (DELFI) or CC BY 4.0 (VBB, Berlin/Brandenburg): show attribution.
+> Public-transport punctuality now in a German region: share of trips >5 min late, skipped stops, cancellations, trend, alerts in force. Use when asked if buses and trains run normally, a strike, storm or works disrupt them, or for a line with no place ("ist die RB33 pünktlich?" → line: answered where it runs, or asks which region). Do NOT use for a station's departures or a line from a named DEPARTURE station ("RE1 ab Köln Hbf?"; "nach …" is no station) — get_train_departures. Figures are region-wide. Window ≤ 120 min. CC BY-SA (DELFI) or CC BY 4.0 (VBB, Berlin/Brandenburg): show attribution.
 
 | parameter | type | required | default | constraints |
 | --- | --- | --- | --- | --- |
 | `language` | string | no | `"de"` | one of `"de"`, `"en"` |
 | `lat` | number | no | — | min -90; max 90 |
+| `line` | string | no | — | min length 1; max length 16 |
 | `lon` | number | no | — | min -180; max 180 |
 | `region` | string | no | — | min length 1; max length 120 |
 | `window_min` | integer | no | `60` | min 5; max 120 |
 
 - **`language`** — Set this on every call to the language the person is writing in: "en" if they wrote English, "de" if they wrote German. Do not leave it out: it defaults to German ("de"), which is only the fallback when the language is genuinely unclear, so an English question sent without it is answered in German — a wrong answer. Place names, station names and road numbers are never translated in either language; in English the German term is kept in parentheses so the person recognises it on signs and in local apps.
 - **`lat`** — Latitude in WGS 84, e.g. 48.137. Use with lon when the caller already holds coordinates; otherwise use region.
+- **`line`** — A line name as on the vehicle, e.g. "RB33", "S1", "RE 1", "U6". Give it when the question names a line; with no region the answer covers the Kreise the line runs through, or names the regions where lines of that name run. With region, it is that region's line of the name.
 - **`lon`** — Longitude in WGS 84, e.g. 11.576. Use with lat; otherwise use region.
 - **`region`** — The German region to report on, as free text: a Bundesland ("Bayern", "Bavaria", "Nordrhein-Westfalen"), a city ("Hamburg", "Köln"), a Kreis ("Landkreis Fulda") or one of the conurbations Ruhrgebiet, Rhein-Ruhr and Rhein-Main. A town inside a Kreis is reported as that Kreis and the answer says so, because the data is filed at Kreis level. Not a stop, not a street, not an address. Give either region OR lat+lon, never both.
 - **`window_min`** — How many minutes back to look, 5–120 (default 60). The trend compares this window with the equally long one before it, so 60 means "the last hour against the hour before". Use a short window for "right now" and a long one for "has it been bad all morning".
@@ -582,7 +584,7 @@ The server's own instructions to a connecting client, verbatim:
 
 ### `describe_station` — Describe a railway station
 
-**Read-only** — it changes nothing. Answers from data this service already holds (closed world). Idempotent: true. Destructive: false.
+**Read-only** — it changes nothing. Reaches a third-party source (open world). Idempotent: true. Destructive: false.
 
 > One German railway station as its viafrei.de page shows it: address, step-free platforms now, lifts and escalators (out of service first), platforms, the next departures with live delays, service alerts, parking and charging. Use when asked about a station as a whole: "Was gibt es am Bahnhof Köln Hbf?", "tell me about Leipzig Hbf", "is Hannover Hbf step-free today?". Do NOT use for one lift (check_station_facilities), one train's delay or platform (get_train_departures) or a bus stop (get_departures). Show the attribution line.
 
@@ -812,5 +814,5 @@ single call.
 ---
 
 Generated from `catalogue.json` by `scripts/gen-api-doc.mjs`. The snapshot was
-read from `https://mcp.viafrei.de/mcp` on 2026-11-12; no tool was invoked to
+read from `https://mcp.viafrei.de/mcp` on 2026-11-13; no tool was invoked to
 produce it, so no data provider was contacted.
