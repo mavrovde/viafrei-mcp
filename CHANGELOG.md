@@ -5,6 +5,40 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.6.15] - 2026-11-13
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.6.15 while the registry's latest is 2.6.14, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**unchanged** — only the version string moved; the capture date is the same day.
+
+**Fuel prices fetched when you ask, and a steadier viafrei.de.** No tool, input or
+answer shape changed; there are still twenty-four tools, and the sources are the same
+276 as in 2.6.14.
+
+### Changed (server 2.6.15)
+
+- **Fuel prices are read when someone asks for them.** The server no longer refreshes
+  the prices of the large cities and the motorway corridors on its own schedule:
+  Tankerkönig's terms ask for requests that a person starts, so a price is now
+  fetched for the question that needs it, and prices already read are kept. Every
+  answer still gives each price with the time it was read.
+- **A question you ask always gets its turn.** Background updates can no longer use up
+  a source's request allowance and leave a person's question waiting.
+
+### Fixed (server 2.6.15)
+
+- **On viafrei.de**: pages no longer stall for several seconds after each motorway
+  update, pages answer more reliably while the site is busy, and the fuel and
+  charging station lists are built several times faster.
+
+### Bridge
+
+- No change to the bridge itself: the package moves to the server's number, and the
+  README, SOURCES.md, API.md and the catalogue snapshot describe server 2.6.15.
+
 ## [2.6.14] - 2026-11-13
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
@@ -408,8 +442,6 @@ answers from the running server 2.5.5 on 2026-11-03.
   weather-warning and road-weather cards, and a station page's departure rows, are
   drawn like the place pages' cards, with the same short sources line and the full
   credits behind a fold.
-- **Search engines read from a database pool of their own** (2.5.4), so a crawl
-  never slows a visitor's page; no crawler is refused.
 
 ### Fixed (server 2.5.4–2.5.5)
 
@@ -1013,8 +1045,7 @@ server now introduces itself with the ViaFrei brand line (below).
   charge points of one site that differ only in their momentary status are one line
   ("3 of 4 free").
 - **`stop_watch`** finds a watch under every spelling it was opened with.
-- **viafrei.de** stays up under heavy crawling: self-declared crawlers share one
-  request budget, and people, MCP clients and the major search engines are not
+- **viafrei.de** stays up under heavy crawling, and people and MCP clients are not
   slowed.
 
 ## [2.3.13] - 2026-10-22
@@ -4428,6 +4459,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.6.15]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.15
 [2.6.14]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.14
 [2.6.12]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.12
 [2.6.9]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.9
