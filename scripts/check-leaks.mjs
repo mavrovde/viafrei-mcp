@@ -334,12 +334,26 @@ if (withHistory) {
     const revisions = git(['rev-list', ...(allRefs ? ['--all'] : ['HEAD'])])
         .split('\n')
         .filter(line => line !== '');
+    // Each (blob, path) pair is read ONCE. What a scan reports depends on the
+    // blob's bytes and on its path (the host exemption, and the path is
+    // searched for names too) - nothing else - so reading the same pair again
+    // in the next commit's tree can find nothing the first read did not. The
+    // leg used to read every file of every commit: about 33 000 reads, one git
+    // process each, for under 1 300 distinct pairs, and on 2026-11-13 that
+    // pushed a CI job past its 15-minute ceiling and a publish job to 14 min 25 s
+    // of its 15. A finding is labelled with the newest commit that carries it.
+    const seenPairs = new Set();
     let blobs = 0;
     for (const revision of revisions) {
         const entries = git(['ls-tree', '-r', '-z', revision]).split('\0').filter(entry => entry !== '');
         for (const entry of entries) {
             const [meta, path] = entry.split('\t');
             const sha = meta.split(' ')[2];
+            const pair = `${sha}\t${path}`;
+            if (seenPairs.has(pair)) {
+                continue;
+            }
+            seenPairs.add(pair);
             const buffer = runGit(['cat-file', 'blob', sha]);
             if (!isProbablyText(buffer)) {
                 continue;
@@ -349,7 +363,7 @@ if (withHistory) {
         }
     }
     log(
-        `sweep: ${blobs} blobs across ${revisions.length} commits scanned (${allRefs ? 'every ref' : 'this ref only'})`
+        `sweep: ${blobs} distinct blobs (each path once) across ${revisions.length} commits scanned (${allRefs ? 'every ref' : 'this ref only'})`
     );
     if (revisions.length === 0) {
         // Reachable through --all-refs, which lists nothing in a repository

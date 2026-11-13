@@ -218,6 +218,45 @@ try {
         const all = sweep(repo, ['--history', '--all-refs']);
         assert.equal(all.code, 0, `expected the entry to apply under --all-refs, got ${all.code}:\n${all.out}`);
     });
+
+    // The history leg reads each (blob, path) pair once. The PATH is part of
+    // that key because a scan's verdict depends on it: the host allow-list does
+    // not apply to package-lock.json. Here one blob carrying a host nobody
+    // listed sits at an exempt path in the newer commit and at an ordinary path
+    // in the older one, so it is met first where it is exempt. Keyed by blob
+    // alone, the older, ordinary copy would be skipped as already read and the
+    // run would pass about a host it never judged.
+    check('one blob at two paths is judged at each path', () => {
+        const unlisted = ['https://', 'unlisted-host', '.sweep-self-test', '.invalid/'].join('');
+        // The case above leaves a residue entry in rules.json that this ref
+        // cannot reach, which is itself a finding. Cleared here, or an exit 1
+        // from THAT would satisfy the assertion below (measured: it did).
+        const rulesPath = join(repo, 'scripts', 'rules.json');
+        const savedRules = readFileSync(rulesPath, 'utf8');
+        const rules = JSON.parse(savedRules);
+        rules.historyNumberResidue = [];
+        writeFileSync(rulesPath, JSON.stringify(rules, null, 4));
+        git(repo, ['checkout', '-q', '-b', 'moved', 'main']);
+        try {
+            const clean = sweep(repo, ['--history']);
+            assert.equal(clean.code, 0, `expected a clean start, got ${clean.code}:\n${clean.out}`);
+            writeFileSync(join(repo, 'notes.txt'), `see ${unlisted}\n`);
+            git(repo, ['add', 'notes.txt']);
+            git(repo, ['commit', '-q', '-m', 'an unlisted host at an ordinary path']);
+            git(repo, ['mv', 'notes.txt', 'package-lock.json']);
+            git(repo, ['commit', '-q', '-m', 'the same blob, now at the exempt path']);
+
+            const tree = sweep(repo, []);
+            assert.equal(tree.code, 0, `the working tree holds it only at the exempt path, expected a clean exit, got ${tree.code}:\n${tree.out}`);
+            const history = sweep(repo, ['--history']);
+            assert.equal(history.code, 1, `expected the older, ordinary copy to be reported, got ${history.code}:\n${history.out}`);
+            assert.match(history.out, /notes\.txt/u, `the finding should name the ordinary path:\n${history.out}`);
+        } finally {
+            git(repo, ['checkout', '-q', '-f', 'main']);
+            git(repo, ['branch', '-q', '-D', 'moved']);
+            writeFileSync(rulesPath, savedRules);
+        }
+    });
 } finally {
     rmSync(repo, { recursive: true, force: true });
 }
