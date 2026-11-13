@@ -14,6 +14,32 @@ waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipp
 reference was re-captured from the running server, and the probe reported the surface
 **unchanged** — only the version string moved; the capture date is the same day.
 
+**Fuel prices fetched when you ask, and a steadier viafrei.de.** No tool, input or
+answer shape changed; there are still twenty-four tools, and the sources are the same
+276 as in 2.6.14.
+
+### Changed (server 2.6.15)
+
+- **Fuel prices are read when someone asks for them.** The server no longer refreshes
+  the prices of the large cities and the motorway corridors on its own schedule:
+  Tankerkönig's terms ask for requests that a person starts, so a price is now
+  fetched for the question that needs it, and prices already read are kept. Every
+  answer still gives each price with the time it was read.
+- **A question you ask always gets its turn.** Background updates can no longer use up
+  a source's request allowance and leave a person's question waiting.
+
+### Fixed (server 2.6.15)
+
+- **On viafrei.de**: pages no longer stall for several seconds after each motorway
+  update; one client sending many requests at once no longer puts the "please wait"
+  check in front of every other visitor; and the fuel and charging station lists are
+  built several times faster.
+
+### Bridge
+
+- No change to the bridge itself: the package moves to the server's number, and the
+  README, SOURCES.md, API.md and the catalogue snapshot describe server 2.6.15.
+
 ## [2.6.14] - 2026-11-13
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it

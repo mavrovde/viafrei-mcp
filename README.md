@@ -46,7 +46,25 @@ one search away from the box in the site's header.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in server 2.6.13 and 2.6.14: speed-camera lists from three more cities and
+> **New in server 2.6.15: fuel prices fetched when you ask, and a steadier
+> viafrei.de.** No tool, input or answer shape changed; there are still twenty-four
+> tools, and the sources are the same 276.
+>
+> - **Fuel prices are read for the question that needs them.** The server no longer
+>   refreshes the large cities' and the motorway corridors' prices on a schedule of its
+>   own, because Tankerkönig's terms ask for requests that a person starts. Asked for
+>   the cheapest Super E5 in Leipzig with `limit: 3` at 21:30 on 2026-11-13,
+>   `find_cheapest_fuel` listed two STAR stations at 1.819 €/l and a Greenline at
+>   1.848 €/l, each "as of 21:30": read for that question. Prices already read are
+>   kept, and every price still carries the time it was read.
+> - **A question you ask always gets its turn.** Background updates can no longer use
+>   up a source's request allowance and leave a person's question waiting.
+> - **On viafrei.de**: pages no longer stall for several seconds after each motorway
+>   update; one client sending many requests at once no longer puts the "please wait"
+>   check in front of every other visitor; and the fuel and charging station lists
+>   are built several times faster.
+>
+> **Before that, server 2.6.13 and 2.6.14: speed-camera lists from three more cities and
 > from OpenStreetMap, punctuality for a line asked without a place, and DB's own
 > departure board at the large stations.** No tool was added, renamed or removed;
 > there are still twenty-four. Three of them changed: `find_speed_cameras` answers from
@@ -120,26 +138,18 @@ one search away from the box in the site's header.
 >   no longer has a crawl delay. Google's fetchers that act on a person's request are
 >   no longer counted as Google's search crawler.
 >
-> **Before that, server 2.6.0 to 2.6.8: a new home for the server, reached through
-> Cloudflare, with the same address and the same tools.** No tool was added, renamed
-> or removed, and no input or answer changed shape; there are still twenty-four.
+> **Before that, server 2.6.0 to 2.6.8: the same address and the same tools.** No tool
+> was added, renamed or removed, and no input or answer changed shape; there are still
+> twenty-four.
 >
 > - **Nothing to change on your side.** The endpoint is still
 >   `https://mcp.viafrei.de/mcp`, over Streamable HTTP, with no key and no sign-up,
 >   and this package still relays to it. Asked about the A8 at 17:40 on 2026-11-11,
->   `check_autobahn_traffic` answered from the new server as before: a red traffic
+>   `check_autobahn_traffic` answered as before: a red traffic
 >   light, 3 jams, 3 closures and 55 roadworks sites, the worst jam
 >   Stuttgart → Karlsruhe at +27 min. `describe_station` for Köln Hbf four minutes
 >   later gave the station's rail lamp red, with 21 of its 71 trips in the window
 >   more than 5 min late.
-> - **A new server in Germany, delivered through Cloudflare.** Production moved to a
->   server of Hetzner Online GmbH in Germany. Every address, the website and
->   `mcp.viafrei.de` alike, now reaches it through Cloudflare's network as a reverse
->   proxy, and the server accepts requests from Cloudflare only. Cloudflare does not
->   cache the MCP endpoint's answers. The
->   [privacy policy](https://viafrei.de/en/datenschutz) names both providers, what
->   each one receives and for how long, and says plainly that there is no route to the
->   tools that bypasses Cloudflare.
 >
 > **Before that, server 2.5.21 to 2.5.28: distances in metres, train boards that know
 > DB's horizon, lifts and entrances at Berlin and Brandenburg stops, and on

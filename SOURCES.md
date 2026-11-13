@@ -15,7 +15,8 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.6.14 on 2026-11-13**: 276 sources, the 272
+with that resource as served by server 2.6.15 on 2026-11-13**, which serves it line for
+line as 2.6.14 did: 276 sources, the 272
 of server 2.5.28 and four added in server 2.6.14, all four held and answering: the
 speed-enforcement lists of **Bottrop**, **Konstanz** and **Essen**, and the **fixed
 speed cameras mapped in OpenStreetMap**, an eighth ODbL database of ours
@@ -399,7 +400,7 @@ The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.6.14,
+in the wiki. As of the capture shipped alongside this page (server 2.6.15,
 2026-11-13), it exposes twenty-four tools, twenty-two of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
@@ -1905,10 +1906,10 @@ traffic messages, planned until 2.5.1, are held as a backup since 2.5.2.
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; since
 server 2.5.6 the sites only they carried no longer answer (see the charging section).
 
-**Held back.** Nothing at server 2.6.14. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.6.15. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.6.14. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.6.15. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1972,11 +1973,11 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.6.14 on 2026-11-13, not typed: every id it
+  by line with it as served by server 2.6.15 on 2026-11-13, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
-  fetch through. No row was added at 2.3.12, 2.3.18 or in 2.6 up to 2.6.13; the four added in 2.6.14, the two added in 2.5.23, the one added in 2.5.14, the one added in 2.5.8, the six added in 2.5.4, the three added between
+  fetch through. No row was added at 2.3.12, 2.3.18, in 2.6 up to 2.6.13 or in 2.6.15; the four added in 2.6.14, the two added in 2.5.23, the one added in 2.5.14, the one added in 2.5.8, the six added in 2.5.4, the three added between
   2.4.4 and 2.4.9, the eight added in 2.4.2 and 2.4.3, the fourteen added at 2.3.23
   and the 25 added at 2.2.14 were taken from the same resource.
 - Every row in our internal register records the licence, the operative sentence,
