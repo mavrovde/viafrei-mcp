@@ -33,8 +33,8 @@ source (`openWorldHint: true`); its arguments did not change.
   `find_speed_cameras` and on the place pages' card: Bottrop's current speed-check
   sites (Datenlizenz Deutschland – Zero 2.0), Konstanz's stationary radar units from
   the city's yearly statistics (CC BY 4.0) and Essen's weekly plan of announced mobile
-  checks (Datenlizenz Deutschland – Namensnennung 2.0), one row per day and street,
-  shown until the day has passed.
+  checks (Datenlizenz Deutschland – Namensnennung 2.0), a row for each street on each
+  day, kept until the day is over.
 - **OpenStreetMap's fixed speed cameras** (ODbL 1.0), as a block of their own after
   the official rows, with their own count (`osmTotal`) and credit, and only for a
   municipality where no official source we hold publishes fixed or section-control
@@ -46,7 +46,7 @@ source (`openWorldHint: true`); its arguments did not change.
   that region's line of the name. The figures stay region-wide.
 - **DB's own departure board at the large stations.** For the category 1 and 2
   stations, the station page and `describe_station` take the platform and
-  destination of the trains they list from DB's board, a row DB answered says so
+  destination of the trains they list from DB's board; a row DB answered says so
   (`"by": "db_timetables"`), and the page says when DB last answered.
 
 ### Changed (server 2.6.13 and 2.6.14)
@@ -59,14 +59,14 @@ source (`openWorldHint: true`); its arguments did not change.
 
 ### Fixed (server 2.6.13 and 2.6.14)
 
-- **Road answers**: a weight limit alone is no longer reported as a closure, and a
-  closure ends on its own dated words.
+- **Road answers**: a road with only a weight limit is no longer called closed, and
+  a closure is over when the dates in its own text say so.
 - **`get_train_departures`** tells DB's publication horizon apart from a station DB
   does not carry, and names the actual window.
-- **"+N more" never promises more than the result holds**, and `find_parking` says
-  when more sites match than the limit shows.
-- **Station lifts** are listed once per place, and an unmonitored inventory entry
-  never outweighs a lift with a live state.
+- **"+N more" counts only rows the result really holds**, and `find_parking` tells
+  you when the limit hid some matching sites.
+- **Station lifts**: each lift appears once, and an inventory entry with no live
+  reading can no longer override a lift that reports its state.
 - **On viafrei.de**: a home tile that cannot load says so after 1.5 seconds and tries
   again; a place page the site has not read yet answers "busy" rather than "not
   found"; and every charging page in the sitemap opens directly, without a redirect.

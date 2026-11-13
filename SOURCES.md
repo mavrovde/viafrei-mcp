@@ -21,14 +21,14 @@ speed-enforcement lists of **Bottrop**, **Konstanz** and **Essen**, and the **fi
 speed cameras mapped in OpenStreetMap**, an eighth ODbL database of ours
 ([below](#speed-enforcement-locations--seven-towns-and-openstreetmap-for-planning-only)).
 Up to 2.6.13 server 2.6 added, changed or retired no source, and no line or state of
-the 272 moved in 2.6.14 either. The 272 are the
-270 of server 2.5.20 and two added in server 2.5.23. 262 of the 276 are held (four of
-those feed no tool: the streets, drawn on the site's maps, the area of each Land,
-shown on the Land pages, the match of tram stops to underground stations, which
-decides which stops have a station page, and DB InfraGO's railway network, drawn on
-the site's live map), 9 are planned (licence read, nothing ingested yet) and five are
-discontinued. The two rows of 2.5.23 are **VBB's register of lifts and entrances at
-Berlin and Brandenburg stops**, which `check_station_facilities` answers from
+the 272 moved in 2.6.14 either. The 272 are the 270 of server 2.5.20 and two added
+in server 2.5.23. 262 of the 276 are held (four of those feed no tool: the streets,
+drawn on the site's maps, the area of each Land, shown on the Land pages, the match
+of tram stops to underground stations, which decides which stops have a station
+page, and DB InfraGO's railway network, drawn on the site's live map), 9 are planned
+(licence read, nothing ingested yet) and five are discontinued. The two rows of
+2.5.23 are **VBB's register of lifts and entrances at Berlin and Brandenburg
+stops**, which `check_station_facilities` answers from
 ([below](#step-free-access--surveys-and-openstreetmap)), and **DB InfraGO's railway
 network** (Bahn-Geodaten), the Bahn layer of the site's live map
 ([below](#the-websites-own-sources)). The row of 2.5.14 is that match: which tram stops
@@ -511,7 +511,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `mobilithek_speed_konstanz` | Blitzerdaten Konstanz: Stadt Konstanz, Bürgeramt – Abt. Verkehrswesen (Offene Daten Konstanz), CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `essen_geschwindigkeit` | Geschwindigkeitsüberwachung Essen: Datenquelle: Stadt Essen – opendata.essen.de, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
 | `osm_speed_cameras` | Blitzer (OpenStreetMap): © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | held |
-| **Rail and public transport** — feeds `get_train_departures` (the DELFI timetable also answers an empty or unreadable board), `get_departures`, `check_transit_disruption` (VBN's share where DELFI's trips in Niedersachsen and Bremen are mostly untimed), `watch_situation`; site: the transit card (live departures, the district's punctuality, VBB's in Berlin and Brandenburg), the station pages, and the home's block of the stations most affected now | | | |
+| **Rail and public transport** — feeds `get_train_departures` (the DELFI timetable also answers an empty or unreadable board), `get_departures`, `check_transit_disruption` (VBN's share where DELFI's trips in Niedersachsen and Bremen are mostly untimed), `describe_station` (DB's own board at the category 1 and 2 stations, since 2.6.13), `watch_situation`; site: the transit card (live departures, the district's punctuality, VBB's in Berlin and Brandenburg), the station pages, and the home's block of the stations most affected now | | | |
 | `db_timetables` | Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `dbinfrago_streckennetz` | Datenquelle: DB InfraGO AG, Bahn-Geodaten / 2026, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `delfi_static` | Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet | CC BY 4.0 | held |
@@ -1776,8 +1776,9 @@ Since server 2.6.14 three more towns, and OpenStreetMap, are read:
   "bearbeitet": the months are summed per site): the city's stationary radar units,
   by name, from its yearly statistics, shown for Konstanz as a whole with no
   coordinate. The newest year the city publishes is 2023, and the answer says so
-  with the row's year. The city's own page states CCZero for the same files; we
-  credit under CC BY 4.0, the stricter of the two, which satisfies both.
+  with the row's year. The city's own page marks these files CCZero, while the
+  same data offered on the national access point carries CC BY 4.0; we credit the city
+  the way CC BY 4.0 requires, which meets both terms at once.
 - **Essen** (Stadt Essen – opendata.essen.de, Datenlizenz Deutschland – Namensnennung
   – Version 2.0, "bearbeitet": a column per day becomes a row per day and street):
   the city's weekly plan of announced mobile checks, one row per day and street, for

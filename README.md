@@ -49,20 +49,21 @@ one search away from the box in the site's header.
 > **New in server 2.6.13 and 2.6.14: speed-camera lists from three more cities and
 > from OpenStreetMap, punctuality for a line asked without a place, and DB's own
 > departure board at the large stations.** No tool was added, renamed or removed;
-> there are still twenty-four. Two of them changed: `find_speed_cameras` answers from
-> more sources, and `check_transit_disruption` takes one new optional input, `line`.
+> there are still twenty-four. Three of them changed: `find_speed_cameras` answers from
+> more sources, `check_transit_disruption` takes one new optional input, `line`, and
+> `describe_station` now reads DB's own board at the large stations.
 >
 > - **Speed-camera locations from Bottrop, Konstanz and Essen, and from
 >   OpenStreetMap.** `find_speed_cameras` and the place pages' card now also list
 >   Bottrop's current speed-check sites, Konstanz's stationary radar units (from the
 >   city's yearly statistics, 2023 the newest year it publishes) and Essen's weekly
->   plan of announced mobile checks, one row per day and street, shown until that
->   day has passed. Where no official source we hold publishes fixed or
+>   plan of announced mobile checks, a row for each street on each day, kept in the
+>   answer until the day is over. Where no official source we hold publishes fixed or
 >   section-control cameras for a municipality, the fixed cameras OpenStreetMap
 >   contributors have mapped follow in a block of their own, with their own count
 >   (`osmTotal`) and their own ODbL credit; `limit` applies to each block. Asked about
->   Essen at 20:28 on 2026-11-13, the answer listed the day's announced checks
->   (Alfredstraße, Alte Hauptstraße, Altendorfer Straße "and 85 more") and then
+>   Essen with `limit: 3` at 20:28 on 2026-11-13, the answer listed three announced
+>   checks (Alfredstraße, Alte Hauptstraße, Altendorfer Straße "and 85 more") and then
 >   "Fixed cameras (OpenStreetMap)", six of them. Every answer still opens with the
 >   § 23 Abs. 1c StVO notice, and the tool's description now says what that rule
 >   covers: a driver's use of such a device, not the publication of the locations.
@@ -79,18 +80,18 @@ one search away from the box in the site's header.
 >   figures stay region-wide, and the answer says so.
 > - **DB's own board at the large stations.** For the category 1 and 2 stations the
 >   station page and `describe_station` take the platform and destination of the trains
->   they list from DB's own departure board, a row DB answered says so
+>   they list from DB's own departure board; a row DB answered says so
 >   (`"by": "db_timetables"`), and the page says when DB last answered.
 >   `describe_station` is now annotated as reaching an outside source
 >   (`openWorldHint: true`).
 > - **Sharper answers.** "Homburg" finds Bad Homburg v.d.Höhe as well as Homburg in
->   the Saarland; a weight limit alone is no longer reported as a closure, and a
->   closure ends on its own dated words; `get_train_departures` tells DB's
->   publication horizon apart from a station DB does not carry and names the actual
->   window; "+N more" never promises more than the result holds, and `find_parking`
->   says when more sites match than the limit shows; a station's lifts are listed
->   once per place, and an unmonitored inventory entry never outweighs a lift with a
->   live state.
+>   the Saarland; a road with only a weight limit is no longer called closed, and a
+>   closure is over when the dates in its own text say so; `get_train_departures`
+>   now says whether a time lies beyond what DB has published yet or the station is
+>   one DB does not cover, and names the window it looked at; "+N more" counts only
+>   rows the result really holds, and `find_parking` tells you when the limit hid
+>   some matching sites; each lift of a station appears once, and an inventory entry
+>   with no live reading can no longer override a lift that reports its state.
 > - **On viafrei.de**: a home tile that cannot load says so after 1.5 seconds and
 >   tries again, instead of showing "loading" for a quarter of a minute; a place page
 >   the site has not read yet answers "busy" rather than "not found"; and every
@@ -394,8 +395,8 @@ roads and around a place it watches closures and restrictions only, and says so.
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
 are not mock-ups. The first two were asked of **server 2.6.14 on 2026-11-13 at 20:27
 and 20:25 Berlin time**, the evening it went live. The next two were asked of server
-2.5.20 on 2026-11-08 at 11:34 and 11:35 Berlin time. The next two were asked of server 2.5.8 on 2026-11-04 at
-01:13 Berlin time, in the night after it went live. The next five were asked of server
+2.5.20 on 2026-11-08 at 11:34 and 11:35 Berlin time, and the two after them of
+server 2.5.8 on 2026-11-04 at 01:13 Berlin time, in the night after it went live. The next five were asked of server
 2.5.5 on 2026-11-03 at 03:20 Berlin time, a few hours after that release reached
 production. The next three were asked of server 2.5.2 on 2026-11-02 between 03:56
 and 04:10 Berlin time, in the night before 2.5.3 went live. The next was asked of
@@ -2610,8 +2611,8 @@ licence breach rather than a style problem:
   modified"). Merely **showing** it beside another source's data is an
   aggregation and puts no obligation on the other source. The realtime feeds'
   catalogue records name no licence version, so do not rely on one for a
-  derivative; [SOURCES.md](SOURCES.md) has the detail, and also covers the two
-  share-alike databases under the ODbL (OpenStreetMap and one lorry-park operator).
+  derivative; [SOURCES.md](SOURCES.md) has the detail, and also covers the
+  share-alike databases under the ODbL (OpenStreetMap's and the others).
 
 A third condition applies to one source only. **Truck-parking occupancy from Toll
 Collect's Stellplatz-Informationsdienst (SID)** comes with terms that bind everyone
