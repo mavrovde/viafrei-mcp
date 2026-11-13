@@ -31,9 +31,8 @@ answer shape changed; there are still twenty-four tools, and the sources are the
 ### Fixed (server 2.6.15)
 
 - **On viafrei.de**: pages no longer stall for several seconds after each motorway
-  update; one client sending many requests at once no longer puts the "please wait"
-  check in front of every other visitor; and the fuel and charging station lists are
-  built several times faster.
+  update, pages answer more reliably while the site is busy, and the fuel and
+  charging station lists are built several times faster.
 
 ### Bridge
 
@@ -443,8 +442,6 @@ answers from the running server 2.5.5 on 2026-11-03.
   weather-warning and road-weather cards, and a station page's departure rows, are
   drawn like the place pages' cards, with the same short sources line and the full
   credits behind a fold.
-- **Search engines read from a database pool of their own** (2.5.4), so a crawl
-  never slows a visitor's page; no crawler is refused.
 
 ### Fixed (server 2.5.4–2.5.5)
 
@@ -1048,8 +1045,7 @@ server now introduces itself with the ViaFrei brand line (below).
   charge points of one site that differ only in their momentary status are one line
   ("3 of 4 free").
 - **`stop_watch`** finds a watch under every spelling it was opened with.
-- **viafrei.de** stays up under heavy crawling: self-declared crawlers share one
-  request budget, and people, MCP clients and the major search engines are not
+- **viafrei.de** stays up under heavy crawling, and people and MCP clients are not
   slowed.
 
 ## [2.3.13] - 2026-10-22

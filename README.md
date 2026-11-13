@@ -60,9 +60,8 @@ one search away from the box in the site's header.
 > - **A question you ask always gets its turn.** Background updates can no longer use
 >   up a source's request allowance and leave a person's question waiting.
 > - **On viafrei.de**: pages no longer stall for several seconds after each motorway
->   update; one client sending many requests at once no longer puts the "please wait"
->   check in front of every other visitor; and the fuel and charging station lists
->   are built several times faster.
+>   update, pages answer more reliably while the site is busy, and the fuel and
+>   charging station lists are built several times faster.
 >
 > **Before that, server 2.6.13 and 2.6.14: speed-camera lists from three more cities and
 > from OpenStreetMap, punctuality for a line asked without a place, and DB's own
@@ -115,10 +114,9 @@ one search away from the box in the site's header.
 >   the site has not read yet answers "busy" rather than "not found"; and every
 >   charging page in the site's sitemap now opens directly, without a redirect.
 >
-> **Before that, server 2.6.9 to 2.6.12: a steadier viafrei.de when it is busy, for
-> people and for the search engines and AI crawlers that read it.** The connector
-> itself was unchanged: no tool, input, answer shape or source was added, changed or
-> removed.
+> **Before that, server 2.6.9 to 2.6.12: a steadier viafrei.de when it is busy.** The
+> connector itself was unchanged: no tool, input, answer shape or source was added,
+> changed or removed.
 >
 > - **The tools answer as before.** Asked about the A7 at 19:41 on 2026-11-12,
 >   `check_autobahn_traffic` answered with data as of 19:37: a red traffic light, 7 jams,
@@ -129,14 +127,6 @@ one search away from the box in the site's header.
 > - **A busy place page no longer turns a person away.** While the site is under
 >   load, someone waiting for a place page gets a reduced version of it instead of an
 >   error.
-> - **Search engines and AI crawlers read on a lane of their own.** A crawler the
->   site can verify is served apart from visitors, so neither slows the other. When
->   that lane is full it gets the last copy of that page we kept. A page is kept for
->   this only when nothing about a visitor went into it (no location, cookie or
->   address) and it shows no fuel prices.
-> - **robots.txt.** Meta's AI crawler is now treated like the other AI crawlers and
->   no longer has a crawl delay. Google's fetchers that act on a person's request are
->   no longer counted as Google's search crawler.
 >
 > **Before that, server 2.6.0 to 2.6.8: the same address and the same tools.** No tool
 > was added, renamed or removed, and no input or answer changed shape; there are still
@@ -2098,9 +2088,7 @@ corpus crawlers off the fuel page, names them one by one, and leaves the motorwa
 pages open to every crawler, the place pages since 2.4.0, and the station and exit
 pages from their first release. No fuel price is in
 any page's HTML: a reader's browser asks for the prices when the card comes into
-view, and that address is closed to every crawler. Since 2.5.4 a search engine's
-reads wait on a database pool of their own, so a crawl never slows a visitor's
-page, and no crawler is refused.
+view, and that address is closed to every crawler.
 
 **One card format** (2.5.4): a motorway page's fuel, charging, weather-warning and
 road-weather cards are drawn like the place pages' cards, with the same short
