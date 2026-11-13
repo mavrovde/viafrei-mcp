@@ -1773,7 +1773,7 @@ Since server 2.6.14 three more towns, and OpenStreetMap, are read:
   checks is shown as a **measuring site**, a place a check may stand, never a camera
   and never a live position. Former sites are not read.
 - **Konstanz** (Stadt Konstanz, Bürgeramt – Abt. Verkehrswesen, CC BY 4.0,
-  "bearbeitet": the months are summed per site): the city's stationary radar units,
+  "bearbeitet": monthly figures added up for each site): the city's stationary radar units,
   by name, from its yearly statistics, shown for Konstanz as a whole with no
   coordinate. The newest year the city publishes is 2023, and the answer says so
   with the row's year. The city's own page marks these files CCZero, while the
@@ -1781,7 +1781,7 @@ Since server 2.6.14 three more towns, and OpenStreetMap, are read:
   the way CC BY 4.0 requires, which meets both terms at once.
 - **Essen** (Stadt Essen – opendata.essen.de, Datenlizenz Deutschland – Namensnennung
   – Version 2.0, "bearbeitet": a column per day becomes a row per day and street):
-  the city's weekly plan of announced mobile checks, one row per day and street, for
+  the city's weekly plan of announced mobile checks, a row for each street on each day, for
   Essen as a whole with no coordinate and no time of day. A day's rows are shown
   until that day has passed.
 - **OpenStreetMap's fixed speed cameras** (© OpenStreetMap-Mitwirkende, ODbL 1.0): the

@@ -61,8 +61,9 @@ source (`openWorldHint: true`); its arguments did not change.
 
 - **Road answers**: a road with only a weight limit is no longer called closed, and
   a closure is over when the dates in its own text say so.
-- **`get_train_departures`** tells DB's publication horizon apart from a station DB
-  does not carry, and names the actual window.
+- **`get_train_departures`** now says whether a time lies beyond what DB has
+  published yet or the station is one DB does not cover, and names the window it
+  looked at.
 - **"+N more" counts only rows the result really holds**, and `find_parking` tells
   you when the limit hid some matching sites.
 - **Station lifts**: each lift appears once, and an inventory entry with no live
