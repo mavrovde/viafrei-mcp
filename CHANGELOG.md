@@ -18,8 +18,63 @@ reference was re-captured from the running server, and the probe reported the su
 - tools: check_transit_disruption differs between the server and the snapshot
 - tools: describe_station differs between the server and the snapshot
 
-**A person must describe the change above before this merges.** A release note that
-lists a tool name without saying what it does misleads the reader it exists for.
+**Speed-camera lists from three more cities and from OpenStreetMap, punctuality for
+a line asked without a place, and DB's own departure board at the large stations.**
+The server moved from 2.6.12 to 2.6.14 (2.6.13 was not mirrored on its own; this
+release covers both). No tool was added, renamed or removed, and no prompt or
+resource changed. `check_transit_disruption` gained an optional argument, `line`.
+The description of `find_speed_cameras` was rewritten and its `limit` now applies to
+each block of the answer. `describe_station` is now annotated as reaching an outside
+source (`openWorldHint: true`); its arguments did not change.
+
+### Added (server 2.6.13 and 2.6.14)
+
+- **Speed-enforcement locations from Bottrop, Konstanz and Essen** in
+  `find_speed_cameras` and on the place pages' card: Bottrop's current speed-check
+  sites (Datenlizenz Deutschland – Zero 2.0), Konstanz's stationary radar units from
+  the city's yearly statistics (CC BY 4.0) and Essen's weekly plan of announced mobile
+  checks (Datenlizenz Deutschland – Namensnennung 2.0), one row per day and street,
+  shown until the day has passed.
+- **OpenStreetMap's fixed speed cameras** (ODbL 1.0), as a block of their own after
+  the official rows, with their own count (`osmTotal`) and credit, and only for a
+  municipality where no official source we hold publishes fixed or section-control
+  cameras. They are an eighth ODbL database of ours, offered under ODbL 1.0 like the
+  other seven ([SOURCES.md](SOURCES.md)).
+- **`check_transit_disruption` by line.** `line` ("RB33", "S1", "RE 1") answers for
+  the districts the line runs through; when lines of that name run in several
+  regions, the answer lists them and asks which one is meant. With `region`, it is
+  that region's line of the name. The figures stay region-wide.
+- **DB's own departure board at the large stations.** For the category 1 and 2
+  stations, the station page and `describe_station` take the platform and
+  destination of the trains they list from DB's board, a row DB answered says so
+  (`"by": "db_timetables"`), and the page says when DB last answered.
+
+### Changed (server 2.6.13 and 2.6.14)
+
+- **`find_speed_cameras` says what § 23 Abs. 1c StVO covers**: a driver's use of a
+  device that shows enforcement, not the publication of the locations. Every answer
+  still opens with the notice, for planning before a trip or during a stop.
+- **Place names**: "Homburg" finds Bad Homburg v.d.Höhe as well as Homburg in the
+  Saarland.
+
+### Fixed (server 2.6.13 and 2.6.14)
+
+- **Road answers**: a weight limit alone is no longer reported as a closure, and a
+  closure ends on its own dated words.
+- **`get_train_departures`** tells DB's publication horizon apart from a station DB
+  does not carry, and names the actual window.
+- **"+N more" never promises more than the result holds**, and `find_parking` says
+  when more sites match than the limit shows.
+- **Station lifts** are listed once per place, and an unmonitored inventory entry
+  never outweighs a lift with a live state.
+- **On viafrei.de**: a home tile that cannot load says so after 1.5 seconds and tries
+  again; a place page the site has not read yet answers "busy" rather than "not
+  found"; and every charging page in the sitemap opens directly, without a redirect.
+
+### Bridge
+
+- No change to the bridge itself: the package moves to the server's number, and the
+  README, SOURCES.md, API.md and the catalogue snapshot describe server 2.6.14.
 
 ## [2.6.12] - 2026-11-12
 

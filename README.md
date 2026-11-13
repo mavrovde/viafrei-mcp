@@ -21,7 +21,7 @@ traffic and roadworks, fuel, charging, parking and weather. One MCP. No API key.
 [![no API key](https://img.shields.io/badge/API%20key-none-brightgreen)](#-connect-in-one-minute)
 [![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-6f42c1)](https://modelcontextprotocol.io)
 
-**[viafrei.de](https://viafrei.de/en)** · [Connect your assistant](https://viafrei.de/en/connect) · [For developers](https://viafrei.de/en/developers) · [For businesses](https://viafrei.de/en/business) · [All tools](#-everything-it-can-do) · [API reference](API.md) · [REST API (in design)](https://github.com/mavrovde/viafrei-api)
+**[viafrei.de](https://viafrei.de/en)** · [Connect your assistant](https://viafrei.de/en/connect) · [For developers](https://viafrei.de/en/developers) · [For businesses](https://viafrei.de/en/business) · [All tools](#-everything-it-can-do) · [API reference](API.md) · [REST API (in development, preview planned)](https://github.com/mavrovde/viafrei-api)
 
 </div>
 
@@ -46,10 +46,60 @@ one search away from the box in the site's header.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in server 2.6.9 to 2.6.12: a steadier viafrei.de when it is busy, for
+> **New in server 2.6.13 and 2.6.14: speed-camera lists from three more cities and
+> from OpenStreetMap, punctuality for a line asked without a place, and DB's own
+> departure board at the large stations.** No tool was added, renamed or removed;
+> there are still twenty-four. Two of them changed: `find_speed_cameras` answers from
+> more sources, and `check_transit_disruption` takes one new optional input, `line`.
+>
+> - **Speed-camera locations from Bottrop, Konstanz and Essen, and from
+>   OpenStreetMap.** `find_speed_cameras` and the place pages' card now also list
+>   Bottrop's current speed-check sites, Konstanz's stationary radar units (from the
+>   city's yearly statistics, 2023 the newest year it publishes) and Essen's weekly
+>   plan of announced mobile checks, one row per day and street, shown until that
+>   day has passed. Where no official source we hold publishes fixed or
+>   section-control cameras for a municipality, the fixed cameras OpenStreetMap
+>   contributors have mapped follow in a block of their own, with their own count
+>   (`osmTotal`) and their own ODbL credit; `limit` applies to each block. Asked about
+>   Essen at 20:28 on 2026-11-13, the answer listed the day's announced checks
+>   (Alfredstraße, Alte Hauptstraße, Altendorfer Straße "and 85 more") and then
+>   "Fixed cameras (OpenStreetMap)", six of them. Every answer still opens with the
+>   § 23 Abs. 1c StVO notice, and the tool's description now says what that rule
+>   covers: a driver's use of such a device, not the publication of the locations.
+>   [SOURCES.md](SOURCES.md#speed-enforcement-locations--seven-towns-and-openstreetmap-for-planning-only)
+>   has all seven towns and the OpenStreetMap terms.
+> - **"Is the RB33 on time?"** `check_transit_disruption` takes `line`. Without a
+>   region it answers for the districts the line runs through, or, when lines of that
+>   name run in several regions, lists them and asks which. Asked about the RB33 with
+>   `region: "Duisburg"` at 20:25 on 2026-11-13, it answered for the eight districts
+>   and cities that line stops in: 15% of observed trips more than 5 minutes late (187
+>   of 1,212 in the last hour, better than the 25% of the hour before), 3 trips
+>   skipping a stop and 6 cancelled ([example](#-real-answers)); asked without a region
+>   two minutes later, it named the seven regions where a line called RB33 runs. The
+>   figures stay region-wide, and the answer says so.
+> - **DB's own board at the large stations.** For the category 1 and 2 stations the
+>   station page and `describe_station` take the platform and destination of the trains
+>   they list from DB's own departure board, a row DB answered says so
+>   (`"by": "db_timetables"`), and the page says when DB last answered.
+>   `describe_station` is now annotated as reaching an outside source
+>   (`openWorldHint: true`).
+> - **Sharper answers.** "Homburg" finds Bad Homburg v.d.Höhe as well as Homburg in
+>   the Saarland; a weight limit alone is no longer reported as a closure, and a
+>   closure ends on its own dated words; `get_train_departures` tells DB's
+>   publication horizon apart from a station DB does not carry and names the actual
+>   window; "+N more" never promises more than the result holds, and `find_parking`
+>   says when more sites match than the limit shows; a station's lifts are listed
+>   once per place, and an unmonitored inventory entry never outweighs a lift with a
+>   live state.
+> - **On viafrei.de**: a home tile that cannot load says so after 1.5 seconds and
+>   tries again, instead of showing "loading" for a quarter of a minute; a place page
+>   the site has not read yet answers "busy" rather than "not found"; and every
+>   charging page in the site's sitemap now opens directly, without a redirect.
+>
+> **Before that, server 2.6.9 to 2.6.12: a steadier viafrei.de when it is busy, for
 > people and for the search engines and AI crawlers that read it.** The connector
-> itself is unchanged: no tool, input, answer shape or source was added, changed or
-> removed, and there are still twenty-four tools.
+> itself was unchanged: no tool, input, answer shape or source was added, changed or
+> removed.
 >
 > - **The tools answer as before.** Asked about the A7 at 19:41 on 2026-11-12,
 >   `check_autobahn_traffic` answered with data as of 19:37: a red traffic light, 7 jams,
@@ -267,9 +317,9 @@ comes back in the language you asked in.
 
 | when you're… | ask |
 |---|---|
-| 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *What leaves from the stops near Köln-Ehrenfeld?* · *Does an ICE leave Tübingen Hbf in the next hour?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *When does the next train leave Hamburg Hbf?* · *Which U-Bahn and trams leave Berlin Alexanderplatz in the next minutes?* · *Wann fährt die nächste Stadtbahn ab Hannover Kröpcke?* · *Tell me about Leipzig Hbf* |
+| 🌅 **about to commute** | *Wann fährt die nächste Bahn ab Köln Neumarkt?* · *What leaves from the stops near Köln-Ehrenfeld?* · *Does an ICE leave Tübingen Hbf in the next hour?* · *Fahren Busse und Bahnen in Bayern gerade pünktlich?* · *Is the RB33 around Duisburg on time?* · *When does the next train leave Hamburg Hbf?* · *Which U-Bahn and trams leave Berlin Alexanderplatz in the next minutes?* · *Wann fährt die nächste Stadtbahn ab Hannover Kröpcke?* · *Tell me about Leipzig Hbf* |
 | 🚗 **about to drive** | *Is the A7 clear right now?* · *Stau in Bayern?* · *How are the motorways in Hessen right now?* · *Gibt es Stau auf der A8?* · *Are there roadworks on the A7 next week?* · *Is the A1 closed anywhere?* · *Welche Vollsperrungen sind auf der A7 in den nächsten sieben Tagen geplant?* · *Welche Baustellen gibt es in München?* · *How is the traffic on the A3 around Köln?* · *Ist die Fehmarnsundbrücke wegen Wind gesperrt?* · *Which detours are signed near Hamburg Hbf?* |
-| 🗺️ **planning a trip** | *Ich plane eine Fahrt nach Düsseldorf: Wo stehen dort feste Blitzer?* · *Which speed-camera locations does Karlsruhe publish?* — for planning only: the answer opens with the § 23 Abs. 1c StVO notice, and a driver may not use it while driving |
+| 🗺️ **planning a trip** | *Ich plane eine Fahrt nach Düsseldorf: Wo stehen dort feste Blitzer?* · *Which speed-camera locations does Karlsruhe publish?* · *Welche Blitzer plant Essen diese Woche?* — for planning only: the answer opens with the § 23 Abs. 1c StVO notice, and a driver may not use it while driving |
 | 🚚 **driving a lorry** | *Darf der Lang-Lkw auf die A7?* · *Which height limits are there for lorries in Bremen?* · *Gibt es Lkw-Durchfahrtsverbote bei Bielefeld?* · *Wann ist der nächste Lkw-Fahrverbotstag?* · *Gilt am 31. Oktober in Niedersachsen Lkw-Fahrverbot?* · *Welche Durchfahrtshöhen gibt es am Kölner Dom?* · *Where are the lorry bans in Dresden?* |
 | 🚧 **stuck in traffic** | *How much time is the jam on the A3 between Frankfurt and Würzburg costing right now?* · *Is traffic backed up on the Cologne motorway ring — A1, A3 or A4?* · *Ist der Elbtunnel auf der A7 heute Nacht gesperrt?* |
 | ⚡ **driving electric or on hydrogen** | *Where can I charge with Type 2 near Leipzig?* · *Which fast chargers near Leipzig are open around the clock and take a card?* · *Wo gibt es einen Schnelllader mit 150 kW bei Nürnberg?* · *Is there an EnBW charger with 150 kW or more in Stuttgart?* · *Where can I fill up a hydrogen lorry near Hamburg?* · *Where can my electric lorry charge near Munich?* · *Gibt es in Stuttgart kostenlose Ladesäulen?* |
@@ -324,9 +374,11 @@ not all of Germany. A charger's live status counts as current only while it is
 younger than its feed's own window; older, it is shown with its time as possibly
 out of date. Hydrogen stations are H2 Mobility's published list: pumps and
 opening hours, but no availability, price or working state, so check before you
-drive. Speed-camera locations are what four towns publish (Düsseldorf, Karlsruhe
-with Rheinstetten, Köln and Aachen), for planning only; a town not among them
-answers that nothing is published there, which never means that nobody checks.
+drive. Speed-camera locations are what seven towns publish (Düsseldorf, Karlsruhe
+with Rheinstetten, Köln, Aachen, Bottrop, Konstanz and Essen) and, where no official
+source covers a municipality, the fixed cameras mapped in OpenStreetMap, for planning
+only; a town none of them covers answers that nothing is published there, which
+never means that nobody checks.
 Places and addresses, and the everyday needs near a place (shops, pharmacies,
 police, toilets and the rest), come from OpenStreetMap, so what is not
 mapped there cannot be found, and ratings are not part of it. A **watch** lives in
@@ -340,8 +392,9 @@ roads and around a place it watches closures and restrictions only, and says so.
 ## 💬 Real answers
 
 These came back from the production server at `https://mcp.viafrei.de/mcp`. They
-are not mock-ups. The first two were asked of **server 2.5.20 on 2026-11-08 at 11:34
-and 11:35 Berlin time**. The next two were asked of server 2.5.8 on 2026-11-04 at
+are not mock-ups. The first two were asked of **server 2.6.14 on 2026-11-13 at 20:27
+and 20:25 Berlin time**, the evening it went live. The next two were asked of server
+2.5.20 on 2026-11-08 at 11:34 and 11:35 Berlin time. The next two were asked of server 2.5.8 on 2026-11-04 at
 01:13 Berlin time, in the night after it went live. The next five were asked of server
 2.5.5 on 2026-11-03 at 03:20 Berlin time, a few hours after that release reached
 production. The next three were asked of server 2.5.2 on 2026-11-02 between 03:56
@@ -371,6 +424,64 @@ Each one shows the first lines of what the tool returned, and the source line as
 it was sent, shortened where marked.
 
 <details open>
+<summary><b>🗺️ "Where are the speed cameras in Bottrop? I'm planning the trip."</b> — <code>find_speed_cameras</code> with <code>place: "Bottrop"</code>, <code>limit: 3</code>, <code>language: "en"</code></summary>
+
+```text
+Note on use (§ 23 Abs. 1c StVO): a person driving a vehicle may not, while driving, operate or use any technical device or app function that shows or disrupts traffic enforcement. This also applies to a passenger's smartphone if the driver benefits from it (OLG Karlsruhe). A violation costs €75 and one point in Flensburg. This information is meant only for planning before setting off or during a stop. The locations come from official and open sources and may be incomplete or out of date; mobile checks are possible at any time and anywhere. Always keep to the speed limit in force. Not legal advice.
+The notice in its original wording (German):
+Hinweis zur Nutzung (§ 23 Abs. …
+
+Speed enforcement — published locations for Bottrop (radius 5 km), by kind and street:
+Measuring sites from the city's site table:
+- Aegidistraße, Bottrop — speed · 30 km/h · direction Gladbecker Straße
+- Aegidistraße, Bottrop — speed · 30 km/h · direction Horster Straße
+- Aegidistraße, Bottrop — speed · 40 km/h · direction Gladbecker Straße
+… and 7 more locations in this area.
+Fixed cameras (OpenStreetMap):
+- 51.52070, 6.93117 — speed · 50 km/h
+- 51.52073, 6.93140 — speed · 50 km/h
+- 51.52752, 6.99025 — speed · 70 km/h · direction 190
+… and 6 more cameras mapped in OpenStreetMap in this area.
+Stand Blitzerstandorte Bottrop: read 2026-11-13
+Stand Blitzer (OpenStreetMap): read 2026-11-13, data as of 2026-10-27
+
+Source: Blitzerstandorte Bottrop: Stadt Bottrop, Datenlizenz Deutschland – Zero – Version 2.0 (…) · Blitzer (OpenStreetMap): © OpenStreetMap-Mitwirkende, ODbL 1.0 (…) · Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (…) · As of 13:32
+```
+New in 2.6.14: Bottrop's current speed-check sites, and the fixed cameras mapped in
+OpenStreetMap as a block of their own. Bottrop lists its sites for mobile checks, so
+they are measuring sites, never called cameras; because no official source we hold
+publishes fixed cameras for Bottrop, OpenStreetMap's follow, with their own count and
+their own credit, and `limit` applies to each block. The notice comes first, as in
+every answer of this tool.
+*Edited: the German notice cut after its first sentence, and the URIs omitted.*
+</details>
+
+<details>
+<summary><b>🚆 "Is the RB33 around Duisburg on time?"</b> — <code>check_transit_disruption</code> with <code>line: "RB33"</code>, <code>region: "Duisburg"</code>, <code>language: "en"</code></summary>
+
+```text
+Line RB33 (8 districts and cities combined): 15% of observed trips more than 5 minutes late (187 of 1,212 trips in the last 60 minutes, from 16,396 delay reports on these trips; reports in the window from 4,831 stops in all); in addition, 3 trips skip at least one stop (a detour, a closed stop or a trip ending early); 6 trips are cancelled here (none of the stops reported in the region served).
+Line RB33 stops, per the timetable, in: Duisburg, Essen, Krefeld, Mönchengladbach, Mülheim an der Ruhr, Viersen, Städteregion Aachen, Heinsberg. The figures cover every trip in these districts; the service alerts are only those naming the line.
+Trips are counted, not reports: a trip counts as late if it was reported more than 5 minutes late at least once during the window, even if it caught up afterwards.
+Trend: better than the 60 minutes before (25%).
+The source reports changes only: these figures cover the trips whose delay moved during the window, not every trip. Few reports therefore does not by itself mean "everything on time".
+Trips the source cancels as a whole are reported without a stop, cannot be placed in a region and are not in this figure. Counted as cancelled are only trips all of whose reported stops here are skipped.
+Individual lines, trips or stops cannot be judged from these delay figures — the realtime data arrives with no line reference, and its licence permits region-wide totals only.
+
+Service alerts for Line RB33 (8 districts and cities combined): none of the alert sources I read has published an alert for this area in the last 14 days — none for this area has reached me since I began reading these sources, so "none in force" means nothing here — diversions or closures may still exist.
+
+Source: Echtzeitdaten: DELFI e.V. via Mobilithek, CC BY-SA, bearbeitet (…) · Fahrplandaten: DELFI e.V., CC BY 4.0, bearbeitet (…) · Verwaltungseinheiten: © BKG (2026) dl-de/by-2-0, Datenquellen: https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_gn250.pdf (Daten verändert) (…) · As of 20:25
+These figures are licensed CC BY-SA (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution.
+```
+New in 2.6.13: `line`. The figures cover the districts and cities the line stops in,
+per the timetable; the realtime data carries no line reference, so they stay
+region-wide, and only the service alerts are the line's own. Asked without a region,
+the same question listed the seven regions where a line called RB33 runs and asked
+which one was meant.
+*Not edited, except the URIs.*
+</details>
+
+<details>
 <summary><b>🚛 "Where can my electric lorry charge near Munich?"</b> — <code>find_charging_station</code> with <code>place: "München"</code>, <code>connector: "mcs"</code>, <code>radius_km: 25</code>, <code>limit: 3</code>, <code>language: "en"</code></summary>
 
 ```text
@@ -1788,7 +1899,9 @@ rules, so a card and an assistant asked about the same place say the same thing:
   and since 2.5.5 police and public toilets as two cards, each in its own radius,
   the same places `find_nearby` lists when the need is named;
 - **speed cameras** (since 2.5.4): the published locations of Düsseldorf,
-  Karlsruhe, Köln and Aachen, for planning, under the § 23 Abs. 1c StVO notice;
+  Karlsruhe, Köln and Aachen, since 2.6.14 also of Bottrop, Konstanz and Essen, and
+  OpenStreetMap's fixed cameras where no official list covers the town, for
+  planning, under the § 23 Abs. 1c StVO notice;
 - **the place page** adds the low-emission-zone sentence `get_driving_rules`
   states for that Gemeinde, and lines suggesting what to ask your assistant to
   watch.
@@ -2320,9 +2433,9 @@ How well it answers, measured: [test rounds](https://github.com/mavrovde/viafrei
 ## 🛠️ For developers
 
 > **Not building for an AI assistant?** The same live data is coming as a keyed REST API,
-> designed in the open at **[viafrei-api](https://github.com/mavrovde/viafrei-api)**: feature-first
-> endpoints, OpenAPI 3.1, attribution on every response. Follow the design in its
-> [wiki](https://github.com/mavrovde/viafrei-api/wiki).
+> developed in the open at **[viafrei-api](https://github.com/mavrovde/viafrei-api)**: in
+> development, with a preview planned; feature-first endpoints, OpenAPI 3.1, attribution
+> on every response. Follow it in its [wiki](https://github.com/mavrovde/viafrei-api/wiki).
 
 **It's plain MCP over HTTP.** You can call it without an SDK:
 
@@ -2469,8 +2582,9 @@ client that started it finds out.
 - **Read the business page:** [viafrei.de/en/business](https://viafrei.de/en/business).
   It covers six use cases and how to work with us.
 - **A REST API is on the way.** For systems that do not speak MCP,
-  [viafrei-api](https://github.com/mavrovde/viafrei-api) is being designed in public:
-  API keys, rate limits and priority tiers, and the same licence rules on every response.
+  [viafrei-api](https://github.com/mavrovde/viafrei-api) is in development, in public, with
+  a preview planned: API keys, rate limits and priority tiers, and the same licence rules
+  on every response.
 
 ## ⚖️ Using the data you get back
 

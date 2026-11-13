@@ -15,10 +15,14 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.6.12 on 2026-11-12**: 272 sources, the same
-272 as server 2.5.28. Server 2.6 moved to a new host and, up to 2.6.12, added, changed
-or retired no source: every line and every state below reads as it did at 2.5.28. The 272 are the
-270 of server 2.5.20 and two added in server 2.5.23. 258 of the 272 are held (four of
+with that resource as served by server 2.6.14 on 2026-11-13**: 276 sources, the 272
+of server 2.5.28 and four added in server 2.6.14, all four held and answering: the
+speed-enforcement lists of **Bottrop**, **Konstanz** and **Essen**, and the **fixed
+speed cameras mapped in OpenStreetMap**, an eighth ODbL database of ours
+([below](#speed-enforcement-locations--seven-towns-and-openstreetmap-for-planning-only)).
+Up to 2.6.13 server 2.6 added, changed or retired no source, and no line or state of
+the 272 moved in 2.6.14 either. The 272 are the
+270 of server 2.5.20 and two added in server 2.5.23. 262 of the 276 are held (four of
 those feed no tool: the streets, drawn on the site's maps, the area of each Land,
 shown on the Land pages, the match of tram stops to underground stations, which
 decides which stops have a station page, and DB InfraGO's railway network, drawn on
@@ -338,6 +342,26 @@ as CSV, with our alterations, under ODbL 1.0, free of charge on request to the
 contact address in the Impressum on viafrei.de. Reading a station page carries no
 obligation beyond the credit on it.
 
+### And the speed cameras from OpenStreetMap
+
+Since server 2.6.14 `find_speed_cameras` and the speed-enforcement card can list the
+fixed speed cameras OpenStreetMap contributors have mapped. They come from an
+**eighth ODbL database** of ours, read on its own and never joined to an official
+list or to our other OpenStreetMap databases. An answer that lists one, or says that
+OpenStreetMap was searched, carries the line
+
+```
+Blitzer (OpenStreetMap): © OpenStreetMap-Mitwirkende, ODbL 1.0
+```
+
+and names `osm_speed_cameras` in its sources. If you build a database of your own
+from such answers and use it publicly, ODbL's share-alike reaches it; our side of
+the offer is the same as for the other seven: the complete contents of that database
+as CSV, with our alterations, under ODbL 1.0, free of charge on request to the
+contact address in the Impressum on viafrei.de. Every such answer also carries the
+§ 23 Abs. 1c StVO planning notice
+([below](#speed-enforcement-locations--seven-towns-and-openstreetmap-for-planning-only)).
+
 ---
 
 ## The catalogue
@@ -375,8 +399,8 @@ The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.6.12,
-2026-11-12), it exposes twenty-four tools, twenty-two of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.6.14,
+2026-11-13), it exposes twenty-four tools, twenty-two of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
@@ -478,11 +502,15 @@ feed, live, in the resource `viafrei://coverage`.
 | `lorry_dresden_verbotszonen` | Lkw-Verbotszonen: Landeshauptstadt Dresden (Quelle: Geodaten Sachsen), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 **plus a condition of use** | held |
 | `lorry_dresden_vorrangrouten` | Lkw-Vorrangroutennetz: Landeshauptstadt Dresden (Quelle: Geodaten Sachsen), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), bearbeitet | dl-de/by-2-0 | held |
 | `lorry_hh_gst_netz` | Großraum- und Schwertransport-Netz Hamburg: Freie und Hansestadt Hamburg, Landesbetrieb Verkehr (LBV), Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 **plus a condition of use** | held |
-| **Speed enforcement (planning only)** — feeds `find_speed_cameras` (every answer, empty answer and refusal opens with the § 23 Abs. 1c StVO notice); site: the speed-camera card on the place pages, under the same notice ([below](#speed-enforcement-locations--four-towns-for-planning-only)) | | | |
+| **Speed enforcement (planning only)** — feeds `find_speed_cameras` (every answer, empty answer and refusal opens with the § 23 Abs. 1c StVO notice); site: the speed-camera card on the place pages, under the same notice ([below](#speed-enforcement-locations--seven-towns-and-openstreetmap-for-planning-only)) | | | |
 | `mobilithek_speed_aachen` | Geschwindigkeitskontrollen der Stadt Aachen: Stadt Aachen, Fachbereich Sicherheit und Ordnung, Datenlizenz Deutschland – Namensnennung – Version 2.0 (www.govdata.de/dl-de/by-2-0), Daten verändert | dl-de/by-2-0 | held |
 | `mobilithek_speed_duesseldorf` | Stationäre Verkehrsüberwachung Düsseldorf: Landeshauptstadt Düsseldorf – Ordnungsamt, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
 | `mobilithek_speed_karlsruhe` | Blitzer Stationär Karlsruhe: Digitale Mobilität, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_speed_koeln` | Geschwindigkeitsüberwachung Köln: Stadt Köln, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `mobilithek_speed_bottrop` | Blitzerstandorte Bottrop: Stadt Bottrop, Datenlizenz Deutschland – Zero – Version 2.0 | dl-de/zero-2-0 | held |
+| `mobilithek_speed_konstanz` | Blitzerdaten Konstanz: Stadt Konstanz, Bürgeramt – Abt. Verkehrswesen (Offene Daten Konstanz), CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `essen_geschwindigkeit` | Geschwindigkeitsüberwachung Essen: Datenquelle: Stadt Essen – opendata.essen.de, Datenlizenz Deutschland – Namensnennung – Version 2.0, bearbeitet | dl-de/by-2-0 | held |
+| `osm_speed_cameras` | Blitzer (OpenStreetMap): © OpenStreetMap-Mitwirkende, ODbL 1.0 | **ODbL 1.0** | held |
 | **Rail and public transport** — feeds `get_train_departures` (the DELFI timetable also answers an empty or unreadable board), `get_departures`, `check_transit_disruption` (VBN's share where DELFI's trips in Niedersachsen and Bremen are mostly untimed), `watch_situation`; site: the transit card (live departures, the district's punctuality, VBB's in Berlin and Brandenburg), the station pages, and the home's block of the stations most affected now | | | |
 | `db_timetables` | Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `dbinfrago_streckennetz` | Datenquelle: DB InfraGO AG, Bahn-Geodaten / 2026, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
@@ -1008,6 +1036,12 @@ from your own results.
 
 Since server 2.4.2 the station data also builds viafrei.de's station pages, one per
 station in DB's directory, each carrying the Bahnhofsdaten line.
+
+Since server 2.6.13 DB's own departure board is read for the largest stations
+(category 1 and 2): the station page and `describe_station` take the platform and
+destination of the trains they list from it (a departure row DB answered says so,
+`"by": "db_timetables"`), under the Fahrplandaten line, and the page says when DB
+last answered.
 
 A fourth, **DB BahnPark** (station car parks, Datenlizenz Deutschland –
 Namensnennung 2.0), is **discontinued**: its licence was read, and the publisher
@@ -1701,10 +1735,11 @@ survey states what is built, not whether a lift is working now.
   state counts for three hours after the city's newest message and is then
   unknown. Loading zones are stored and answered by no tool yet.
 
-### Speed enforcement locations — four towns, for planning only
+### Speed enforcement locations — seven towns and OpenStreetMap, for planning only
 
 Since server 2.5.4 the tool `find_speed_cameras` and a card on the place pages list
-the speed-enforcement locations four towns publish. **Every answer, every empty
+the speed-enforcement locations towns publish: four at first, seven since server
+2.6.14, with OpenStreetMap's fixed cameras beside them. **Every answer, every empty
 answer and every refusal opens with the § 23 Abs. 1c StVO notice**, in the answer's
 language with the German original beside it and again as `_meta.conditionNote`: a
 person driving may not use a device or app function that shows traffic enforcement
@@ -1730,10 +1765,44 @@ speed cameras, and no live position of a mobile unit is held.
   mobile checks, by street and direction, with no coordinate, for the town as a
   whole. A logged check is a past one, never a live position.
 
+Since server 2.6.14 three more towns, and OpenStreetMap, are read:
+
+- **Bottrop** (Stadt Bottrop, Datenlizenz Deutschland – Zero – Version 2.0): the
+  sites the city flags as current in its map of speed-check locations, each with its
+  point, street, location, direction and limit. A site the city lists for mobile
+  checks is shown as a **measuring site**, a place a check may stand, never a camera
+  and never a live position. Former sites are not read.
+- **Konstanz** (Stadt Konstanz, Bürgeramt – Abt. Verkehrswesen, CC BY 4.0,
+  "bearbeitet": the months are summed per site): the city's stationary radar units,
+  by name, from its yearly statistics, shown for Konstanz as a whole with no
+  coordinate. The newest year the city publishes is 2023, and the answer says so
+  with the row's year. The city's own page states CCZero for the same files; we
+  credit under CC BY 4.0, the stricter of the two, which satisfies both.
+- **Essen** (Stadt Essen – opendata.essen.de, Datenlizenz Deutschland – Namensnennung
+  – Version 2.0, "bearbeitet": a column per day becomes a row per day and street):
+  the city's weekly plan of announced mobile checks, one row per day and street, for
+  Essen as a whole with no coordinate and no time of day. A day's rows are shown
+  until that day has passed.
+- **OpenStreetMap's fixed speed cameras** (© OpenStreetMap-Mitwirkende, ODbL 1.0): the
+  points OpenStreetMap contributors have mapped as fixed speed cameras, from the
+  Germany extracts, kept in a database of their own and never mixed with an
+  official list. Mobile, temporary and out-of-service cameras are left out. They
+  are listed in a block of their own after the official rows, under an OpenStreetMap
+  heading with their own count (`osmTotal`), and only where no official source we
+  hold publishes fixed or section-control cameras for that municipality, whether or
+  not the official list gives a point. `limit` applies to each block. This is the
+  **eighth ODbL database** of ours, and the same § 4.6 offer stands for it: the
+  complete contents as CSV, with our alterations, under ODbL 1.0, free of charge on
+  request to the contact address in the Impressum on viafrei.de.
+
+Since server 2.6.14 the tool's description also says what § 23 Abs. 1c StVO does and
+does not cover: it binds a driver's use of a device that shows enforcement, not the
+publication of the locations.
+
 DL-DE Zero asks for no attribution; the line is given anyway, so an answer says where
 it came from. The answer also says when we last read each source and the date the
-publisher gives its data, and a town not among these four answers that nothing is
-published in our sources, which never means that nobody checks there.
+publisher gives its data, and a town none of these sources covers answers that
+nothing is published in our sources, which never means that nobody checks there.
 
 ## The website's own sources
 
@@ -1835,10 +1904,10 @@ traffic messages, planned until 2.5.1, are held as a backup since 2.5.2.
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; since
 server 2.5.6 the sites only they carried no longer answer (see the charging section).
 
-**Held back.** Nothing at server 2.6.12. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.6.14. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.6.12. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.6.14. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1902,11 +1971,11 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.6.12 on 2026-11-12, not typed: every id it
+  by line with it as served by server 2.6.14 on 2026-11-13, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
-  fetch through. No row was added at 2.3.12, 2.3.18 or in 2.6; the two added in 2.5.23, the one added in 2.5.14, the one added in 2.5.8, the six added in 2.5.4, the three added between
+  fetch through. No row was added at 2.3.12, 2.3.18 or in 2.6 up to 2.6.13; the four added in 2.6.14, the two added in 2.5.23, the one added in 2.5.14, the one added in 2.5.8, the six added in 2.5.4, the three added between
   2.4.4 and 2.4.9, the eight added in 2.4.2 and 2.4.3, the fourteen added at 2.3.23
   and the 25 added at 2.2.14 were taken from the same resource.
 - Every row in our internal register records the licence, the operative sentence,
