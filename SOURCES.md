@@ -380,10 +380,10 @@ Blitzer (OpenStreetMap): © OpenStreetMap-Mitwirkende, ODbL 1.0
 
 and names `osm_speed_cameras` in its sources. If you build a database of your own
 from such answers and use it publicly, ODbL's share-alike reaches it; our side of
-the offer is the same as for the other seven ODbL databases before it: the complete contents of that database
-as CSV, with our alterations, under ODbL 1.0, free of charge on request to the
-contact address in the Impressum on viafrei.de. Every such answer also carries the
-§ 23 Abs. 1c StVO planning notice
+the offer is the same as for the other seven ODbL databases before it: the
+complete contents of that database as CSV, with our alterations, under ODbL 1.0,
+free of charge on request to the contact address in the Impressum on viafrei.de.
+Every such answer also carries the § 23 Abs. 1c StVO planning notice
 ([below](#speed-enforcement-locations--seven-towns-and-openstreetmap-for-planning-only)).
 
 ---
@@ -1744,8 +1744,9 @@ survey states what is built, not whether a lift is working now.
   since server 2.6.16, in a block of their own on the boards of `get_departures` and
   the transit card: the long-distance coaches and trains within 1.5 km of the stop or
   place, with their realtime delay where Flix publishes one, and a plain note where
-  none stands behind a departure. Asking with `modes` keeps them only for coaches
-  and trains. It is a share-alike database of its own
+  none stands behind a departure. A `modes` filter of `bus` keeps the FlixBus
+  coaches and one of `rail` the FlixTrain trains; a tram, U-Bahn or ferry filter
+  leaves the block out. It is a share-alike database of its own
   ([above](#and-the-flixbus-and-flixtrain-departures)).
 - **How full an MVV regional bus usually is** (Münchner Verkehrs- und Tarifverbund
   via opendata-oepnv.de, CC BY with no version stated), beside a departure in
