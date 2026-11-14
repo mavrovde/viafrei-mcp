@@ -14,6 +14,23 @@ waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipp
 reference was re-captured from the running server, and the probe reported the surface
 **unchanged** — only the version string and the capture date moved.
 
+**FlixBus and FlixTrain departures.** No tool was added, renamed or removed and no
+input changed; there are still twenty-four tools, and the sources are 277, one more
+than in 2.6.15.
+
+### Added (server 2.6.16)
+
+- **FlixBus and FlixTrain on the departure board.** `get_departures` adds a block of
+  long-distance coaches and trains after the local departures, at a stop and around a
+  place, with the realtime delay where Flix publishes one and a note where none
+  stands behind a departure. A departure the DELFI timetable already lists is not
+  shown twice, and a block that cannot be read leaves the board as it was. The
+  transit card on viafrei.de shows the same block.
+- **One new source.** The timetable and realtime Flixbus France publishes on
+  transport.data.gouv.fr, under ODbL 1.0, kept as a share-alike database of its own;
+  only an answer that lists a FlixBus or FlixTrain departure carries its line, and
+  SOURCES.md describes the offer that comes with it.
+
 ## [2.6.15] - 2026-11-13
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it

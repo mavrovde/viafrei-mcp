@@ -46,7 +46,26 @@ one search away from the box in the site's header.
 > from our data, and AI can make mistakes, so check anything important (a
 > closure, a departure, a price) against the source each answer names.
 
-> **New in server 2.6.15: fuel prices fetched when you ask, and a steadier
+> **New in server 2.6.16: FlixBus and FlixTrain departures.** No tool was added,
+> renamed or removed and no input changed; there are still twenty-four tools, and one
+> source joins the 276.
+>
+> - **Long-distance coaches and trains on the departure board.** `get_departures` now
+>   adds a FlixBus and FlixTrain block after the local departures, at a stop and
+>   around a place, with the realtime delay where Flix publishes one. Asked for buses
+>   at "München, ZOB" with `limit: 5` and `language: "en"` at 06:19 on 2026-11-14, it
+>   listed the Lufthansa Express Bus to the airport from the DELFI timetable and,
+>   beside it, eight FlixBus departures from Munich central bus station 730 m away
+>   between 05:50 and 07:00, the night line N422 running 69 minutes late. A FlixBus
+>   or FlixTrain departure DELFI's board already lists is not shown twice.
+> - **One new source, share-alike.** The departures come from the timetable and
+>   realtime Flixbus France publishes on transport.data.gouv.fr under ODbL 1.0, kept
+>   as a database of its own; only an answer that lists one carries its line
+>   ([SOURCES.md](SOURCES.md#and-the-flixbus-and-flixtrain-departures)).
+> - **On viafrei.de**: the transit card of the place pages shows the same block, in
+>   every language of the site, and the News page announces it.
+>
+> **Before that, server 2.6.15: fuel prices fetched when you ask, and a steadier
 > viafrei.de.** No tool, input or answer shape changed; there are still twenty-four
 > tools, and the sources are the same 276.
 >
