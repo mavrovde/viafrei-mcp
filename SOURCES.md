@@ -15,15 +15,17 @@ The authoritative, always-current register is the resource
 **`viafrei://attribution`** on the server itself. Any MCP client can read it. If
 this page and that resource ever disagree, the resource is right and this page is
 stale: tell us and we will fix it. **Every row of the catalogue below was compared
-with that resource as served by server 2.6.15 on 2026-11-13**, which serves it line for
-line as 2.6.14 did: 276 sources, the 272
-of server 2.5.28 and four added in server 2.6.14, all four held and answering: the
+with that resource as served by server 2.6.16 on 2026-11-14**: 277 sources, the 276
+of server 2.6.14 and 2.6.15 and one added in server 2.6.16, held and answering: the
+**FlixBus and FlixTrain timetable and realtime**, a ninth ODbL database of ours
+([below](#and-the-flixbus-and-flixtrain-departures)). The four added in server 2.6.14,
+all four held and answering, are the
 speed-enforcement lists of **Bottrop**, **Konstanz** and **Essen**, and the **fixed
 speed cameras mapped in OpenStreetMap**, an eighth ODbL database of ours
 ([below](#speed-enforcement-locations--seven-towns-and-openstreetmap-for-planning-only)).
 Up to 2.6.13 server 2.6 added, changed or retired no source, and no line or state of
 the 272 moved in 2.6.14 either. The 272 are the 270 of server 2.5.20 and two added
-in server 2.5.23. 262 of the 276 are held (four of those feed no tool: the streets,
+in server 2.5.23. 263 of the 277 are held (four of those feed no tool: the streets,
 drawn on the site's maps, the area of each Land, shown on the Land pages, the match
 of tram stops to underground stations, which decides which stops have a station
 page, and DB InfraGO's railway network, drawn on the site's live map), 9 are planned
@@ -287,6 +289,27 @@ contents of the database and our alterations, under ODbL 1.0, free of charge, fr
 the contact address in the Impressum on viafrei.de. If you keep such rows in a
 database you use publicly, you owe your recipients the same.
 
+### And the FlixBus and FlixTrain departures
+
+Since server 2.6.16 `get_departures` and the transit card on viafrei.de's place pages
+list FlixBus and FlixTrain departures near a stop or a place, in a block of their own
+after the local departures, with no price, fare or booking link. They come from a
+**ninth ODbL database** of ours, built from the timetable and realtime dataset
+Flixbus France publishes on transport.data.gouv.fr under ODbL 1.0 together with that
+portal's special conditions of use, and kept to the journeys that call in Germany. It
+is read on its own and never joined, matched or merged with another source; a
+departure the DELFI timetable in the same answer already lists is left out of the
+FlixBus block. An answer that lists one carries the line
+
+```
+Fahrplan und Echtzeit FlixBus/FlixTrain: Flixbus France (FlixMobility) via transport.data.gouv.fr — Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/), bearbeitet
+```
+
+and names `flix_transit` in its sources; an answer without a FlixBus or FlixTrain
+departure carries neither. Our side of the offer is the same as for the other eight:
+the complete contents of that database as CSV, with our alterations, under ODbL 1.0,
+free of charge on request to the contact address in the Impressum on viafrei.de.
+
 ### And the streets on viafrei.de's maps
 
 Since server 2.4.7 the place maps, the station maps and the motorway maps of
@@ -357,10 +380,10 @@ Blitzer (OpenStreetMap): © OpenStreetMap-Mitwirkende, ODbL 1.0
 
 and names `osm_speed_cameras` in its sources. If you build a database of your own
 from such answers and use it publicly, ODbL's share-alike reaches it; our side of
-the offer is the same as for the other seven: the complete contents of that database
-as CSV, with our alterations, under ODbL 1.0, free of charge on request to the
-contact address in the Impressum on viafrei.de. Every such answer also carries the
-§ 23 Abs. 1c StVO planning notice
+the offer is the same as for the other seven ODbL databases before it: the
+complete contents of that database as CSV, with our alterations, under ODbL 1.0,
+free of charge on request to the contact address in the Impressum on viafrei.de.
+Every such answer also carries the § 23 Abs. 1c StVO planning notice
 ([below](#speed-enforcement-locations--seven-towns-and-openstreetmap-for-planning-only)).
 
 ---
@@ -400,8 +423,8 @@ The last time each source's
 status was measured from answers was a round of 1,000 questions against server
 1.8.17 on 2026-10-06, before most of the 2.0 sources existed; the
 [test rounds](https://github.com/mavrovde/viafrei-mcp/wiki/Test-rounds) are published
-in the wiki. As of the capture shipped alongside this page (server 2.6.15,
-2026-11-13), it exposes twenty-four tools, twenty-two of them read-only. A routine
+in the wiki. As of the capture shipped alongside this page (server 2.6.16,
+2026-11-14), it exposes twenty-four tools, twenty-two of them read-only. A routine
 re-check of which sources answer leaves both fuel tools out — **`find_cheapest_fuel`
 and `find_fuel_station`** — because Tankerkönig limits how often its interface may
 be asked, and its terms say plainly that bulk retrieval is blocked and the key
@@ -528,6 +551,7 @@ feed, live, in the resource `viafrei://coverage`.
 | `mvv_bus_load` | Auslastung Regionalbus: Münchner Verkehrs- und Tarifverbund GmbH (MVV) via opendata-oepnv.de, CC BY, bearbeitet | CC BY (version unstated) | held |
 | `mobilithek_connect_gtfs` | Fahrplan Connect: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „GTFS Datensatz Connect (Niedersachsen und Bremen)“, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_connect_gtfs_rt` | Echtzeit Connect: Verkehrsverbund Bremen/Niedersachsen GmbH (VBN) via Mobilithek, Datensatz „GTFS-RT Datensatz Connect (Niedersachsen und Bremen)“, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
+| `flix_transit` | Fahrplan und Echtzeit FlixBus/FlixTrain: Flixbus France (FlixMobility) via transport.data.gouv.fr — Open Database License 1.0 (opendatacommons.org/licenses/odbl/1-0/), bearbeitet | **ODbL 1.0** | held |
 | **Station lifts, escalators and step-free access** — feeds `check_station_facilities` (lifts, escalators, platforms, surveys, acoustic signals nearby) and the step-free line that ends a `get_departures` board; site: the station lines on the transit card | | | |
 | `db_fasta` | Aufzüge und Fahrtreppen: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet | CC BY 4.0 | held |
 | `mobilithek_openstation_netex` | Aufzüge, Fahrtreppen und Bahnsteige (Bestand): Deutsche Bahn AG / DB InfraGO AG (OpenStation) via Mobilithek, CC0 1.0 | CC0 1.0 | held |
@@ -1716,6 +1740,14 @@ survey states what is built, not whether a lift is working now.
   from both), and every feed that carried it is credited under its own line, so no
   CC BY figure ends up inside a share-alike one and no share-alike figure under a
   CC BY line. The operators Connect names are shown as it publishes them.
+- **FlixBus and FlixTrain** (Flixbus France via transport.data.gouv.fr, ODbL 1.0),
+  since server 2.6.16, in a block of their own on the boards of `get_departures` and
+  the transit card: the long-distance coaches and trains within 1.5 km of the stop or
+  place, with their realtime delay where Flix publishes one, and a plain note where
+  none stands behind a departure. A `modes` filter of `bus` keeps the FlixBus
+  coaches and one of `rail` the FlixTrain trains; a tram, U-Bahn or ferry filter
+  leaves the block out. It is a share-alike database of its own
+  ([above](#and-the-flixbus-and-flixtrain-departures)).
 - **How full an MVV regional bus usually is** (Münchner Verkehrs- und Tarifverbund
   via opendata-oepnv.de, CC BY with no version stated), beside a departure in
   `get_departures` and on the transit card. These are typical values from MVV's
@@ -1906,10 +1938,10 @@ traffic messages, planned until 2.5.1, are held as a backup since 2.5.2.
 (ladenetz.de and ladebusiness), whose publisher ended them on 2026-10-19; since
 server 2.5.6 the sites only they carried no longer answer (see the charging section).
 
-**Held back.** Nothing at server 2.6.15. ivm's two lorry feeds, held back at 2.2.6,
+**Held back.** Nothing at server 2.6.16. ivm's two lorry feeds, held back at 2.2.6,
 answer since 2.2.7 under the credit their terms prescribe.
 
-**No data yet.** None at server 2.6.15. Berlin's park-and-ride sites, the one such
+**No data yet.** None at server 2.6.16. Berlin's park-and-ride sites, the one such
 row at 2.2.14, answer now.
 
 **Not built:**
@@ -1973,11 +2005,11 @@ row at 2.2.14, answer now.
   register at `viafrei://attribution` is generated from the same place. A line
   that existed only in documentation would be a line nobody emits.
 - The catalogue above was **generated** from that register and **compared** line
-  by line with it as served by server 2.6.15 on 2026-11-13, not typed: every id it
+  by line with it as served by server 2.6.16 on 2026-11-14, not typed: every id it
   lists is here, once, with its line and licence as served. Two lines are printed
   shorter than served, and marked (…): ivm's lines carry their dataset's offer
   link inside the line, and this page carries no deep links into the catalogues we
-  fetch through. No row was added at 2.3.12, 2.3.18, in 2.6 up to 2.6.13 or in 2.6.15; the four added in 2.6.14, the two added in 2.5.23, the one added in 2.5.14, the one added in 2.5.8, the six added in 2.5.4, the three added between
+  fetch through. No row was added at 2.3.12, 2.3.18, in 2.6 up to 2.6.13 or in 2.6.15; the one added in 2.6.16, the four added in 2.6.14, the two added in 2.5.23, the one added in 2.5.14, the one added in 2.5.8, the six added in 2.5.4, the three added between
   2.4.4 and 2.4.9, the eight added in 2.4.2 and 2.4.3, the fourteen added at 2.3.23
   and the 25 added at 2.2.14 were taken from the same resource.
 - Every row in our internal register records the licence, the operative sentence,

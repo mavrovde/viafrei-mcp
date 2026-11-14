@@ -5,6 +5,32 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.6.16] - 2026-11-14
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.6.16 while the registry's latest is 2.6.15, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**unchanged** — only the version string and the capture date moved.
+
+**FlixBus and FlixTrain departures.** No tool was added, renamed or removed and no
+input changed; there are still twenty-four tools, and the sources are 277, one more
+than in 2.6.15.
+
+### Added (server 2.6.16)
+
+- **FlixBus and FlixTrain on the departure board.** `get_departures` adds a block of
+  long-distance coaches and trains after the local departures, at a stop and around a
+  place, with the realtime delay where Flix publishes one and a note where none
+  stands behind a departure. A departure the DELFI timetable already lists is not
+  shown twice, and a block that cannot be read leaves the board as it was. The
+  transit card on viafrei.de shows the same block.
+- **One new source.** The timetable and realtime Flixbus France publishes on
+  transport.data.gouv.fr, under ODbL 1.0, kept as a share-alike database of its own;
+  only an answer that lists a FlixBus or FlixTrain departure carries its line, and
+  SOURCES.md describes the offer that comes with it.
+
 ## [2.6.15] - 2026-11-13
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
@@ -4459,6 +4485,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.6.16]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.16
 [2.6.15]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.15
 [2.6.14]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.14
 [2.6.12]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.12
