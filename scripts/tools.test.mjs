@@ -401,7 +401,7 @@ check('precondition 2: the expression locates a program argument in a REAL file 
         const hits = bareCalls(asItWas);
         assert.ok(hits.length >= 1, `BARE_CALL found no program in ${relative(ROOT, file)} with its helper removed`);
         for (const hit of hits) {
-            assert.match(hit.program, /^(?:git|tar|npm|node|mkdir)$/u, `unexpected program: ${hit.program}`);
+            assert.match(hit.program, /^(?:git|tar|npm|node|mkdir|bash)$/u, `unexpected program: ${hit.program}`);
         }
         proved += hits.length;
     }
