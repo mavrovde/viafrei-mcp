@@ -98,6 +98,7 @@
     "test:verify": "node scripts/verify-published.test.mjs",
     "test:verify-smithery": "node scripts/verify-smithery.test.mjs",
     "test:release-notes": "node scripts/release-notes.test.mjs",
+    "test:snyk": "node scripts/snyk-workflow.test.mjs",
     "rules:show": "node scripts/show-rules.mjs"
   },
   "dependencies": {

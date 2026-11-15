@@ -183,6 +183,13 @@ jobs:
       - name: Release-notes extractor self-test (offline)
         run: npm run test:release-notes
 
+      # Snyk runs weekly on main and once per release (snyk.yml, called by the npm
+      # workflow before it publishes), never on a pull request or a push. This
+      # proves the wiring offline: the triggers, the scan, the secret, that publish
+      # needs it, and the guard step run under bash; each planted fault is reported.
+      - name: Snyk wiring self-test (offline)
+        run: npm run test:snyk
+
       # The public endpoint may be *asserted about* - one test checks that the
       # default really is it - but it may never be handed to something that
       # connects. Any occurrence outside an assertion fails the build.

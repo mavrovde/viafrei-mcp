@@ -20,6 +20,10 @@ name: npm
 # tag ref by the Version sync workflow, because a tag pushed with GITHUB_TOKEN
 # starts no workflow run. Either way the ref is the tag and every gate below
 # runs. Nothing here publishes from a branch.
+#
+# Snyk (snyk.yml, called by the snyk job below) tests the dependencies of the
+# same commit first; the publish job needs it, so a high or critical advisory
+# stops the release before anything is packed.
 
 on:
   push:
@@ -65,7 +69,24 @@ env:
   NPM_VERSION: '12.0.2'
 
 jobs:
+  # Snyk once per release, on the commit about to be packed and published
+  # (snyk.yml; it also runs weekly on main, never on a pull request or a push).
+  # A high or critical advisory stops the release before anything is built:
+  # publish needs this job. Its own permissions replace the workflow-level
+  # id-token grant, which only the publish job needs.
+  snyk:
+    name: Snyk (dependencies)
+    permissions:
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/snyk.yml
+    with:
+      ref: ${{ github.sha }}
+    secrets:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
   publish:
+    needs: snyk
     # Pinned, unlike ci.yml: this is the job that mints a published
     # artefact, so the runner image it is built on is part of what is
     # being released. ubuntu-latest moves under us on GitHub's schedule.
