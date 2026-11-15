@@ -14,11 +14,11 @@
  *   node scripts/snyk-workflow.test.mjs
  */
 
-import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createChecker } from './check-harness.mjs';
+import { resolveTool, runTool } from './tools.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -55,7 +55,7 @@ function guardOf(snyk) {
 
 function runGuard(script, ref, gitRef) {
     try {
-        execFileSync('bash', ['--noprofile', '--norc', '-eo', 'pipefail', '-c', script], { env: { PATH: process.env.PATH ?? '', REF_IN: ref, GITHUB_REF: gitRef }, stdio: 'ignore' });
+        runTool(resolveTool('bash'), ['--noprofile', '--norc', '-eo', 'pipefail', '-c', script], { env: { PATH: process.env.PATH ?? '', REF_IN: ref, GITHUB_REF: gitRef }, stdio: 'ignore' });
         return 0;
     } catch (e) {
         return e.status ?? -1;
