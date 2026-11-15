@@ -84,8 +84,8 @@ ahead, it prepares the release with `scripts/propose-release.mjs` and opens a
   `build-and-test (24)`, `SonarCloud Code Analysis`) for at most 30 minutes,
   merges it with a merge commit pinned to the head it checked, pushes the
   annotated tag `vX.Y.Z` on the merge commit, then dispatches the `npm` workflow
-  on the tag (its first job is Snyk, below) and waits for it to succeed, then dispatches `Smithery` and `Release
-  page`. A red check, a check still pending at the deadline, a pull request a
+  on the tag (its first job is Snyk, below) and waits for it to succeed, then
+  dispatches `Smithery` and `Release page`. A red check, a check still pending at the deadline, a pull request a
   person has touched in the meantime, or any later failure ends the run red with
   the reason, and the message says what has already happened at that stage. Nothing
   is merged on red or pending. A pull request left unmerged waits for a person, who
@@ -171,11 +171,14 @@ stuck:
   advisory, and is not forced through.
 
 **Snyk.** `.github/workflows/snyk.yml` runs Snyk Open Source over the npm
-dependencies once a week on `main` (Mondays 05:17 UTC; a dispatch on `main` too) and
-once per release, called by `publish.yml` on the tagged commit before anything is
-packed: `publish` needs it, so a high or critical advisory stops the release. It never
-runs on a pull request or a push. It needs the repository secret `SNYK_TOKEN`, handed
-on by name. `npm run test:snyk` pins this wiring.
+dependencies once a week on `main` (Mondays 05:17 UTC; a dispatch on `main`
+too) and once per release, called by `publish.yml` on the tagged commit before
+anything is packed: `publish` needs it, so a high or critical advisory stops
+the release. It never runs on a pull request or a push. In `publish.yml` the
+scan runs on a tag only; a `workflow_dispatch` on a branch is the dry-run
+rehearsal, which skips the scan and publishes nothing. It needs the Actions
+repository secret `SNYK_TOKEN`, handed on by name. `npm run test:snyk` pins
+this wiring.
 
 ### Release pages are written from the CHANGELOG
 

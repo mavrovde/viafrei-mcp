@@ -73,9 +73,11 @@ jobs:
   # (snyk.yml; it also runs weekly on main, never on a pull request or a push).
   # A high or critical advisory stops the release before anything is built:
   # publish needs this job. Its own permissions replace the workflow-level
-  # id-token grant, which only the publish job needs.
+  # id-token grant, which only the publish job needs. It runs on a tag only;
+  # a dispatch on a branch is the dry-run rehearsal, which publishes nothing.
   snyk:
     name: Snyk (dependencies)
+    if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: read
       security-events: write
@@ -87,6 +89,9 @@ jobs:
 
   publish:
     needs: snyk
+    # After a passed scan, or a branch dry run with no scan; never past a failed
+    # or cancelled one, and never a real publish without one.
+    if: ${{ !cancelled() && (needs.snyk.result == 'success' || (needs.snyk.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.dry_run)) }}
     # Pinned, unlike ci.yml: this is the job that mints a published
     # artefact, so the runner image it is built on is part of what is
     # being released. ubuntu-latest moves under us on GitHub's schedule.

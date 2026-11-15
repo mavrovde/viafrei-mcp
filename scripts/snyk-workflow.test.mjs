@@ -26,9 +26,13 @@ const WF = join(ROOT, '.github', 'workflows');
 const { check, failures, passed } = createChecker();
 
 const TRIGGERS = '\non:\n  schedule:\n    - cron: "17 5 * * 1" # Mondays 05:17 UTC\n  workflow_dispatch:\n  workflow_call:\n    inputs:\n      ref:\n';
-const SCAN = '\n      - name: Snyk test\n        env:\n          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n        run: |\n          mkdir -p sarif\n          ./snyk test --severity-threshold=high --sarif-file-output=sarif/snyk.sarif\n';
+const SCAN = '\n      - name: Snyk test\n        env:\n          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n        run: |\n          mkdir -p sarif\n          ./snyk test --severity-threshold=high --sarif-file-output=sarif/snyk.sarif\n' +
+    "      - name: Upload SARIF to code scanning\n        # A called run scans another commit than the caller's github.sha; its findings are\n        # uploaded only when they belong to the commit code scanning files them under.\n" +
+    "        if: always() && hashFiles('sarif/snyk.sarif') != '' && (inputs.ref == '' || inputs.ref == github.sha)\n";
+const CHECKOUT = '\n        with:\n          ref: ${{ inputs.ref || github.sha }}\n          persist-credentials: false\n';
+const PUBLISH_IF = "\n  publish:\n    needs: snyk\n    # After a passed scan, or a branch dry run with no scan; never past a failed\n    # or cancelled one, and never a real publish without one.\n    if: ${{ !cancelled() && (needs.snyk.result == 'success' || (needs.snyk.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.dry_run)) }}\n";
 const SECRETS = '\n    secrets:\n      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n';
-const CALLER = '\n  snyk:\n    name: Snyk (dependencies)\n    permissions:\n      contents: read\n      security-events: write\n    uses: ./.github/workflows/snyk.yml\n    with:\n      ref: ${{ github.sha }}\n' + SECRETS.slice(1);
+const CALLER = '\n  snyk:\n    name: Snyk (dependencies)\n    if: startsWith(github.ref, \'refs/tags/v\')\n    permissions:\n      contents: read\n      security-events: write\n    uses: ./.github/workflows/snyk.yml\n    with:\n      ref: ${{ github.sha }}\n' + SECRETS.slice(1);
 
 const SHA40 = '0123456789abcdef0123456789abcdef01234567';
 /** What the guard must answer: a wrong ref is exit 2, never a skip. */
@@ -75,7 +79,9 @@ function faults(files) {
     const triggers = [...on.matchAll(/^ {2}([a-z_]+):/gmu)].map((m) => m[1]);
     if (triggers.join() !== 'schedule,workflow_dispatch,workflow_call') out.push(`snyk.yml runs on ${triggers.join(', ')}, not the weekly schedule, a dispatch and the release call alone`);
     if (!sn.includes(TRIGGERS)) out.push("snyk.yml's trigger block is not the weekly schedule, a dispatch with no input and the release call");
-    if (!sn.includes(SCAN)) out.push("snyk.yml's scan step is not exactly the high-threshold scan");
+    if (!sn.includes(SCAN)) out.push("snyk.yml's scan step and SARIF upload are not exactly the high-threshold scan and the own-commit upload");
+    if (!sn.includes(CHECKOUT)) out.push('snyk.yml does not check out ${{ inputs.ref || github.sha }}');
+    if (sn.includes('continue-on-error')) out.push('snyk.yml carries continue-on-error');
     const guard = guardOf(sn);
     if (guard === '') out.push('snyk.yml has no guard step');
     else for (const [ref, gitRef, want] of GUARD_CASES) {
@@ -84,11 +90,13 @@ function faults(files) {
     }
     for (const [n, t] of Object.entries(files)) {
         if (n !== 'snyk.yml' && t.includes('snyk test')) out.push(`${n} runs the Snyk CLI; only snyk.yml does`);
+        if (n !== 'publish.yml' && t.includes('workflows/snyk.yml')) out.push(`${n} references workflows/snyk.yml; only publish.yml calls it`);
         if (t.includes('secrets: inherit')) out.push(`${n} passes secrets: inherit`);
     }
     const pub = files['publish.yml'] ?? '';
     if (!pub.includes(CALLER)) out.push("publish.yml's snyk job does not call snyk.yml on the tagged commit with exactly SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}");
     if (!/^ {4}needs: snyk\n/mu.test(job(pub, 'publish'))) out.push("publish.yml's publish does not need snyk");
+    if (!pub.includes(PUBLISH_IF)) out.push("publish.yml's publish does not run only after a passed scan or a branch dry run");
     return out;
 }
 
@@ -118,6 +126,13 @@ console.log('each planted fault is reported');
         ['|| true on the scan', 'the high-threshold scan', plant('snyk.yml', '--sarif-file-output=sarif/snyk.sarif\n', '--sarif-file-output=sarif/snyk.sarif || true\n')],
         ['secrets: inherit', 'publish.yml passes secrets: inherit', plant('publish.yml', SECRETS, '\n    secrets: inherit\n')],
         ['publish not needing snyk', "publish.yml's publish does not need snyk", plant('publish.yml', '  publish:\n    needs: snyk\n', '  publish:\n')],
+        ['the SARIF condition dropped', 'the own-commit upload', plant('snyk.yml', " && (inputs.ref == '' || inputs.ref == github.sha)", '')],
+        ['a key inside the scan step', 'the high-threshold scan', plant('snyk.yml', '          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n        run: |\n          mkdir', '          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n        continue-on-error: true\n        run: |\n          mkdir')],
+        ['checkout ref changed', 'snyk.yml does not check out', plant('snyk.yml', 'ref: ${{ inputs.ref || github.sha }}', 'ref: ${{ github.sha }}')],
+        ['continue-on-error on the job', 'snyk.yml carries continue-on-error', plant('snyk.yml', '    timeout-minutes: 10\n', '    timeout-minutes: 10\n    continue-on-error: true\n')],
+        ['a second caller', 'ci.yml references workflows/snyk.yml', plant('ci.yml', '\njobs:\n', '\njobs:\n  s:\n    uses: ./.github/workflows/snyk.yml\n')],
+        ['snyk on a branch dispatch', "publish.yml's snyk job does not call", plant('publish.yml', "    if: startsWith(github.ref, 'refs/tags/v')\n", '')],
+        ['publish if: always()', 'only after a passed scan or a branch dry run', plant('publish.yml', "    if: ${{ !cancelled() && (needs.snyk.result", "    if: always()\n    # ${{ !cancelled() && (needs.snyk.result")],
         ['a second Snyk run', 'ci.yml runs the Snyk CLI', plant('ci.yml', '\njobs:\n', '\njobs:\n  x:\n    steps:\n      - run: ./snyk test\n')],
     ];
     for (const [label, want, f] of cases) {
