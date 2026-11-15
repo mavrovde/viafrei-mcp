@@ -72,10 +72,11 @@ the release page).
 
 This package carries the version of the hosted server it relays to. The `Version
 sync` workflow (`.github/workflows/version-sync.yml`) compares the running server,
-the registry and `main` every hour (minute 30; one `initialize` and the four list
-calls, never a tool call). When the server is ahead, it prepares the release with
-`scripts/propose-release.mjs` and opens a `release/X.Y.Z` pull request. What
-happens next depends on one decision, made by `scripts/auto-release.mjs decide`:
+the registry and `main` once a day (06:30 UTC; dispatch it by hand after a release;
+one `initialize` and the four list calls, never a tool call). When the server is
+ahead, it prepares the release with `scripts/propose-release.mjs` and opens a
+`release/X.Y.Z` pull request. What happens next depends on one decision, made by
+`scripts/auto-release.mjs decide`:
 
 - **A pure mirror is released automatically.** The probe found the surface
   unchanged, every offline gate passed and the leak sweep is clean. The workflow
@@ -147,15 +148,15 @@ against the tag before it uploads anything.
   both cases.
 
 **Recovering a release that stopped halfway.** Each failure message says which stage
-it stopped at. The hourly run also turns red, with the fix, while the release stays
+it stopped at. The daily run also turns red, with the fix, while the release stays
 stuck:
 
 - *Red before the merge* (a check red, or still pending after 30 minutes). Nothing was
   merged. Finish by hand: merge with a merge commit, then tag.
-- *Merged but not tagged.* The next hourly run reports it. Tag the merge commit
+- *Merged but not tagged.* The next daily run reports it. Tag the merge commit
   (`git tag -a vX.Y.Z <merge sha>`) and push the tag yourself. A tag pushed by a person
   starts `npm`, and `npm`'s success starts `Smithery` and `Release page`.
-- *Tagged, but npm did not publish.* The next hourly run reports it. Re-run the
+- *Tagged, but npm did not publish.* The next daily run reports it. Re-run the
   failed job of that Version sync run, or dispatch `publish.yml` on the tag with
   `dry_run=false`. Once npm serves the version, dispatch `smithery.yml` (input
   `version`) and `release-page.yml` (input `tag`) by hand. Their `workflow_run` trigger

@@ -5,6 +5,9 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+- **Freshness and Version sync run once a day** (06:00 and 06:30 UTC). Freshness ran every six hours and Version sync hourly, so this saves about 780 Actions runs a month (owner, 2026-11-15: use GitHub by minimum). Run Version sync by hand right after a release.
+
 ## [2.6.17] - 2026-11-14
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it

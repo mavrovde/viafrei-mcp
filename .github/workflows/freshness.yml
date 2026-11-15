@@ -16,10 +16,10 @@ name: Freshness
 
 on:
   schedule:
-    # Every six hours. Four reads a day of five tools is negligible load, and six
-    # hours is well inside the slowest feed's own limit, so a dead worker is
-    # noticed within one cycle rather than at the next release.
-    - cron: '0 */6 * * *'
+    # Once a day (owner 2026-11-15: GitHub by minimum, to save the free Actions
+    # runs; it was every six hours). One read a day of five tools; a dead worker
+    # is noticed within a day, and the prod rounds watch the feeds in between.
+    - cron: '0 6 * * *'
   workflow_dispatch:
 
 permissions:
