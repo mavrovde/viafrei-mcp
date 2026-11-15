@@ -317,7 +317,7 @@ async function collectReadings(endpoint, sessionId) {
     const rows = [];
     for (const entry of WATCH) {
         // Deliberately sequential: five concurrent requests to the public
-        // endpoint every six hours is load for no benefit.
+        // endpoint once a day is load for no benefit.
         // eslint-disable-next-line no-await-in-loop
         const { text } = await post(endpoint, {
             jsonrpc: '2.0',

@@ -205,7 +205,7 @@ export function remedy(stage, { version = 'X.Y.Z' } = {}) {
 /**
  * An `awaiting-tag` reading: main carries the server's version and npm does not. That is
  * the normal pause between a person's merge and their tag — and it is ALSO what every
- * later hourly run reads after the automatic path stopped halfway, which used to finish
+ * later daily run reads after the automatic path stopped halfway, which used to finish
  * green with "the tag is the missing step" while nothing would ever take it. Two cases
  * are therefore red, each with its remedy:
  *

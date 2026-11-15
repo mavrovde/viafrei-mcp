@@ -43,11 +43,13 @@ name: Version sync
 
 on:
   schedule:
-    # Hourly, at minute 30, so it never reads the server in the same minute as
-    # Freshness (minute 0 of every sixth hour). One `initialize` plus the four
-    # list calls per run — no tool is invoked, which is a licence condition, not
-    # courtesy.
-    - cron: '30 * * * *'
+    # Once a day at 06:30 (owner 2026-11-15: GitHub by minimum, to save the free
+    # Actions runs; it was hourly), so it never reads the server in the same
+    # minute as Freshness (06:00). A release's drift is caught within a day; run
+    # it by hand (workflow_dispatch) right after a release. One `initialize` plus
+    # the four list calls per run — no tool is invoked, which is a licence
+    # condition, not courtesy.
+    - cron: '30 6 * * *'
   workflow_dispatch:
 
 # Nothing at the top level; each job asks for exactly what it uses.
@@ -158,7 +160,7 @@ jobs:
 
       # `awaiting-tag` is main carrying the server's version while npm does not. That
       # is the normal pause between a person's merge and their tag — and also exactly
-      # what every hourly run reads after the automatic path stopped halfway, which
+      # what every daily run reads after the automatic path stopped halfway, which
       # used to end green saying "the tag is the missing step" while nothing would ever
       # take it. Red, with the remedy, when the tag exists but npm lacks the version
       # (a publish failed), or when the workflow token merged the release and no tag
@@ -186,7 +188,7 @@ jobs:
 
       # Idempotent across runs: a drift that is already proposed is left alone,
       # so a pull request waiting for its review is not joined by a twin every
-      # hour. The key is the BRANCH on origin, deliberately: close the pull
+      # day. The key is the BRANCH on origin, deliberately: close the pull
       # request and keep the branch and the proposal stays quiet; delete the
       # branch and the next run proposes again. The version has passed the
       # script's X.Y.Z check before it reaches this shell, and it arrives
@@ -429,7 +431,7 @@ jobs:
           merge_sha="${merged#MERGED }"
           if [ "${merged%% *}" != "MERGED" ] || ! printf '%s' "$merge_sha" | grep -Eq '^[0-9a-f]{40}$'; then
             echo "The merge call returned but the pull request does not read as merged with a 40-hex merge commit ('${merged}')." >&2
-            echo "If it IS merged, the next hourly run reports it as stuck and names the remedy." >&2
+            echo "If it IS merged, the next daily run reports it as stuck and names the remedy." >&2
             exit 1
           fi
           echo "sha=${merge_sha}" >> "$GITHUB_OUTPUT"
@@ -455,7 +457,7 @@ jobs:
             echo "${tag} already exists on origin — nothing is tagged twice." >&2
             exit 1
           fi
-          # From here a failure leaves a merged, untagged release. The next hourly run
+          # From here a failure leaves a merged, untagged release. The next daily run
           # reads it as stuck (merged by the workflow, no tag) and names the remedy.
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
