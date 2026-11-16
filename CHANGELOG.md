@@ -5,6 +5,15 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.6.18] - 2026-11-16
+
+**Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it
+relays to. The running server reports 2.6.18 while the registry's latest is 2.6.17, so
+this release moves the package to the server's number and carries whatever had been
+waiting under `[Unreleased]`. Prepared by the `Version sync` workflow: the shipped
+reference was re-captured from the running server, and the probe reported the surface
+**unchanged** — only the version string and the capture date moved.
+
 ### Changed
 - **Freshness and Version sync run once a day** (06:00 and 06:30 UTC). Freshness ran every six hours and Version sync hourly, so this saves about 780 Actions runs a month (owner, 2026-11-15: use GitHub by minimum). Run Version sync by hand right after a release.
 
@@ -4497,6 +4506,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.6.18]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.18
 [2.6.17]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.17
 [2.6.16]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.16
 [2.6.15]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.15
