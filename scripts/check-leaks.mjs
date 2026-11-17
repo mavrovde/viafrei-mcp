@@ -145,11 +145,11 @@ function blobExists(sha) {
 const findings = [];
 
 /**
- * `package-lock.json` is generated, and the URLs in it are upstream projects'
- * funding links, not ours. Everything else about it is scanned, including the
+ * `package-lock.json` and `server/package-lock.json` are generated, and the URLs
+ * in them are upstream projects' funding links, not ours. Everything else about it is scanned, including the
  * private-name check; only the host allow-list is relaxed, and the run says so.
  */
-const HOST_EXEMPT = new Set(['package-lock.json']);
+const HOST_EXEMPT = new Set(['package-lock.json', 'server/package-lock.json']);
 const hostExpression = /\bhttps?:\/\/([A-Za-z0-9._-]+)/gu;
 
 /**
