@@ -87,11 +87,113 @@ jobs:
     secrets:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
+  # The MCP server against the REAL API before anything is published: the
+  # viafrei-api release server/api.pin names (its published image), on the
+  # database release that API release pins, seeded with the API repository's
+  # synthetic fixture world (tiny profile). No live provider: the DB Timetables
+  # credentials are empty, so the live board is never asked. Same checks as the
+  # mock run: initialize, tools/list byte-equal to catalogue.json, one
+  # tools/call per tool. It fails, never skips, while the pinned API is not
+  # published. If an image is private, the repo secret GHCR_READ_TOKEN
+  # (packages: read) must hold a read token; without one the pull fails.
+  server-e2e-api:
+    name: Server e2e (real API)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Read the API pin
+        id: pin
+        run: |
+          set -euo pipefail
+          for k in api_repo api_image api_version fixture_profile; do
+            v=$(sed -n "s/^${k}=//p" server/api.pin)
+            [ -n "$v" ] || { echo "::error::server/api.pin has no ${k}"; exit 1; }
+            echo "${k}=${v}" >> "$GITHUB_OUTPUT"
+          done
+      - name: Log in to GHCR (read)
+        env:
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${GHCR_READ_TOKEN}" ]; then
+            printf '%s' "${GHCR_READ_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+          fi
+      - name: The pinned API release is published
+        env:
+          REF: ${{ steps.pin.outputs.api_image }}:${{ steps.pin.outputs.api_version }}
+          VER: ${{ steps.pin.outputs.api_version }}
+        run: |
+          set -euo pipefail
+          if ! docker manifest inspect "$REF" > /dev/null 2>&1; then
+            echo "::error::API ${VER} not published yet (${REF} is not readable on GHCR). Publish waits for it."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.pin.outputs.api_repo }}
+          ref: v${{ steps.pin.outputs.api_version }}
+          path: api
+          token: ${{ secrets.GHCR_READ_TOKEN || github.token }}
+      - name: Start the API on the database release it pins, with the fixture world
+        working-directory: api
+        env:
+          API_REF: ${{ steps.pin.outputs.api_image }}:${{ steps.pin.outputs.api_version }}
+          PROFILE: ${{ steps.pin.outputs.fixture_profile }}
+        run: |
+          set -euo pipefail
+          umask 077
+          {
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
+            echo "API_READER_PASSWORD=$(openssl rand -hex 24)"
+            echo "FIXTURE_PROFILE=${PROFILE}"
+            echo "API_PUBLISH=127.0.0.1:8080"
+            echo "API_HEALTH_PUBLISH=127.0.0.1:8082"
+          } > .env
+          db_image=$(sed -n 1p database.pin)
+          printf 'services:\n  db-migrate: { image: "%s" }\n  db-seed: { image: "%s" }\n  api: { image: "%s", pull_policy: always }\n' "$db_image" "$db_image" "$API_REF" > compose.e2e.yaml
+          docker compose -f compose.yaml -f compose.e2e.yaml up -d --wait api || { docker compose -f compose.yaml -f compose.e2e.yaml logs --no-color | tail -200; exit 1; }
+      - name: A key for the fixture world
+        id: key
+        working-directory: api
+        run: |
+          set -euo pipefail
+          # The API release documents how a key is issued for its fixture world;
+          # until server/api.pin names that command, this fails rather than run keyless.
+          cmd=$(sed -n 's/^fixture_key_command=//p' ../server/api.pin)
+          if [ -z "$cmd" ]; then
+            echo "::error::server/api.pin names no fixture_key_command: wire the API release's fixture-key command before the first release with the server"
+            exit 1
+          fi
+          key=$(sh -c "$cmd")
+          echo "::add-mask::${key}"
+          echo "key=${key}" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - working-directory: server
+        run: npm ci --ignore-scripts
+      - name: MCP over Streamable HTTP against the real API
+        working-directory: server
+        env:
+          E2E_API_URL: http://127.0.0.1:8080
+          E2E_API_KEY: ${{ steps.key.outputs.key }}
+          E2E_FACTS: '1'
+        run: npm run test:e2e:api
+      - if: always()
+        working-directory: api
+        run: docker compose -f compose.yaml -f compose.e2e.yaml down -v || true
+
   publish:
-    needs: snyk
+    needs: [snyk, server-e2e-api]
     # After a passed scan, or a branch dry run with no scan; never past a failed
     # or cancelled one, and never a real publish without one.
-    if: ${{ !cancelled() && (needs.snyk.result == 'success' || (needs.snyk.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.dry_run)) }}
+    if: ${{ !cancelled() && (needs.snyk.result == 'success' || (needs.snyk.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.dry_run)) && (needs.server-e2e-api.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)) }}
     # Pinned, unlike ci.yml: this is the job that mints a published
     # artefact, so the runner image it is built on is part of what is
     # being released. ubuntu-latest moves under us on GitHub's schedule.
