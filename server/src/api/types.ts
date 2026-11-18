@@ -34,6 +34,9 @@ export type Poi = { name: string | null; category: string; kind: string | null; 
 export type NeedPlace = { name: string; kind: string; street: string | null; houseNo: string | null; distanceM: number };
 export type NearbyFuelStation = { name: string | null; brand: string | null; distanceM: number; prices: FuelPrice[] };
 export type NearbyJunction = { name: string; road: string | null; number: string | null; distanceM: number };
+/** NearbyPartStatus (NearbyMeta.parts) */
+export type NearbyPart = "fuel" | "charging" | "parking" | "station" | "junction" | "needs";
+export type NearbyPartStatus = { part: NearbyPart; status: "ok" | "timeout" | "not_permitted" | "unavailable" | "not_requested"; problemType?: string };
 /** Every category is optional: a category that is not ok (or not asked) is absent, and named in meta.parts. */
 export type NearbyData = {
   fuel?: NearbyFuelStation[]; charging?: ChargingSite[]; parking?: ParkingSite[]; stations?: Station[]; junctions?: NearbyJunction[];
