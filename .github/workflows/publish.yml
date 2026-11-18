@@ -23,7 +23,9 @@ name: npm
 #
 # Snyk (snyk.yml, called by the snyk job below) tests the dependencies of the
 # same commit first; the publish job needs it, so a high or critical advisory
-# stops the release before anything is packed.
+# stops the release before anything is packed. The full mutation run of the
+# server (mutation.yml, called by the mutation job below, four shards) tests it
+# beside Snyk; publish needs it too, so a run below 70 % stops the release.
 
 on:
   push:
@@ -86,6 +88,19 @@ jobs:
       ref: ${{ github.sha }}
     secrets:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  # The full mutation run of the server once per release, on the commit about
+  # to be published (mutation.yml, four shards gathered into one 70 % gate;
+  # never on a pull request or a push). A red run stops the release: publish
+  # needs this job. Like Snyk it runs on a tag only and needs no secret.
+  mutation:
+    name: Mutation
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+    uses: ./.github/workflows/mutation.yml
+    with:
+      ref: ${{ github.sha }}
 
   # The MCP server against the REAL API before anything is published: the
   # viafrei-api release server/api.pin names (its published image), on the
@@ -190,10 +205,11 @@ jobs:
         run: docker compose -f compose.yaml -f compose.e2e.yaml down -v || true
 
   publish:
-    needs: [snyk, server-e2e-api]
-    # After a passed scan, or a branch dry run with no scan; never past a failed
-    # or cancelled one, and never a real publish without one.
-    if: ${{ !cancelled() && (needs.snyk.result == 'success' || (needs.snyk.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.dry_run)) && (needs.server-e2e-api.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)) }}
+    needs: [snyk, mutation, server-e2e-api]
+    # After a passed scan and a passed mutation run, or a branch dry run with
+    # neither; never past a failed or cancelled one, and never a real publish
+    # without both.
+    if: ${{ !cancelled() && (needs.snyk.result == 'success' || (needs.snyk.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.dry_run)) && (needs.mutation.result == 'success' || (needs.mutation.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.dry_run)) && (needs.server-e2e-api.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)) }}
     # Pinned, unlike ci.yml: this is the job that mints a published
     # artefact, so the runner image it is built on is part of what is
     # being released. ubuntu-latest moves under us on GitHub's schedule.

@@ -29,3 +29,6 @@ node_modules/
 *.log
 npm-debug.log*
 coverage/
+# Mutation testing (server/stryker.config.mjs): the report and the sandbox
+server/reports/
+server/.stryker-tmp/
