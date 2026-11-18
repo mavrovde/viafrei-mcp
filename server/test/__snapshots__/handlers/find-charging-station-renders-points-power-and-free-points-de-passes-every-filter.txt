@@ -1,0 +1,3 @@
+- Laden Mitte · 3,0 km · 3 Ladepunkte, max 150 kW, 1 frei
+- Strom AG · 3,0 km · 2 Ladepunkte
+- cs-9 · 3,0 km · 1 Ladepunkte, max 22 kW, 0 frei

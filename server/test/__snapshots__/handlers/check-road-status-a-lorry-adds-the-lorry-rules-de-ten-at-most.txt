@@ -1,0 +1,16 @@
+The data make no claim to be complete or correct. They have no legal or official meaning either. The data are not suitable for navigation or similar purposes (our translation of the publisher's notice).
+weather_warning
+- A101: GeneralObstruction
+- A101: GeneralObstruction
+
+Lkw-Regeln:
+- A1, Hauptstraße, Köln: Durchfahrt verboten
+- : weight
+- A100: long_lorry
+- A10: long_lorry
+- A11: long_lorry
+- A12: long_lorry
+- A13: long_lorry
+- A14: long_lorry
+- A15: long_lorry
+- A16: long_lorry
