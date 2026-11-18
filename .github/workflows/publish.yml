@@ -153,37 +153,78 @@ jobs:
           ref: v${{ steps.pin.outputs.api_version }}
           path: api
           token: ${{ secrets.GHCR_READ_TOKEN || github.token }}
-      - name: Start the API on the database release it pins, with the fixture world
+      # Keyed operations need the API's access store, which its base compose leaves off:
+      # compose.e2e.yaml (written here) pins the images, lets the role api_access log in
+      # with this run's password (db-access, the way the API's own load stack does it) and
+      # hands the API the access store and a pepper. Every secret is random per run.
+      - name: Start the API on the database release it pins, with the fixture world and keyed access
         working-directory: api
         env:
           API_REF: ${{ steps.pin.outputs.api_image }}:${{ steps.pin.outputs.api_version }}
           PROFILE: ${{ steps.pin.outputs.fixture_profile }}
+          API_PORT: '8080'
+          API_HEALTH_PORT: '8082'
         run: |
           set -euo pipefail
           umask 077
+          # database.pin opens with comment lines; the release is its first other line.
+          db_image=$(awk '!/^#/ && NF { print; exit }' database.pin)
+          case "$db_image" in
+            *:*@sha256:*) ;;
+            *) echo "::error::database.pin of the API release names no image pinned by digest"; exit 1 ;;
+          esac
           {
             echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
             echo "API_READER_PASSWORD=$(openssl rand -hex 24)"
+            echo "API_ACCESS_PASSWORD=$(openssl rand -hex 24)"
+            echo "VFAPI_AUTH_PEPPER=$(openssl rand -hex 32)"
             echo "FIXTURE_PROFILE=${PROFILE}"
-            echo "API_PUBLISH=127.0.0.1:8080"
-            echo "API_HEALTH_PUBLISH=127.0.0.1:8082"
+            echo "API_PUBLISH=127.0.0.1:${API_PORT}"
+            echo "API_HEALTH_PUBLISH=127.0.0.1:${API_HEALTH_PORT}"
+            echo "E2E_DB_IMAGE=${db_image}"
+            echo "E2E_API_IMAGE=${API_REF}"
           } > .env
-          db_image=$(sed -n 1p database.pin)
-          printf 'services:\n  db-migrate: { image: "%s" }\n  db-seed: { image: "%s" }\n  api: { image: "%s", pull_policy: always }\n' "$db_image" "$db_image" "$API_REF" > compose.e2e.yaml
+          cat > compose.e2e.yaml <<'YAML'
+          services:
+            db-migrate: { image: "${E2E_DB_IMAGE:?}" }
+            db-seed: { image: "${E2E_DB_IMAGE:?}" }
+            db-access:
+              extends: { file: compose.yaml, service: db-migrate }
+              image: "${E2E_DB_IMAGE:?}"
+              depends_on:
+                db-migrate: { condition: service_completed_successfully }
+              environment:
+                API_ACCESS_PASSWORD: ${API_ACCESS_PASSWORD:?}
+              command:
+                - |
+                  echo "alter role api_access login password :'pw';" | psql -X -q -v ON_ERROR_STOP=1 -v pw="$$API_ACCESS_PASSWORD" "$$DATABASE_URL"
+            api:
+              image: "${E2E_API_IMAGE:?}"
+              pull_policy: always
+              depends_on:
+                db-access: { condition: service_completed_successfully }
+              environment:
+                VFAPI_ACCESS_URL: postgres://api_access:${API_ACCESS_PASSWORD:?}@db/test_contract?sslmode=disable
+                VFAPI_AUTH_PEPPER: ${VFAPI_AUTH_PEPPER:?}
+          YAML
           docker compose -f compose.yaml -f compose.e2e.yaml up -d --wait api || { docker compose -f compose.yaml -f compose.e2e.yaml logs --no-color | tail -200; exit 1; }
+      # A key the way the API's scripts/load-test.sh issues one: a plan with every scope and
+      # every signed-off source of the fixture world, then keys issue, whose second line is
+      # the key. It is masked before it is written anywhere.
       - name: A key for the fixture world
         id: key
         working-directory: api
         run: |
           set -euo pipefail
-          # The API release documents how a key is issued for its fixture world;
-          # until server/api.pin names that command, this fails rather than run keyless.
-          cmd=$(sed -n 's/^fixture_key_command=//p' ../server/api.pin)
-          if [ -z "$cmd" ]; then
-            echo "::error::server/api.pin names no fixture_key_command: wire the API release's fixture-key command before the first release with the server"
-            exit 1
-          fi
-          key=$(sh -c "$cmd")
+          compose=(docker compose -f compose.yaml -f compose.e2e.yaml)
+          sources=$("${compose[@]}" exec -T db psql -U owner -d test_contract -v ON_ERROR_STOP=1 -tAqc \
+            "select string_agg(source_ref, ',' order by source_ref) from contract.source where review_signed_on is not null")
+          [ -n "$sources" ] || { echo "::error::the fixture world has no signed-off source"; exit 1; }
+          "${compose[@]}" exec -T api /app keys plan -name e2e -use-class commercial -tier standard \
+            -scopes places,roads,energy,parking,transit,accessibility,weather,rules,history -sources "$sources" \
+            -rate 100000 -burst 100000 -actor mcp-e2e > /dev/null
+          key=$("${compose[@]}" exec -T api /app keys issue -plan e2e -label mcp-e2e -contact ops@example.test -actor mcp-e2e | sed -n 2p)
+          [ -n "$key" ] || { echo "::error::the API's key tool issued no key"; exit 1; }
           echo "::add-mask::${key}"
           echo "key=${key}" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
