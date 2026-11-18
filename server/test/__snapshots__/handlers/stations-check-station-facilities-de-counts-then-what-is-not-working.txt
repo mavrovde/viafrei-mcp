@@ -1,0 +1,3 @@
+Pienköckheim Nord: 3 in Betrieb, 1 außer Betrieb, 1 unbekannt.
+- elevator zu Gleis 1: inactive
+- escalator: unknown
