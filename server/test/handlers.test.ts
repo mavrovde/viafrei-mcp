@@ -499,7 +499,7 @@ describe("find_nearby and find_sharing", () => {
     expect(body(r)).toBe("groceries:\n- A, Weg 2 · 120 m\n- B, Weg · 120 m\n- C · 2,0 km\n- D · 120 m\n- E · 120 m\n\nfood:\n- –");
   });
 
-  it("find_nearby without categories: the API's default vehicle categories, each a block, three at most; a category whose part did not answer gets its own line", async () => {
+  it("find_nearby without categories: the API's default vehicle categories, each a block, three at most, in the order the API answers them", async () => {
     const fuel = (name: string | null, brand: string | null, distanceM: number, current = true) => ({ id: "f", name, brand, location: at, distanceM, prices: [{ fuel: "e5", priceEur: 1.789, reportedAt: "2026-11-18T10:00:00Z", reportedAtLocal: "2026-11-18T11:00:00+01:00", current }], sourceFamily: "tk" });
     const charging = { id: "c", name: null, operator: "EnBW", location: at, distanceM: 1800, access: "public", summary: { chargePoints: 4, availableNow: null, maxPowerKw: 150 } };
     const parking = { id: "p", name: "P1", operator: null, kind: "car_park", location: at, distanceM: null, occupancy: null, termsRequired: false, sourceFamily: "p" };
