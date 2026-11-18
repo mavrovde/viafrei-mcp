@@ -247,18 +247,37 @@ const findNearby: Handler = async (args, ctx) => {
   if (isResult(pos)) return pos;
   const r = await ctx.api.get<T.NearbyData>("listNearby", { at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), categories: strs(args["categories"]) });
   const d = r.data;
-  const block = <X>(title: string, rows: readonly X[] | undefined, line: (x: X) => string, max: number): string[] =>
-    rows === undefined ? [] : [`${title}:\n${rows.length === 0 ? "- –" : rows.slice(0, max).map((x) => `- ${line(x)}`).join("\n")}`];
+  const title = (part: T.NearbyPart): string =>
+    ({
+      fuel: L(language, "Tankstellen", "Fuel"),
+      charging: L(language, "Laden", "Charging"),
+      parking: L(language, "Parken", "Parking"),
+      station: L(language, "Bahnhöfe", "Stations"),
+      junction: L(language, "Autobahn-Anschlussstellen", "Motorway junctions"),
+      needs: L(language, "Orte des Alltags", "Everyday places"),
+    })[part];
+  const block = <X>(heading: string, rows: readonly X[] | undefined, line: (x: X) => string, max: number): string[] =>
+    rows === undefined ? [] : [`${heading}:\n${rows.length === 0 ? "- –" : rows.slice(0, max).map((x) => `- ${line(x)}`).join("\n")}`];
   const at = (m: number | null | undefined): string => (m === null || m === undefined ? "" : ` · ${km(m, language)}`);
+  const price = (p: T.FuelPrice): string =>
+    ` · ${p.fuel.toUpperCase()} ${eur(p.priceEur, language)}${p.current ? "" : L(language, ` (nicht aktuell, gemeldet ${berlinDateTime(p.reportedAt, language)})`, ` (not current, reported ${berlinDateTime(p.reportedAt, language)})`)}`;
   const blocks = [
-    ...block(L(language, "Tankstellen", "Fuel"), d.fuel, (s) => `${s.name ?? s.brand ?? "–"}${s.prices.map((p) => ` · ${p.fuel.toUpperCase()} ${eur(p.priceEur, language)}`).join("")}${at(s.distanceM)}`, 3),
-    ...block(L(language, "Laden", "Charging"), d.charging, (s) => `${s.name ?? s.operator ?? "–"}${s.summary.maxPowerKw === null ? "" : ` · ${s.summary.maxPowerKw} kW`}${at(s.distanceM)}`, 3),
-    ...block(L(language, "Parken", "Parking"), d.parking, (s) => `${s.name ?? s.operator ?? "–"}${at(s.distanceM)}`, 3),
-    ...block(L(language, "Bahnhöfe", "Stations"), d.stations, (s) => `${s.name}${at(s.distanceM)}`, 3),
-    ...block(L(language, "Autobahn-Anschlussstellen", "Motorway junctions"), d.junctions, (j) => `${j.name}${j.road === null ? "" : ` (${[j.road, j.number].filter((x) => x !== null).join(" ")})`}${at(j.distanceM)}`, 3),
+    ...block(title("fuel"), d.fuel, (s) => `${s.name ?? s.brand ?? "–"}${s.prices.map(price).join("")}${at(s.distanceM)}`, 3),
+    ...block(title("charging"), d.charging, (s) => `${s.name ?? s.operator ?? "–"}${s.summary.maxPowerKw === null ? "" : ` · ${s.summary.maxPowerKw} kW`}${at(s.distanceM)}`, 3),
+    ...block(title("parking"), d.parking, (s) => `${s.name ?? s.operator ?? "–"}${at(s.distanceM)}`, 3),
+    ...block(title("station"), d.stations, (s) => `${s.name}${at(s.distanceM)}`, 3),
+    ...block(title("junction"), d.junctions, (j) => `${j.name}${j.road === null ? "" : ` (${[j.road, j.number].filter((x) => x !== null).join(" ")})`}${at(j.distanceM)}`, 3),
     ...(d.needs ?? []).flatMap((n) => block(n.need, n.places, (p) => `${p.name}${p.street ? `, ${p.street}${p.houseNo ? ` ${p.houseNo}` : ""}` : ""}${at(p.distanceM)}`, 5)),
   ];
-  return toolResult(blocks.join("\n\n") || L(language, "In diesem Umkreis ist nichts bekannt.", "Nothing is known within this radius."), [r.meta], language);
+  // A category that is not ok is absent from data and named in meta.parts: it is said, not dropped.
+  const why: Record<Exclude<T.NearbyPartStatus["status"], "ok" | "not_requested">, string> = {
+    timeout: L(language, "hat nicht rechtzeitig geantwortet – bitte gleich noch einmal fragen.", "did not answer in time – please ask again shortly."),
+    unavailable: L(language, "gerade nicht verfügbar.", "not available right now."),
+    not_permitted: L(language, "mit diesem Zugang nicht freigegeben.", "not included in this access."),
+  };
+  const failed = ((r.meta["parts"] as readonly T.NearbyPartStatus[] | undefined) ?? []).flatMap((p) => (p.status === "ok" || p.status === "not_requested" ? [] : [`${title(p.part)}: ${why[p.status]}`]));
+  const body = [...blocks, ...(failed.length === 0 ? [] : [failed.join("\n")])].join("\n\n");
+  return toolResult(body || L(language, "In diesem Umkreis ist nichts bekannt.", "Nothing is known within this radius."), [r.meta], language);
 };
 
 const findSharing: Handler = async (args, ctx) => {

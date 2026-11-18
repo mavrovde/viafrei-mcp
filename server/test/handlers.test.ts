@@ -499,23 +499,48 @@ describe("find_nearby and find_sharing", () => {
     expect(body(r)).toBe("groceries:\n- A, Weg 2 · 120 m\n- B, Weg · 120 m\n- C · 2,0 km\n- D · 120 m\n- E · 120 m\n\nfood:\n- –");
   });
 
-  it("find_nearby without categories: the API's default vehicle categories, each a block, three at most; a withheld one (absent) is left out", async () => {
-    const fuel = (name: string | null, brand: string | null, distanceM: number) => ({ id: "f", name, brand, location: at, distanceM, prices: [{ fuel: "e5", priceEur: 1.789, reportedAt: "2026-11-18T10:00:00Z", current: true }], sourceFamily: "tk" });
+  it("find_nearby without categories: the API's default vehicle categories, each a block, three at most; a category whose part did not answer gets its own line", async () => {
+    const fuel = (name: string | null, brand: string | null, distanceM: number, current = true) => ({ id: "f", name, brand, location: at, distanceM, prices: [{ fuel: "e5", priceEur: 1.789, reportedAt: "2026-11-18T10:00:00Z", reportedAtLocal: "2026-11-18T11:00:00+01:00", current }], sourceFamily: "tk" });
     const charging = { id: "c", name: null, operator: "EnBW", location: at, distanceM: 1800, access: "public", summary: { chargePoints: 4, availableNow: null, maxPowerKw: 150 } };
     const parking = { id: "p", name: "P1", operator: null, kind: "car_park", location: at, distanceM: null, occupancy: null, termsRequired: false, sourceFamily: "p" };
     const station = { id: "s", name: "Musterstadt Hbf", location: at, stopCode: null, eva: null, evaNumbers: [], districtCode: null, modes: [], distanceM: 800, sourceFamily: "s" };
     const junction = (road: string | null, number: string | null) => ({ id: "j", name: "Musterstadt-Nord", road, number, location: at, distanceM: 3000, sourceFamily: "r" });
-    serve("listNearby", { fuel: [fuel("Tank A", null, 300), fuel(null, "Brand B", 400), fuel(null, null, 500), fuel("Fourth", null, 600)], charging: [charging], parking: [parking], stations: [station], junctions: [junction("A101", "12"), junction("A101", null), junction(null, null)] });
+    serve("listNearby", { fuel: [fuel("Tank A", null, 300), fuel(null, "Brand B", 400, false), fuel(null, null, 500), fuel("Fourth", null, 600)], charging: [charging], parking: [parking], stations: [station], junctions: [junction("A101", "12"), junction("A101", null), junction(null, null)] });
     const r = await call("find_nearby", { ...at, language: "en" });
     expect(query("listNearby")).toEqual([{ at: "52.52,13.405", lang: "en" }]);
     expect(body(r)).toBe(
-      "Fuel:\n- Tank A · E5 1.789 € · 300 m\n- Brand B · E5 1.789 € · 400 m\n- – · E5 1.789 € · 500 m\n\nCharging:\n- EnBW · 150 kW · 1.8 km\n\nParking:\n- P1\n\nStations:\n- Musterstadt Hbf · 800 m\n\n" +
+      "Fuel:\n- Tank A · E5 1.789 € · 300 m\n- Brand B · E5 1.789 € (not current, reported 18/11/2026, 11:00) · 400 m\n- – · E5 1.789 € · 500 m\n\nCharging:\n- EnBW · 150 kW · 1.8 km\n\nParking:\n- P1\n\nStations:\n- Musterstadt Hbf · 800 m\n\n" +
         "Motorway junctions:\n- Musterstadt-Nord (A101 12) · 3.0 km\n- Musterstadt-Nord (A101) · 3.0 km\n- Musterstadt-Nord · 3.0 km",
     );
-    serve("listNearby", { fuel: [], stations: [station] });
-    expect(body(await call("find_nearby", { ...at, language: "de" }))).toBe("Tankstellen:\n- –\n\nBahnhöfe:\n- Musterstadt Hbf · 800 m");
-    serve("listNearby", {});
+    serve("listNearby", { fuel: [fuel(null, "Marke", 400, false)], stations: [station] });
+    expect(body(await call("find_nearby", { ...at, language: "de" }))).toBe("Tankstellen:\n- Marke · E5 1,789 € (nicht aktuell, gemeldet 18.11.2026, 11:00) · 400 m\n\nBahnhöfe:\n- Musterstadt Hbf · 800 m");
+  });
+
+  // NearbyMeta.parts: a category that is not ok is absent from data; the answer names it with its status.
+  const parts = (s: Record<string, string>) => ({ parts: Object.entries(s).map(([part, status]) => ({ part, status })) });
+  it("find_nearby: a category that is not ok is said per status, after the blocks that answered", async () => {
+    const station = { id: "s", name: "Musterstadt Hbf", location: at, stopCode: null, eva: null, evaNumbers: [], districtCode: null, modes: [], distanceM: 800, sourceFamily: "s" };
+    serve("listNearby", { fuel: [], stations: [station] }, parts({ fuel: "ok", charging: "timeout", parking: "unavailable", station: "ok", junction: "not_permitted", needs: "not_requested" }));
+    expect(body(await call("find_nearby", { ...at, language: "en" }))).toBe(
+      "Fuel:\n- –\n\nStations:\n- Musterstadt Hbf · 800 m\n\nCharging: did not answer in time – please ask again shortly.\nParking: not available right now.\nMotorway junctions: not included in this access.",
+    );
+    serve("listNearby", { fuel: [] }, parts({ fuel: "ok", charging: "unavailable", parking: "timeout", station: "not_permitted", junction: "unavailable", needs: "timeout" }));
+    expect(body(await call("find_nearby", { ...at, language: "de" }))).toBe(
+      "Tankstellen:\n- –\n\nLaden: gerade nicht verfügbar.\nParken: hat nicht rechtzeitig geantwortet – bitte gleich noch einmal fragen.\nBahnhöfe: mit diesem Zugang nicht freigegeben.\nAutobahn-Anschlussstellen: gerade nicht verfügbar.\nOrte des Alltags: hat nicht rechtzeitig geantwortet – bitte gleich noch einmal fragen.",
+    );
+  });
+
+  it("find_nearby: every part failed is not 'nothing is known'; only all ok or not asked is", async () => {
+    serve("listNearby", {}, parts({ fuel: "timeout", charging: "unavailable", parking: "not_permitted", station: "timeout", junction: "unavailable", needs: "not_requested" }));
+    const failed = body(await call("find_nearby", { ...at, language: "en" }));
+    expect(failed).toBe(
+      "Fuel: did not answer in time – please ask again shortly.\nCharging: not available right now.\nParking: not included in this access.\nStations: did not answer in time – please ask again shortly.\nMotorway junctions: not available right now.",
+    );
+    expect(failed).not.toContain("Nothing is known");
+    serve("listNearby", {}, parts({ fuel: "ok", charging: "ok", parking: "ok", station: "ok", junction: "ok", needs: "not_requested" }));
     expect(body(await call("find_nearby", { ...at, language: "de" }))).toBe("In diesem Umkreis ist nichts bekannt.");
+    serve("listNearby", {}, parts({ fuel: "ok", charging: "ok", parking: "ok", station: "ok", junction: "ok", needs: "not_requested" }));
+    expect(body(await call("find_nearby", { ...at, language: "en" }))).toBe("Nothing is known within this radius.");
   });
 
   for (const language of LANGS) {
