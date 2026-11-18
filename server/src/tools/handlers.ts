@@ -246,8 +246,19 @@ const findNearby: Handler = async (args, ctx) => {
   const pos = await position(args, ctx);
   if (isResult(pos)) return pos;
   const r = await ctx.api.get<T.NearbyData>("listNearby", { at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), categories: strs(args["categories"]) });
-  const blocks = r.data.needs.map((n) => `${n.need}:\n${n.places.length === 0 ? "- –" : n.places.slice(0, 5).map((p) => `- ${p.name}${p.street ? `, ${p.street}${p.houseNo ? ` ${p.houseNo}` : ""}` : ""} · ${km(p.distanceM, language)}`).join("\n")}`);
-  return toolResult(blocks.join("\n\n"), [r.meta], language);
+  const d = r.data;
+  const block = <X>(title: string, rows: readonly X[] | undefined, line: (x: X) => string, max: number): string[] =>
+    rows === undefined ? [] : [`${title}:\n${rows.length === 0 ? "- –" : rows.slice(0, max).map((x) => `- ${line(x)}`).join("\n")}`];
+  const at = (m: number | null | undefined): string => (m === null || m === undefined ? "" : ` · ${km(m, language)}`);
+  const blocks = [
+    ...block(L(language, "Tankstellen", "Fuel"), d.fuel, (s) => `${s.name ?? s.brand ?? "–"}${s.prices.map((p) => ` · ${p.fuel.toUpperCase()} ${eur(p.priceEur, language)}`).join("")}${at(s.distanceM)}`, 3),
+    ...block(L(language, "Laden", "Charging"), d.charging, (s) => `${s.name ?? s.operator ?? "–"}${s.summary.maxPowerKw === null ? "" : ` · ${s.summary.maxPowerKw} kW`}${at(s.distanceM)}`, 3),
+    ...block(L(language, "Parken", "Parking"), d.parking, (s) => `${s.name ?? s.operator ?? "–"}${at(s.distanceM)}`, 3),
+    ...block(L(language, "Bahnhöfe", "Stations"), d.stations, (s) => `${s.name}${at(s.distanceM)}`, 3),
+    ...block(L(language, "Autobahn-Anschlussstellen", "Motorway junctions"), d.junctions, (j) => `${j.name}${j.road === null ? "" : ` (${[j.road, j.number].filter((x) => x !== null).join(" ")})`}${at(j.distanceM)}`, 3),
+    ...(d.needs ?? []).flatMap((n) => block(n.need, n.places, (p) => `${p.name}${p.street ? `, ${p.street}${p.houseNo ? ` ${p.houseNo}` : ""}` : ""}${at(p.distanceM)}`, 5)),
+  ];
+  return toolResult(blocks.join("\n\n") || L(language, "In diesem Umkreis ist nichts bekannt.", "Nothing is known within this radius."), [r.meta], language);
 };
 
 const findSharing: Handler = async (args, ctx) => {

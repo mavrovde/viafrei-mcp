@@ -32,7 +32,13 @@ export type SpeedData = { official: SpeedCamera[]; officialTotal: number; osm: S
 export type Poi = { name: string | null; category: string; kind: string | null; street: string | null; number: string | null; postcode: string | null; place: string | null; distanceM: number | null };
 /** NearbyData */
 export type NeedPlace = { name: string; kind: string; street: string | null; houseNo: string | null; distanceM: number };
-export type NearbyData = { needs: { need: string; radiusM: number; widened: boolean; places: NeedPlace[] }[] };
+export type NearbyFuelStation = { name: string | null; brand: string | null; distanceM: number; prices: FuelPrice[] };
+export type NearbyJunction = { name: string; road: string | null; number: string | null; distanceM: number };
+/** Every category is optional: a category that is not ok (or not asked) is absent, and named in meta.parts. */
+export type NearbyData = {
+  fuel?: NearbyFuelStation[]; charging?: ChargingSite[]; parking?: ParkingSite[]; stations?: Station[]; junctions?: NearbyJunction[];
+  needs?: { need: string; radiusM: number; widened: boolean; places: NeedPlace[] }[];
+};
 /** SharingData */
 export type SharingStation = { name: string | null; systemLabel: string | null; system: string; distanceM: number; bikes: number | null; freeDocks: number | null; available: boolean };
 export type SharingData = { stations: SharingStation[]; stationsInRadius: number; vehicles: { count: number; electric: number; atLeast: boolean } };

@@ -8,6 +8,8 @@
  *
  * Checks: initialize, tools/list byte-equal to catalogue.json (under the capture's documented
  * normalisation), and one tools/call per tool that answers without an error and with its attribution.
+ * Against a real API the motorway a road case asks is one that API lists (the fixture world's own roads,
+ * not a real-world name): the one with the most situations, read through listMotorways.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -17,6 +19,17 @@ import { normaliseLikeCapture } from "../../src/catalogue.js";
 import { TOOL_CASES } from "../tool-cases.js";
 import { ApiClient, apiConfigFromEnv } from "../../src/api/client.js";
 import type { PlaceItem, Station } from "../../src/api/types.js";
+
+type MotorwayItem = { road: string; situations: number };
+
+/** A case's arguments with the motorway it names replaced by `road` (the road tools and a road watch). */
+function withRoad(args: Record<string, unknown>, road: string): Record<string, unknown> {
+  const out = { ...args };
+  if (Array.isArray(out["roads"])) out["roads"] = [road];
+  if (typeof out["road"] === "string") out["road"] = road;
+  if (out["kind"] === "road" && typeof out["key"] === "string") out["key"] = road;
+  return out;
+}
 
 const root = new URL("../../", import.meta.url).pathname;
 const catalogue = JSON.parse(readFileSync(new URL("../../catalogue/catalogue.json", import.meta.url), "utf8"));
@@ -59,6 +72,7 @@ function start(cmd: string, args: string[], env: Record<string, string>): ChildP
 }
 
 let mcpUrl = "";
+let fixtureRoad: string | undefined;
 let session = "";
 let id = 0;
 
@@ -85,6 +99,11 @@ beforeAll(async () => {
     start(`${root}node_modules/.bin/prism`, ["mock", "--errors", "-h", "127.0.0.1", "-p", String(apiPort), "test/fixtures/api-openapi.json"], {});
     apiUrl = `http://127.0.0.1:${apiPort}`;
     await waitFor(`${apiUrl}/healthz`, 60_000);
+  } else {
+    const api = new ApiClient(apiConfigFromEnv({ VIAFREI_API_URL: apiUrl, VIAFREI_API_KEY: process.env["E2E_API_KEY"] }));
+    const roads = (await api.get<MotorwayItem[]>("listMotorways", { limit: 100 })).data;
+    fixtureRoad = [...roads].sort((a, b) => b.situations - a.situations)[0]?.road;
+    if (fixtureRoad === undefined) throw new Error("the API lists no motorway: the fixture world was not seeded");
   }
   const port = await freePort();
   start(process.execPath, ["dist/http.js"], {
@@ -118,7 +137,7 @@ describe("MCP over Streamable HTTP against the API", () => {
 
   for (const c of TOOL_CASES) {
     it(`tools/call ${c.tool}`, async () => {
-      const r = await rpc("tools/call", { name: c.tool, arguments: c.args });
+      const r = await rpc("tools/call", { name: c.tool, arguments: fixtureRoad === undefined ? c.args : withRoad(c.args, fixtureRoad) });
       const result = r.body.result as { isError?: boolean; content: { text: string }[]; _meta?: { attribution?: string } };
       expect(result.isError, result.content[0]?.text).not.toBe(true);
       expect(typeof result._meta?.attribution).toBe("string");

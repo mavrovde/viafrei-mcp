@@ -499,6 +499,25 @@ describe("find_nearby and find_sharing", () => {
     expect(body(r)).toBe("groceries:\n- A, Weg 2 · 120 m\n- B, Weg · 120 m\n- C · 2,0 km\n- D · 120 m\n- E · 120 m\n\nfood:\n- –");
   });
 
+  it("find_nearby without categories: the API's default vehicle categories, each a block, three at most; a withheld one (absent) is left out", async () => {
+    const fuel = (name: string | null, brand: string | null, distanceM: number) => ({ id: "f", name, brand, location: at, distanceM, prices: [{ fuel: "e5", priceEur: 1.789, reportedAt: "2026-11-18T10:00:00Z", current: true }], sourceFamily: "tk" });
+    const charging = { id: "c", name: null, operator: "EnBW", location: at, distanceM: 1800, access: "public", summary: { chargePoints: 4, availableNow: null, maxPowerKw: 150 } };
+    const parking = { id: "p", name: "P1", operator: null, kind: "car_park", location: at, distanceM: null, occupancy: null, termsRequired: false, sourceFamily: "p" };
+    const station = { id: "s", name: "Musterstadt Hbf", location: at, stopCode: null, eva: null, evaNumbers: [], districtCode: null, modes: [], distanceM: 800, sourceFamily: "s" };
+    const junction = (road: string | null, number: string | null) => ({ id: "j", name: "Musterstadt-Nord", road, number, location: at, distanceM: 3000, sourceFamily: "r" });
+    serve("listNearby", { fuel: [fuel("Tank A", null, 300), fuel(null, "Brand B", 400), fuel(null, null, 500), fuel("Fourth", null, 600)], charging: [charging], parking: [parking], stations: [station], junctions: [junction("A101", "12"), junction("A101", null), junction(null, null)] });
+    const r = await call("find_nearby", { ...at, language: "en" });
+    expect(query("listNearby")).toEqual([{ at: "52.52,13.405", lang: "en" }]);
+    expect(body(r)).toBe(
+      "Fuel:\n- Tank A · E5 1.789 € · 300 m\n- Brand B · E5 1.789 € · 400 m\n- – · E5 1.789 € · 500 m\n\nCharging:\n- EnBW · 150 kW · 1.8 km\n\nParking:\n- P1\n\nStations:\n- Musterstadt Hbf · 800 m\n\n" +
+        "Motorway junctions:\n- Musterstadt-Nord (A101 12) · 3.0 km\n- Musterstadt-Nord (A101) · 3.0 km\n- Musterstadt-Nord · 3.0 km",
+    );
+    serve("listNearby", { fuel: [], stations: [station] });
+    expect(body(await call("find_nearby", { ...at, language: "de" }))).toBe("Tankstellen:\n- –\n\nBahnhöfe:\n- Musterstadt Hbf · 800 m");
+    serve("listNearby", {});
+    expect(body(await call("find_nearby", { ...at, language: "de" }))).toBe("In diesem Umkreis ist nichts bekannt.");
+  });
+
   for (const language of LANGS) {
     it(`find_sharing (${language}): stations by name, system label or system, bikes, free vehicles`, async () => {
       const s = { name: "Station 1", systemLabel: "Nextbike", system: "nextbike_de", distanceM: 300, bikes: 4, freeDocks: 2, available: true };
