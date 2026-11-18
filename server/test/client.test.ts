@@ -56,7 +56,7 @@ describe("ApiClient", () => {
   it("the contract fixture is api/openapi.json of the release api.pin names", () => {
     const pin = /^api_version=(\d+\.\d+\.\d+)$/m.exec(readFileSync(new URL("../api.pin", import.meta.url), "utf8"))?.[1];
     const spec = JSON.parse(readFileSync(new URL("./fixtures/api-openapi.json", import.meta.url), "utf8")) as { "x-source": { comment: string } };
-    expect(pin).toBe("0.3.0");
+    expect(pin).toBe("0.3.2");
     expect(spec["x-source"].comment).toContain(`at the release tag v${pin ?? ""}`);
   });
 
