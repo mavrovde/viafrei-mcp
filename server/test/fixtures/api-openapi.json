@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "x-source": {
-    "comment": "Copied from the viafrei-api repository, api/openapi.json at the release tag v0.3.0 (the release asset openapi.json, sha256 ab6fb03352058ac3f9b8ac05709219c846f1c70635d0dadf620e587224b42911).",
-    "commit": "4ff6850b41d1fb6c2f7031bbb2a1fb2127999fea"
+    "comment": "Copied from the viafrei-api repository, api/openapi.json at the release tag v0.3.2 (the release asset openapi.json, sha256 ab6fb03352058ac3f9b8ac05709219c846f1c70635d0dadf620e587224b42911).",
+    "commit": "51f75375c0b136ddfbcdfcb64373ec301b3e5f07"
   },
   "components": {
     "schemas": {
