@@ -25,9 +25,9 @@ import { readPromptArgumentsFirst, registerPrompts } from "./prompts/index.js";
 import { ElicitResultSchema, SID_CONSENT_TIMEOUT_MS, SidConsent } from "./sid-consent.js";
 import { SessionWatches, type ToolContext } from "./tools/context.js";
 import { HANDLERS } from "./tools/handlers.js";
-import type { DbTimetablesClient } from "./vendor/db-timetables/client.js";
+import { REFRESH_WAIT, type RefreshWait } from "./tools/trains.js";
 
-export type ServerDeps = { readonly api: ApiClient; readonly trains: DbTimetablesClient; readonly catalogue: Catalogue };
+export type ServerDeps = { readonly api: ApiClient; readonly catalogue: Catalogue; readonly refreshWait?: RefreshWait };
 
 const RULES_TOPICS: Readonly<Record<string, readonly string[]>> = {
   "viafrei://rules/driving-in-germany": ["speed", "alcohol", "winter", "equipment", "toll", "truck_ban"],
@@ -58,7 +58,7 @@ export function createServer(deps: ServerDeps): McpServer {
     if (!toolNames.has(name) || handler === undefined) return toolError(language === "de" ? `Unbekanntes Werkzeug: ${name}` : `Unknown tool: ${name}`);
     const ctx: ToolContext = {
       api: deps.api.withLanguage(language),
-      trains: deps.trains,
+      refreshWait: deps.refreshWait ?? REFRESH_WAIT,
       language,
       watches,
       askSidConsent: (lang) =>

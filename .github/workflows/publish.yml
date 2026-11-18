@@ -90,8 +90,8 @@ jobs:
   # The MCP server against the REAL API before anything is published: the
   # viafrei-api release server/api.pin names (its published image), on the
   # database release that API release pins, seeded with the API repository's
-  # synthetic fixture world (tiny profile). No live provider: the DB Timetables
-  # credentials are empty, so the live board is never asked. Same checks as the
+  # synthetic fixture world (tiny profile). No live provider: the server calls
+  # none, and the API's live refresher is not run. Same checks as the
   # mock run: initialize, tools/list byte-equal to catalogue.json, one
   # tools/call per tool. It fails, never skips, while the pinned API is not
   # published. If an image is private, the repo secret GHCR_READ_TOKEN

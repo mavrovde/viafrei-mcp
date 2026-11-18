@@ -42,8 +42,11 @@ describe("ApiClient", () => {
     expect(calls).toHaveLength(0);
   });
 
-  it("refuses a write the contract lacks", async () => {
-    await expect(api.post("postTrainBoard", {})).rejects.toMatchObject({ kind: "missing_operation" });
+  it("sends a write operation's JSON body with the key", async () => {
+    const r = await api.post<{ source: string }>("createRefresh", { source: "train-board-de", subject: { eva: "8001001" } });
+    expect(r.data.source).toBe("fuel-prices-de");
+    expect(calls.map((c) => c.operationId)).toEqual(["createRefresh"]);
+    expect(calls[0]!.headers.get("content-type")).toBe("application/json");
   });
 
   it("the operation table is generated from the pinned contract", () => {

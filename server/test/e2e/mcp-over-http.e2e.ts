@@ -92,8 +92,6 @@ beforeAll(async () => {
     HOST: "127.0.0.1",
     VIAFREI_API_URL: apiUrl,
     VIAFREI_API_KEY: process.env["E2E_API_KEY"] ?? "e2e-mock-key",
-    DB_API_CLIENT_ID: "",
-    DB_API_CLIENT_SECRET: "",
     LOG_LEVEL: "warn",
   });
   mcpUrl = `http://127.0.0.1:${port}/mcp`;

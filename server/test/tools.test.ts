@@ -143,7 +143,7 @@ describe("special cases", () => {
 
   it("unsupported cases answer not-available and ask nothing", async () => {
     const { client, close } = await connect();
-    const r = await client.callTool({ name: "find_place", arguments: { query: "A1", kind: "motorway", language: "en" } });
+    const r = await client.callTool({ name: "find_parking", arguments: { ...at, kind: "disabled_badge", language: "en" } });
     expect(textOf(r)).toContain("not available through the ViaFrei API yet");
     expect(calls).toHaveLength(0);
     await close();

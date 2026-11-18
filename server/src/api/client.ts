@@ -1,6 +1,5 @@
 /**
- * The typed ViaFrei API client: the one source of every answer the MCP server gives (bar the live DB
- * Timetables board). The base URL and the key come from the environment (VIAFREI_API_URL,
+ * The typed ViaFrei API client: the one source of every answer the MCP server gives. The base URL and the key come from the environment (VIAFREI_API_URL,
  * VIAFREI_API_KEY); the operations, their paths and parameter names come from the contract
  * (`test/fixtures/api-openapi.json`, through the generated `operations.ts`), so no path is spelled by hand.
  */
@@ -76,7 +75,7 @@ export type Problem = {
   readonly [k: string]: unknown;
 };
 
-export type ApiFailure = "not_configured" | "not_found" | "invalid" | "refused" | "rate_limited" | "unavailable" | "missing_operation";
+export type ApiFailure = "not_configured" | "not_found" | "invalid" | "refused" | "rate_limited" | "unavailable";
 
 export class ApiError extends Error {
   constructor(readonly kind: ApiFailure, message: string, readonly status: number | null = null, readonly problem: Problem | null = null) {
@@ -108,11 +107,6 @@ export class ApiClient {
     return new ApiClient(this.config, lang);
   }
 
-  /** True when the contract this build was made from has the operation. */
-  has(op: string): op is OperationId {
-    return Object.prototype.hasOwnProperty.call(OPERATIONS, op);
-  }
-
   /** The request URL of an operation, with its path parameters filled and its query in contract order. */
   url(op: OperationId, params: Params = {}): string {
     const spec = OPERATIONS[op];
@@ -136,9 +130,8 @@ export class ApiClient {
     return this.send<D>(op, params, undefined);
   }
 
-  /** A write operation: used only when the contract has it (`has(op)`). */
-  async post<D>(op: string, body: unknown, params: Params = {}): Promise<Envelope<D> | null> {
-    if (!this.has(op)) throw new ApiError("missing_operation", `the API contract has no operation ${op}`);
+  /** A write operation of the contract (createRefresh), with its JSON body. */
+  async post<D>(op: OperationId, body: unknown, params: Params = {}): Promise<Envelope<D>> {
     return this.send<D>(op, params, body);
   }
 
