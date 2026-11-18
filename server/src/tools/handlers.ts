@@ -1,7 +1,7 @@
 /**
  * The tool handlers: each maps its catalogue arguments to one API operation (or a few), and renders the
- * envelope. No handler reads a database; get_train_departures (in `trains.ts`) is the one live provider
- * call. A tool whose operation the API contract lacks answers `notAvailable` and is listed in GAPS.
+ * envelope. No handler reads a database or calls a provider; get_train_departures (in `trains.ts`) asks the
+ * API's live refresher for a fresh board. A tool whose operation the API contract lacks answers `notAvailable` and is listed in GAPS.
  */
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { DataMeta, Envelope } from "../api/client.js";
@@ -180,12 +180,11 @@ const findSpeedCameras: Handler = async (args, ctx) => {
   return toolResult(rows.map((c) => `- ${[c.street, c.municipality].filter(Boolean).join(", ") || c.locationLabel || c.id} (${c.kind})${c.limitKmh === null ? "" : ` · ${c.limitKmh} km/h`}`).join("\n"), [r.meta], language);
 };
 
-const PLACE_KIND: Record<string, string> = { city: "municipality", district: "district", admin: "region", station: "station_area", stop: "station_area" };
+const PLACE_KIND: Record<string, string> = { city: "municipality", district: "district", admin: "region", station: "station_area", stop: "station_area", motorway: "motorway", junction: "junction" };
 
 const findPlace: Handler = async (args, ctx) => {
   const { language } = ctx;
   const kindArg = str(args["kind"]);
-  if (kindArg === "motorway" || kindArg === "junction") return notAvailable(language, `kind=${kindArg}`);
   let at: string | undefined;
   if (str(args["near"]) !== undefined || num(args["lat"]) !== undefined) {
     const pos = await position(args, ctx, "near");
@@ -426,10 +425,7 @@ export const HANDLERS: Readonly<Record<string, Handler>> = {
  */
 export const GAPS: readonly { tool: string; case: string; needs: string }[] = [
   { tool: "*", case: "answers in the caller's language (language=de|en)", needs: "a language parameter (or Accept-Language) on every operation" },
-  { tool: "get_train_departures", case: "station name to EVA numbers", needs: "the EVA numbers of a station (Station has only the DHID stopCode)" },
-  { tool: "get_train_departures", case: "hand the live board to the platform", needs: "POST /v1/train-boards (write operation)" },
   { tool: "find_parking", case: "kind=disabled_badge", needs: "a disabled-badge kind on listParkingOptions" },
-  { tool: "find_place", case: "kind=motorway and kind=junction", needs: "motorway and junction kinds on listPlaces" },
   { tool: "find_roadworks_ahead", case: "a route from → to", needs: "a route/corridor road-conditions operation" },
   { tool: "watch_situation", case: "notifications when a watch reports (resources/updated)", needs: "a push or since-poll contract for watches" },
 ];

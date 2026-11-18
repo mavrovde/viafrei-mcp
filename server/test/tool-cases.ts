@@ -20,7 +20,7 @@ export const TOOL_CASES: readonly { tool: string; args: Record<string, unknown>;
   { tool: "get_driving_rules", args: { topic: "speed", language: "en" }, ops: ["getDrivingRules"] },
   { tool: "check_transit_disruption", args: { region: "VBB", language: "en" }, ops: ["listPlaces", "listTransitDisruptions"] },
   { tool: "check_weather_warnings", args: { ...at, language: "en" }, ops: ["getWeatherRisk"] },
-  { tool: "get_train_departures", args: { station: "Köln Hbf", language: "en" }, ops: ["listStations", "listStationDepartures"] },
+  { tool: "get_train_departures", args: { station: "Köln Hbf", language: "en" }, ops: ["listStations", "createRefresh", "getTrainBoard"] },
   { tool: "get_departures", args: { stop: "Köln Hbf", language: "en" }, ops: ["listStations", "listStationDepartures"] },
   { tool: "check_station_facilities", args: { station: "Köln Hbf", language: "en" }, ops: ["listStations", "listStationFacilities"] },
   { tool: "describe_station", args: { station: "Köln Hbf", language: "en" }, ops: ["listStations", "listStationFacilities", "listStationDepartures"] },

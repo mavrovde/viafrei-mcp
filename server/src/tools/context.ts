@@ -2,9 +2,9 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { ApiClient, LatLon } from "../api/client.js";
 import { atParam } from "../api/client.js";
 import type { PlaceItem } from "../api/types.js";
-import type { DbTimetablesClient } from "../vendor/db-timetables/client.js";
 import { toolError, type Language } from "../presentation.js";
 import type { ConsentOutcome } from "../sid-consent.js";
+import type { RefreshWait } from "./trains.js";
 
 /** The watches of one MCP session: the catalogue's integer ids mapped to the API's watch ids, in memory. */
 export class SessionWatches {
@@ -32,7 +32,8 @@ export class SessionWatches {
 
 export type ToolContext = {
   readonly api: ApiClient;
-  readonly trains: DbTimetablesClient;
+  /** How long a train board waits for the API's live refresh to settle. */
+  readonly refreshWait: RefreshWait;
   readonly language: Language;
   readonly watches: SessionWatches;
   /** Asks the person to accept the truck-parking terms (MCP elicitation); undefined when the client cannot be asked. */

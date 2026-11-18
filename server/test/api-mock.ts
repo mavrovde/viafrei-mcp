@@ -1,6 +1,6 @@
 /**
  * MSW handlers for every operation of the API contract (test/fixtures/api-openapi.json), each answering
- * the contract's first 200 example. A test overrides one only for its special case (empty, 404, 429,
+ * the contract's first 200 example (201 for a write that has no 200, createRefresh). A test overrides one only for its special case (empty, 404, 429,
  * terms not accepted). Unmatched requests fail the test (`onUnhandledRequest: "error"`), so a handler
  * that asks an operation the contract lacks shows up at once.
  */
@@ -10,7 +10,7 @@ import { setupServer } from "msw/node";
 
 export const API_BASE = "http://127.0.0.1";
 
-type Op = { operationId: string; method: string; path: string; example: unknown; responses: Record<string, unknown> };
+type Op = { operationId: string; method: string; path: string; status: number; example: unknown; responses: Record<string, unknown> };
 
 export const SPEC = JSON.parse(readFileSync(new URL("./fixtures/api-openapi.json", import.meta.url), "utf8")) as {
   paths: Record<string, Record<string, { operationId?: string; responses?: Record<string, { content?: Record<string, { examples?: Record<string, { value: unknown }>; example?: unknown }> }> }>>;
@@ -20,9 +20,10 @@ export const OPS: Op[] = Object.entries(SPEC.paths).flatMap(([path, item]) =>
   Object.entries(item)
     .filter(([, op]) => typeof op === "object" && op !== null && typeof op.operationId === "string")
     .map(([method, op]) => {
-      const content = op.responses?.["200"]?.content?.["application/json"];
+      const status = op.responses?.["200"] === undefined && op.responses?.["201"] !== undefined ? 201 : 200;
+      const content = op.responses?.[String(status)]?.content?.["application/json"];
       const example = content?.example ?? (content?.examples === undefined ? undefined : Object.values(content.examples)[0]?.value);
-      return { operationId: op.operationId!, method, path, example, responses: op.responses ?? {} };
+      return { operationId: op.operationId!, method, path, status, example, responses: op.responses ?? {} };
     }),
 );
 
@@ -48,7 +49,7 @@ export function handlerFor(id: string, respond?: (url: URL) => Response | Promis
     calls.push({ operationId: id, url, headers: request.headers });
     if (respond !== undefined) return respond(url);
     if (op.example === undefined) return HttpResponse.json({ status: 500, title: "no example" }, { status: 500 });
-    return HttpResponse.json(structuredClone(op.example) as Record<string, unknown>);
+    return HttpResponse.json(structuredClone(op.example) as Record<string, unknown>, { status: op.status });
   });
 }
 

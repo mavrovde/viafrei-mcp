@@ -11,9 +11,9 @@ This repository holds the **bridge** — a stdio↔Streamable-HTTP relay to
 
 The server reads every answer from the public ViaFrei API; it holds no
 database. Its tool catalogue is `server/catalogue/catalogue.json`, a copy of
-the `catalogue.json` at the root, and it is served byte for byte. The one live
-provider call it makes itself is the DB Timetables board, behind a 60-per-minute
-limiter.
+the `catalogue.json` at the root, and it is served byte for byte. It calls no
+provider itself: a live DB Timetables board is asked of the API's live
+refresher, and read back from the API.
 
 **A change to a data source, or to the data behind an answer, is not made
 here:** it is an API change. Open an issue describing what is wrong with the

@@ -116,7 +116,6 @@ export function apiFailure(err: unknown, language: Language): CallToolResult {
       return toolError(de ? "Gerade zu viele Anfragen – bitte in einer Minute noch einmal fragen." : "Too many requests right now – please ask again in a minute.");
     case "not_configured":
     case "refused":
-    case "missing_operation":
       return notAvailable(language);
     default:
       return toolError(de ? "Die ViaFrei-API antwortet gerade nicht – bitte gleich noch einmal fragen." : "The ViaFrei API is not answering right now – please ask again shortly.");

@@ -1,95 +1,164 @@
 /**
- * get_train_departures: the one live provider call that stays in the MCP server. With an EVA number the
- * board comes from DB Timetables (vendored client, 60/min limiter) and is handed to the API's train-board
- * write operation when the contract has one, so the live answers are kept on the API side.
- * A station given by name resolves through the API's station search; the contract's Station carries no
- * EVA numbers yet, so a named station's board is the API's own departure board until it does.
+ * get_train_departures: a DB railway station's live board, through the API. The station's EVA numbers come
+ * from the API's station search (Station.eva, Station.evaNumbers; an `eva_no` asks that number alone). For
+ * each number the server asks the API's live refresher for a fresh board (createRefresh, source
+ * train-board-de, subject {eva}), waits a short bounded time for the refresh to settle (getRefresh), and
+ * answers from the board the API then holds (getTrainBoard). A board that is not fresh is never shown as
+ * current: the answer says when the newest board held was fetched. A stop that is no DB station has no EVA
+ * number; its board is the API's own departure board (listStationDepartures).
  */
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { DataMeta } from "../api/client.js";
+import { ApiError, type DataMeta, type Envelope } from "../api/client.js";
 import type * as T from "../api/types.js";
 import { log, redact } from "../log.js";
-import { berlinTime, toolError, toolResult, type Language } from "../presentation.js";
-import { fetchDepartureBoard, type DepartureBoard } from "../vendor/db-timetables/db-board.js";
-import { DbApiError } from "../vendor/db-timetables/client.js";
+import { berlinDateTime, berlinTime, toolError, toolResult, type Language } from "../presentation.js";
 import { num, str, strs, type Handler, type ToolContext } from "./context.js";
 
-/** The write operation the board is handed to, when the contract has it. */
-export const TRAIN_BOARD_WRITE_OPERATION = "postTrainBoard";
+/** The live source of the API's refresher that fetches DB Timetables boards. */
+export const TRAIN_BOARD_SOURCE = "train-board-de";
+/** At most this many parts of a station are asked (a station of several parts files its trains under each). */
+export const MAX_BOARD_PARTS = 4;
+
+/** How long a tool call waits for a refresh to settle, and how often it asks again. */
+export type RefreshWait = { readonly totalMs: number; readonly pollMs: number };
+export const REFRESH_WAIT: RefreshWait = { totalMs: 3_000, pollMs: 250 };
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
-/** The DB Timetables attribution, as the API's source register states it for this family. */
-export const DB_TIMETABLES_META: DataMeta = {
-  requestId: "db-timetables-live",
-  generatedAt: new Date(0).toISOString(),
-  language: "de",
-  attribution: [{ family: "db_timetables", text: "Deutsche Bahn AG, DB Timetables API (CC BY 4.0)", licence: "CC BY 4.0" }],
-  notes: { condition: [], purpose: [] },
-};
+/** How one refresh ended, as far as this call saw it. */
+type Outcome = "settled" | "failed" | "timed_out" | "not_asked";
 
-function boardText(board: DepartureBoard, language: Language, limit: number): string {
-  const rows = board.departures.slice(0, limit).map((d) => {
-    const delay = d.cancelled ? L(language, " · fällt aus", " · cancelled") : d.delayMin > 0 ? ` · +${d.delayMin}` : "";
-    const platform = d.platform === null ? "" : `${L(language, " · Gl. ", " · pl. ")}${d.platform}${d.platformChanged ? "!" : ""}`;
-    return `- ${berlinTime(d.plannedAt.toISOString())} ${d.line} → ${d.destination ?? "?"}${delay}${platform}`;
-  });
-  const head = `${board.station ?? board.evaNo}:`;
-  const notes = board.notes.length > 0 ? `\n${board.notes.join("\n")}` : "";
-  return rows.length === 0 ? `${head} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}${notes}` : [head, ...rows].join("\n") + notes;
-}
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Hands the board to the API when the contract has the write operation; a failure is logged, never shown. */
-async function storeBoard(ctx: ToolContext, board: DepartureBoard): Promise<void> {
-  if (!ctx.api.has(TRAIN_BOARD_WRITE_OPERATION)) return;
+const failureOf = (err: unknown): { error: string; reason: string } => ({ error: err instanceof ApiError ? err.kind : "error", reason: redact(String(err)) });
+
+/**
+ * Asks the refresher for a fresh board of one EVA number and waits until the refresh settles or the wait is
+ * spent. A 400 (the refresher refuses the number) and a 429 are the caller's to answer, so they are thrown;
+ * any other refusal of the ask (scope, a switched-off source, an API that does not answer) leaves the board
+ * to be read as the API holds it.
+ */
+async function refresh(ctx: ToolContext, eva: string): Promise<Outcome> {
+  let r: Envelope<T.RefreshData>;
   try {
-    await ctx.api.post(TRAIN_BOARD_WRITE_OPERATION, {
-      evaNo: board.evaNo,
-      station: board.station,
-      departures: board.departures.map((d) => ({
-        line: d.line, category: d.category, destination: d.destination, plannedAt: d.plannedAt.toISOString(), expectedAt: d.expectedAt.toISOString(),
-        delayMin: d.delayMin, platform: d.platform, plannedPlatform: d.plannedPlatform, platformChanged: d.platformChanged, cancelled: d.cancelled, evaNo: d.evaNo,
-      })),
-    });
+    r = await ctx.api.post<T.RefreshData>("createRefresh", { source: TRAIN_BOARD_SOURCE, subject: { eva } });
   } catch (err) {
-    log.warn({ error: err instanceof Error ? err.name : "error", reason: redact(String(err)) }, "train board not handed to the API");
+    if (err instanceof ApiError && (err.kind === "invalid" || err.kind === "rate_limited")) throw err;
+    log.warn({ eva, ...failureOf(err) }, "train board refresh not asked");
+    return "not_asked";
   }
+  const deadline = Date.now() + ctx.refreshWait.totalMs;
+  let data = r.data;
+  while (data.state === "pending" && Date.now() < deadline) {
+    await sleep(Math.min(ctx.refreshWait.pollMs, Math.max(0, deadline - Date.now())));
+    try {
+      data = (await ctx.api.get<T.RefreshData>("getRefresh", { id: data.id })).data;
+    } catch (err) {
+      log.warn({ eva, ...failureOf(err) }, "train board refresh not read again");
+      return "timed_out";
+    }
+  }
+  if (data.state === "pending") return "timed_out";
+  if (data.state === "failed" || data.state === "refused") {
+    log.warn({ eva, state: data.state, reason: data.reason === null ? null : redact(data.reason) }, "train board refresh did not refresh");
+    return "failed";
+  }
+  return "settled";
 }
 
-async function liveBoard(evaNo: string, args: Record<string, unknown>, ctx: ToolContext): Promise<CallToolResult> {
+type Part = { eva: string; outcome: Outcome; board: Envelope<T.TrainBoardData> };
+
+async function part(ctx: ToolContext, eva: string): Promise<Part> {
+  const outcome = await refresh(ctx, eva);
+  const board = await ctx.api.get<T.TrainBoardData>("getTrainBoard", { eva });
+  return { eva, outcome, board };
+}
+
+const lineOf = (d: T.TrainBoardDeparture): string => d.line ?? ([d.category, d.number].filter((x) => x !== null && x !== "").join(" ") || "?");
+
+function departureLine(d: T.TrainBoardDeparture, language: Language): string {
+  const delay = d.cancelled ? L(language, " · fällt aus", " · cancelled") : d.delayMin > 0 ? ` · +${d.delayMin}` : "";
+  const platform = d.platform === null ? "" : `${L(language, " · Gl. ", " · pl. ")}${d.platform}${d.platformChanged ? "!" : ""}`;
+  return `- ${berlinTime(d.plannedAt)} ${lineOf(d)} → ${d.destination ?? "?"}${delay}${platform}`;
+}
+
+/** The sentence a board that is not fresh gets: when the newest board held was fetched, or that none is. */
+function staleLine(station: string, b: T.TrainBoardData, outcome: Outcome, language: Language): string {
+  const age = b.ageSeconds === null ? "" : L(language, ` (vor ${Math.round(b.ageSeconds / 60)} min)`, ` (${Math.round(b.ageSeconds / 60)} min ago)`);
+  const held =
+    b.fetchedAt === null
+      ? L(language, "es liegt noch keine vor.", "none is held yet.")
+      : L(language, `die neueste ist vom ${berlinDateTime(b.fetchedAt, language)}${age}.`, `the newest held was fetched at ${berlinDateTime(b.fetchedAt, language)}${age}.`);
+  const why =
+    outcome === "failed"
+      ? L(language, " Die Live-Abfahrten der DB sind gerade nicht erreichbar.", " DB's live departures are not reachable right now.")
+      : outcome === "timed_out"
+        ? L(language, " Die Aktualisierung läuft noch – bitte gleich noch einmal fragen.", " The refresh is still running – please ask again in a moment.")
+        : "";
+  return `${L(language, `Für ${station} liegt gerade keine aktuelle Abfahrtstafel der DB vor; `, `There is no current DB departure board for ${station} right now; `)}${held}${why}`;
+}
+
+async function liveBoard(evas: readonly string[], stationName: string | null, args: Record<string, unknown>, ctx: ToolContext, metas: DataMeta[]): Promise<CallToolResult> {
   const { language } = ctx;
   const limit = num(args["limit"]) ?? 10;
   const categories = strs(args["categories"]);
   const when = str(args["when"]);
   const from = when === undefined ? new Date() : new Date(when);
   if (Number.isNaN(from.getTime())) return toolError(L(language, "when ist keine gültige Zeit.", "when is not a valid time."));
+  const until = from.getTime() + (num(args["duration_min"]) ?? 60) * 60_000;
+  const asked = evas.slice(0, MAX_BOARD_PARTS);
+  const station = stationName ?? asked.join(", ");
+
+  let parts: Part[];
   try {
-    const board = await fetchDepartureBoard(ctx.trains, evaNo, {
-      from, durationMin: num(args["duration_min"]) ?? 60, limit, now: new Date(),
-      ...(categories === undefined ? {} : { keep: (d) => d.category !== null && categories.includes(d.category) }),
-    });
-    await storeBoard(ctx, board);
-    return toolResult(boardText(board, language, limit), [{ ...DB_TIMETABLES_META, generatedAt: new Date().toISOString(), asOf: new Date().toISOString() }], language);
+    parts = await Promise.all(asked.map((eva) => part(ctx, eva)));
   } catch (err) {
-    if (err instanceof DbApiError) {
-      log.warn({ evaNo, kind: err.kind, reason: redact(err.message) }, "train board failed");
-      if (err.kind === "not_found") return toolError(L(language, `Zur EVA-Nummer ${evaNo} kennt DB Timetables keinen Bahnhof.`, `DB Timetables knows no station with EVA number ${evaNo}.`));
-      if (err.kind === "rate_limited") return toolError(L(language, "Gerade zu viele Anfragen – bitte in einer Minute noch einmal fragen.", "Too many requests right now – please ask again in a minute."));
-      return toolError(L(language, "Die Live-Abfahrten der DB sind gerade nicht erreichbar.", "DB's live departures are not reachable right now."));
+    if (err instanceof ApiError && err.kind === "invalid") {
+      return toolError(L(language, `Die DB-Fahrplanschnittstelle kennt keinen Bahnhof mit der Nummer ${asked.join(", ")}. Bitte den Bahnhofsnamen nennen.`, `The DB timetable interface knows no station with the number ${asked.join(", ")}. Please give the station's name.`));
     }
     throw err;
   }
+
+  const fresh = parts.filter((p) => p.board.data.fresh);
+  if (fresh.length === 0) {
+    const newest = parts.reduce((a, b) => ((b.board.data.fetchedAt ?? "") > (a.board.data.fetchedAt ?? "") ? b : a));
+    const outcome: Outcome = parts.some((p) => p.outcome === "timed_out") ? "timed_out" : parts.every((p) => p.outcome === "failed") ? "failed" : newest.outcome;
+    const text = staleLine(station, newest.board.data, outcome, language);
+    if (outcome === "failed") return toolError(text);
+    return toolResult(text, [...metas, { ...newest.board.meta, asOf: newest.board.data.fetchedAt }], language);
+  }
+
+  const seen = new Set<string>();
+  const rows = fresh
+    .flatMap((p) => p.board.data.departures)
+    .filter((d) => {
+      const at = new Date(d.cancelled ? d.plannedAt : d.expectedAt).getTime();
+      return at >= from.getTime() && at <= until && (categories === undefined || (d.category !== null && categories.includes(d.category)));
+    })
+    .filter((d) => {
+      const key = `${lineOf(d)}\u0000${d.plannedAt}\u0000${d.destination ?? ""}`;
+      return seen.has(key) ? false : (seen.add(key), true);
+    })
+    .sort((a, b) => a.plannedAt.localeCompare(b.plannedAt))
+    .slice(0, limit);
+  const notes = parts.filter((p) => !p.board.data.fresh).map((p) => staleLine(`${station} (${p.eva})`, p.board.data, p.outcome, language));
+  const head = `${station}:`;
+  const body = rows.length === 0 ? `${head} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}` : [head, ...rows.map((d) => departureLine(d, language))].join("\n");
+  const oldest = fresh.map((p) => p.board.data.fetchedAt).filter((x): x is string => x !== null).sort()[0] ?? null;
+  return toolResult([body, ...notes].join("\n"), [...metas, { ...fresh[0]!.board.meta, asOf: oldest }], language);
 }
 
 export const getTrainDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
   const eva = str(args["eva_no"]);
-  if (eva !== undefined && ctx.trains.configured) return liveBoard(eva, args, ctx);
   const name = str(args["station"]);
   if (eva === undefined && name === undefined) return toolError(L(language, "Bitte einen Bahnhof (station) oder eine EVA-Nummer angeben.", "Please give a station or an EVA number."));
   const stations = await ctx.api.get<T.Station[]>("listStations", { code: eva, q: eva === undefined ? name : undefined, limit: 1 });
   const station = stations.data[0];
+  if (eva !== undefined) return liveBoard([eva], station?.name ?? null, args, ctx, [stations.meta]);
   if (station === undefined) return toolResult(L(language, "Diesen Bahnhof kenne ich nicht.", "I do not know this station."), [stations.meta], language);
+  const evas = station.evaNumbers.length > 0 ? station.evaNumbers : station.eva === null ? [] : [station.eva];
+  if (evas.length > 0) return liveBoard(evas, station.name, args, ctx, [stations.meta]);
   const r = await ctx.api.get<T.Board>("listStationDepartures", {
     stationId: station.id, from: str(args["when"]), duration_min: num(args["duration_min"]), categories: strs(args["categories"]), modes: ["rail"], limit: num(args["limit"]),
   });
