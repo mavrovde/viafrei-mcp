@@ -1,0 +1,6 @@
+{
+  "A9, A4": [
+    "+ 1. check_road_status for each motorway (A9, A4) — a closure decides this question on its own.",
+    "- 1. check_road_status for each motorway (no road was named — name the obvious motorways for this pair yourself, say in one clause that you assumed them, and ask only if the pair is genuinely ambiguous) — a closure decides this question on its own."
+  ]
+}

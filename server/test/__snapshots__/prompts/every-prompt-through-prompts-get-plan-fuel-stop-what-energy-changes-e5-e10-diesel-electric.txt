@@ -1,0 +1,24 @@
+{
+  "e5": [
+    "+ 1. find_cheapest_fuel at Ingolstadt with radius_km=5 (at most 25), fuel=\"e5\" and limit=10.",
+    "- 1. find_cheapest_fuel at Ingolstadt with radius_km=5 (at most 25), fuel=\"e10\" and limit=10. Nobody named a grade: e10 is the standard German petrol and the tool's own default, so say in one clause that you assumed it, and ask which grade only if the answer would change."
+  ],
+  "e10": [
+    "+ 1. find_cheapest_fuel at Ingolstadt with radius_km=5 (at most 25), fuel=\"e10\" and limit=10.",
+    "- 1. find_cheapest_fuel at Ingolstadt with radius_km=5 (at most 25), fuel=\"e10\" and limit=10. Nobody named a grade: e10 is the standard German petrol and the tool's own default, so say in one clause that you assumed it, and ask which grade only if the answer would change."
+  ],
+  "diesel": [
+    "+ 1. find_cheapest_fuel at Ingolstadt with radius_km=5 (at most 25), fuel=\"diesel\" and limit=10.",
+    "- 1. find_cheapest_fuel at Ingolstadt with radius_km=5 (at most 25), fuel=\"e10\" and limit=10. Nobody named a grade: e10 is the standard German petrol and the tool's own default, so say in one clause that you assumed it, and ask which grade only if the answer would change."
+  ],
+  "electric": [
+    "+ Find one charging stop near Ingolstadt.",
+    "+ 1. find_charging_station at Ingolstadt with radius_km=5 (at most 25) and limit=10. Pass the connector and min_power_kw only if the traveller named them, and only_available=true only if they said they want one that is free now — the result then tells you how many sites that filter hid, and you pass that number on.",
+    "+ Then answer in at most eight lines: the nearest usable site first with its power and connector, then the alternatives, and for each one its live state — frei, belegt, außer Betrieb, or keine Statusdaten. Silence is never \"free\": a site with no status data is reported as having none.",
+    "+ - If a tool reports that it holds nothing for this place, read the viafrei://coverage resource and tell the traveller plainly which data we do not have here, instead of trying a different tool until one answers something.",
+    "- Find one refuelling stop near Ingolstadt.",
+    "- 1. find_cheapest_fuel at Ingolstadt with radius_km=5 (at most 25), fuel=\"e10\" and limit=10. Nobody named a grade: e10 is the standard German petrol and the tool's own default, so say in one clause that you assumed it, and ask which grade only if the answer would change.",
+    "- Then answer in at most eight lines: the cheapest station first with its price, brand, distance and whether it is open, then the alternatives, then how old the prices are. One stop for this traveller, this journey — that is the whole answer.",
+    "- - Fuel prices are consumer information for this one traveller and this one journey. Answer the stop they asked about: never build a price list, a ranking, a regional average, a cheapest-in-Germany table or any other aggregate, and never present the prices as data to pass on or store."
+  ]
+}

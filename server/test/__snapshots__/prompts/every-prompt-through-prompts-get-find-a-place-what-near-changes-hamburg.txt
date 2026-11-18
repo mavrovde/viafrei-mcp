@@ -1,0 +1,8 @@
+{
+  "Hamburg": [
+    "+ 1. find_place with query=\"Neustadt\" and near=\"Hamburg\". If it lists more than one candidate, show the list — kind, official key, population, English name where one exists — and ask which one is meant rather than guessing.",
+    "+ 2. Only if find_place found nothing: find_poi with name=\"Neustadt\" and in=\"Hamburg\" — a company, shop, clinic, hotel or landmark, not a settlement.",
+    "- 1. find_place with query=\"Neustadt\". If it lists more than one candidate, show the list — kind, official key, population, English name where one exists — and ask which one is meant rather than guessing.",
+    "- 2. Only if find_place found nothing: find_poi with name=\"Neustadt\" — a company, shop, clinic, hotel or landmark, not a settlement."
+  ]
+}

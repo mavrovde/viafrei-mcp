@@ -1,0 +1,38 @@
+{
+  "lez": [
+    "+ 1. get_driving_rules with city=\"Stuttgart\" and topic=\"lez\".",
+    "- 1. get_driving_rules with city=\"Stuttgart\" and no topic at all, for the overview of all nine."
+  ],
+  "speed": [
+    "+ 1. get_driving_rules with city=\"Stuttgart\" and topic=\"speed\".",
+    "- 1. get_driving_rules with city=\"Stuttgart\" and no topic at all, for the overview of all nine."
+  ],
+  "winter": [
+    "+ 1. get_driving_rules with city=\"Stuttgart\" and topic=\"winter\".",
+    "- 1. get_driving_rules with city=\"Stuttgart\" and no topic at all, for the overview of all nine."
+  ],
+  "alcohol": [
+    "+ 1. get_driving_rules with city=\"Stuttgart\" and topic=\"alcohol\".",
+    "- 1. get_driving_rules with city=\"Stuttgart\" and no topic at all, for the overview of all nine."
+  ],
+  "toll": [
+    "+ 1. get_driving_rules with city=\"Stuttgart\" and topic=\"toll\".",
+    "- 1. get_driving_rules with city=\"Stuttgart\" and no topic at all, for the overview of all nine."
+  ],
+  "truck_ban": [
+    "+ 1. get_driving_rules with city=\"Stuttgart\" and topic=\"truck_ban\".",
+    "- 1. get_driving_rules with city=\"Stuttgart\" and no topic at all, for the overview of all nine."
+  ],
+  "equipment": [
+    "+ 1. get_driving_rules with city=\"Stuttgart\" and topic=\"equipment\".",
+    "- 1. get_driving_rules with city=\"Stuttgart\" and no topic at all, for the overview of all nine."
+  ],
+  "emergency": [
+    "+ 1. get_driving_rules with city=\"Stuttgart\" and topic=\"emergency\".",
+    "- 1. get_driving_rules with city=\"Stuttgart\" and no topic at all, for the overview of all nine."
+  ],
+  "ev": [
+    "+ 1. get_driving_rules with city=\"Stuttgart\" and topic=\"ev\".",
+    "- 1. get_driving_rules with city=\"Stuttgart\" and no topic at all, for the overview of all nine."
+  ]
+}

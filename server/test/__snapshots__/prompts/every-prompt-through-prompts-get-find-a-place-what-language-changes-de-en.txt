@@ -1,0 +1,7 @@
+{
+  "de": [],
+  "en": [
+    "+ Answer the traveller in English, and pass language: \"en\" to every tool call in the recipe. Place names, station names and road numbers are never translated; keep the German term in parentheses so the traveller recognises it on the signs.",
+    "- Answer the traveller in German, and pass language: \"de\" to every tool call in the recipe. Place names, station names and road numbers are never translated."
+  ]
+}
