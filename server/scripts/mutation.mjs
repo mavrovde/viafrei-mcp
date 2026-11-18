@@ -127,7 +127,8 @@ export function gather(dir, scope) {
 
 function stryker(env) {
   const bin = join(SERVER, "node_modules", ".bin", process.platform === "win32" ? "stryker.cmd" : "stryker");
-  const r = spawnSync(bin, ["run"], { cwd: SERVER, stdio: "inherit", env: { ...process.env, ...env } });
+  // CI=1: vitest never writes a missing snapshot, so a mutant that renames a test cannot pass by recording a new one.
+  const r = spawnSync(bin, ["run"], { cwd: SERVER, stdio: "inherit", env: { ...process.env, ...env, CI: "1" } });
   return r.status ?? 1;
 }
 
