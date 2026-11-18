@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { ApiClient, ApiError, apiConfigFromEnv, DEFAULT_API_URL } from "../src/api/client.js";
 import { API_BASE, calls, handlerFor, mockServer, problem } from "./api-mock.js";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
@@ -47,5 +48,19 @@ describe("ApiClient", () => {
 
   it("the operation table is generated from the pinned contract", () => {
     execFileSync(process.execPath, [new URL("../scripts/gen-operations.mjs", import.meta.url).pathname, "--check"]);
+  });
+
+  it("the contract fixture is api/openapi.json of the release api.pin names", () => {
+    const pin = /^api_version=(\d+\.\d+\.\d+)$/m.exec(readFileSync(new URL("../api.pin", import.meta.url), "utf8"))?.[1];
+    const spec = JSON.parse(readFileSync(new URL("./fixtures/api-openapi.json", import.meta.url), "utf8")) as { "x-source": { comment: string } };
+    expect(pin).toBe("0.3.0");
+    expect(spec["x-source"].comment).toContain(`at the release tag v${pin ?? ""}`);
+  });
+
+  it("asks for a tool call's language with the contract's lang parameter, where the operation takes it", () => {
+    const en = api.withLanguage("en");
+    expect(en.url("listPlaces", { q: "Köln" })).toBe(`${API_BASE}/v1/places?q=K%C3%B6ln&lang=en`);
+    expect(en.url("getMeta")).toBe(`${API_BASE}/v1/meta`);
+    expect(api.url("listPlaces", { q: "Köln" })).toBe(`${API_BASE}/v1/places?q=K%C3%B6ln`);
   });
 });

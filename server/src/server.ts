@@ -57,7 +57,7 @@ export function createServer(deps: ServerDeps): McpServer {
     const handler = HANDLERS[name];
     if (!toolNames.has(name) || handler === undefined) return toolError(language === "de" ? `Unbekanntes Werkzeug: ${name}` : `Unknown tool: ${name}`);
     const ctx: ToolContext = {
-      api: deps.api,
+      api: deps.api.withLanguage(language),
       trains: deps.trains,
       language,
       watches,
