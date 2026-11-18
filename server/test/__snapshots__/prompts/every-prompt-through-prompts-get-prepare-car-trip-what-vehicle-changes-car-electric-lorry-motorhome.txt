@@ -1,0 +1,20 @@
+{
+  "car": [],
+  "electric": [
+    "+ Prepare a driver for a trip into Stuttgart with a vehicle of type: electric.",
+    "+ Three calls, at most:",
+    "+ 2. get_driving_rules again with city=\"Stuttgart\" and topic=\"ev\" — the E-Kennzeichen, what charging costs and which plugs are here. No other topic answers it, and it carries the caveat that these are city rules.",
+    "+ 3. Read viafrei://rules/electric-driving for the long form of the charging and parking rules, and viafrei://rules/low-emission-zones for the badge.",
+    "- Prepare a driver for a trip into Stuttgart.",
+    "- Two calls, at most:",
+    "- 2. Read viafrei://rules/low-emission-zones when a badge is in question, or viafrei://rules/driving-in-germany for the long form of a rule the tool answered in one line."
+  ],
+  "lorry": [
+    "+ Prepare a driver for a trip into Stuttgart with a vehicle of type: lorry.",
+    "- Prepare a driver for a trip into Stuttgart."
+  ],
+  "motorhome": [
+    "+ Prepare a driver for a trip into Stuttgart with a vehicle of type: motorhome.",
+    "- Prepare a driver for a trip into Stuttgart."
+  ]
+}

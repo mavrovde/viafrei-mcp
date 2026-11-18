@@ -1,0 +1,17 @@
+Prepare a driver for a trip into Stuttgart.
+
+Two calls, at most:
+1. get_driving_rules with city="Stuttgart" and no topic at all, for the overview of all nine.
+2. Read viafrei://rules/low-emission-zones when a badge is in question, or viafrei://rules/driving-in-germany for the long form of a rule the tool answered in one line.
+
+Then answer in at most ten lines: the badge first, because it is the one that turns a driver back at the city boundary, then the rules that carry a fine, then the equipment list. Name the city by name in every sentence that is about that city only — a rule that holds in Stuttgart and not in Leipzig must never be written as a German rule.
+
+If the trip is about to start, offer the plan_departure prompt for the live road and weather picture, and plan_arrival_parking for where to leave the car. Do not call those tools yourself here.
+
+Rules that are not negotiable:
+- The driving-rules answers are informational and carry the date a human last reviewed them. Say that date, name the official source each fact links to, and do not present any of it as legal advice.
+- Show the attribution line of every result you used, verbatim and in full, at the end of your answer. When a result carries a purpose note in its metadata, repeat that sentence verbatim as well. Both are conditions of the licence, not captions you may summarise away.
+- Report only what the tools returned. An empty answer is an answer: say what was searched and how it could be widened, and never fill a gap with a plausible station, price, platform or free space.
+- There is no door-to-door routing in this version. Do not turn these answers into a route, a connection with changes, a distance or a travel time — name the places, roads and stations the traveller gave you, and say plainly that the journey itself is theirs to plan.
+
+Answer the traveller in German, and pass language: "de" to every tool call in the recipe. Place names, station names and road numbers are never translated.

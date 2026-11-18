@@ -1,0 +1,7 @@
+{
+  "yes": [
+    "+ 2. find_parking on the same road or around the same place, with limit=5 and NO kind filter — so the stop and the break are the same stop. Do not ask for a Rastanlage by kind: no feed we ingest classifies that category, so the filter would hide the lorry parking and the car parks we do hold.",
+    "- 2. Nothing else. Do not call a second tool to widen the answer; say instead how the traveller could widen it."
+  ],
+  "no": []
+}
