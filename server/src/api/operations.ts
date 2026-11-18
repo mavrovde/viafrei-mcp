@@ -21,7 +21,8 @@ export const OPERATIONS = {
     "pathParams": [],
     "query": [
       "q",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "q"
@@ -32,7 +33,8 @@ export const OPERATIONS = {
     "path": "/v1/affected-stations",
     "pathParams": [],
     "query": [
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": []
   },
@@ -50,7 +52,8 @@ export const OPERATIONS = {
       "operator",
       "conditions",
       "only_available",
-      "access"
+      "access",
+      "lang"
     ],
     "required": [
       "at"
@@ -62,7 +65,9 @@ export const OPERATIONS = {
     "pathParams": [
       "chargingId"
     ],
-    "query": [],
+    "query": [
+      "lang"
+    ],
     "required": [
       "chargingId"
     ]
@@ -74,7 +79,8 @@ export const OPERATIONS = {
     "query": [
       "topic",
       "at",
-      "city"
+      "city",
+      "lang"
     ],
     "required": [
       "topic"
@@ -94,7 +100,8 @@ export const OPERATIONS = {
       "open_at",
       "whole_day",
       "sort",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "at"
@@ -106,7 +113,9 @@ export const OPERATIONS = {
     "pathParams": [
       "fuelId"
     ],
-    "query": [],
+    "query": [
+      "lang"
+    ],
     "required": [
       "fuelId"
     ]
@@ -115,7 +124,9 @@ export const OPERATIONS = {
     "method": "GET",
     "path": "/v1/germany",
     "pathParams": [],
-    "query": [],
+    "query": [
+      "lang"
+    ],
     "required": []
   },
   "listHydrogenOptions": {
@@ -126,7 +137,8 @@ export const OPERATIONS = {
       "at",
       "radius_m",
       "vehicle",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "at"
@@ -136,7 +148,9 @@ export const OPERATIONS = {
     "method": "GET",
     "path": "/v1/key",
     "pathParams": [],
-    "query": [],
+    "query": [
+      "lang"
+    ],
     "required": []
   },
   "describeLocation": {
@@ -144,7 +158,8 @@ export const OPERATIONS = {
     "path": "/v1/location",
     "pathParams": [],
     "query": [
-      "at"
+      "at",
+      "lang"
     ],
     "required": [
       "at"
@@ -159,7 +174,8 @@ export const OPERATIONS = {
       "road",
       "at",
       "radius_m",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "vehicle"
@@ -179,7 +195,8 @@ export const OPERATIONS = {
     "query": [
       "state",
       "road",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": []
   },
@@ -197,7 +214,8 @@ export const OPERATIONS = {
       "from",
       "to",
       "limit",
-      "cursor"
+      "cursor",
+      "lang"
     ],
     "required": [
       "road"
@@ -214,7 +232,8 @@ export const OPERATIONS = {
       "free_min",
       "kind",
       "facilities",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "road"
@@ -227,7 +246,24 @@ export const OPERATIONS = {
     "query": [
       "at",
       "radius_m",
-      "categories"
+      "categories",
+      "lang"
+    ],
+    "required": [
+      "at"
+    ]
+  },
+  "listParkingBays": {
+    "method": "GET",
+    "path": "/v1/parking-bays",
+    "pathParams": [],
+    "query": [
+      "at",
+      "kind",
+      "radius_m",
+      "limit",
+      "only_free",
+      "lang"
     ],
     "required": [
       "at"
@@ -244,7 +280,8 @@ export const OPERATIONS = {
       "accept_terms",
       "free_min",
       "kind",
-      "facilities"
+      "facilities",
+      "lang"
     ],
     "required": [
       "at"
@@ -259,7 +296,8 @@ export const OPERATIONS = {
       "kind",
       "at",
       "radius_m",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "q"
@@ -269,7 +307,9 @@ export const OPERATIONS = {
     "method": "GET",
     "path": "/v1/places/coverage",
     "pathParams": [],
-    "query": [],
+    "query": [
+      "lang"
+    ],
     "required": []
   },
   "getPlaceOverview": {
@@ -282,7 +322,8 @@ export const OPERATIONS = {
       "accept_terms",
       "needs",
       "radius_m",
-      "per_part_limit"
+      "per_part_limit",
+      "lang"
     ],
     "required": [
       "placeId"
@@ -299,7 +340,8 @@ export const OPERATIONS = {
       "radius_m",
       "category",
       "limit",
-      "cursor"
+      "cursor",
+      "lang"
     ],
     "required": [
       "name"
@@ -311,6 +353,26 @@ export const OPERATIONS = {
     "pathParams": [],
     "query": [],
     "required": []
+  },
+  "createRefresh": {
+    "method": "POST",
+    "path": "/v1/refreshes",
+    "pathParams": [],
+    "query": [],
+    "required": []
+  },
+  "getRefresh": {
+    "method": "GET",
+    "path": "/v1/refreshes/{id}",
+    "pathParams": [
+      "id"
+    ],
+    "query": [
+      "lang"
+    ],
+    "required": [
+      "id"
+    ]
   },
   "listRoadConditions": {
     "method": "GET",
@@ -325,7 +387,8 @@ export const OPERATIONS = {
       "horizon_days",
       "from",
       "to",
-      "road_class"
+      "road_class",
+      "lang"
     ],
     "required": [
       "at"
@@ -337,7 +400,9 @@ export const OPERATIONS = {
     "pathParams": [
       "situationId"
     ],
-    "query": [],
+    "query": [
+      "lang"
+    ],
     "required": [
       "situationId"
     ]
@@ -350,7 +415,8 @@ export const OPERATIONS = {
       "at",
       "radius_m",
       "limit",
-      "only_available"
+      "only_available",
+      "lang"
     ],
     "required": [
       "at"
@@ -361,7 +427,8 @@ export const OPERATIONS = {
     "path": "/v1/sources",
     "pathParams": [],
     "query": [
-      "domain"
+      "domain",
+      "lang"
     ],
     "required": []
   },
@@ -372,7 +439,8 @@ export const OPERATIONS = {
     "query": [
       "at",
       "radius_m",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "at"
@@ -391,7 +459,8 @@ export const OPERATIONS = {
       "from",
       "to",
       "road_class",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "state"
@@ -404,7 +473,8 @@ export const OPERATIONS = {
       "state"
     ],
     "query": [
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "state"
@@ -416,7 +486,9 @@ export const OPERATIONS = {
     "pathParams": [
       "state"
     ],
-    "query": [],
+    "query": [
+      "lang"
+    ],
     "required": [
       "state"
     ]
@@ -430,7 +502,8 @@ export const OPERATIONS = {
       "code",
       "at",
       "radius_m",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": []
   },
@@ -445,7 +518,8 @@ export const OPERATIONS = {
       "duration_min",
       "modes",
       "categories",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "stationId"
@@ -459,10 +533,24 @@ export const OPERATIONS = {
     ],
     "query": [
       "kind",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": [
       "stationId"
+    ]
+  },
+  "getTrainBoard": {
+    "method": "GET",
+    "path": "/v1/train-boards/{eva}",
+    "pathParams": [
+      "eva"
+    ],
+    "query": [
+      "lang"
+    ],
+    "required": [
+      "eva"
     ]
   },
   "listTransitDisruptions": {
@@ -473,7 +561,8 @@ export const OPERATIONS = {
       "area",
       "line",
       "window_min",
-      "limit"
+      "limit",
+      "lang"
     ],
     "required": []
   },
@@ -489,7 +578,8 @@ export const OPERATIONS = {
       "hours",
       "until",
       "condition",
-      "since"
+      "since",
+      "lang"
     ],
     "required": []
   },
@@ -500,7 +590,8 @@ export const OPERATIONS = {
     "query": [
       "at",
       "min_level",
-      "hazards"
+      "hazards",
+      "lang"
     ],
     "required": [
       "at"

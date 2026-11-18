@@ -220,6 +220,15 @@ const findAddress: Handler = async (args, ctx) => {
 
 const nameOf = (n: T.Named): string | null => (n === null ? null : (n.name ?? null));
 
+/** The low-emission zone line: the zone the position is in, or the nearest one and how far; none without a zone. */
+function zoneLine(z: T.LowEmissionZone | null, language: Language): string | null {
+  if (z === null || z.zone === null || z.verdict === "unknown") return null;
+  if (z.verdict === "inside") return L(language, `Umweltzone: ${z.zone} (innerhalb)`, `Low-emission zone: ${z.zone} (inside)`);
+  if (z.verdict === "transfer") return L(language, `Umweltzone: ${z.zone} (freigegebener Randbereich)`, `Low-emission zone: ${z.zone} (released area at its edge)`);
+  const away = z.distanceM === null ? "" : L(language, ` (${km(z.distanceM, language)} entfernt)`, ` (${km(z.distanceM, language)} away)`);
+  return L(language, `Umweltzone: ${z.zone}${away}`, `Low-emission zone: ${z.zone}${away}`);
+}
+
 const describeLocation: Handler = async (args, ctx) => {
   const { language } = ctx;
   const lat = num(args["lat"]);
@@ -228,7 +237,8 @@ const describeLocation: Handler = async (args, ctx) => {
   const r = await ctx.api.get<T.LocationData>("describeLocation", { at: atParam({ lat, lon }) });
   const d = r.data;
   const lines = [nameOf(d.municipality), nameOf(d.district), nameOf(d.state)].filter((x): x is string => x !== null);
-  if (d.lowEmissionZone !== null) lines.push(L(language, `Umweltzone: ${d.lowEmissionZone.name}${d.lowEmissionZone.inside ? " (innerhalb)" : ` (${km(d.lowEmissionZone.distanceM, language)} entfernt)`}`, `Low-emission zone: ${d.lowEmissionZone.name}${d.lowEmissionZone.inside ? " (inside)" : ` (${km(d.lowEmissionZone.distanceM, language)} away)`}`));
+  const zone = zoneLine(d.lowEmissionZone, language);
+  if (zone !== null) lines.push(zone);
   return toolResult(lines.join("\n") || L(language, "Zu dieser Position ist nichts bekannt.", "Nothing is known about this position."), [r.meta], language);
 };
 
@@ -287,7 +297,7 @@ const checkTransitDisruption: Handler = async (args, ctx) => {
   const area = await areaCode(args, ctx);
   if (area.code === undefined && line === undefined) return toolResult(L(language, "Diese Region kenne ich nicht.", "I do not know this region."), area.metas, language);
   const r = await ctx.api.get<T.DisruptionData>("listTransitDisruptions", { area: area.code, line, window_min: num(args["window_min"]) });
-  const lines = r.data.alerts.map((a) => `- ${a.lines.length > 0 ? `${a.lines.join(", ")}: ` : ""}${a.header}`);
+  const lines = r.data.alerts.map((a) => `- ${a.lines.length > 0 ? `${a.lines.join(", ")}: ` : ""}${a.header ?? ""}`);
   if (r.data.punctuality !== null) lines.unshift(L(language, `Pünktlichkeit ${r.data.punctuality.name ?? ""}: ${r.data.punctuality.level} (${r.data.punctuality.late} von ${r.data.punctuality.observed} verspätet)`, `Punctuality ${r.data.punctuality.name ?? ""}: ${r.data.punctuality.level} (${r.data.punctuality.late} of ${r.data.punctuality.observed} late)`));
   if (lines.length === 0) return none(language, [r.meta], L(language, "Störungen", "disruptions"));
   return toolResult(lines.join("\n"), [r.meta], language);

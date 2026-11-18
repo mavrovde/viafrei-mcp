@@ -94,9 +94,18 @@ export const atParam = (p: LatLon): string => `${Number(p.lat.toFixed(6))},${Num
 export class ApiClient {
   private readonly doFetch: typeof fetch;
   private readonly timeoutMs: number;
-  constructor(readonly config: ApiConfig) {
+  /**
+   * `lang`: the language of the answers' texts (source notes, rules texts, notices), sent as the contract's `lang`
+   * query parameter to every operation that takes it; undefined leaves it to the API (German).
+   */
+  constructor(readonly config: ApiConfig, readonly lang?: "de" | "en") {
     this.doFetch = config.fetch ?? ((input, init) => fetch(input, init));
     this.timeoutMs = config.timeoutMs ?? 15_000;
+  }
+
+  /** The same client, asking for its answers' texts in `lang` (one tool call's language). */
+  withLanguage(lang: "de" | "en"): ApiClient {
+    return new ApiClient(this.config, lang);
   }
 
   /** True when the contract this build was made from has the operation. */
@@ -115,7 +124,7 @@ export class ApiClient {
     }
     const q = new URLSearchParams();
     for (const name of spec.query as readonly string[]) {
-      const v = params[name];
+      const v = name === "lang" ? (params[name] ?? this.lang) : params[name];
       if (v === undefined || v === null || v === "") continue;
       q.set(name, Array.isArray(v) ? v.join(",") : String(v));
     }

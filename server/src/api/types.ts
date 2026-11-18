@@ -47,14 +47,16 @@ export type LorryRule = { layer: string; kind: string | null; road: string | nul
 /** DrivingRulesData */
 export type DrivingRulesData = { topic: string; title: string; rules: { text: string; legalBasis: string | null }[]; reviewedOn: string; disclaimer: string };
 /** DisruptionData */
-export type DisruptionAlert = { header: string; description: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
+export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
 export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; punctuality: { name: string | null; level: string; late: number; observed: number } | null; windowMin: number };
 /** WeatherRiskData */
 export type WeatherWarning = { headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null } };
 export type WeatherRiskData = { warnings: WeatherWarning[] };
 /** LocationData */
 export type Named = { name?: string | null; code?: string | null } | null;
-export type LocationData = { address: Record<string, unknown> | null; municipality: Named; district: Named; state: Named; lowEmissionZone: { name: string; inside: boolean; distanceM: number } | null };
+/** LocationData.lowEmissionZone: the verdict, and the zone it is in (inside, transfer) or the nearest (outside). */
+export type LowEmissionZone = { verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null };
+export type LocationData = { address: Record<string, unknown> | null; municipality: Named; district: Named; state: Named; lowEmissionZone: LowEmissionZone | null };
 /** Station */
 export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; distanceM?: number | null };
 /** Board */
@@ -66,7 +68,7 @@ export type Board = { station: { id: string; name: string }; window: { from: str
 /** StationFacilitiesData */
 export type StationFacilitiesData = { station: { name: string }; counts: { active: number; inactive: number; unknown: number }; facilities: { id: string; kind: string; position: string | null; state: string }[] };
 /** WatchData */
-export type WatchData = { watchId: string; uri: string; kind: string; key: string; from: string; until: string; ended: boolean; lamp: string | null; note: string | null; situations: RoadSituation[] };
+export type WatchData = { watchId: string; uri: string; kind: string; key: string; from: string; until: string; ended: boolean; note: string | null; situations: RoadSituation[] };
 /** SourceRow */
 export type SourceRow = { family: string; domain: string; publisher: string; attribution: string; licence: string; licenceUrl: string; status: string };
 /** PlacesCoverageData */
