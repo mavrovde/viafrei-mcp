@@ -30,7 +30,7 @@ const SCAN = '\n      - name: Snyk test\n        env:\n          SNYK_TOKEN: ${{
     "      - name: Upload SARIF to code scanning\n        # A called run scans another commit than the caller's github.sha; its findings are\n        # uploaded only when they belong to the commit code scanning files them under.\n" +
     "        if: always() && hashFiles('sarif/snyk.sarif') != '' && (inputs.ref == '' || inputs.ref == github.sha)\n";
 const CHECKOUT = '\n        with:\n          ref: ${{ inputs.ref || github.sha }}\n          persist-credentials: false\n';
-const PUBLISH_IF = "\n  publish:\n    needs: [snyk, server-e2e-api]\n    # After a passed scan, or a branch dry run with no scan; never past a failed\n    # or cancelled one, and never a real publish without one.\n    if: ${{ !cancelled() && (needs.snyk.result == 'success' || (needs.snyk.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.dry_run)) && (needs.server-e2e-api.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)) }}\n";
+const PUBLISH_IF = "\n  publish:\n    needs: [snyk, mutation, server-e2e-api]\n    # After a passed scan and a passed mutation run, or a branch dry run with\n    # neither; never past a failed or cancelled one, and never a real publish\n    # without both.\n    if: ${{ !cancelled() && (needs.snyk.result == 'success' || (needs.snyk.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.dry_run)) && (needs.mutation.result == 'success' || (needs.mutation.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.dry_run)) && (needs.server-e2e-api.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)) }}\n";
 const SECRETS = '\n    secrets:\n      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n';
 const CALLER = '\n  snyk:\n    name: Snyk (dependencies)\n    if: startsWith(github.ref, \'refs/tags/v\')\n    permissions:\n      contents: read\n      security-events: write\n    uses: ./.github/workflows/snyk.yml\n    with:\n      ref: ${{ github.sha }}\n' + SECRETS.slice(1);
 
@@ -95,7 +95,7 @@ function faults(files) {
     }
     const pub = files['publish.yml'] ?? '';
     if (!pub.includes(CALLER)) out.push("publish.yml's snyk job does not call snyk.yml on the tagged commit with exactly SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}");
-    if (!/^ {4}needs: \[snyk, server-e2e-api\]\n/mu.test(job(pub, 'publish'))) out.push("publish.yml's publish does not need snyk");
+    if (!/^ {4}needs: \[snyk, mutation, server-e2e-api\]\n/mu.test(job(pub, 'publish'))) out.push("publish.yml's publish does not need snyk");
     if (!pub.includes(PUBLISH_IF)) out.push("publish.yml's publish does not run only after a passed scan or a branch dry run");
     return out;
 }
@@ -125,7 +125,7 @@ console.log('each planted fault is reported');
         ['a push trigger', 'the weekly schedule, a dispatch and the release call alone', plant('snyk.yml', '  workflow_dispatch:\n', '  push:\n    branches: [main]\n  workflow_dispatch:\n')],
         ['|| true on the scan', 'the high-threshold scan', plant('snyk.yml', '--sarif-file-output=sarif/snyk.sarif\n', '--sarif-file-output=sarif/snyk.sarif || true\n')],
         ['secrets: inherit', 'publish.yml passes secrets: inherit', plant('publish.yml', SECRETS, '\n    secrets: inherit\n')],
-        ['publish not needing snyk', "publish.yml's publish does not need snyk", plant('publish.yml', '  publish:\n    needs: [snyk, server-e2e-api]\n', '  publish:\n')],
+        ['publish not needing snyk', "publish.yml's publish does not need snyk", plant('publish.yml', '  publish:\n    needs: [snyk, mutation, server-e2e-api]\n', '  publish:\n')],
         ['the SARIF condition dropped', 'the own-commit upload', plant('snyk.yml', " && (inputs.ref == '' || inputs.ref == github.sha)", '')],
         ['a key inside the scan step', 'the high-threshold scan', plant('snyk.yml', '          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n        run: |\n          mkdir', '          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}\n        continue-on-error: true\n        run: |\n          mkdir')],
         ['checkout ref changed', 'snyk.yml does not check out', plant('snyk.yml', 'ref: ${{ inputs.ref || github.sha }}', 'ref: ${{ github.sha }}')],

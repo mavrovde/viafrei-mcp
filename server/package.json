@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:e2e:mock": "npm run build && vitest run --config vitest.e2e.config.ts",
     "test:e2e:api": "npm run build && vitest run --config vitest.e2e.config.ts",
+    "mutation": "node scripts/mutation.mjs full",
     "check:operations": "node scripts/gen-operations.mjs --check",
     "start:http": "node dist/http.js",
     "start:stdio": "node dist/stdio.js"
@@ -27,6 +28,8 @@
   },
   "devDependencies": {
     "@stoplight/prism-cli": "^5.16.0",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@types/express": "^5.0.3",
     "@types/node": "^22.19.0",
     "msw": "^2.15.0",
