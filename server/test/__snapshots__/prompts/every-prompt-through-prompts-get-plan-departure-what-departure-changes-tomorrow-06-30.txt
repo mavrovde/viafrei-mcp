@@ -1,0 +1,6 @@
+{
+  "tomorrow 06:30": [
+    "+ Trip briefing: München → Berlin, departing tomorrow 06:30.",
+    "- Trip briefing: München → Berlin, departing now."
+  ]
+}

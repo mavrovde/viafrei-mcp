@@ -1,0 +1,20 @@
+Trip briefing: München → Berlin, departing now.
+
+Call these tools in this order, and stop as soon as the picture is clear:
+1. check_weather_warnings for München, then a second call for Berlin, with min_level=0 — a Vorabinformation is exactly what changes a departure time.
+2. check_road_status once per motorway (no road was named — name the obvious motorways for this pair yourself, say in one clause that you assumed them, and ask only if the pair is genuinely ambiguous), with horizon_days=1 for a departure today and horizon_days=3 when they are leaving tomorrow.
+3. check_autobahn_traffic with ALL of those roads in ONE call — it takes up to five — for what is in force this minute.
+
+Then answer in at most twelve lines:
+- first line: the verdict — set off now, wait, or take another route — and the single reason for it;
+- the warnings in force, each with its DWD Warnstufe and the window it is valid for;
+- per road: closures first, then the worst jam with its delay in minutes;
+- last: the attribution lines and the Stand / As of time.
+
+Rules that are not negotiable:
+- Show the attribution line of every result you used, verbatim and in full, at the end of your answer. When a result carries a purpose note in its metadata, repeat that sentence verbatim as well. Both are conditions of the licence, not captions you may summarise away.
+- All times are Europe/Berlin. Render a departure as 08:05 (+3 min) and keep each result's Stand / As of line, so the traveller knows how old the answer is.
+- Report only what the tools returned. An empty answer is an answer: say what was searched and how it could be widened, and never fill a gap with a plausible station, price, platform or free space.
+- There is no door-to-door routing in this version. Do not turn these answers into a route, a connection with changes, a distance or a travel time — name the places, roads and stations the traveller gave you, and say plainly that the journey itself is theirs to plan.
+
+Answer the traveller in German, and pass language: "de" to every tool call in the recipe. Place names, station names and road numbers are never translated.

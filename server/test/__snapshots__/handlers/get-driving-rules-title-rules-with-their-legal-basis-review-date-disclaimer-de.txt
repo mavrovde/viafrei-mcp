@@ -1,0 +1,5 @@
+Synthetic rule topic winter_tyres
+- Synthetic statement 1 about winter_tyres, for tests only. (§ 0 synthetic)
+- Synthetic statement 2 about winter_tyres, for tests only.
+Geprüft am 2026-11-17.
+Informational, not legal advice.

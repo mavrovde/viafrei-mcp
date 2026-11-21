@@ -1,0 +1,21 @@
+{
+  "fuel": [
+    "+ What is around Ingolstadt for fuel?",
+    "+ 1. find_nearby at Ingolstadt, radius_km=5, narrowed to the fuel category only.",
+    "- What is around Ingolstadt?",
+    "- 1. find_nearby at Ingolstadt, radius_km=5."
+  ],
+  "charging": [
+    "+ What is around Ingolstadt for charging?",
+    "+ 1. find_nearby at Ingolstadt, radius_km=5, narrowed to the charging category only.",
+    "- What is around Ingolstadt?",
+    "- 1. find_nearby at Ingolstadt, radius_km=5."
+  ],
+  "parking": [
+    "+ What is around Ingolstadt for parking?",
+    "+ 1. find_nearby at Ingolstadt, radius_km=5, narrowed to the parking category only.",
+    "- What is around Ingolstadt?",
+    "- 1. find_nearby at Ingolstadt, radius_km=5."
+  ],
+  "everything": []
+}

@@ -1,0 +1,4 @@
+- Möniltal Parken (rest_area) · 39,0 km · 106 frei von 231
+- Parkraum GmbH (garage) · 5 frei
+- p:3 (street) · 80 m
+- Nur Zahl (rest_area) · 39,0 km

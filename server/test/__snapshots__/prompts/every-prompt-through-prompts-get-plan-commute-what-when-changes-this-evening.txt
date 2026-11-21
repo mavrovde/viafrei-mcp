@@ -1,0 +1,6 @@
+{
+  "this evening": [
+    "+ Plan one public-transport leg from Köln Hbf, this evening.",
+    "- Plan one public-transport leg from Köln Hbf, leaving now."
+  ]
+}

@@ -5,27 +5,74 @@ to send a first patch.
 
 ## Read this first: what lives here and what does not
 
-This repository holds **only the bridge** — a stdio↔Streamable-HTTP relay to
-`https://mcp.viafrei.de/mcp`.
+This repository holds the **bridge** — a stdio↔Streamable-HTTP relay to
+`https://mcp.viafrei.de/mcp`, published to npm — and, under `server/`, the
+**MCP server** itself (draft, being moved in).
 
-The ViaFrei MCP server is a **hosted service and its source is closed**. It is
-not here and is not published. That is a deliberate decision, not an oversight,
-and it is written down so you do not spend an evening looking for code that was
-never pushed.
+The server reads every answer from the public ViaFrei API; it holds no
+database. Its tool catalogue is `server/catalogue/catalogue.json`, a copy of
+the `catalogue.json` at the root, and it is served byte for byte. It calls no
+provider itself: a live DB Timetables board is asked of the API's live
+refresher, and read back from the API.
 
-What *is* public is the part that is meant to be read: tool names, descriptions,
-input schemas, result shapes and attribution lines. Any MCP client gets all of
-it from `tools/list` against the live server. If you want to know what the
-server can do, ask the server.
-
-**So: a change to a tool's behaviour, a new data source, or a fix to an answer
-cannot be made in this repository.** Open an issue or a discussion here
-describing what is wrong with the answer, and it will be picked up on the other
-side. A bug report against the server is welcome and useful — it is just not a
-pull request you can write.
+**A change to a data source, or to the data behind an answer, is not made
+here:** it is an API change. Open an issue describing what is wrong with the
+answer. A change to how the server renders an answer, its transports, or its
+tests is a pull request against `server/`.
 
 Things you *can* change here: the relay itself, its argument and configuration
-handling, its error messages, its tests, its packaging, and this documentation.
+handling, its error messages, its tests, its packaging, the server under
+`server/`, and this documentation.
+
+### The server: running and testing it
+
+```sh
+cd server
+npm ci --ignore-scripts
+npm run typecheck
+npm test                 # unit tests; the API is mocked (MSW) from its contract's examples
+npm run test:e2e:mock    # MCP over Streamable HTTP against Prism mocking the same contract
+```
+
+`server/test/fixtures/api-openapi.json` is a byte copy of the API's OpenAPI
+contract, pinned by commit; `npm run check:operations` fails when the generated
+operation table is stale. The pre-release job in `publish.yml` runs the same
+end-to-end checks against the real API release `server/api.pin` names.
+
+#### Mutation testing: once per release, never per pull request
+
+Coverage shows which lines ran, not whether a test would notice a wrong
+answer. StrykerJS (vitest runner,
+`server/stryker.config.mjs`) changes one thing at a time in `server/src` (a
+negated condition, a moved boundary, an emptied string, ...), runs the tests,
+and reports every mutant they do not kill. The scope is every `.ts` file under
+`server/src` except the generated operation table.
+
+| Run | When | Fails |
+|---|---|---|
+| full | once per release: `publish.yml` calls `mutation.yml` on the tagged commit, and the publish job needs it next to Snyk, so a red run stops the publish; or a manual run of `mutation.yml` | below 70 % |
+
+No pull request and no push runs it. The full run is cut into four parallel
+shards: shard k mutates the files at the positions p of the sorted scope with
+p mod 4 = k - 1, and the **Mutation testing** job gathers the four reports into
+one score. It fails when a shard did not finish green, when a file has no
+report or two, and below 70 %. The job summary holds the score per file and
+every mutant not detected; the reports are the run's artefacts.
+`npm run test:mutation-wiring` (in CI) holds the workflows to this and proves
+the four shards of the real scope disjoint and complete.
+
+A maintainer run, from `server/`:
+
+```sh
+npm run mutation                                 # the full run, floor 70 %; report in reports/mutation/
+node scripts/mutation.mjs plan 4                 # the four shards
+node scripts/mutation.mjs shard 2/4 mut/shard-2  # one shard, no floor
+node scripts/mutation.mjs gather mut out.md      # score the shard directories as one run
+```
+
+Stryker mutates the files in place (a test reads the repository's
+`catalogue.json` above `server/`), so run shards one after another locally;
+if a run is killed hard, `git status` shows the mutant it left behind.
 
 ## Running it
 

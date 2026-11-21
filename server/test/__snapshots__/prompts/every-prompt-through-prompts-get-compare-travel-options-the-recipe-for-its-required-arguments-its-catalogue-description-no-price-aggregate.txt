@@ -1,0 +1,20 @@
+Compare driving against taking the train: München → Berlin, leaving now.
+
+The car side, two calls:
+1. check_road_status for each motorway (no road was named — name the obvious motorways for this pair yourself, say in one clause that you assumed them, and ask only if the pair is genuinely ambiguous) — a closure decides this question on its own.
+2. check_autobahn_traffic with all of those roads in one call, for the delay in minutes right now.
+
+The rail side, two calls, and they stay separate from the car side:
+3. get_train_departures from the main station at München, with duration_min=120 and limit=10 — the trains that actually leave, with delays and cancellations.
+4. check_transit_disruption for the region around München, as its own call, for how reliable the network is at this hour.
+
+Then write two short paragraphs — Car, Rail — and one closing sentence that recommends one of them and says what would change the recommendation. Do not compute a combined score, a total travel time or a reliability percentage across the two: we hold no journey planner and no road travel time, so any such number would be invented.
+
+Rules that are not negotiable:
+- The punctuality figures from check_transit_disruption are share-alike (CC BY-SA; the licensor states no version) when they come from DELFI. For Berlin and Brandenburg they may come from VBB instead, under CC BY 4.0, which is not share-alike; the result's attribution line says which. Show them with their own attribution line and keep it clear which figures they are, so a reader can tell what the share-alike covers. You may put them beside road, weather, fuel or departure data in one answer or one table: showing two sources next to each other places no obligation on the other source, though each source's own terms still apply to it. What you may not do is merge share-alike figures into a single derived figure, score or index — that is an adaptation, and the result would itself be share-alike.
+- Show the attribution line of every result you used, verbatim and in full, at the end of your answer. When a result carries a purpose note in its metadata, repeat that sentence verbatim as well. Both are conditions of the licence, not captions you may summarise away.
+- All times are Europe/Berlin. Render a departure as 08:05 (+3 min) and keep each result's Stand / As of line, so the traveller knows how old the answer is.
+- Report only what the tools returned. An empty answer is an answer: say what was searched and how it could be widened, and never fill a gap with a plausible station, price, platform or free space.
+- There is no door-to-door routing in this version. Do not turn these answers into a route, a connection with changes, a distance or a travel time — name the places, roads and stations the traveller gave you, and say plainly that the journey itself is theirs to plan.
+
+Answer the traveller in German, and pass language: "de" to every tool call in the recipe. Place names, station names and road numbers are never translated.

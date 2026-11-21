@@ -1,0 +1,6 @@
+{
+  "Düsseldorf": [
+    "+ Plan one public-transport leg from Köln Hbf towards Düsseldorf, leaving now.",
+    "- Plan one public-transport leg from Köln Hbf, leaving now."
+  ]
+}

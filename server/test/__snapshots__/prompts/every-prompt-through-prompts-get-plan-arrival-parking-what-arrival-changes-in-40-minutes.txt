@@ -1,0 +1,6 @@
+{
+  "in 40 minutes": [
+    "+ Find parking at Berlin, arriving in 40 minutes.",
+    "- Find parking at Berlin, arriving shortly."
+  ]
+}

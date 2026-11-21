@@ -1,0 +1,40 @@
+{
+  "name": "@viafrei/mcp-server",
+  "version": "2.6.23",
+  "description": "The ViaFrei MCP server (Streamable HTTP, legacy SSE, stdio): every answer from the ViaFrei API, live train boards through its refresher.",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:e2e:mock": "npm run build && vitest run --config vitest.e2e.config.ts",
+    "test:e2e:api": "npm run build && vitest run --config vitest.e2e.config.ts",
+    "mutation": "node scripts/mutation.mjs full",
+    "check:operations": "node scripts/gen-operations.mjs --check",
+    "start:http": "node dist/http.js",
+    "start:stdio": "node dist/stdio.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "express": "^5.2.1",
+    "pino": "^10.3.1",
+    "saxes": "^6.0.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@stoplight/prism-cli": "^5.16.0",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.19.0",
+    "msw": "^2.15.0",
+    "typescript": "^5.9.3",
+    "undici": "^7.30.2",
+    "vitest": "^4.1.11"
+  }
+}
