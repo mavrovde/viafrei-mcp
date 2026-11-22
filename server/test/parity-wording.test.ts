@@ -210,7 +210,10 @@ const GAP_LINES: Record<string, { lines: number[]; absent?: number[]; needs: str
 };
 
 /** The same gaps, by the lines' own shape, for every case of a tool. */
-const GAP_BY_TOOL: Record<string, { gap?: RegExp; absent?: RegExp; tail?: string; needs: string }> = {
+const GAP_BY_TOOL: Record<string, { gap?: RegExp; absent?: RegExp; tail?: string; tailGap?: RegExp; squeeze?: true; needs: string }> = {
+  // The head names the station page (its slug) and the facts line DB's address and category; the rail Ampel is not served.
+  describe_station: { tailGap: / — (Bahnhofsseite|Station page): /u, tail: " — ", gap: /(Bahnhofskategorie|station category) /u, absent: /^(Bahn-Ampel|Rail lamp|Ampel je Linie|Lamp per line):/u, squeeze: true,
+    needs: "the station page's slug, DB's street address and station category, the rail Ampel" },
   // DB's own explanation of a state rides after the state; the line up to it is today's, word for word.
   check_station_facilities: { gap: / — (Meldung der Bahn|DB's report)/u, tail: " — ", needs: "DB's explanation of a facility's state (stateExplanation)" },
   // A site's line names its street address and plugs; the price and the register's release date are not held.
@@ -232,6 +235,31 @@ function chargingState(c: Case): void {
     const unfiltered = !["connector", "min_kw", "max_kw", "operator", "conditions", "only_available"].some((k) => u.searchParams.has(k));
     return Array.from({ length: held > 0 ? (unfiltered ? held : 0) : listed }, (_, i) => site(i));
   }, { page: { limit: 100, hasMore: false } });
+}
+
+/** describe_station: the station from the copied head, facts and parking lines, its units from the lift section, no board. */
+function stationPageState(c: Case): void {
+  const lines = c.body.split("\n");
+  const name = lines[0]!.split(" — ")[0]!;
+  const lands: Record<string, string> = { Hamburg: "02000000", Hessen: "06412000", Hesse: "06412000", "Nordrhein-Westfalen": "05113000", "North Rhine-Westphalia": "05113000", Berlin: "11000000", Sachsen: "14713000", Saxony: "14713000" };
+  const facts = lines[1]!.split(" · ");
+  const districtCode = facts.map((f) => lands[f]).find((x) => x !== undefined) ?? null;
+  const eva = facts.find((f) => f.startsWith("EVA "))?.slice(4) ?? null;
+  // The copied point's decimals are masked (NNNNN, five digits): any point in the same whole degrees prints the same.
+  const at = /lat (-?\d+)\.(?:\d+|NNNNN), lon (-?\d+)\./u.exec(c.body);
+  const now = { asOf: new Date().toISOString() };
+  serve("listStations", [{ id: "st-1", name, location: { lat: Number(at?.[1]) + 0.5, lon: Number(at?.[2]) + 0.5 }, stopCode: null, eva, evaNumbers: eva === null ? [] : [eva], districtCode, modes: ["rail"], distanceM: null, sourceFamily: "stada" }], now);
+  const kinds: Record<string, string> = { Aufzug: "elevator", Lift: "elevator", Fahrtreppe: "escalator", Escalator: "escalator", Fahrsteig: "travelator", "Moving walkway": "travelator", Anlage: "other", Unit: "other" };
+  const states: Record<string, string> = { "in Betrieb": "active", "in service": "active", "außer Betrieb": "inactive", "out of service": "inactive", "Zustand unbekannt": "unknown", "state unknown": "unknown" };
+  const start = lines.findIndex((l) => /^(Aufzüge und Fahrtreppen|Lifts and escalators) \(/u.test(l));
+  const units = start < 0 ? [] : lines.slice(start + 1, lines.indexOf("", start)).map((l, i) => {
+    const m = /^- (Aufzug|Fahrtreppe|Fahrsteig|Anlage|Lift|Escalator|Moving walkway|Unit)(?: \(Platform (.+)\)| \(no location given\)| (.+))?: (.+)$/u.exec(l);
+    if (m === null) throw new Error(`lift line not read: ${l}`);
+    return { id: `f-${i}`, kind: kinds[m[1]!]!, position: m[3] ?? (m[2] === undefined ? null : `zu Gleis ${m[2]}`), state: states[m[4]!]!, sourceFamily: "fasta" };
+  });
+  const n = (st: string): number => units.filter((u) => u.state === st).length;
+  serve("listStationFacilities", { station: { name }, facilities: units, counts: { active: n("active"), inactive: n("inactive"), unknown: n("unknown") } }, now);
+  serve("listStationDepartures", { ...exampleOf<{ data: Record<string, unknown> }>("listStationDepartures").data, departures: [] }, now);
 }
 
 /** check_station_facilities: the station as today names it, and each copied unit line read back into a unit. */
@@ -321,7 +349,7 @@ describe("today's wording, from the parity run (lane A)", () => {
     it(`${c.tool} ${JSON.stringify(c.args)}`, async () => {
       const state = c.tool === "get_train_departures" ? () => trainState(c) : c.tool === "get_departures" && c.args["stop"] !== undefined ? () => unknownStop(c)
         : c.tool === "find_charging_station" ? () => chargingState(c) : c.tool === "find_hydrogen_station" ? () => hydrogenState(c)
-        : c.tool === "check_station_facilities" ? () => facilitiesState(c) : STATE[key];
+        : c.tool === "check_station_facilities" ? () => facilitiesState(c) : c.tool === "describe_station" ? () => stationPageState(c) : STATE[key];
       if (state === undefined) throw new Error(`no API state for ${key}`);
       state(c.args);
       const { client, close } = await connect({ refreshWait: { totalMs: 20, pollMs: 5 } });
@@ -332,16 +360,20 @@ describe("today's wording, from the parity run (lane A)", () => {
         const rule = GAP_BY_TOOL[c.tool];
         const byRule = (re: RegExp | undefined): number[] => (re === undefined ? [] : c.body.split("\n").flatMap((l, i) => (re.test(l) ? [i] : [])));
         const absent = new Set([...(GAP_LINES[key]?.absent ?? []), ...byRule(rule?.absent)]);
-        const lines = c.body.split("\n").map((l, i) => ({ l, i })).filter((x) => !absent.has(x.i));
+        const kept = c.body.split("\n").map((l, i) => ({ l, i })).filter((x) => !absent.has(x.i));
+        // A section left out whole leaves its blank line behind: one blank line between sections, as the answer has.
+        const lines = rule?.squeeze === true ? kept.filter((x, k) => !(x.l === "" && kept[k - 1]?.l === "")) : kept;
         const want = lines.map((x) => x.l);
         const got = bodyOf(r).split("\n");
-        const gapAt = new Set([...(GAP_LINES[key]?.lines ?? []), ...byRule(rule?.gap)]);
+        const gapAt = new Set([...(GAP_LINES[key]?.lines ?? []), ...byRule(rule?.gap), ...byRule(rule?.tailGap)]);
         const gap = new Set(lines.flatMap((x, k) => (gapAt.has(x.i) ? [k] : [])));
         expect(got.length).toBe(want.length);
         expect(got.filter((_, i) => !gap.has(i))).toEqual(want.filter((_, i) => !gap.has(i)));
         // A gap that only drops a tail (prefix): the line says everything up to it, word for word.
         if (GAP_LINES[key]?.prefix === true) for (const i of gap) expect(want[i]!.startsWith(`${got[i]!} (`)).toBe(true);
-        if (rule?.tail !== undefined) for (const i of gap) expect(want[i]!.startsWith(`${got[i]!}${rule.tail}`)).toBe(true);
+        const tailRe = rule?.tailGap ?? rule?.gap;
+        const tailed = rule?.tail === undefined || tailRe === undefined ? [] : lines.flatMap((x, k) => (tailRe.test(x.l) ? [k] : []));
+        for (const i of tailed) expect(want[i]!.startsWith(`${got[i]!}${rule!.tail!}`)).toBe(true);
       } finally {
         await close();
       }

@@ -17,6 +17,7 @@ import { findCheapestFuel, findFuelStation } from "./fuel.js";
 import { findChargingStation } from "./charging.js";
 import { findHydrogenStation } from "./hydrogen.js";
 import { facilitiesText } from "./facilities.js";
+import { stationPageText } from "./station-page.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
 import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
@@ -544,10 +545,7 @@ const describeStation: Handler = async (args, ctx) => {
     ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id }),
     n > 0 ? ctx.api.get<T.Board>("listStationDepartures", { stationId: station.id, limit: n }) : Promise.resolve(null),
   ]);
-  const lines = [`${station.name} · ${station.location.lat.toFixed(5)}, ${station.location.lon.toFixed(5)}`];
-  lines.push(L(language, `Aufzüge/Rolltreppen: ${fac.data.counts.active} in Betrieb, ${fac.data.counts.inactive} außer Betrieb.`, `Lifts/escalators: ${fac.data.counts.active} working, ${fac.data.counts.inactive} out of service.`));
-  if (board !== null) lines.push(...board.data.departures.map((d) => departureLine(d, language)));
-  return toolResult(lines.join("\n"), [stations.meta, fac.meta, ...(board === null ? [] : [board.meta])], language);
+  return toolResult(stationPageText(language, station, fac, board), [stations.meta, fac.meta, ...(board === null ? [] : [board.meta])], language);
 };
 
 const LAT_LON = /^-?\d{1,2}(\.\d+)?,\s*-?\d{1,3}(\.\d+)?$/u;

@@ -84,7 +84,7 @@ export type Named = { name?: string | null; code?: string | null } | null;
 export type LowEmissionZone = { verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null };
 export type LocationData = { address: Record<string, unknown> | null; municipality: Named; district: Named; state: Named; lowEmissionZone: LowEmissionZone | null };
 /** Station */
-export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; eva: string | null; evaNumbers: string[]; distanceM?: number | null };
+export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; eva: string | null; evaNumbers: string[]; distanceM?: number | null; districtCode?: string | null };
 /** Board */
 export type Departure = {
   line: string | null; category: string | null; destination: string | null; plannedAt: string; expectedAt: string | null; delayMin: number | null;

@@ -1213,10 +1213,22 @@ describe("stations", () => {
     }
   });
 
+  it("describe_station lists the lifts out of service first, then by kind and track, a unit without a place said so", async () => {
+    const f = (id: string, kind: string, position: string | null, state: string) => ({ id, kind, position, state, sourceFamily: "fasta" });
+    serve("listStationFacilities", { station: { name: "Schömpingbach Hbf" }, counts: { active: 2, inactive: 1, unknown: 1 },
+      facilities: [f("1", "elevator", "zu Gleis 2", "active"), f("2", "escalator", "Westseite", "unknown"), f("3", "elevator", "zu Gleis 1", "active"), f("4", "escalator", "zu Gleis 9", "inactive")] });
+    const text = body(await call("describe_station", { station: "Schömpingbach Hbf", departures: 0, language: "en" })).split("\n");
+    expect(text.slice(4, 8)).toEqual(["- Escalator (Platform 9): out of service", "- Escalator (no location given): state unknown", "- Lift (Platform 1): in service", "- Lift (Platform 2): in service"]);
+  });
+
   it("describe_station with no departures asked reads no board", async () => {
     const r = await call("describe_station", { station: "Schömpingbach Hbf", departures: 0, language: "en" });
     expect(ops().sort()).toEqual(["listStationFacilities", "listStations"]);
-    expect(body(r)).toBe("Schömpingbach Hbf · 48.38815, 7.51821\nLifts/escalators: 0 working, 0 out of service.");
+    expect(body(r)).toBe([
+      "Schömpingbach Hbf", "Schleswig-Holstein · EVA 8001001", "",
+      "Lifts and escalators (As of 2026-03-29 14:00):", "- Escalator (Platform 1): state unknown", "- Escalator (Platform 2): state unknown", "",
+      "Parking and charging:", "- Car parks and charging points nearby: find_parking or find_charging_station with lat 48.38815, lon 7.51821.",
+    ].join("\n"));
     calls.length = 0;
     await call("describe_station", { station: "Schömpingbach Hbf", departures: 2, language: "en" });
     expect(query("listStationDepartures")).toEqual([{ limit: "2", lang: "en" }]);

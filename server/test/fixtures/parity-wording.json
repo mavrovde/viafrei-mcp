@@ -1614,6 +1614,80 @@
       },
       "isError": false,
       "body": "DB's lift and escalator data lists neither a lift nor an escalator for Leipzig Hbf. Whether the station has equipment DB does not list, I cannot tell from this."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Essen Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Essen Hbf — Bahnhofsseite: https://viafrei.de/de/station/essen-hbf\nAm Hauptbahnhof 5, NNNNN Essen · Nordrhein-Westfalen · Bahnhofskategorie 1 · EVA 8000098\n\nBahn-Ampel: Gelb — Sicht eingeschränkt: Echtzeitdaten möglicherweise veraltet (Stand HH:MM)\n\nAufzüge und Fahrtreppen (Stand HH:MM):\n- Fahrtreppe zu Gleis 1/2: Zustand unbekannt\n- Fahrtreppe zu Gleis 3/4 (S-Bahn): Zustand unbekannt\n\nParken und Laden:\n- Parkhäuser und Ladesäulen in der Nähe: find_parking bzw. find_charging_station mit lat 51.NNNNN, lon 6.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hamburg Hbf — Bahnhofsseite: https://viafrei.de/de/station/hamburg-hbf\nHachmannplatz 16, NNNNN Hamburg · Hamburg · Bahnhofskategorie 1 · EVA 8002549\n\nBahn-Ampel: Gelb — Sicht eingeschränkt: Echtzeitdaten möglicherweise veraltet (Stand HH:MM)\n\nAufzüge und Fahrtreppen (Stand HH:MM):\n- Aufzug zu Gleis 5/6: Zustand unbekannt\n- Aufzug zu Gleis 7/8: Zustand unbekannt\n- Fahrtreppe zu Gleis 11/12: Zustand unbekannt\n- Fahrtreppe Zugang Wandelhalle: Zustand unbekannt\n\nParken und Laden:\n- Parkhäuser und Ladesäulen in der Nähe: find_parking bzw. find_charging_station mit lat 53.NNNNN, lon 10.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "departures": 0,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Frankfurt (Main) Hbf — Bahnhofsseite: https://viafrei.de/de/station/frankfurt-main-hbf\nAm Hauptbahnhof 1, NNNNN Frankfurt am Main · Hessen · Bahnhofskategorie 1 · EVA 8000105\n\nBahn-Ampel: Gelb — Sicht eingeschränkt: Echtzeitdaten möglicherweise veraltet (Stand HH:MM)\n\nParken und Laden:\n- Parkhäuser und Ladesäulen in der Nähe: find_parking bzw. find_charging_station mit lat 50.NNNNN, lon 8.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Berlin Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Berlin Hbf — Bahnhofsseite: https://viafrei.de/de/station/berlin-hbf\nEuropaplatz 1, NNNNN Berlin · Berlin · Bahnhofskategorie 1 · EVA 8011160\n\nBahn-Ampel: Gelb — Sicht eingeschränkt: Echtzeitdaten möglicherweise veraltet (Stand HH:MM)\n\nParken und Laden:\n- Parkhäuser und Ladesäulen in der Nähe: find_parking bzw. find_charging_station mit lat 52.NNNNN, lon 13.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Essen Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Essen Hbf — Station page: https://viafrei.de/en/station/essen-hbf\nAm Hauptbahnhof 5, NNNNN Essen · North Rhine-Westphalia · station category 1 (Bahnhofskategorie) · EVA 8000098\n\nRail lamp: Amber — Limited view: real-time data may be out of date (As of HH:MM)\n\nLifts and escalators (As of HH:MM):\n- Escalator (Platform 1/2): state unknown\n- Escalator (Platform 3/4): state unknown\n\nParking and charging:\n- Car parks and charging points nearby: find_parking or find_charging_station with lat 51.NNNNN, lon 6.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "departures": 0,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Frankfurt (Main) Hbf — Station page: https://viafrei.de/en/station/frankfurt-main-hbf\nAm Hauptbahnhof 1, NNNNN Frankfurt am Main · Hesse · station category 1 (Bahnhofskategorie) · EVA 8000105\n\nRail lamp: Amber — Limited view: real-time data may be out of date (As of HH:MM)\n\nParking and charging:\n- Car parks and charging points nearby: find_parking or find_charging_station with lat 50.NNNNN, lon 8.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hamburg Hbf — Station page: https://viafrei.de/en/station/hamburg-hbf\nHachmannplatz 16, NNNNN Hamburg · Hamburg · station category 1 (Bahnhofskategorie) · EVA 8002549\n\nRail lamp: Amber — Limited view: real-time data may be out of date (As of HH:MM)\n\nLifts and escalators (As of HH:MM):\n- Lift (Platform 5/6): state unknown\n- Lift (Platform 7/8): state unknown\n- Escalator (Platform 11/12): state unknown\n- Escalator (no location given): state unknown\n\nParking and charging:\n- Car parks and charging points nearby: find_parking or find_charging_station with lat 53.NNNNN, lon 10.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Berlin Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Berlin Hbf — Station page: https://viafrei.de/en/station/berlin-hbf\nEuropaplatz 1, NNNNN Berlin · Berlin · station category 1 (Bahnhofskategorie) · EVA 8011160\n\nRail lamp: Amber — Limited view: real-time data may be out of date (As of HH:MM)\n\nParking and charging:\n- Car parks and charging points nearby: find_parking or find_charging_station with lat 52.NNNNN, lon 13.NNNNN."
     }
   ]
 }

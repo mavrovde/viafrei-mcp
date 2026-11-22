@@ -1,4 +1,13 @@
-Schömpingbach Hbf · 48.38815, 7.51821
-Aufzüge/Rolltreppen: 0 in Betrieb, 0 außer Betrieb.
-- 08:05 S1 → Flughafen · Gl. 3
-- 08:05 S1 → Flughafen · +4 · Gl. 3!
+Schömpingbach Hbf
+Schleswig-Holstein · EVA 8001001
+
+Aufzüge und Fahrtreppen (Stand 29.03. 14:00):
+- Fahrtreppe zu Gleis 1: Zustand unbekannt
+- Fahrtreppe zu Gleis 2: Zustand unbekannt
+
+Abfahrten (Stand 29.03. 14:00):
+- 08:05 S1 → Flughafen, Gleis 3: nach Fahrplan
+- 08:05 S1 → Flughafen, Gleis 3: +4 min
+
+Parken und Laden:
+- Parkhäuser und Ladesäulen in der Nähe: find_parking bzw. find_charging_station mit lat 48.38815, lon 7.51821.
