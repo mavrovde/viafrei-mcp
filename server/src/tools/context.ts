@@ -1,7 +1,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { ApiClient, LatLon } from "../api/client.js";
 import { atParam } from "../api/client.js";
-import type { PlaceItem } from "../api/types.js";
+import type { PlaceItem, PlacesCoverageData } from "../api/types.js";
 import { creditPlace, toolError, type Language } from "../presentation.js";
 import type { ConsentOutcome } from "../sid-consent.js";
 import { PLACE_WORDS } from "./place-words.js";
@@ -85,6 +85,17 @@ function placeUnknown(ctx: ToolContext, q: string): CallToolResult {
   return { ...toolError(unknown[ctx.language](q)), _meta: { errorCode: "not_found" } };
 }
 
+/** Verbatim from today's server (geo/place.ts HOUSE_NUMBER_COPY). */
+const HOUSE_NUMBER_COPY = {
+  de: "Ich finde Orte, Haltestellen und Autobahnen — keine Hausnummern. Bitte den Ort oder die Haltestelle nennen.",
+  en: "I can find places, stations and motorways, not house numbers. Please name the place or the station.",
+} as const;
+
+/** "Hauptstraße 12, Fulda", "Marienplatz 8": a word, then a number of up to four digits; never a motorway ("A 7"). */
+export function looksLikeHouseNumber(query: string): boolean {
+  return /[a-zäöüß.]\s*\d{1,4}\s*[a-z]?\s*(,|$)/iu.test(query.trim()) && !/^\s*[ab]\s*\d{1,3}\s*$/iu.test(query.trim());
+}
+
 /** The position a tool asks about: lat/lon as given, else the place name resolved through the API's place search. */
 export async function position(args: Args, ctx: ToolContext, placeKey = "place"): Promise<Position | CallToolResult> {
   const lat = num(args["lat"]);
@@ -92,6 +103,11 @@ export async function position(args: Args, ctx: ToolContext, placeKey = "place")
   if (lat !== undefined && lon !== undefined) return { at: { lat, lon }, label: null };
   const q = ctx.tool !== undefined && PLACE_WORDS[ctx.tool]?.ignorePlace === true ? undefined : str(args[placeKey]);
   if (q === undefined) return placeMissing(ctx);
+  // Today's resolver (geo/place.ts looksLikeHouseNumber) refuses a street and house number in one sentence where
+  // no address data is held, rather than calling the place unknown; where addresses are loaded, the search goes on.
+  if (looksLikeHouseNumber(q) && (await ctx.api.get<PlacesCoverageData>("getPlacesCoverage", {})).data.addresses.length === 0) {
+    return toolError(HOUSE_NUMBER_COPY[ctx.language]);
+  }
   const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: 1 });
   const first = found.data[0];
   if (first === undefined) return (await townCentre(q, ctx)) ?? placeUnknown(ctx, q);

@@ -11,6 +11,12 @@ import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
+import { findPlace } from "./find-place.js";
+import { findCheapestFuel, findFuelStation } from "./fuel.js";
+import { findChargingStation } from "./charging.js";
+import { findHydrogenStation } from "./hydrogen.js";
+import { facilitiesText } from "./facilities.js";
+import { stationPageText } from "./station-page.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
 import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
@@ -262,63 +268,6 @@ const findRoadworksAhead: Handler = async (args, ctx) => {
   return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
 };
 
-const fuelLine = (s: T.FuelStation, fuel: string | undefined, language: Language): string => {
-  const prices = s.prices.filter((p) => fuel === undefined || p.fuel === fuel).map((p) => `${p.fuel.toUpperCase()} ${eur(p.priceEur, language)}`).join(", ");
-  return `- ${s.name}${s.brand ? ` (${s.brand})` : ""} · ${km(s.distanceM, language)} · ${prices || "–"}${s.openingState === "closed" ? L(language, " · geschlossen", " · closed") : ""}`;
-};
-
-const fuelSearch = (sortDefault: "price" | "distance"): Handler => async (args, ctx) => {
-  const { language } = ctx;
-  const pos = await position(args, ctx);
-  if (isResult(pos)) return pos;
-  const fuel = str(args["fuel"]) ?? (sortDefault === "price" ? "e10" : undefined);
-  const r = await ctx.api.get<T.FuelStation[]>("listFuelOptions", {
-    at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), fuel, brand: str(args["brand"]), name: str(args["name"]),
-    open_now: bool(args["open_now"]), open_at: str(args["open_at"]), whole_day: bool(args["whole_day"]), sort: str(args["sort"]) ?? sortDefault, limit: num(args["limit"]),
-  });
-  if (r.data.length === 0) return none(language, [r.meta], L(language, "Tankstellen", "filling stations"));
-  return toolResult(r.data.map((s) => fuelLine(s, fuel, language)).join("\n"), [r.meta], language);
-};
-
-/** find_charging_station's default and largest radius (today's schema). */
-const CHARGING_RADIUS_KM = 10;
-const CHARGING_MAX_RADIUS_KM = 25;
-
-const findChargingStation: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  const pos = await position(args, ctx);
-  if (isResult(pos)) return pos;
-  // Today's default radius, always sent and said: the API's own default is not the one the answer names.
-  const radiusKm = num(args["radius_km"]) ?? CHARGING_RADIUS_KM;
-  const r = await ctx.api.get<T.ChargingSite[]>("listChargingOptions", {
-    at: atParam(pos.at), radius_m: radiusKm * 1000, connector: str(args["connector"]), min_kw: num(args["min_power_kw"]), max_kw: num(args["max_power_kw"]),
-    operator: str(args["operator"]), conditions: strs(args["conditions"]), only_available: bool(args["only_available"]), limit: num(args["limit"]),
-  });
-  if (r.data.length === 0) {
-    const filtered = ["connector", "min_power_kw", "max_power_kw", "operator", "conditions", "only_available"].some((k) => args[k] !== undefined && args[k] !== false);
-    // meta.inRadius: the sites of the circle with every filter dropped. None at all is said as today says it,
-    // whatever the filters; a filter that dropped some keeps the short answer until its own wording is ported.
-    const inRadius = (r.meta as { inRadius?: number }).inRadius;
-    if (filtered && inRadius !== 0) return none(language, [r.meta], L(language, "Ladestationen", "charging stations"));
-    const around = aroundText(pos.label, pos.at);
-    return toolResult(L(language,
-      `Im Umkreis von ${radiusKm} km um ${around} kenne ich keine Ladestandorte. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis ${CHARGING_MAX_RADIUS_KM} km) hilft oft.`,
-      `I hold no charging sites within ${radiusKm} km of ${around}. Coverage is nationwide but not complete — a larger radius (up to ${CHARGING_MAX_RADIUS_KM} km) often helps.`), [r.meta], language);
-  }
-  const lines = r.data.map((s) => `- ${s.name ?? s.operator ?? s.id} · ${km(s.distanceM, language)} · ${s.summary.chargePoints} ${L(language, "Ladepunkte", "points")}${s.summary.maxPowerKw === null ? "" : `, max ${s.summary.maxPowerKw} kW`}${s.summary.availableNow === null ? "" : L(language, `, ${s.summary.availableNow} frei`, `, ${s.summary.availableNow} free`)}`);
-  return toolResult(lines.join("\n"), [r.meta], language);
-};
-
-const findHydrogenStation: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  const pos = await position(args, ctx);
-  if (isResult(pos)) return pos;
-  const r = await ctx.api.get<T.HydrogenData>("listHydrogenOptions", { at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), vehicle: str(args["vehicle"]), limit: num(args["limit"]) });
-  const rows = r.data.stations.length > 0 ? r.data.stations : r.data.nearest === null ? [] : [r.data.nearest];
-  if (rows.length === 0) return none(language, [r.meta], L(language, "Wasserstofftankstellen", "hydrogen stations"));
-  return toolResult(rows.map((s) => `- ${s.name ?? s.operator ?? s.brand ?? "H2"} · ${km(s.distanceM, language)}`).join("\n"), [r.meta], language);
-};
-
 async function parkingRead(ctx: ToolContext, op: "listParkingOptions" | "listMotorwayParking", params: Record<string, unknown>): Promise<{ r: Envelope<T.ParkingSite[]>; conditionNote?: string }> {
   const first = await ctx.api.get<T.ParkingSite[]>(op, params as never);
   const terms = first.meta.terms ?? [];
@@ -421,22 +370,6 @@ const findParking: Handler = async (args, ctx) => {
   return toolResult(lines.join("\n"), [r.meta], language, read.conditionNote === undefined ? {} : { conditionNote: read.conditionNote });
 };
 
-const PLACE_KIND: Record<string, string> = { city: "municipality", district: "district", admin: "region", station: "station_area", stop: "station_area", motorway: "motorway", junction: "junction" };
-
-const findPlace: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  const kindArg = str(args["kind"]);
-  let at: string | undefined;
-  if (str(args["near"]) !== undefined || num(args["lat"]) !== undefined) {
-    const pos = await position(args, ctx, "near");
-    if (isResult(pos)) return pos;
-    at = atParam(pos.at);
-  }
-  const r = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: str(args["query"]), kind: kindArg === undefined ? undefined : PLACE_KIND[kindArg], at, radius_m: radiusM(args["radius_km"]), limit: num(args["limit"]) });
-  if (r.data.length === 0) return none(language, [r.meta], L(language, "Orte", "places"));
-  return toolResult(r.data.map((p) => `- ${p.name} (${p.kind}) · ${p.location.lat.toFixed(5)}, ${p.location.lon.toFixed(5)}`).join("\n"), [r.meta], language);
-};
-
 const findPoi: Handler = async (args, ctx) => {
   const { language } = ctx;
   let at: string | undefined;
@@ -506,6 +439,29 @@ const departureLine = (d: T.Departure, language: Language): string => {
   return `- ${berlinTime(d.plannedAt)} ${d.line ?? d.category ?? d.mode} → ${d.destination ?? "?"}${delay}${platform}`;
 };
 
+/**
+ * The town a stop's name carries ("München, Marienplatz", "Hauptbahnhof München", "Köln Nippes"), as today's
+ * server reads it (main get_departures.ts, the town out of the question): a part before a comma, else a word,
+ * that the place search knows as a municipality of exactly that name. undefined when none is one.
+ */
+/** Verbatim from today's server (get_departures.ts unknownInTown). */
+const STOP_IN_TOWN: Record<Language, (q: string, town: string) => string> = {
+  de: (q, town) => `In ${town} finde ich keine Haltestelle "${q}". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht.`,
+  en: (q, town) => `I do not know a stop called "${q}" in ${town}. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town.`,
+};
+
+async function townIn(q: string, ctx: ToolContext): Promise<string | undefined> {
+  const comma = q.split(",").map((p) => p.trim()).filter((p) => p !== "");
+  const words = q.split(/[\s,]+/u).filter((w) => w.length >= 3 && !/\d/u.test(w));
+  // At most four reads, on the not-found path only.
+  for (const candidate of [...new Set([...(comma.length > 1 ? comma : []), ...words])].slice(0, 4)) {
+    const r = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: candidate, kind: "municipality", limit: 1 });
+    const p = r.data[0];
+    if (p !== undefined && p.name.toLocaleLowerCase("de") === candidate.toLocaleLowerCase("de")) return p.name;
+  }
+  return undefined;
+}
+
 const getDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
   const given = (k: string): boolean => str(args[k]) !== undefined;
@@ -522,7 +478,10 @@ const getDepartures: Handler = async (args, ctx) => {
   const station = stations.data[0];
   if (station === undefined) {
     const asked = str(args["stop"]) ?? str(args["stop_id"]);
-    return asked === undefined ? none(language, [stations.meta], L(language, "Haltestellen", "stops")) : NOT_KNOWN.stop(asked, language);
+    if (asked === undefined) return none(language, [stations.meta], L(language, "Haltestellen", "stops"));
+    // Today's server reads a town out of the stop's name and says the stop is not in THAT town.
+    const town = str(args["stop"]) === undefined ? undefined : await townIn(asked, ctx);
+    return town === undefined ? NOT_KNOWN.stop(asked, language) : toolError(STOP_IN_TOWN[language](asked, town));
   }
   const r = await ctx.api.get<T.Board>("listStationDepartures", { stationId: station.id, from: str(args["when"]), duration_min: num(args["duration_min"]), modes: strs(args["modes"]), limit: num(args["limit"]) });
   const head = `${r.data.station.name}:`;
@@ -536,6 +495,9 @@ const NEED_STATION = (language: Language): CallToolResult => toolError(L(languag
   'Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {"station": "Hannover Hbf"}.'));
 const noStation = (args: Args): boolean => str(args["station"]) === undefined && str(args["eva_no"]) === undefined;
 
+/** check_station_facilities' default list length (today's schema). */
+const FACILITIES_LIMIT = 20;
+
 const checkStationFacilities: Handler = async (args, ctx) => {
   const { language } = ctx;
   if (noStation(args)) return NEED_STATION(language);
@@ -546,10 +508,15 @@ const checkStationFacilities: Handler = async (args, ctx) => {
     return asked === undefined ? none(language, [stations.meta], L(language, "Bahnhöfe", "stations")) : NOT_KNOWN.facilityStation(asked, language);
   }
   const facility = str(args["facility"]);
-  const r = await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id, kind: facility === "any" ? undefined : facility, limit: num(args["limit"]) });
+  const kind = facility === "any" ? undefined : facility;
+  // Today's default list length, sent so the counts and the list agree on it.
+  const limit = num(args["limit"]) ?? FACILITIES_LIMIT;
+  const r = await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id, kind, limit });
   const d = r.data;
-  const head = L(language, `${d.station.name}: ${d.counts.active} in Betrieb, ${d.counts.inactive} außer Betrieb, ${d.counts.unknown} unbekannt.`, `${d.station.name}: ${d.counts.active} working, ${d.counts.inactive} out of service, ${d.counts.unknown} unknown.`);
-  return toolResult([head, ...d.facilities.filter((f) => f.state !== "active").map((f) => `- ${f.kind}${f.position === null ? "" : ` ${f.position}`}: ${f.state}`)].join("\n"), [stations.meta, r.meta], language);
+  // None of the asked kind: one more read, on this path only, says what DB does list ("nur 6 Fahrtreppen").
+  const empty = d.counts.active + d.counts.inactive + d.counts.unknown === 0;
+  const others = kind !== undefined && empty ? await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id, limit: 50 }) : null;
+  return toolResult(facilitiesText(language, d, kind, limit, others?.data.facilities ?? []), [stations.meta, r.meta, ...(others === null ? [] : [others.meta])], language);
 };
 
 const describeStation: Handler = async (args, ctx) => {
@@ -568,10 +535,7 @@ const describeStation: Handler = async (args, ctx) => {
     ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id }),
     n > 0 ? ctx.api.get<T.Board>("listStationDepartures", { stationId: station.id, limit: n }) : Promise.resolve(null),
   ]);
-  const lines = [`${station.name} · ${station.location.lat.toFixed(5)}, ${station.location.lon.toFixed(5)}`];
-  lines.push(L(language, `Aufzüge/Rolltreppen: ${fac.data.counts.active} in Betrieb, ${fac.data.counts.inactive} außer Betrieb.`, `Lifts/escalators: ${fac.data.counts.active} working, ${fac.data.counts.inactive} out of service.`));
-  if (board !== null) lines.push(...board.data.departures.map((d) => departureLine(d, language)));
-  return toolResult(lines.join("\n"), [stations.meta, fac.meta, ...(board === null ? [] : [board.meta])], language);
+  return toolResult(stationPageText(language, station, fac, board), [stations.meta, fac.meta, ...(board === null ? [] : [board.meta])], language);
 };
 
 const LAT_LON = /^-?\d{1,2}(\.\d+)?,\s*-?\d{1,3}(\.\d+)?$/u;
@@ -626,26 +590,16 @@ const WEATHER_NO_CELL: Record<Language, (label: string) => string> = {
   en: (label) => `I know no DWD warn cell for ${label} yet — no warning has been held there so far — so I am not opening a weather watch that might never fire. Name a larger town nearby.`,
 };
 
-/** Verbatim from today's server (get_departures.ts unknownInTown, watch_situation.ts notOpened). */
-const STOP_IN_TOWN: Record<Language, (q: string, town: string) => string> = {
-  de: (q, town) => `In ${town} finde ich keine Haltestelle "${q}". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht.`,
-  en: (q, town) => `I do not know a stop called "${q}" in ${town}. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town.`,
-};
+/**
+ * A stop name the stop search does not hold, in watch_situation: today's server reads it with get_departures'
+ * resolver (watch_situation.ts stationKey), so the town in the name is found by the same rule (townIn), and the
+ * refusal is get_departures' own sentence followed by "no watch was opened".
+ */
 const NOT_OPENED: Record<Language, string> = { de: "Es wurde keine Beobachtung geöffnet.", en: "No watch was opened." };
 
-/**
- * A stop name the stop search does not hold. Today's server reads the name's leading words as a town (the
- * longest first, at most three, never the whole name) and, where one is a place, says no such stop is in it;
- * otherwise it says it does not know the stop. Either way no watch is opened.
- */
 async function stopNotFound(key: string, ctx: ToolContext): Promise<CallToolResult> {
-  const words = key.split(/\s+/u);
-  for (let n = Math.min(words.length - 1, 3); n >= 1; n--) {
-    const found = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: words.slice(0, n).join(" "), limit: 1 });
-    const town = found.data[0];
-    if (town !== undefined) return toolError(`${STOP_IN_TOWN[ctx.language](key, town.name)} ${NOT_OPENED[ctx.language]}`);
-  }
-  return toolError(`${stopUnknown(key, ctx.language)} ${NOT_OPENED[ctx.language]}`);
+  const town = await townIn(key, ctx);
+  return toolError(`${town === undefined ? stopUnknown(key, ctx.language) : STOP_IN_TOWN[ctx.language](key, town)} ${NOT_OPENED[ctx.language]}`);
 }
 
 /** watchTarget, with what a station or a region named in words became, for the answer to say it. */
@@ -708,8 +662,8 @@ const stopWatch = stopWatchHandler(watchTarget);
 
 export const HANDLERS: Readonly<Record<string, Handler>> = {
   check_autobahn_traffic: checkAutobahnTraffic,
-  find_cheapest_fuel: fuelSearch("price"),
-  find_fuel_station: fuelSearch("distance"),
+  find_cheapest_fuel: findCheapestFuel,
+  find_fuel_station: findFuelStation,
   find_parking: findParking,
   check_road_status: checkRoadStatus,
   find_roadworks_ahead: findRoadworksAhead,

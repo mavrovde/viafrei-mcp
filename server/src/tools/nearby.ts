@@ -7,6 +7,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type * as T from "../api/types.js";
 import { toolResult, type Language } from "../presentation.js";
 import { atParam, isResult, num, position, strs, type Handler } from "./context.js";
+import { fuelAreaText, fuelCoverage, readOnlyAreaWording } from "./fuel.js";
 
 export const DEFAULT_RADIUS_KM = 5;
 const HOUR_MS = 60 * 60 * 1000;
@@ -95,7 +96,12 @@ export const findNearby: Handler = async (args, ctx): Promise<CallToolResult> =>
     const label = LABEL[cat]?.[language] ?? cat;
     if (cat === "fuel") {
       const rows = d.fuel ?? [];
-      if (rows.length === 0) { lines.push(`- ${label}: ${c.noPrice}`); continue; }
+      if (rows.length === 0) {
+        // The area's state, in the sentence find_cheapest_fuel uses (#517, fuel-area.ts), for the E5 line.
+        const area = readOnlyAreaWording(await fuelCoverage(ctx, pos.at, Math.round(radiusKm * 1000), "e5"), radiusKm);
+        lines.push(`- ${label}: ${area === undefined ? c.noPrice : `${c.noPrice} — ${fuelAreaText(language, area)}`}`);
+        continue;
+      }
       lines.push(`- ${label}, Super E5: ${list(rows, (s) => {
         const p = s.prices[0];
         const age = p === undefined || now.getTime() - new Date(p.reportedAt).getTime() <= HOUR_MS ? "" : c.priceFrom(clock(p.reportedAt, language, now), p.current);

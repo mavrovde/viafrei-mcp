@@ -39,7 +39,7 @@ describe("tools answer from the API contract's examples", () => {
         // A newly opened watch shows no provider data, so it credits the watch service alone, as today's
         // server does (attribution names what answered); each report it later gives names its own source.
         if (c.tool === "watch_situation") {
-          expect(meta.attribution).toBe(WATCH_CREDIT.text);
+          expect(meta.attribution).toBe(`${WATCH_CREDIT.text} (${WATCH_CREDIT.termsUrl})`);
           for (const a of credited) expect(textOf(r)).not.toContain(a.text);
         } else {
           // A road answer credits a weather family only for a weather reason in the lamp it shows, in the
@@ -75,7 +75,7 @@ describe("special cases", () => {
     mockServer.use(handlerFor("listFuelOptions", () => HttpResponse.json({ ...body, data: [] })));
     const { client, close } = await connect();
     const r = await client.callTool({ name: "find_cheapest_fuel", arguments: { ...at, language: "en" } });
-    expect(textOf(r)).toContain("No filling stations found.");
+    expect(textOf(r)).toContain("Within 5 km of 52.520, 13.405 I know 1 filling station, but none with a Super E10 price.");
     expect((r._meta as { attribution: string }).attribution.length).toBeGreaterThan(0);
     await close();
   });

@@ -12,13 +12,22 @@ export type AddressData = { addresses: Address[] };
 /** FuelStation */
 export type FuelPrice = { fuel: string; priceEur: number; reportedAt: string; current: boolean };
 export type FuelStation = { id: string; name: string; brand: string | null; location: LatLon; distanceM?: number; openingState: string; prices: FuelPrice[] };
+/** FuelStationData (getFuelStation): one station with its postal address. */
+export type FuelAddress = { street: string | null; number: string | null; postcode: string | null; place: string | null };
+export type FuelStationData = { id: string; name: string | null; brand: string | null; location: LatLon; address: FuelAddress | null; aroundTheClock: boolean; openingState: string; prices: FuelPrice[] };
 /** ChargingSite */
 export type ChargingSite = {
   id: string; name: string | null; operator: string | null; location: LatLon; distanceM?: number; access: string;
   summary: { chargePoints: number; availableNow: number | null; maxPowerKw: number | null };
+  /** Each point and its last report (null: none published, or one that says nothing). */
+  chargePoints?: { id: string; current: string | null; maxPowerKw: number | null; availability: { state: string; observedAt: string } | null }[];
 };
 /** HydrogenData */
-export type HydrogenStation = { name: string | null; operator: string | null; brand: string | null; distanceM: number; location: LatLon };
+export type HydrogenStation = {
+  name: string | null; operator: string | null; brand: string | null; distanceM: number; location: LatLon;
+  /** The publisher's address, refill solutions and opening periods, verbatim; null when not published. */
+  address?: unknown; refill?: unknown; opening?: unknown; providerUpdatedAt: string | null;
+};
 export type HydrogenData = { stations: HydrogenStation[]; nearest: HydrogenStation | null };
 /** ParkingSite */
 export type ParkingSite = {
@@ -84,7 +93,7 @@ export type LocationData = {
   lowEmissionZone: LowEmissionZone | null; mayLieOutsideGermany: boolean;
 };
 /** Station */
-export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; eva: string | null; evaNumbers: string[]; distanceM?: number | null };
+export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; eva: string | null; evaNumbers: string[]; distanceM?: number | null; districtCode?: string | null };
 /** Board */
 export type Departure = {
   line: string | null; category: string | null; destination: string | null; plannedAt: string; expectedAt: string | null; delayMin: number | null;
