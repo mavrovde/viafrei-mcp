@@ -8,7 +8,7 @@ import type { DataMeta, Envelope } from "../api/client.js";
 import type * as T from "../api/types.js";
 import { berlinDateTime, berlinTime, eur, km, notAvailable, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
-import { atParam, bool, isResult, num, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
+import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
 import { getTrainDepartures } from "./trains.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
@@ -330,6 +330,7 @@ async function areaCode(args: Args, ctx: ToolContext): Promise<{ code: string | 
 const checkTransitDisruption: Handler = async (args, ctx) => {
   const { language } = ctx;
   const line = str(args["line"]);
+  if (line === undefined && str(args["region"]) === undefined && (num(args["lat"]) === undefined || num(args["lon"]) === undefined)) return placeMissing(ctx);
   const area = await areaCode(args, ctx);
   if (area.code === undefined && line === undefined) return toolResult(L(language, "Diese Region kenne ich nicht.", "I do not know this region."), area.metas, language);
   const r = await ctx.api.get<T.DisruptionData>("listTransitDisruptions", { area: area.code, line, window_min: num(args["window_min"]) });
@@ -363,6 +364,8 @@ const departureLine = (d: T.Departure, language: Language): string => {
 
 const getDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
+  const given = (k: string): boolean => str(args[k]) !== undefined;
+  if (!given("stop") && !given("stop_id") && !given("place") && (num(args["lat"]) === undefined || num(args["lon"]) === undefined)) return placeMissing(ctx);
   let stations = await stationOf(args, ctx);
   if (stations.data.length === 0 && (str(args["place"]) !== undefined || num(args["lat"]) !== undefined)) {
     const pos = await position(args, ctx);

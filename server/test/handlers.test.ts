@@ -115,10 +115,13 @@ describe("check_autobahn_traffic", () => {
   });
 
   for (const language of LANGS) {
-    it(`no road, no Land, no position (${language}): asks for a place, asks the API nothing`, async () => {
+    it(`no road, no Land, no position (${language}): asks for a road or a Land in today's words, asks the API nothing`, async () => {
       const r = await call("check_autobahn_traffic", { language });
-      expect(r.isError).toBe(true);
-      expect(textOf(r)).toBe(language === "de" ? "Bitte einen Ort (place) oder Koordinaten (lat und lon) angeben." : "Please give a place (place) or coordinates (lat and lon).");
+      expect(r).toEqual({
+        content: [{ type: "text", text: language === "de" ? 'Bitte roads (Autobahnnummern, z. B. ["A9"]) oder land (ein Bundesland, z. B. "bayern") angeben. Hat die Person nichts davon genannt, bitte fragen, welche Autobahn oder welches Bundesland; für den Verkehr in einer Stadt check_road_status. Zum Beispiel {"roads": ["A9"]} oder {"land": "bayern"}.' : 'Give roads (motorway numbers, e.g. ["A9"]) or land (one Bundesland, e.g. "bayern"). If the person named neither, ask which motorway or which Land; for a town\'s own traffic use check_road_status. For example {"roads": ["A9"]} or {"land": "bayern"}.' }],
+        isError: true,
+        _meta: { errorCode: "invalid_input", errorReason: "place_missing" },
+      });
       expect(calls).toHaveLength(0);
     });
   }
@@ -203,8 +206,11 @@ describe("find_roadworks_ahead", () => {
     it(`an unknown place (${language}) is named back`, async () => {
       serve("listPlaces", []);
       const r = await call("find_roadworks_ahead", { place: "Nirgendwo", language });
-      expect(r.isError).toBe(true);
-      expect(textOf(r)).toBe(language === "de" ? "Den Ort „Nirgendwo“ kenne ich nicht. Bitte genauer angeben oder Koordinaten nennen." : 'I do not know the place "Nirgendwo". Please be more specific or give coordinates.');
+      expect(r).toEqual({
+        content: [{ type: "text", text: language === "de" ? "„Nirgendwo“ habe ich als Ort nicht gefunden." : 'I could not find "Nirgendwo" as a place.' }],
+        isError: true,
+        _meta: { errorCode: "not_found" },
+      });
     });
   }
 });
@@ -640,9 +646,13 @@ describe("check_transit_disruption", () => {
     expect(body(r)).toBe("I do not know this region.");
     expect(meta(r)["sources"]).toEqual(["geonames", "osm"]);
   });
-  it("only a latitude: no position, no region", async () => {
+  it("only a latitude: no position, no region, so no place in today's words", async () => {
     const r = await call("check_transit_disruption", { lat: 52.5, language: "en" });
-    expect(body(r)).toBe("I do not know this region.");
+    expect(r).toEqual({
+      content: [{ type: "text", text: 'No place given. Ask the person where: a town, a postcode or their position. Then pass the town (or postcode and town, "36037 Fulda") as region, or their position as lat+lon — for example {"region": "Fulda"} or {"lat": 50.55, "lon": 9.68}.' }],
+      isError: true,
+      _meta: { errorCode: "invalid_input", errorReason: "place_missing" },
+    });
     expect(calls).toHaveLength(0);
   });
 });
@@ -684,7 +694,7 @@ describe("stations", () => {
       expect(meta(r)["sources"]).toEqual(["bkg_gvisys", "delfi_static"]);
     });
     it(`get_departures with an empty window (${language})`, async () => {
-      const r = await call("get_departures", { station: "Schömpingbach", language });
+      const r = await call("get_departures", { stop: "Schömpingbach", language });
       expect(body(r)).toBe(`Pienköckheim Nord: ${language === "de" ? "keine Abfahrten im Zeitfenster." : "no departures in the window."}`);
     });
     it(`get_departures, no such stop (${language})`, async () => {
@@ -821,5 +831,33 @@ describe("the credit footer and _meta of a tool answer", () => {
   it("the gap list names a tool, a case and the operation it needs, for each gap", () => {
     expect(GAPS.map((g) => g.tool)).toEqual(["*", "find_parking", "find_roadworks_ahead", "watch_situation"]);
     for (const g of GAPS) expect(g.case.length * g.needs.length).toBeGreaterThan(0);
+  });
+});
+
+describe("a missing or unknown place, in today's words per tool", () => {
+  it("weather (de) without a place and the fuel search (en) with an unknown one", async () => {
+    expect(await call("check_weather_warnings", { language: "de" })).toEqual({
+      content: [{ type: "text", text: 'Kein Ort angegeben. Bitte die Person fragen, wo: eine Stadt, eine Postleitzahl oder ihren Standort. Dann die Stadt (oder Postleitzahl und Stadt, "36037 Fulda") als place übergeben oder den Standort als lat+lon — zum Beispiel {"place": "Fulda"} oder {"lat": 50.55, "lon": 9.68}.' }],
+      isError: true,
+      _meta: { errorCode: "invalid_input", errorReason: "place_missing" },
+    });
+    serve("listPlaces", []);
+    expect(await call("find_cheapest_fuel", { place: "Nirgendwo", language: "en" })).toEqual({
+      content: [{ type: "text", text: 'I do not know "Nirgendwo". Name a town, a district or a stop — or pass lat/lon.' }],
+      isError: true,
+      _meta: { errorCode: "not_found" },
+    });
+  });
+
+  it("a region-only tool takes no place: check_autobahn_traffic with a place is asked for a road, the API not at all", async () => {
+    const r = await call("check_autobahn_traffic", { place: "Kassel", language: "en" });
+    expect(r._meta).toEqual({ errorCode: "invalid_input", errorReason: "place_missing" });
+    expect(calls).toHaveLength(0);
+  });
+
+  it("get_departures with nothing to go by asks for a stop, the API not at all", async () => {
+    const r = await call("get_departures", { language: "en" });
+    expect(textOf(r)).toBe('Give a stop name (free text) or a stop_id from an earlier result — or a place (or lat+lon) for the nearest stops around it. If the person named none, ask which stop, or where: a town or their position. For example {"stop": "Köln Hbf"} or {"place": "Fulda"}.');
+    expect(calls).toHaveLength(0);
   });
 });

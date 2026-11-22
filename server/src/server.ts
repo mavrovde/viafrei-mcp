@@ -61,6 +61,7 @@ export function createServer(deps: ServerDeps): McpServer {
     const refused = checkInput(name, args);
     if (refused !== null) return refused;
     const ctx: ToolContext = {
+      tool: name,
       api: deps.api.withLanguage(language),
       refreshWait: deps.refreshWait ?? REFRESH_WAIT,
       language,

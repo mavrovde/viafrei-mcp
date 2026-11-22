@@ -4,6 +4,7 @@ import { atParam } from "../api/client.js";
 import type { PlaceItem } from "../api/types.js";
 import { toolError, type Language } from "../presentation.js";
 import type { ConsentOutcome } from "../sid-consent.js";
+import { PLACE_WORDS } from "./place-words.js";
 import type { RefreshWait } from "./trains.js";
 
 /** The watches of one MCP session: the catalogue's integer ids mapped to the API's watch ids, in memory. */
@@ -31,6 +32,8 @@ export class SessionWatches {
 }
 
 export type ToolContext = {
+  /** The tool called: its own words for a missing or unknown place (place-words.ts). */
+  readonly tool?: string;
   readonly api: ApiClient;
   /** How long a train board waits for the API's live refresh to settle. */
   readonly refreshWait: RefreshWait;
@@ -60,16 +63,29 @@ const NO_PLACE: Record<Language, (q: string) => string> = {
   en: (q) => `I do not know the place "${q}". Please be more specific or give coordinates.`,
 };
 
+/** A missing place in the tool's own words, coded as today's server codes it. */
+export function placeMissing(ctx: ToolContext): CallToolResult {
+  const words = ctx.tool === undefined ? undefined : PLACE_WORDS[ctx.tool];
+  if (words === undefined) return toolError(NEED_PLACE[ctx.language]);
+  return { ...toolError(words.missing[ctx.language]), _meta: { errorCode: "invalid_input", errorReason: "place_missing" } };
+}
+
+function placeUnknown(ctx: ToolContext, q: string): CallToolResult {
+  const unknown = ctx.tool === undefined ? undefined : PLACE_WORDS[ctx.tool]?.unknown;
+  if (unknown === undefined) return toolError(NO_PLACE[ctx.language](q));
+  return { ...toolError(unknown[ctx.language](q)), _meta: { errorCode: "not_found" } };
+}
+
 /** The position a tool asks about: lat/lon as given, else the place name resolved through the API's place search. */
 export async function position(args: Args, ctx: ToolContext, placeKey = "place"): Promise<Position | CallToolResult> {
   const lat = num(args["lat"]);
   const lon = num(args["lon"]);
   if (lat !== undefined && lon !== undefined) return { at: { lat, lon }, label: null };
-  const q = str(args[placeKey]);
-  if (q === undefined) return toolError(NEED_PLACE[ctx.language]);
+  const q = ctx.tool !== undefined && PLACE_WORDS[ctx.tool]?.ignorePlace === true ? undefined : str(args[placeKey]);
+  if (q === undefined) return placeMissing(ctx);
   const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: 1 });
   const first = found.data[0];
-  if (first === undefined) return toolError(NO_PLACE[ctx.language](q));
+  if (first === undefined) return placeUnknown(ctx, q);
   return { at: first.location, label: first.name };
 }
 
