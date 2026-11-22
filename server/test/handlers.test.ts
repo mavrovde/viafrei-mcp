@@ -1236,6 +1236,37 @@ describe("watch_situation's answer: the condition said back, what a name became,
   });
 });
 
+describe("watch_situation on a charger named by a place: the nearest listed site that reports live", () => {
+  const site = (id: string, availableNow: number | null, distanceM = 2985) => ({ ...ex<Record<string, unknown>[]>("listChargingOptions")[0], id, name: `Site ${id}`, distanceM, summary: { chargePoints: 2, availableNow, maxPowerKw: 50 } });
+  it("skips a site with no live status, asks find_charging_station's defaults, says what the place became", async () => {
+    serve("listChargingOptions", [site("a", null, 500), site("b", 0, 2985)]);
+    serve("getWatch", { ...ex<Record<string, unknown>>("getWatch"), kind: "charger", key: "b", condition: {}, note: null });
+    const r = await call("watch_situation", { kind: "charger", key: "Leipzig", language: "de" });
+    expect(query("listChargingOptions")).toEqual([{ at: expect.any(String) as string, radius_m: "10000", limit: "5", lang: "de" }]);
+    expect(query("getWatch")[0]).toMatchObject({ kind: "charger", target: "b" });
+    expect(textOf(r).split("\n")[0]).toContain('Aus "Leipzig" aufgelöst: nächster Ladestandort mit Live-Belegung, Site b (3,0 km entfernt), Standort-ID b. ');
+  });
+  for (const [sites, reason, words] of [
+    [[], "no_site_near", "Im Umkreis von 10 km um "],
+    [[site("a", null)], "no_live_site", "meldet kein Ladestandort eine Live-Belegung"],
+  ] as const) {
+    it(`opens nothing when ${reason}`, async () => {
+      serve("listChargingOptions", [...sites]);
+      const r = await call("watch_situation", { kind: "charger", key: "Leipzig", language: "de" });
+      expect(textOf(r)).toContain(words);
+      expect(r.structuredContent).toMatchObject({ watchOpened: false, reason });
+      expect(r.isError).not.toBe(true);
+      expect(query("getWatch")).toEqual([]);
+    });
+  }
+  it("a site id is the key as given, with no search", async () => {
+    serve("getWatch", { ...ex<Record<string, unknown>>("getWatch"), kind: "charger", key: "afir_alpha:cs-01-0001", condition: {}, note: null });
+    await call("watch_situation", { kind: "charger", key: "afir_alpha:cs-01-0001", language: "en" });
+    expect(query("listChargingOptions")).toEqual([]);
+    expect(query("getWatch")[0]).toMatchObject({ target: "afir_alpha:cs-01-0001" });
+  });
+});
+
 describe("watch_situation: the target is the platform's key, resolved from the person's words", () => {
   const target = async (kind: string, key: string): Promise<string | undefined> => {
     calls.length = 0;

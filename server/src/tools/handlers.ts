@@ -10,7 +10,7 @@ import { berlinDateTime, berlinTime, creditPlace, eur, km, notAvailable, toolErr
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
-import { findNearby } from "./nearby.js";
+import { findNearby, kmText } from "./nearby.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
 import { findSpeedCameras } from "./speed-cameras.js";
@@ -514,6 +514,39 @@ export async function watchTarget(kind: string, key: string, ctx: ToolContext): 
   return isResult(r) ? r : r.target;
 }
 
+/** find_charging_station's defaults: the site a place's charger watch takes is one that list would show. */
+const CHARGER_RADIUS_KM = 10;
+const CHARGER_LIST = 5;
+
+/**
+ * A charger watch on a place waits on the nearest site find_charging_station lists that reports a live
+ * status: a site that never reports would make a watch that never fires, so none is opened then.
+ */
+async function chargerByPlace(key: string, ctx: ToolContext): Promise<{ target: string; resolved?: Resolved } | CallToolResult> {
+  const { language } = ctx;
+  const pos = await position({ place: key }, ctx);
+  if (isResult(pos)) return pos;
+  const r = await ctx.api.get<T.ChargingSite[]>("listChargingOptions", { at: atParam(pos.at), radius_m: CHARGER_RADIUS_KM * 1000, limit: CHARGER_LIST });
+  const label = pos.label ?? key;
+  const site = r.data.find((x) => x.summary.availableNow !== null);
+  if (site === undefined) {
+    const reason = r.data.length === 0 ? "no_site_near" : "no_live_site";
+    const text = r.data.length === 0
+      ? L(language, `Im Umkreis von ${CHARGER_RADIUS_KM} km um ${label} kenne ich keinen Ladestandort, deshalb öffne ich keine Lade-Beobachtung. Bitte einen anderen Ort nennen.`,
+        `I know no charging site within ${CHARGER_RADIUS_KM} km of ${label}, so I am not opening a charger watch. Name another place.`)
+      : L(language, `Im Umkreis von ${CHARGER_RADIUS_KM} km um ${label} meldet kein Ladestandort eine Live-Belegung — eine Beobachtung würde nie auslösen, deshalb öffne ich keine. Die Standorte dort zeigt find_charging_station.`,
+        `No charging site within ${CHARGER_RADIUS_KM} km of ${label} reports live occupancy — a watch would never fire, so I am not opening one. find_charging_station shows the sites there.`);
+    return toolResult(text, [r.meta], language, { structured: { watchOpened: false, reason } });
+  }
+  for (const a of r.meta.attribution ?? []) creditPlace([a]);
+  const name = site.name ?? site.id;
+  const away = kmText(site.distanceM ?? 0, language);
+  return { target: site.id, resolved: { from: key, label: name, what: {
+    de: `nächster Ladestandort mit Live-Belegung, ${name} (${away} entfernt), Standort-ID ${site.id}`,
+    en: `the nearest charging site with live occupancy, ${name} (${away} away), site id ${site.id}`,
+  } } };
+}
+
 /** watchTarget, with what a station or a region named in words became, for the answer to say it. */
 async function resolveWatch(kind: string, key: string, ctx: ToolContext): Promise<{ target: string; resolved?: Resolved } | CallToolResult> {
   if (kind === "road") return { target: key.replace(/\s/g, "").toUpperCase() };
@@ -528,6 +561,7 @@ async function resolveWatch(kind: string, key: string, ctx: ToolContext): Promis
     if (first === undefined) return toolError(L(ctx.language, `Die Haltestelle „${key}“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet.`, `I could not find the stop "${key}". No watch was opened.`));
     return { target: first.id, resolved: { from: key, label: first.name, what: { de: `Haltestelle ${first.name}, DHID ${first.id}`, en: `the stop ${first.name}, DHID ${first.id}` } } };
   }
+  if (kind === "charger" && !(/\d/u.test(key) && !/\s/u.test(key))) return chargerByPlace(key, ctx);
   if (kind === "region") {
     const { code, metas } = await areaCode({ region: key }, ctx);
     if (code === undefined) return toolError(L(ctx.language, `Die Region „${key}“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet.`, `I could not find the region "${key}". No watch was opened.`));
