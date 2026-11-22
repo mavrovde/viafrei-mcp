@@ -12,6 +12,7 @@ import { pinned } from "./pinned.js";
 import { connect, textOf } from "./harness.js";
 import { GAPS, lampText, nearestMotorways } from "../src/tools/handlers.js";
 import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
+import { kmText } from "../src/tools/nearby.js";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
@@ -560,56 +561,79 @@ describe("describe_location", () => {
 });
 
 describe("find_nearby and find_sharing", () => {
-  it("find_nearby: a block per need, five places at most, the street and number where known", async () => {
-    const p = (name: string, street: string | null, houseNo: string | null, distanceM = 120) => ({ name, kind: "shop", street, houseNo, location: at, distanceM, sourceFamily: "osm" });
-    serve("listNearby", { needs: [{ need: "groceries", radiusM: 5000, widened: false, places: [p("A", "Weg", "2"), p("B", "Weg", null), p("C", null, "9", 2000), p("D", null, null), p("E", null, null), p("F", null, null)] }, { need: "food", radiusM: 5000, widened: true, places: [] }] });
-    const r = await call("find_nearby", { ...at, radius_km: 5, categories: ["groceries", "food"], language: "de" });
-    expect(query("listNearby")).toEqual([{ at: "52.52,13.405", radius_m: "5000", categories: "groceries,food", lang: "de" }]);
-    expect(body(r)).toBe("groceries:\n- A, Weg 2 · 120 m\n- B, Weg · 120 m\n- C · 2,0 km\n- D · 120 m\n- E · 120 m\n\nfood:\n- –");
+  const nbFuel = (name: string | null, brand: string | null, distanceM: number, reportedAt: string, current = true) => ({ id: "f", name, brand, location: at, distanceM, prices: [{ fuel: "e5", priceEur: 1.789, reportedAt, reportedAtLocal: reportedAt, current }], sourceFamily: "tk" });
+  const nbStation = { id: "s", name: "Musterstadt Hbf", location: at, stopCode: null, eva: null, evaNumbers: [], districtCode: null, modes: [], distanceM: 2500, sourceFamily: "s" };
+  const nbJunction = (name: string, road: string | null, distanceM = 3000) => ({ id: "j", name, road, number: null, location: at, distanceM, sourceFamily: "r" });
+
+  it("find_nearby: the needs asked, each on its line with its radius, or what it holds when it holds nothing", async () => {
+    const p = (name: string, distanceM = 120) => ({ name, kind: "shop=supermarket", street: null, houseNo: null, location: at, distanceM, sourceFamily: "osm" });
+    serve("listNearby", { needs: [{ need: "groceries", radiusM: 5000, widened: false, places: [p("A"), p("B", 2000)] }, { need: "food", radiusM: 8000, widened: true, places: [p("C", 30)] }, { need: "money", radiusM: 2000, widened: false, places: [] }] });
+    const r = await call("find_nearby", { place: "Kassel", radius_km: 5, categories: ["groceries", "food", "money"], language: "de" });
+    expect(query("listNearby")).toEqual([{ at: "48.24375,7.01625", radius_m: "5000", categories: "groceries,food,money", lang: "de" }]);
+    expect(body(r).split("\n")).toEqual([
+      "In der Nähe von Matfienland (Umkreis 5 km):",
+      "- Lebensmittel (Umkreis 5,0 km): A (0,1 km); B (2,0 km)",
+      "- Essen (wenige in der Nähe, Umkreis 8,0 km): C (30 m)",
+      "- Geld & Post: nichts im Umkreis von 2,0 km in den OpenStreetMap-Daten",
+    ]);
   });
 
-  it("find_nearby without categories: the API's default vehicle categories, each a block, three at most, in the fixed order fuel, charging, parking, stations, junctions", async () => {
-    const fuel = (name: string | null, brand: string | null, distanceM: number, current = true) => ({ id: "f", name, brand, location: at, distanceM, prices: [{ fuel: "e5", priceEur: 1.789, reportedAt: "2026-11-18T10:00:00Z", reportedAtLocal: "2026-11-18T11:00:00+01:00", current }], sourceFamily: "tk" });
-    const charging = { id: "c", name: null, operator: "EnBW", location: at, distanceM: 1800, access: "public", summary: { chargePoints: 4, availableNow: null, maxPowerKw: 150 } };
-    const parking = { id: "p", name: "P1", operator: null, kind: "car_park", location: at, distanceM: null, occupancy: null, termsRequired: false, sourceFamily: "p" };
-    const station = { id: "s", name: "Musterstadt Hbf", location: at, stopCode: null, eva: null, evaNumbers: [], districtCode: null, modes: [], distanceM: 800, sourceFamily: "s" };
-    const junction = (road: string | null, number: string | null) => ({ id: "j", name: "Musterstadt-Nord", road, number, location: at, distanceM: 3000, sourceFamily: "r" });
-    serve("listNearby", { fuel: [fuel("Tank A", null, 300), fuel(null, "Brand B", 400, false), fuel(null, null, 500), fuel("Fourth", null, 600)], charging: [charging], parking: [parking], stations: [station], junctions: [junction("A101", "12"), junction("A101", null), junction(null, null)] });
-    const r = await call("find_nearby", { ...at, language: "en" });
-    expect(query("listNearby")).toEqual([{ at: "52.52,13.405", lang: "en" }]);
-    expect(body(r)).toBe(
-      "Fuel:\n- Tank A · E5 1.789 € · 300 m\n- Brand B · E5 1.789 € (not current, reported 18/11/2026, 11:00) · 400 m\n- – · E5 1.789 € · 500 m\n\nCharging:\n- EnBW · 150 kW · 1.8 km\n\nParking:\n- P1\n\nStations:\n- Musterstadt Hbf · 800 m\n\n" +
-        "Motorway junctions:\n- Musterstadt-Nord (A101 12) · 3.0 km\n- Musterstadt-Nord (A101) · 3.0 km\n- Musterstadt-Nord · 3.0 km",
-    );
-    serve("listNearby", { fuel: [fuel(null, "Marke", 400, false)], stations: [station] });
-    expect(body(await call("find_nearby", { ...at, language: "de" }))).toBe("Tankstellen:\n- Marke · E5 1,789 € (nicht aktuell, gemeldet 18.11.2026, 11:00) · 400 m\n\nBahnhöfe:\n- Musterstadt Hbf · 800 m");
+  for (const language of LANGS) {
+    it(`find_nearby without categories: one line per vehicle category, in the fixed order, places joined, the price's time when over an hour (${language})`, async () => {
+      const now = Date.now();
+      const old = new Date(now - 2 * 60 * 60 * 1000).toISOString();
+      const fresh = new Date(now - 10 * 60 * 1000).toISOString();
+      const charging = { id: "c", name: null, operator: "EnBW", location: at, distanceM: 1800, access: "public", summary: { chargePoints: 4, availableNow: null, maxPowerKw: 150 } };
+      serve("listNearby", { fuel: [nbFuel("Tank A", "Aral", 300, fresh), nbFuel(null, null, 400, old, false)], charging: [charging], parking: [], stations: [nbStation], junctions: [nbJunction("Musterstadt-Nord", "A101"), nbJunction("Musterstadt A101-Süd", "A101", 3500), nbJunction("Ortsumgehung", "B2", 40)] });
+      const r = await call("find_nearby", { ...at, language });
+      expect(query("listNearby")).toEqual([{ at: "52.52,13.405", lang: language }]);
+      const t = new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(old));
+      const sameDay = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date(old)) === new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date(now));
+      if (!sameDay) return; // the dated form is asserted by the clock's own test, not across midnight
+      expect(body(r).split("\n")).toEqual(language === "de" ? [
+        "In der Nähe von 52.520, 13.405 (Umkreis 5 km):",
+        `- Tankstellen, Super E5: Aral, 1,789 €/l (0,3 km); Tankstelle, 1,789 €/l (0,4 km, nicht aktuell: Preis von ${t})`,
+        "- Ladepunkte: EnBW (1,8 km)",
+        "- Parkplätze: nichts im Umkreis",
+        "- Bahnhöfe: Musterstadt Hbf (2,5 km)",
+        "- Autobahnanschlüsse: Musterstadt-Nord (A101) (3,0 km); Musterstadt A101-Süd (3,5 km)",
+        "- Weitere Anschlussstellen (keiner Autobahn zugeordnet, z. B. autobahnähnliche Bundesstraßen): Ortsumgehung (B2) (40 m)",
+      ] : [
+        "Near 52.520, 13.405 (within 5 km):",
+        `- fuel stations, Super E5: Aral, 1.789 €/l (0.3 km); Tankstelle, 1.789 €/l (0.4 km, not current: price from ${t})`,
+        "- charging: EnBW (1.8 km)",
+        "- parking: nothing nearby",
+        "- stations: Musterstadt Hbf (2.5 km)",
+        "- motorway junctions: Musterstadt-Nord (A101) (3.0 km); Musterstadt A101-Süd (3.5 km)",
+        "- Other junctions (not on a motorway we can name, e.g. dual-carriageway federal roads): Ortsumgehung (B2) (40 m)",
+      ]);
+      expect((r.structuredContent as { fuel: unknown[] }).fuel[1]).toEqual({ name: "Tankstelle", distanceKm: 0.4, price: 1.789, fuel: "e5", observedAt: old, priceOlderThan24h: true });
+    });
+  }
+
+  it("find_nearby: no price nearby is said as such; a category that did not answer is said by its status, never as nothing nearby", async () => {
+    const parts = (s: Record<string, string>) => ({ parts: Object.entries(s).map(([part, status]) => ({ part, status })) });
+    serve("listNearby", { fuel: [], stations: [nbStation] }, parts({ fuel: "ok", charging: "timeout", parking: "unavailable", station: "ok", junction: "not_permitted", needs: "not_requested" }));
+    expect(body(await call("find_nearby", { ...at, language: "en" })).split("\n")).toEqual([
+      "Near 52.520, 13.405 (within 5 km):",
+      "- fuel stations: no prices nearby",
+      "- stations: Musterstadt Hbf (2.5 km)",
+      "- charging: did not answer in time – please ask again shortly.",
+      "- parking: not available right now.",
+      "- motorway junctions: not included in this access.",
+    ]);
+    serve("listNearby", {}, parts({ needs: "timeout" }));
+    expect(body(await call("find_nearby", { ...at, categories: ["food"], language: "de" })).split("\n").slice(1)).toEqual(["- Orte des Alltags: hat nicht rechtzeitig geantwortet – bitte gleich noch einmal fragen."]);
   });
 
-  // NearbyMeta.parts: a category that is not ok is absent from data; the answer names it with its status.
-  const parts = (s: Record<string, string>) => ({ parts: Object.entries(s).map(([part, status]) => ({ part, status })) });
-  it("find_nearby: a category that is not ok is said per status, after the blocks that answered", async () => {
-    const station = { id: "s", name: "Musterstadt Hbf", location: at, stopCode: null, eva: null, evaNumbers: [], districtCode: null, modes: [], distanceM: 800, sourceFamily: "s" };
-    serve("listNearby", { fuel: [], stations: [station] }, parts({ fuel: "ok", charging: "timeout", parking: "unavailable", station: "ok", junction: "not_permitted", needs: "not_requested" }));
-    expect(body(await call("find_nearby", { ...at, language: "en" }))).toBe(
-      "Fuel:\n- –\n\nStations:\n- Musterstadt Hbf · 800 m\n\nCharging: did not answer in time – please ask again shortly.\nParking: not available right now.\nMotorway junctions: not included in this access.",
-    );
-    serve("listNearby", { fuel: [] }, parts({ fuel: "ok", charging: "unavailable", parking: "timeout", station: "not_permitted", junction: "unavailable", needs: "timeout" }));
-    expect(body(await call("find_nearby", { ...at, language: "de" }))).toBe(
-      "Tankstellen:\n- –\n\nLaden: gerade nicht verfügbar.\nParken: hat nicht rechtzeitig geantwortet – bitte gleich noch einmal fragen.\nBahnhöfe: mit diesem Zugang nicht freigegeben.\nAutobahn-Anschlussstellen: gerade nicht verfügbar.\nOrte des Alltags: hat nicht rechtzeitig geantwortet – bitte gleich noch einmal fragen.",
-    );
+  it("find_nearby: categories asked out of order are said in the fixed order, the needs after the vehicle ones", async () => {
+    serve("listNearby", { stations: [nbStation], parking: [], needs: [{ need: "toilets", radiusM: 1000, widened: false, places: [] }] });
+    const lines = body(await call("find_nearby", { ...at, categories: ["toilets", "station", "parking"], language: "en" })).split("\n");
+    expect(lines.slice(1)).toEqual(["- parking: nothing nearby", "- stations: Musterstadt Hbf (2.5 km)", "- public toilets: nothing within 1.0 km in the OpenStreetMap data"]);
   });
 
-  it("find_nearby: every part failed is not 'nothing is known'; only all ok or not asked is", async () => {
-    serve("listNearby", {}, parts({ fuel: "timeout", charging: "unavailable", parking: "not_permitted", station: "timeout", junction: "unavailable", needs: "not_requested" }));
-    const failed = body(await call("find_nearby", { ...at, language: "en" }));
-    expect(failed).toBe(
-      "Fuel: did not answer in time – please ask again shortly.\nCharging: not available right now.\nParking: not included in this access.\nStations: did not answer in time – please ask again shortly.\nMotorway junctions: not available right now.",
-    );
-    expect(failed).not.toContain("Nothing is known");
-    serve("listNearby", {}, parts({ fuel: "ok", charging: "ok", parking: "ok", station: "ok", junction: "ok", needs: "not_requested" }));
-    expect(body(await call("find_nearby", { ...at, language: "de" }))).toBe("In diesem Umkreis ist nichts bekannt.");
-    serve("listNearby", {}, parts({ fuel: "ok", charging: "ok", parking: "ok", station: "ok", junction: "ok", needs: "not_requested" }));
-    expect(body(await call("find_nearby", { ...at, language: "en" }))).toBe("Nothing is known within this radius.");
+  it("find_nearby's distance: metres under 50 m, else a tenth of a kilometre", () => {
+    expect([kmText(49, "de"), kmText(50, "de"), kmText(1849, "en"), kmText(0, "en")]).toEqual(["49 m", "0,1 km", "1.8 km", "0 m"]);
   });
 
   for (const language of LANGS) {
