@@ -16,7 +16,8 @@
         "family": "autobahn",
         "text": "Verkehrsdaten: Autobahn GmbH des Bundes",
         "termsUrl": "https://verkehr.autobahn.de",
-        "licence": "open data (Autobahn GmbH)"
+        "licence": "open data (Autobahn GmbH)",
+        "licenceUrl": "https://verkehr.autobahn.de"
       },
       "today": "Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de)"
     },

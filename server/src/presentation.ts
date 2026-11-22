@@ -110,7 +110,10 @@ const AS_OF_LABEL: Record<Language, string> = { de: "Stand", en: "As of" };
 export function creditWithLinks(a: Attribution): string {
   const line = a.text;
   const bare = a.licenceUrl?.replace(/^https?:\/\//u, "").replace(/\/$/u, "");
-  const ref = a.licence !== undefined && a.licenceUrl !== undefined && bare !== undefined && !line.includes(bare) ? `Lizenz: ${a.licence}, ${a.licenceUrl}` : null;
+  // A licence with no text of its own (the API points it at the publisher's terms page, as the Autobahn GmbH's
+  // open data) gets no reference: today's register links no licence text for it.
+  const ownText = a.licenceUrl !== a.termsUrl;
+  const ref = ownText && a.licence !== undefined && a.licenceUrl !== undefined && bare !== undefined && !line.includes(bare) ? `Lizenz: ${a.licence}, ${a.licenceUrl}` : null;
   const links = [...(typeof a.termsUrl === "string" && a.termsUrl !== "" && !line.includes(a.termsUrl) ? [a.termsUrl] : []), ...(ref === null ? [] : [ref])];
   return links.length === 0 ? line : `${line} (${links.join("; ")})`;
 }
