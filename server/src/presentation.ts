@@ -99,14 +99,22 @@ function uniqueAttributions(list: readonly Attribution[]): Attribution[] {
  * reads). When the handler gives `structured`, `structuredContent` carries those fields plus the same asOf,
  * attribution, licence and notes, as the server before the move sent them.
  */
-export function toolResult(body: string, metas: readonly DataMeta[], language: Language, extra: { conditionNote?: string; nextCursor?: string | null; structured?: Record<string, unknown> } = {}): CallToolResult {
+export function toolResult(body: string, metas: readonly DataMeta[], language: Language, extra: {
+  conditionNote?: string; nextCursor?: string | null; structured?: Record<string, unknown>;
+  /** The data time when it is not the reads' (the driving rules: the review date). */
+  asOf?: string;
+  /** The Stand when it is not a clock time (the driving rules: "Stand 19.09.2026"). */
+  asOfLabel?: string;
+  /** A sentence AFTER the credit line, the last thing read aloud (the rules' disclaimer). */
+  note?: string;
+} = {}): CallToolResult {
   const attributions = uniqueAttributions(metas.flatMap((m) => m.attribution ?? []));
   const purpose = [...new Set(metas.flatMap((m) => m.notes?.purpose ?? []))];
   const condition = [...new Set([...metas.flatMap((m) => m.notes?.condition ?? []), ...(extra.conditionNote ? [extra.conditionNote] : [])])];
   const asOfs = metas.map((m) => m.asOf).filter((x): x is string => typeof x === "string").sort();
-  const asOf = asOfs[0] ?? metas[0]?.generatedAt ?? new Date().toISOString();
+  const asOf = extra.asOf ?? asOfs[0] ?? metas[0]?.generatedAt ?? new Date().toISOString();
   const attributionText = attributions.map((a) => a.text).join(" · ");
-  const footer = creditFooter(language, attributions.map((a) => a.text), `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`);
+  const footer = creditFooter(language, attributions.map((a) => a.text), extra.asOfLabel ?? `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`) + (extra.note === undefined ? "" : `\n${extra.note}`);
   const lines = [...purpose, ...condition];
   const room = TOOL_RESULT_CHARS - footer.length - lines.join("\n").length - 4;
   const text = [...lines, body.length > room ? `${body.slice(0, Math.max(0, room - 1))}…` : body, "", footer].join("\n");

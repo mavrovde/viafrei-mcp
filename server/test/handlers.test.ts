@@ -569,22 +569,117 @@ describe("find_nearby and find_sharing", () => {
 });
 
 describe("get_driving_rules", () => {
+  const rule = (id: string, o: Record<string, unknown> = {}): Record<string, unknown> => ({ id, text: `Text ${id}.`, legalBasis: `§ ${id} StVO`, sourceUrl: `https://alpha.example/${id}`, reviewedOn: "2026-09-19", unconfirmed: null, ...o });
+  const rulesOf = (topic: string, rules: Record<string, unknown>[], o: Record<string, unknown> = {}): Record<string, unknown> => ({ topic, title: `Titel ${topic}`, rules, reviewedOn: "2026-09-01", disclaimer: "Informational, not legal advice.", ...o });
+  /** Answers each topic with its own rules: `topic.1`, `topic.2`. */
+  const serveByTopic = (extra: (topic: string) => Record<string, unknown> = () => ({})): void => {
+    mockServer.use(handlerFor("getDrivingRules", (url) => {
+      const t = url.searchParams.get("topic") ?? "";
+      return HttpResponse.json({ data: rulesOf(t, [rule(`${t}.1`, { reviewedOn: t === "toll" ? "2026-08-30" : "2026-09-19" }), rule(`${t}.2`)], extra(t)), meta: exampleOf<Body>("getDrivingRules").meta });
+    }));
+  };
+
   for (const language of LANGS) {
-    it(`title, rules with their legal basis, review date, disclaimer (${language})`, async () => {
-      const d = ex<{ rules: Record<string, unknown>[] }>("getDrivingRules");
-      serve("getDrivingRules", { ...d, rules: [d.rules[0], { ...d.rules[1], legalBasis: null }] });
-      const r = await call("get_driving_rules", { topic: "winter", city: "Köln", language });
-      expect(query("getDrivingRules")).toEqual([{ topic: "winter", city: "Köln", lang: language }]);
-      await pinned("handlers", body(r));
+    it(`a topic: its headline, one bullet per rule with its citation and its open doubt, the review date as the Stand, the disclaimer last (${language})`, async () => {
+      serve("getDrivingRules", rulesOf("winter", [rule("winter.a"), rule("winter.b", { legalBasis: null, unconfirmed: language === "de" ? "die Frist" : "the deadline", reviewedOn: "2026-09-02" })], { title: language === "de" ? "Winterreifen" : "Winter tyres" }));
+      const r = await call("get_driving_rules", { topic: "winter", language });
+      expect(query("getDrivingRules")).toEqual([{ topic: "winter", lang: language }]);
+      expect(body(r)).toBe(language === "de"
+        ? "Regeln in Deutschland — Winterreifen:\n• Text winter.a. (§ winter.a StVO)\n• Text winter.b. (nicht bestätigt: die Frist — bitte an der Quelle nachlesen)"
+        : "Driving in Germany — Winter tyres:\n• Text winter.a. (§ winter.a StVO)\n• Text winter.b. (not confirmed: the deadline — check the source)");
+      expect(footer(r).endsWith(language === "de"
+        ? " · Stand 02.09.2026\nGeprüft am 02.09.2026 · Informativ, keine Rechtsberatung (informational, not legal advice)."
+        : " · As of 2026-09-02\nReviewed 2026-09-02 · Informational, not legal advice.")).toBe(true);
+      const sc = r.structuredContent as Record<string, unknown>;
+      expect(sc["asOf"]).toBe("2026-09-02T00:00:00.000Z");
+      expect({ ...sc, asOf: undefined, attribution: undefined, license: undefined }).toEqual({
+        topic: "winter", city: null, language, reviewedAt: "2026-09-02", omittedLines: 0,
+        facts: [
+          { key: "winter.a", topic: "winter", text: "Text winter.a.", source: "https://alpha.example/winter.a", sourceName: "§ winter.a StVO", lastReviewed: "2026-09-19" },
+          { key: "winter.b", topic: "winter", text: "Text winter.b.", source: "https://alpha.example/winter.b", sourceName: null, lastReviewed: "2026-09-02", toVerify: language === "de" ? "die Frist" : "the deadline" },
+        ],
+        lines: [
+          { key: "winter.a", text: "• Text winter.a. (§ winter.a StVO)" },
+          { key: "winter.b", text: language === "de" ? "• Text winter.b. (nicht bestätigt: die Frist — bitte an der Quelle nachlesen)" : "• Text winter.b. (not confirmed: the deadline — check the source)" },
+        ],
+        toVerify: [{ key: "winter.b", note: language === "de" ? "die Frist" : "the deadline" }],
+        disclaimer: language === "de" ? "Geprüft am 02.09.2026 · Informativ, keine Rechtsberatung (informational, not legal advice)." : "Reviewed 2026-09-02 · Informational, not legal advice.",
+        asOf: undefined, attribution: undefined, license: undefined,
+      });
     });
   }
-  it("speed by default; a place is resolved to its position", async () => {
-    await call("get_driving_rules", { place: "Köln", language: "en" });
-    expect(query("getDrivingRules")).toEqual([{ topic: "speed", at: "48.24375,7.01625", lang: "en" }]);
-    calls.length = 0;
-    await call("get_driving_rules", { ...at, language: "en" });
-    expect(query("getDrivingRules")).toEqual([{ topic: "speed", at: "52.52,13.405", lang: "en" }]);
+
+  it("no topic: the first rule of each of the nine topics under its title, in order, the oldest review of them; the city goes to the zone topic only", async () => {
+    serveByTopic((t) => (t === "lez" ? { zoneCity: { name: "Köln", zone: "Zone im Autobahnring.", plakette: "green", covered: true } } : {}));
+    const r = await call("get_driving_rules", { city: "Köln", language: "de" });
+    expect(query("getDrivingRules")).toEqual(["lez", "speed", "winter", "alcohol", "toll", "truck_ban", "equipment", "emergency", "ev"].map((t) => (t === "lez" ? { topic: t, city: "Köln", lang: "de" } : { topic: t, lang: "de" })));
+    const lines = body(r).split("\n");
+    expect(lines[0]).toBe("Autofahren in Deutschland — das Wichtigste in neun Themen (topic=… für Details):");
+    expect(lines[1]).toBe("• Köln: Zone im Autobahnring. Erforderlich: die grüne Plakette (Schadstoffgruppe 4). Sie gibt es bei Zulassungsstellen, TÜV/DEKRA/GTÜ/KÜS und anerkannten Werkstätten gegen Vorlage der Zulassungsbescheinigung Teil I.");
+    expect(lines[2]).toBe('• Titel lez (topic="lez"): Text lez.1. (§ lez.1 StVO)');
+    expect(lines[10]).toBe('• Titel ev (topic="ev"): Text ev.1. (§ ev.1 StVO)');
+    expect(lines).toHaveLength(11);
+    expect((r.structuredContent as { reviewedAt: string }).reviewedAt).toBe("2026-08-30");
   });
+
+  it("more than eleven lines: eleven are kept, and the last line names how many were left and the narrower call", async () => {
+    serve("getDrivingRules", rulesOf("speed", Array.from({ length: 13 }, (_, i) => rule(`speed.r${i + 1}`))));
+    const r = await call("get_driving_rules", { topic: "speed", language: "en" });
+    const lines = body(r).split("\n");
+    expect(lines).toHaveLength(13);
+    expect(lines[11]).toBe("• Text speed.r11. (§ speed.r11 StVO)");
+    expect(lines[12]).toBe('… and 2 more rules on this topic — ask again with city="…" for the rest.');
+    expect((r.structuredContent as { omittedLines: number }).omittedLines).toBe(2);
+  });
+
+  for (const language of LANGS) {
+    it(`the zone topic with a city: the list's entry leads, the list caveat closes (${language})`, async () => {
+      serve("getDrivingRules", rulesOf("lez", [rule("lez.1")], { zoneCity: { name: "Stuttgart", zone: "Ganzes Stadtgebiet.", plakette: "green", covered: true } }));
+      const r = await call("get_driving_rules", { topic: "lez", city: "Stuttgart", language });
+      expect(body(r).split("\n")).toEqual(language === "de" ? [
+        "Umweltzone Stuttgart: Ja, Sie brauchen die grüne Feinstaubplakette.",
+        "• Stuttgart: Ganzes Stadtgebiet. Erforderlich: die grüne Plakette (Schadstoffgruppe 4). Sie gibt es bei Zulassungsstellen, TÜV/DEKRA/GTÜ/KÜS und anerkannten Werkstätten gegen Vorlage der Zulassungsbescheinigung Teil I.",
+        "• Text lez.1. (§ lez.1 StVO)",
+        "• Diese Liste ist unsere Abschrift der Liste des Umweltbundesamts, nicht das amtliche Verzeichnis: Fehlt eine Stadt hier, heißt das nicht, dass sie keine Umweltzone hat. Die maßgebliche Liste führt das Umweltbundesamt.",
+      ] : [
+        "Low-emission zone Stuttgart: yes, you need the green Feinstaubplakette.",
+        "• Stuttgart: Ganzes Stadtgebiet. Required: the green plaque (emission group 4). You can buy it at vehicle registration offices, TÜV/DEKRA/GTÜ/KÜS and approved garages on presentation of the vehicle registration document (part I).",
+        "• Text lez.1. (§ lez.1 StVO)",
+        "• This list is our copy of the Umweltbundesamt's list, not the official register: a city missing here is not a city without a zone. The authoritative list is kept by the Umweltbundesamt.",
+      ]);
+    });
+  }
+
+  it("a city under a closed licence: there is a zone, we may not say where; a city with no entry: no entry is not no zone", async () => {
+    serve("getDrivingRules", rulesOf("lez", [rule("lez.1")], { zoneCity: { name: "Düsseldorf", zone: "Düsseldorf hat eine Umweltzone.", plakette: null, covered: false } }));
+    const closed = body(await call("get_driving_rules", { topic: "lez", city: "Düsseldorf", language: "de" })).split("\n");
+    expect(closed[0]).toBe("Umweltzone Düsseldorf: von uns nicht abgedeckt (geschlossene Lizenz) — es gibt dort eine Zone, also nicht ohne grüne Plakette hineinfahren.");
+    expect(closed[1]).toBe("• Düsseldorf: Düsseldorf hat eine Umweltzone. Die Zonendaten für Düsseldorf stehen unter einer geschlossenen Lizenz, die uns die Weitergabe verbietet. Das heißt ausdrücklich nicht, dass es keine Zone gibt: ohne grüne Plakette besser nicht hineinfahren und die Angaben der Stadt Düsseldorf sowie die Liste des Umweltbundesamts prüfen.");
+    serve("getDrivingRules", rulesOf("lez", [rule("lez.1")], { zoneCity: { name: "Atlantis", zone: null, plakette: null, covered: false } }));
+    const none = body(await call("get_driving_rules", { topic: "lez", city: "Atlantis", language: "en" })).split("\n");
+    expect(none[0]).toBe("Low-emission zone Atlantis: no entry with us — that does not mean there is no zone.");
+    expect(none[1]?.startsWith('• We have no zone entry for "Atlantis" — that does not mean the city has no low-emission zone.')).toBe(true);
+  });
+
+  it("an electric car in a city: the city decides, said first; another topic in a city: the same nationwide rules, said last", async () => {
+    serve("getDrivingRules", rulesOf("ev", [rule("ev.1")]));
+    const ev = body(await call("get_driving_rules", { topic: "ev", city: "München", language: "de" })).split("\n");
+    expect(ev[1]).toBe("• Für München gilt: Ob und wo dort mit E-Kennzeichen kostenlos oder ermäßigt geparkt werden darf, entscheidet die Stadt selbst — es zählt das Zusatzzeichen am Parkplatz, nicht das Kennzeichen allein.");
+    serve("getDrivingRules", rulesOf("speed", [rule("speed.1")]));
+    const speed = body(await call("get_driving_rules", { topic: "speed", city: "München", language: "en" })).split("\n");
+    expect(speed.at(-1)).toBe('• The same nationwide rules apply in München; the only city-specific topic here is the low-emission zone (topic="lez").');
+  });
+
+  it("a place with no topic is the zone question at its position; a place with another topic is not looked up, and the answer says so", async () => {
+    await call("get_driving_rules", { ...at, language: "en" });
+    expect(query("getDrivingRules")).toEqual([{ topic: "lez", at: "52.52,13.405", lang: "en" }]);
+    calls.length = 0;
+    serve("getDrivingRules", rulesOf("speed", [rule("speed.1")]));
+    const r = await call("get_driving_rules", { place: "Köln", topic: "speed", language: "en" });
+    expect(ops()).toEqual(["getDrivingRules"]);
+    expect(body(r).split("\n")[1]).toBe("Note: a place (place or lat/lon) is checked for low-emission zones only (topic=lez); these rules apply across Germany.");
+  });
+
   it("an unknown place says so", async () => {
     serve("listPlaces", []);
     expect((await call("get_driving_rules", { place: "Nirgendwo", language: "en" })).isError).toBe(true);

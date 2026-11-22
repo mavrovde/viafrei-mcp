@@ -54,7 +54,10 @@ export type RoadConditionsData = { lamp: string; lampReason: string | null; situ
 /** LorryRule */
 export type LorryRule = { layer: string; kind: string | null; road: string | null; street: string | null; municipality: string | null; publishedText: string | null; value: number | null; unit: string | null };
 /** DrivingRulesData */
-export type DrivingRulesData = { topic: string; title: string; rules: { text: string; legalBasis: string | null }[]; reviewedOn: string; disclaimer: string };
+export type DrivingRule = { id: string; text: string; legalBasis: string | null; sourceUrl: string | null; reviewedOn: string; unconfirmed: string | null };
+/** With topic lez and a city: the curated list's entry, or the asked city uncovered (zone null). */
+export type ZoneCity = { name: string; zone: string | null; plakette: string | null; covered: boolean };
+export type DrivingRulesData = { topic: string; title: string; rules: DrivingRule[]; reviewedOn: string; disclaimer: string; zoneCity?: ZoneCity };
 /** DisruptionData */
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
 export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; punctuality: { name: string | null; level: string; late: number; observed: number } | null; windowMin: number };

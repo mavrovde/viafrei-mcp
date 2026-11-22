@@ -9,6 +9,7 @@ import type * as T from "../api/types.js";
 import { berlinDateTime, berlinTime, eur, km, notAvailable, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
+import { getDrivingRules } from "./driving-rules.js";
 import { getTrainDepartures } from "./trains.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
@@ -378,20 +379,6 @@ const findSharing: Handler = async (args, ctx) => {
   const lines = r.data.stations.map((s) => `- ${s.name ?? s.systemLabel ?? s.system} · ${km(s.distanceM, language)}${s.bikes === null ? "" : L(language, ` · ${s.bikes} Räder`, ` · ${s.bikes} bikes`)}`);
   lines.push(L(language, `Freie Fahrzeuge im Umkreis: ${r.data.vehicles.count}`, `Free vehicles nearby: ${r.data.vehicles.count}`));
   return toolResult(lines.join("\n"), [r.meta], language);
-};
-
-const getDrivingRules: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  let at: string | undefined;
-  if (str(args["place"]) !== undefined || num(args["lat"]) !== undefined) {
-    const pos = await position(args, ctx);
-    if (isResult(pos)) return pos;
-    at = atParam(pos.at);
-  }
-  const r = await ctx.api.get<T.DrivingRulesData>("getDrivingRules", { topic: str(args["topic"]) ?? "speed", city: str(args["city"]), at });
-  const d = r.data;
-  const body = [d.title, ...d.rules.map((x) => `- ${x.text}${x.legalBasis === null ? "" : ` (${x.legalBasis})`}`), L(language, `Geprüft am ${d.reviewedOn}.`, `Reviewed on ${d.reviewedOn}.`), d.disclaimer].join("\n");
-  return toolResult(body, [r.meta], language);
 };
 
 /** The official region code the contract's `area` wants: given as one, a region name through listPlaces, or a position through describeLocation. */
