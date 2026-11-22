@@ -77,8 +77,9 @@ export const findSharing: Handler = async (args, ctx): Promise<CallToolResult> =
     at: atParam(pos.at), radius_m: args["radius_km"] === undefined ? undefined : Math.round(radiusKm * 1000), limit: num(args["limit"]),
     only_available: only === undefined ? undefined : String(only),
   });
-  const metas = [r.meta];
   const { stations, vehicles, stationsInRadius } = r.data;
+  // Nothing listed is nothing credited (today's server): only the place search, and the nearest station's publisher.
+  const metas = stations.length === 0 && vehicles.count === 0 ? [] : [r.meta];
   const counted = stations.filter((s) => s.current && s.renting !== false);
   const docksVirtual = counted.filter((s) => s.virtual === true).length;
   const docksUnpublished = counted.filter((s) => s.virtual !== true && s.freeDocks === null).length;
@@ -93,7 +94,7 @@ export const findSharing: Handler = async (args, ctx): Promise<CallToolResult> =
       const nearest = wide.data.stations[0];
       if (nearest !== undefined) {
         text.push(c.nearest(kmText(nearest.distanceM, language), label(nearest)));
-        metas.push(wide.meta);
+        metas.push({ ...wide.meta, attribution: (wide.meta.attribution ?? []).filter((a: Attribution) => a.family === nearest.sourceFamily) });
       }
     }
   } else {
@@ -105,6 +106,7 @@ export const findSharing: Handler = async (args, ctx): Promise<CallToolResult> =
   }
   const credit = (family: string): string | null => r.meta.attribution?.find((a: Attribution) => a.family === family)?.text ?? null;
   return toolResult(text.join("\n"), metas, language, {
+    ...(metas.length === 0 ? { asOf: r.meta.generatedAt } : {}),
     structured: {
       place: where,
       radiusKm,

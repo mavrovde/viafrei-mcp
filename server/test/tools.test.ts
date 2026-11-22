@@ -41,6 +41,10 @@ describe("tools answer from the API contract's examples", () => {
         if (c.tool === "watch_situation") {
           expect(meta.attribution).toBe(`${WATCH_CREDIT.text} (${WATCH_CREDIT.termsUrl})`);
           for (const a of credited) expect(textOf(r)).not.toContain(a.text);
+        } else if (c.tool === "find_sharing") {
+          // The example lists no bike: nothing listed is nothing credited, as today's server does.
+          for (const a of credited) expect(textOf(r)).not.toContain(a.text);
+          expect(textOf(r)).toMatch(/\n\n(Stand|As of) [^\n]+$/u);
         } else {
           // A road answer credits a weather family only for a weather reason in the lamp it shows, in the
           // summary form (today's ampel); check_road_status shows no lamp, so never.

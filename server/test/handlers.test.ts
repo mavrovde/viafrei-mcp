@@ -981,6 +981,23 @@ describe("find_nearby and find_sharing", () => {
     expect(none).toBe("No shared bikes found within 5 km of 52.520, 13.405 — neither at a station nor free-floating. Radius up to 5 km possible. Covered are nextbike and Donkey Republic; e-scooters and operators without an open licence are not.");
     expect(ops()).toEqual(["listSharingOptions", "listSharingOptions"]);
   });
+  it("find_sharing: nothing listed credits nothing; the nearest station past the radius credits its own publisher alone", async () => {
+    const ex = exampleOf<{ meta: { attribution: Record<string, unknown>[] } }>("listSharingOptions");
+    const nextbike = ex.meta.attribution[0]!;
+    const donkey = { ...nextbike, family: "gbfs_donkey", publisher: "Donkey Republic", text: "Bikesharing: Donkey Republic (GBFS), CC0 1.0" };
+    const wideMeta = { ...ex.meta, attribution: [nextbike, donkey], generatedAt: "2026-03-30T08:00:00Z" };
+    mockServer.use(handlerFor("listSharingOptions", (url) => Response.json({ meta: wideMeta, data: url.searchParams.get("radius_m") === "5000"
+      ? { stations: [bike({ distanceM: 3_400, sourceFamily: "gbfs_donkey" })], stationsInRadius: 1, vehicles: fleet() }
+      : { stations: [], stationsInRadius: 0, vehicles: fleet() } })));
+    const near = await call("find_sharing", { ...at, language: "de" });
+    expect(footer(near)).toContain("Donkey Republic");
+    expect(footer(near)).not.toContain(String(nextbike["text"]));
+    expect(meta(near)["attribution"]).not.toContain(String(nextbike["text"]));
+    serve("listSharingOptions", { stations: [], stationsInRadius: 0, vehicles: fleet() }, { generatedAt: "2026-03-30T08:00:00Z" });
+    const none = await call("find_sharing", { ...at, radius_km: 5, language: "en" });
+    expect(footer(none)).toBe("As of 2026-03-30 10:00");
+    expect(meta(none)["attribution"] ?? "").toBe("");
+  });
   it("find_sharing: only free-floating bikes still head the answer", async () => {
     serve("listSharingOptions", { stations: [], stationsInRadius: 0, vehicles: fleet(1) });
     expect(body(await call("find_sharing", { ...at, language: "de" }))).toBe("Leihräder nahe 52.520, 13.405 (Umkreis 1 km):\nOhne Station: 1 frei abgestelltes Rad im Umkreis, das nächste 0,4 km entfernt.");
