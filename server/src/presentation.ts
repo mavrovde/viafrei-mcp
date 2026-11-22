@@ -4,6 +4,7 @@
  * `purposeNote` / `conditionNote` the API states in `meta.notes`. The notes are shown verbatim: they
  * are legal conditions of the data, not captions.
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Attribution, DataMeta } from "./api/client.js";
 import { ApiError } from "./api/client.js";
@@ -70,6 +71,18 @@ export const km = (m: number | null | undefined, language: Language): string =>
 
 export const eur = (v: number, language: Language): string => `${v.toFixed(3).replace(".", language === "de" ? "," : ".")} €`;
 
+/**
+ * The credits of the place search a tool call resolved its place through: today's server credits the
+ * gazetteer row it read the place from ("Ortsdaten: © GeoNames …") after the answer's own sources. One
+ * store per tool call, filled by `position()` and read by `toolResult`, so no handler can forget it.
+ * Credit only: the place's read never moves the answer's data time.
+ */
+const placeCredits = new AsyncLocalStorage<Attribution[]>();
+export const withPlaceCredits = <R>(fn: () => Promise<R>): Promise<R> => placeCredits.run([], fn);
+export function creditPlace(list: readonly Attribution[] | undefined): void {
+  placeCredits.getStore()?.push(...(list ?? []));
+}
+
 export type ToolMeta = {
   attribution: string;
   license: string;
@@ -108,7 +121,7 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
   /** A sentence AFTER the credit line, the last thing read aloud (the rules' disclaimer). */
   note?: string;
 } = {}): CallToolResult {
-  const attributions = uniqueAttributions(metas.flatMap((m) => m.attribution ?? []));
+  const attributions = uniqueAttributions([...metas.flatMap((m) => m.attribution ?? []), ...(placeCredits.getStore() ?? [])]);
   const purpose = [...new Set(metas.flatMap((m) => m.notes?.purpose ?? []))];
   const condition = [...new Set([...metas.flatMap((m) => m.notes?.condition ?? []), ...(extra.conditionNote ? [extra.conditionNote] : [])])];
   const asOfs = metas.map((m) => m.asOf).filter((x): x is string => typeof x === "string").sort();

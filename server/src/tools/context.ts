@@ -2,7 +2,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { ApiClient, LatLon } from "../api/client.js";
 import { atParam } from "../api/client.js";
 import type { PlaceItem } from "../api/types.js";
-import { toolError, type Language } from "../presentation.js";
+import { creditPlace, toolError, type Language } from "../presentation.js";
 import type { ConsentOutcome } from "../sid-consent.js";
 import { PLACE_WORDS } from "./place-words.js";
 import type { RefreshWait } from "./trains.js";
@@ -86,6 +86,7 @@ export async function position(args: Args, ctx: ToolContext, placeKey = "place")
   const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: 1 });
   const first = found.data[0];
   if (first === undefined) return placeUnknown(ctx, q);
+  creditPlace(found.meta.attribution);
   return { at: first.location, label: first.name };
 }
 

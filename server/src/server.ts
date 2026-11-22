@@ -20,7 +20,7 @@ import { ApiError } from "./api/client.js";
 import type * as T from "./api/types.js";
 import type { Catalogue } from "./catalogue.js";
 import { log } from "./log.js";
-import { apiFailure, languageOf, toolError } from "./presentation.js";
+import { apiFailure, languageOf, toolError, withPlaceCredits } from "./presentation.js";
 import { readPromptArgumentsFirst, registerPrompts } from "./prompts/index.js";
 import { ElicitResultSchema, SID_CONSENT_TIMEOUT_MS, SidConsent } from "./sid-consent.js";
 import { SessionWatches, type ToolContext } from "./tools/context.js";
@@ -71,7 +71,7 @@ export function createServer(deps: ServerDeps): McpServer {
     };
     const started = Date.now();
     try {
-      const result = await handler(args, ctx);
+      const result = await withPlaceCredits(() => handler(args, ctx));
       log.info({ tool: name, ms: Date.now() - started, isError: result.isError === true }, "tool call");
       return result;
     } catch (err) {

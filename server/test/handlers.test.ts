@@ -923,6 +923,16 @@ describe("the credit footer and _meta of a tool answer", () => {
     });
   });
 
+  it("a place found by name credits the place search's row after the answer's own, and never moves the data time; coordinates credit nothing more", async () => {
+    const place = { family: "gazetteer_x", text: "Ortsdaten: Gazetteer X", licence: "CC BY 4.0", shareAlike: false };
+    serve("listPlaces", ex<unknown[]>("listPlaces"), { attribution: [place], asOf: "2020-01-01T00:00:00Z" });
+    const named = await call("find_cheapest_fuel", { place: "Köln", language: "de" });
+    expect(footer(named)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. · Ortsdaten: Gazetteer X · Stand 30.03. 01:57");
+    expect(meta(named)["sources"]).toEqual(["tankerkoenig_gamma", "gazetteer_x"]);
+    expect(meta(named)["asOf"]).toBe("2026-03-29T23:57:30Z");
+    expect(footer(await call("find_cheapest_fuel", { ...at, language: "de" }))).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. · Stand 30.03. 01:57");
+  });
+
   it("the gap list names a tool, a case and the operation it needs, for each gap", () => {
     expect(GAPS.map((g) => g.tool)).toEqual(["*", "find_parking", "find_roadworks_ahead", "watch_situation"]);
     for (const g of GAPS) expect(g.case.length * g.needs.length).toBeGreaterThan(0);
