@@ -19,6 +19,7 @@ import { getTrainDepartures } from "./trains.js";
 import { landOf, regionOf } from "./region.js";
 import { checkTransitDisruption } from "./transit.js";
 import { findSharing } from "./sharing.js";
+import { describeLocation } from "./location.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -435,30 +436,6 @@ const findAddress: Handler = async (args, ctx) => {
     return none(language, [r.meta], L(language, "Adressen", "addresses"));
   }
   return toolResult(r.data.addresses.map((a) => `- ${[[a.street, a.number].filter(Boolean).join(" "), [a.postcode, a.place].filter(Boolean).join(" ")].filter(Boolean).join(", ")} · ${a.location.lat.toFixed(5)}, ${a.location.lon.toFixed(5)}`).join("\n"), [r.meta], language);
-};
-
-const nameOf = (n: T.Named): string | null => (n === null ? null : (n.name ?? null));
-
-/** The low-emission zone line: the zone the position is in, or the nearest one and how far; none without a zone. */
-function zoneLine(z: T.LowEmissionZone | null, language: Language): string | null {
-  if (z === null || z.zone === null || z.verdict === "unknown") return null;
-  if (z.verdict === "inside") return L(language, `Umweltzone: ${z.zone} (innerhalb)`, `Low-emission zone: ${z.zone} (inside)`);
-  if (z.verdict === "transfer") return L(language, `Umweltzone: ${z.zone} (freigegebener Randbereich)`, `Low-emission zone: ${z.zone} (released area at its edge)`);
-  const away = z.distanceM === null ? "" : L(language, ` (${km(z.distanceM, language)} entfernt)`, ` (${km(z.distanceM, language)} away)`);
-  return L(language, `Umweltzone: ${z.zone}${away}`, `Low-emission zone: ${z.zone}${away}`);
-}
-
-const describeLocation: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  const lat = num(args["lat"]);
-  const lon = num(args["lon"]);
-  if (lat === undefined || lon === undefined) return toolError(L(language, "Bitte lat und lon angeben.", "Please give lat and lon."));
-  const r = await ctx.api.get<T.LocationData>("describeLocation", { at: atParam({ lat, lon }) });
-  const d = r.data;
-  const lines = [nameOf(d.municipality), nameOf(d.district), nameOf(d.state)].filter((x): x is string => x !== null);
-  const zone = zoneLine(d.lowEmissionZone, language);
-  if (zone !== null) lines.push(zone);
-  return toolResult(lines.join("\n") || L(language, "Zu dieser Position ist nichts bekannt.", "Nothing is known about this position."), [r.meta], language);
 };
 
 /** The official region code the contract's `area` wants: given as one, a region name through listPlaces, or a position through describeLocation. */

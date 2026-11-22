@@ -9,6 +9,7 @@ import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
 import { pinned } from "./pinned.js";
+import { haversineM } from "../src/tools/location.js";
 import { connect, textOf } from "./harness.js";
 import { GAPS, lampText, nearestMotorways } from "../src/tools/handlers.js";
 import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
@@ -643,25 +644,45 @@ describe("find_place, find_poi, find_address", () => {
 });
 
 describe("describe_location", () => {
-  const loc = (o: Record<string, unknown>) => ({ ...ex<object>("describeLocation"), ...o });
-  const lez = { verdict: "outside", zone: "Köln", distanceM: 2000 };
+  const place = (name: string, lat: number, lon: number, code?: string) => ({ id: name, name, location: { lat, lon }, distanceM: null, sourceFamily: "x", ...(code === undefined ? {} : { code }) });
+  const loc = (o: Record<string, unknown>) => ({
+    address: null, municipality: place("Ort A", 52.53, 13.405), district: place("Kreis B", 52.6, 13.5, "12"), state: null, mayLieOutsideGermany: false,
+    lowEmissionZone: { verdict: "unknown", zone: null, distanceM: null, liftedOn: null }, ...o,
+  });
+  const lez = { verdict: "outside", zone: "Umweltzone Köln", distanceM: 2_345, liftedOn: null };
+  const noAddresses = () => serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [] });
   for (const language of LANGS) {
     for (const [name, zone] of [
       ["inside", { ...lez, verdict: "inside" }],
-      ["transfer", { ...lez, verdict: "transfer" }],
+      ["transfer", { ...lez, verdict: "transfer", zone: "Randbereich Nord" }],
       ["outside", lez],
-      ["outside, no distance", { ...lez, distanceM: null }],
+      ["outside, under a kilometre", { ...lez, distanceM: 4 }],
+      ["lifted", { ...lez, verdict: "inside", liftedOn: "01.01.2025" }],
+      ["unknown", { ...lez, verdict: "unknown", zone: null }],
     ] as const) {
-      it(`municipality, district, Land and the low-emission zone ${name} (${language})`, async () => {
-        serve("describeLocation", loc({ municipality: { name: "Köln" }, district: { name: "Köln, Stadt" }, lowEmissionZone: zone }));
+      it(`place, district, Land and the low-emission zone ${name} (${language})`, async () => {
+        noAddresses();
+        serve("describeLocation", loc({ lowEmissionZone: zone }));
         const r = await call("describe_location", { ...at, language });
         expect(query("describeLocation")).toEqual([{ at: "52.52,13.405", lang: language }]);
         await pinned("handlers", body(r));
       });
     }
-    it(`nothing known (${language})`, async () => {
-      serve("describeLocation", loc({ state: null, lowEmissionZone: { verdict: "unknown", zone: "X", distanceM: null } }));
-      expect(body(await call("describe_location", { ...at, language }))).toBe(language === "de" ? "Zu dieser Position ist nichts bekannt." : "Nothing is known about this position.");
+    it(`an address, the point maybe abroad (no zone said there), no place (${language})`, async () => {
+      serve("describeLocation", loc({
+        address: { street: "Hauptstraße", number: "5", postcode: null, place: "Berlin", land: "Berlin", distanceM: 30, dataAsOf: "2026-11-01", sourceFamily: "osm", location: at },
+        municipality: null, district: null, state: place("Brandenburg", 52.4, 13.0, "12"), mayLieOutsideGermany: true,
+      }));
+      const r = await call("describe_location", { ...at, language });
+      expect(ops()).toEqual(["describeLocation"]);
+      await pinned("handlers", body(r));
+    });
+    it(`addresses loaded but none near (${language})`, async () => {
+      serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [{ land: "Berlin", dataAsOf: "2026-11-01" }] });
+      serve("describeLocation", loc({ municipality: null, district: null, lowEmissionZone: null }));
+      expect(body(await call("describe_location", { ...at, language }))).toBe(language === "de"
+        ? "Beschreibung für 52.5200, 13.4050:\n- Keine Adresse in der Nähe bekannt."
+        : "Description of 52.5200, 13.4050:\n- No address known nearby.");
     });
     it(`without lon (${language}): the schema's refusal, as today's server words it`, async () => {
       const r = await call("describe_location", { lat: 52.5, language });
@@ -670,9 +691,16 @@ describe("describe_location", () => {
       expect(calls).toHaveLength(0);
     });
   }
-  it("a zone without a name and a named nothing are left out", async () => {
-    serve("describeLocation", loc({ municipality: { name: null }, district: null, lowEmissionZone: { verdict: "inside", zone: null, distanceM: null } }));
-    expect(body(await call("describe_location", { lon: 13.4, lat: 52.5, language: "en" }))).toBe("Matfienland");
+  it("the Land is named from the district's key in the answer's language, before the API's Land row", async () => {
+    noAddresses();
+    serve("describeLocation", loc({ state: place("Irgendwo", 0, 0, "09") }));
+    expect(body(await call("describe_location", { ...at, language: "en" }))).toContain("\n- State (Land): Brandenburg\n");
+  });
+  it("distances are today's: a sphere from the asked point to the place's point, not the API's rounded distance", async () => {
+    expect(Math.round(haversineM(50.5546, 9.6773, 50.4509, 9.9157))).toBe(20_427);
+    noAddresses();
+    serve("describeLocation", loc({ municipality: { ...place("Ort A", 52.53, 13.405), distanceM: 99_000 } }));
+    expect(body(await call("describe_location", { ...at, language: "de" }))).toContain("\n- Ort: Ort A (1,1 km)\n");
   });
 });
 

@@ -74,11 +74,15 @@ export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; a
 /** WeatherRiskData */
 export type WeatherWarning = { headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null }; inForce?: boolean };
 export type WeatherRiskData = { warnings: WeatherWarning[] };
-/** LocationData */
-export type Named = { name?: string | null; code?: string | null } | null;
+/** LocationData's places: the nearest municipality, the nearest district, the district's Land. */
+export type LocationPlace = { id: string; name: string; code?: string | null; location: { lat: number; lon: number }; distanceM: number | null; sourceFamily: string };
 /** LocationData.lowEmissionZone: the verdict, and the zone it is in (inside, transfer) or the nearest (outside). */
-export type LowEmissionZone = { verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null };
-export type LocationData = { address: Record<string, unknown> | null; municipality: Named; district: Named; state: Named; lowEmissionZone: LowEmissionZone | null };
+export type LowEmissionZone = { verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null; liftedOn?: string | null };
+export type LocationAddress = { street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; distanceM: number; dataAsOf: string | null };
+export type LocationData = {
+  address: LocationAddress | null; municipality: LocationPlace | null; district: LocationPlace | null; state: LocationPlace | null;
+  lowEmissionZone: LowEmissionZone | null; mayLieOutsideGermany: boolean;
+};
 /** Station */
 export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; eva: string | null; evaNumbers: string[]; distanceM?: number | null };
 /** Board */

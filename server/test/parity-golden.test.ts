@@ -43,6 +43,30 @@ const STATE: Record<string, () => void> = {
     mockServer.use(handlerFor("getMotorwayConditions", () => problem(404, "not-found")));
     serve("listMotorways", ["A3", "A9"].map((road) => ({ ...(exampleOf<{ data: object[] }>("listMotorways").data[0] ?? {}), road })));
   },
+  // The harness's places at the asked points with no Gemeinde near them (the run's structuredContent): the nearest
+  // settlement within 50 km and the nearest district with its point and its key's Land digits; no address is loaded,
+  // and no zone boundary is held.
+  describe_location: () => {
+    type P = [string, number, number];
+    const near: Record<string, { city: P | null; district: P; land: string }> = {
+      "50.5546,9.6773": { city: ["Gersfeld", 50.4509, 9.9157], district: ["Marburg-Biedenkopf", 50.85, 9.1167], land: "06" },
+      "49.4521,11.0767": { city: null, district: ["Coburg", 50.3297, 11.1167], land: "09" },
+      "51.3397,12.3731": { city: ["Leipzig", 51.3397, 12.3731], district: ["Burgenlandkreis", 51.2006, 11.9686], land: "15" },
+      "48.7758,9.1829": { city: null, district: ["Hohenlohekreis", 49.2, 9.5], land: "08" },
+      "52.3906,13.0645": { city: ["Potsdam", 52.3906, 13.0645], district: ["Berlin", 52.52, 13.405], land: "11" },
+      "51.9607,14.7198": { city: ["Cottbus", 51.7563, 14.3329], district: ["Frankfurt (Oder)", 52.3471, 14.5506], land: "12" },
+    };
+    const place = (p: P, code?: string) => ({ id: p[0], name: p[0], location: { lat: p[1], lon: p[2] }, distanceM: null, sourceFamily: "x", ...(code === undefined ? {} : { code }) });
+    mockServer.use(handlerFor("describeLocation", (url) => {
+      const ex = exampleOf<{ meta: Record<string, unknown> }>("describeLocation");
+      const n = near[url.searchParams.get("at") ?? ""]!;
+      return HttpResponse.json({ ...ex, data: {
+        address: null, municipality: n.city === null ? null : place(n.city), district: place(n.district, n.land), state: null, mayLieOutsideGermany: false,
+        lowEmissionZone: { verdict: "unknown", zone: null, distanceM: null, liftedOn: null },
+      } });
+    }));
+    serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [] });
+  },
   // The harness's bike-sharing data: one virtual Donkey Republic station within 1 km of each asked Kiel point (the
   // run's structuredContent: name, system, distance, bikes, e-bikes), no free-floating bike.
   find_sharing: () => {

@@ -1,0 +1,6 @@
+Description of 52.5200, 13.4050:
+- This installation holds no OpenStreetMap address data.
+- Settlement: Ort A (1.1 km)
+- District: Kreis B (11.0 km)
+- State (Land): Brandenburg
+- Low-emission zone: The point lies outside the Umweltzone Köln; its boundary is 10 m away.

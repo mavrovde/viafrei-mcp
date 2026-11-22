@@ -1,0 +1,6 @@
+Beschreibung für 52.5200, 13.4050:
+- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.
+- Ort: Ort A (1,1 km)
+- Kreis: Kreis B (11,0 km)
+- Bundesland: Brandenburg
+- Umweltzone: Der Punkt: Die Umweltzone Köln wurde laut Umweltbundesamt am 01.01.2025 aufgehoben; eine Plakette ist dort nicht mehr nötig — maßgeblich bleibt die Beschilderung vor Ort.

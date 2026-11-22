@@ -255,6 +255,198 @@
         "structuredContent",
         "credit"
       ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 50.5546,
+        "lon": 9.6773,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 50.5546, 9.6773:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Ort: Gersfeld (20,4 km)\n- Kreis: Marburg-Biedenkopf (51,4 km)\n- Bundesland: Hessen\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 50.5546,
+        "lon": 9.6773,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 50.5546, 9.6773:\n- This installation holds no OpenStreetMap address data.\n- Settlement: Gersfeld (20.4 km)\n- District: Marburg-Biedenkopf (51.4 km)\n- State (Land): Hesse\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 49.4521,
+        "lon": 11.0767,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 49.4521, 11.0767:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Kreis: Coburg (97,6 km)\n- Bundesland: Bayern\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 49.4521,
+        "lon": 11.0767,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 49.4521, 11.0767:\n- This installation holds no OpenStreetMap address data.\n- District: Coburg (97.6 km)\n- State (Land): Bavaria\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 51.3397,
+        "lon": 12.3731,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 51.3397, 12.3731:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Ort: Leipzig (0 m)\n- Kreis: Burgenlandkreis (32,1 km)\n- Bundesland: Sachsen-Anhalt\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 51.3397,
+        "lon": 12.3731,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 51.3397, 12.3731:\n- This installation holds no OpenStreetMap address data.\n- Settlement: Leipzig (0 m)\n- District: Burgenlandkreis (32.1 km)\n- State (Land): Saxony-Anhalt\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 48.7758,
+        "lon": 9.1829,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 48.7758, 9.1829:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Kreis: Hohenlohekreis (52,5 km)\n- Bundesland: Baden-Württemberg\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 48.7758,
+        "lon": 9.1829,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 48.7758, 9.1829:\n- This installation holds no OpenStreetMap address data.\n- District: Hohenlohekreis (52.5 km)\n- State (Land): Baden-Württemberg\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 52.3906,
+        "lon": 13.0645,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 52.3906, 13.0645:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Ort: Potsdam (0 m)\n- Kreis: Berlin (27,2 km)\n- Bundesland: Berlin\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 52.3906,
+        "lon": 13.0645,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 52.3906, 13.0645:\n- This installation holds no OpenStreetMap address data.\n- Settlement: Potsdam (0 m)\n- District: Berlin (27.2 km)\n- State (Land): Berlin\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 51.9607,
+        "lon": 14.7198,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 51.9607, 14.7198:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Ort: Cottbus (35,0 km)\n- Kreis: Frankfurt (Oder) (44,5 km)\n- Bundesland: Brandenburg\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 51.9607,
+        "lon": 14.7198,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 51.9607, 14.7198:\n- This installation holds no OpenStreetMap address data.\n- Settlement: Cottbus (35.0 km)\n- District: Frankfurt (Oder) (44.5 km)\n- State (Land): Brandenburg\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
     }
   ]
 }
