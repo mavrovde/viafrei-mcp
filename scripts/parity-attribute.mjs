@@ -12,11 +12,17 @@
  *
  * Masks: db#72 (the "Keine offene Quelle" line against the "no report" line), db#83 (a weather
  * warning's body lines), db#84 (the credit of an empty road answer), db#85 (the road head's fold
- * of reasons and its count line), structuredContent (dropped), credit (the credit line and
- * `_meta.attribution` / `_meta.license`). A db mask only removes what its gap names.
+ * of reasons and its count line), structuredContent (dropped), "structuredContent outside the
+ * API" (only the keys the API contract names are compared: parity pending the API), credit (the
+ * credit line and `_meta.attribution` / `_meta.license`). A db mask only removes what its gap names.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
+/** The key names the API contract carries (the pinned OpenAPI copy); a structuredContent key outside it waits on the API. */
+const CONTRACT = new Set([...readFileSync(new URL("../server/test/fixtures/api-openapi.json", import.meta.url), "utf8").matchAll(/"([A-Za-z_][A-Za-z0-9_]*)"\s*:/gu)].map((m) => m[1]));
+const pruneToContract = (v) => Array.isArray(v) ? v.map(pruneToContract)
+  : v !== null && typeof v === "object" ? Object.fromEntries(Object.entries(v).filter(([k]) => CONTRACT.has(k)).map(([k, x]) => [k, pruneToContract(x)])) : v;
 
 const ROAD = new Set(["check_road_status", "find_roadworks_ahead", "check_autobahn_traffic"]);
 const CREDIT = /^(Quelle|Quellen|Source|Sources): /u;
@@ -53,6 +59,9 @@ export const MASKS = {
     if (!ROAD.has(tool)) return;
     a.t = a.t.map((l) => l.replace(FOLD, "")).filter((l) => !ROAD_COUNTS.test(l));
   },
+  // Before the plain structuredContent mask: of two masks that both make a row identical, the
+  // narrower one names it.
+  "structuredContent outside the API": (a) => { a.s = a.s === null ? null : pruneToContract(a.s); },
   structuredContent: (a) => { a.s = null; },
   credit: (a) => dropCredit(a),
 };
@@ -110,4 +119,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.log(`| ${k} | ${e.count} | ${k === "identical" ? "" : tools} |`);
   }
   console.log(`| total | ${rows.length} | |`);
+  const pending = rows.filter((r) => attribute(r) === "structuredContent outside the API").length;
+  const exact = rows.filter((r) => r.verdict === "identical").length;
+  console.log(`\nexact parity: ${exact}/${rows.length}; parity pending the API: ${exact + pending}/${rows.length}`);
 }

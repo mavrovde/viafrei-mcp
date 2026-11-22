@@ -28,6 +28,10 @@ check("db#85 removes the fold of reasons and the count line",
   attribute(row("check_autobahn_traffic", ans("A3 — Ampel Gelb: Baustelle (und 4 weitere Gründe).\nA3, gesamte Strecke: 0 Staus"), ans("A3 — Ampel Gelb: Baustelle."))), "db#85");
 check("db#85 does not cover a different item list",
   attribute(row("check_autobahn_traffic", ans("A3 — Ampel Gelb: Baustelle (und 4 weitere Gründe).\n• Baustelle: A3 | X"), ans("A3 — Ampel Gelb: Baustelle.\n- A3: X"))), "unexplained");
+check("a structuredContent key the API contract lacks is parity pending the API",
+  attribute(row("find_charging_station", ans("A", { place: "X", registerCaveat: "c" }), ans("A", { place: "X" }))), "structuredContent outside the API");
+check("a key the contract carries is not pending",
+  attribute(row("find_charging_station", ans("A", { place: "X" }), ans("A", { place: "Y" }))), "structuredContent");
 check("an error today, an answer here", attribute(row("find_parking", ans("Bitte place angeben.", null, {}, true), ans("Keine Parkplätze gefunden."))), "isError: an error today, an answer here");
 check("an answer today, an error here", attribute(row("find_parking", ans("Parken an der A9:"), ans("Nicht verfügbar.", null, {}, true))), "isError: an answer today, an error here");
 check("a wording difference is unexplained", attribute(row("find_address", ans("Keine OSM-Adressdaten geladen."), ans("Keine Adressen gefunden."))), "unexplained");
