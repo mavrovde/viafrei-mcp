@@ -102,21 +102,9 @@ export const TOOL_RESULT_CHARS = 8_000;
 const SOURCE_LABEL: Record<Language, string> = { de: "Quelle", en: "Source" };
 const AS_OF_LABEL: Record<Language, string> = { de: "Stand", en: "As of" };
 
-/** The token a register line carries where the year of retrieval stands (today's attribution-year.ts). */
-export const RETRIEVAL_YEAR = "{Jahr}";
-
-/**
- * A credit line with the year of retrieval resolved: the register stores the token, and every surface that
- * prints a line resolves it with its own clock, by the Berlin calendar (a licence asking for "das Jahr des
- * Datenbezugs"; we retrieve continuously, so it is the year the reader is in).
- */
-export function datedAttribution(text: string, now: Date = new Date()): string {
-  return text.split(RETRIEVAL_YEAR).join(berlinDay(now).slice(0, 4));
-}
-
-function uniqueAttributions(list: readonly Attribution[], now: Date = new Date()): Attribution[] {
+function uniqueAttributions(list: readonly Attribution[]): Attribution[] {
   const seen = new Set<string>();
-  return list.filter((a) => (seen.has(a.family) ? false : (seen.add(a.family), true))).map((a) => ({ ...a, text: datedAttribution(a.text, now) }));
+  return list.filter((a) => (seen.has(a.family) ? false : (seen.add(a.family), true)));
 }
 
 /**

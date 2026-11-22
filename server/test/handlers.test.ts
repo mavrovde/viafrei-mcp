@@ -14,7 +14,6 @@ import { GAPS, lampText, nearestMotorways } from "../src/tools/handlers.js";
 import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
 import { kmText } from "../src/tools/nearby.js";
 import { conditionSentence } from "../src/tools/watch-words.js";
-import { datedAttribution } from "../src/presentation.js";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
@@ -221,21 +220,6 @@ const WX = { family: "dwd_warnings", domain: "weather", text: "Quelle: Deutscher
 const WX_ROAD = { family: "dwd_road_forecast", domain: "weather", text: "Quelle: Deutscher Wetterdienst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder", licence: "CC BY 4.0" };
 const LORRY = { family: "lorry_bast_langlkw", domain: "rules", text: "Lang-Lkw-Netz: BASt", licence: "dl-de/by-2-0" };
 const ROADS = { family: "autobahn", domain: "roads", text: "Verkehrsdaten: Autobahn GmbH des Bundes", licence: "open data" };
-
-describe("a credit naming the year of retrieval", () => {
-  it("resolves the register's token to the Berlin year, in the footer and in _meta", async () => {
-    const tlbv = { family: "tlbv_roadworks", domain: "roads", text: "Arbeitsstellen Thüringen: © Thüringer Landesamt für Bau und Verkehr (TLBV) {Jahr} — GeoNutzV, Daten verändert", licence: "GeoNutzV" };
-    serve("getMotorwayConditions", roads(rich), { attribution: [tlbv] });
-    const r = await call("check_road_status", { road: "A1", language: "de" });
-    const year = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric" }).format(new Date());
-    expect((r._meta as { attribution: string }).attribution).toBe(`Arbeitsstellen Thüringen: © Thüringer Landesamt für Bau und Verkehr (TLBV) ${year} — GeoNutzV, Daten verändert`);
-    expect(textOf(r)).not.toContain("{Jahr}");
-  });
-  it("by the Berlin calendar: 31 December 23:30 UTC is already the next year", () => {
-    expect(datedAttribution("Stadt Aachen ({Jahr})", new Date("2026-12-31T23:30:00Z"))).toBe("Stadt Aachen (2027)");
-    expect(datedAttribution("Stadt Aachen ({Jahr})", new Date("2026-12-31T22:30:00Z"))).toBe("Stadt Aachen (2026)");
-  });
-});
 
 describe("check_autobahn_traffic's lamp, as today's ampel says it", () => {
   for (const language of LANGS) {
