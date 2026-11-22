@@ -16,6 +16,7 @@ import { houseNumberRefusal } from "./house-number.js";
 import { findCheapestFuel, findFuelStation } from "./fuel.js";
 import { findChargingStation } from "./charging.js";
 import { findHydrogenStation } from "./hydrogen.js";
+import { facilitiesText } from "./facilities.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
 import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
@@ -503,6 +504,9 @@ const NEED_STATION = (language: Language): CallToolResult => toolError(L(languag
   'Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {"station": "Hannover Hbf"}.'));
 const noStation = (args: Args): boolean => str(args["station"]) === undefined && str(args["eva_no"]) === undefined;
 
+/** check_station_facilities' default list length (today's schema). */
+const FACILITIES_LIMIT = 20;
+
 const checkStationFacilities: Handler = async (args, ctx) => {
   const { language } = ctx;
   if (noStation(args)) return NEED_STATION(language);
@@ -513,10 +517,15 @@ const checkStationFacilities: Handler = async (args, ctx) => {
     return asked === undefined ? none(language, [stations.meta], L(language, "Bahnhöfe", "stations")) : NOT_KNOWN.facilityStation(asked, language);
   }
   const facility = str(args["facility"]);
-  const r = await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id, kind: facility === "any" ? undefined : facility, limit: num(args["limit"]) });
+  const kind = facility === "any" ? undefined : facility;
+  // Today's default list length, sent so the counts and the list agree on it.
+  const limit = num(args["limit"]) ?? FACILITIES_LIMIT;
+  const r = await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id, kind, limit });
   const d = r.data;
-  const head = L(language, `${d.station.name}: ${d.counts.active} in Betrieb, ${d.counts.inactive} außer Betrieb, ${d.counts.unknown} unbekannt.`, `${d.station.name}: ${d.counts.active} working, ${d.counts.inactive} out of service, ${d.counts.unknown} unknown.`);
-  return toolResult([head, ...d.facilities.filter((f) => f.state !== "active").map((f) => `- ${f.kind}${f.position === null ? "" : ` ${f.position}`}: ${f.state}`)].join("\n"), [stations.meta, r.meta], language);
+  // None of the asked kind: one more read, on this path only, says what DB does list ("nur 6 Fahrtreppen").
+  const empty = d.counts.active + d.counts.inactive + d.counts.unknown === 0;
+  const others = kind !== undefined && empty ? await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id, limit: 50 }) : null;
+  return toolResult(facilitiesText(language, d, kind, limit, others?.data.facilities ?? []), [stations.meta, r.meta, ...(others === null ? [] : [others.meta])], language);
 };
 
 const describeStation: Handler = async (args, ctx) => {

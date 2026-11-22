@@ -210,7 +210,9 @@ const GAP_LINES: Record<string, { lines: number[]; absent?: number[]; needs: str
 };
 
 /** The same gaps, by the lines' own shape, for every case of a tool. */
-const GAP_BY_TOOL: Record<string, { gap?: RegExp; absent?: RegExp; needs: string }> = {
+const GAP_BY_TOOL: Record<string, { gap?: RegExp; absent?: RegExp; tail?: string; needs: string }> = {
+  // DB's own explanation of a state rides after the state; the line up to it is today's, word for word.
+  check_station_facilities: { gap: / — (Meldung der Bahn|DB's report)/u, tail: " — ", needs: "DB's explanation of a facility's state (stateExplanation)" },
   // A site's line names its street address and plugs; the price and the register's release date are not held.
   find_charging_station: { gap: /^\d+\. /u, absent: /^(Preis pro kWh|Price per kWh|Stand des Ladesäulenregisters|Charging point register as of)/u, needs: "a charging site's address and plugs, its price per kWh, the register's release date" },
 };
@@ -230,6 +232,21 @@ function chargingState(c: Case): void {
     const unfiltered = !["connector", "min_kw", "max_kw", "operator", "conditions", "only_available"].some((k) => u.searchParams.has(k));
     return Array.from({ length: held > 0 ? (unfiltered ? held : 0) : listed }, (_, i) => site(i));
   }, { page: { limit: 100, hasMore: false } });
+}
+
+/** check_station_facilities: the station as today names it, and each copied unit line read back into a unit. */
+function facilitiesState(c: Case): void {
+  const name = /^(?:In den Aufzugs- und Fahrtreppendaten der Bahn ist für (.+?) (?:weder|kein|keine) |In (.+?) (?:ist|sind|kann) |DB's lift and escalator data lists .+? for (.+?)(?:\.|, only) |\d+ of \d+ reported facilities .*? at (.+?) (?:is|are) )/u.exec(c.body);
+  const station = name?.slice(1).find((x) => x !== undefined) ?? String(c.args["station"]);
+  serve("listStations", [{ id: "st-1", name: station, location: { lat: 50, lon: 10 }, stopCode: null, eva: "8000001", evaNumbers: ["8000001"] }]);
+  const kinds: Record<string, string> = { Aufzug: "elevator", Lift: "elevator", Fahrtreppe: "escalator", Escalator: "escalator", Anlage: "other", Facility: "other" };
+  const states: Record<string, string> = { "in Betrieb": "active", "in service": "active", "außer Betrieb": "inactive", "out of service": "inactive", "Status unbekannt": "unknown", "status unknown": "unknown" };
+  const units = c.body.split("\n").slice(1).flatMap((l, i) => {
+    const m = /^(Aufzug|Fahrtreppe|Anlage|Lift|Escalator|Facility)(?: (.+?))?: (in Betrieb|außer Betrieb|Status unbekannt|in service|out of service|status unknown)(?: — |$)/u.exec(l);
+    return m === null ? [] : [{ id: `f-${i}`, kind: kinds[m[1]!]!, position: m[2] ?? null, state: states[m[3]!]!, sourceFamily: "fasta" }];
+  });
+  const n = (st: string): number => units.filter((u) => u.state === st).length;
+  serve("listStationFacilities", { station: { name: station }, facilities: units, counts: { active: n("active"), inactive: n("inactive"), unknown: n("unknown") } });
 }
 
 /**
@@ -303,7 +320,8 @@ describe("today's wording, from the parity run (lane A)", () => {
     const key = keyOf(c);
     it(`${c.tool} ${JSON.stringify(c.args)}`, async () => {
       const state = c.tool === "get_train_departures" ? () => trainState(c) : c.tool === "get_departures" && c.args["stop"] !== undefined ? () => unknownStop(c)
-        : c.tool === "find_charging_station" ? () => chargingState(c) : c.tool === "find_hydrogen_station" ? () => hydrogenState(c) : STATE[key];
+        : c.tool === "find_charging_station" ? () => chargingState(c) : c.tool === "find_hydrogen_station" ? () => hydrogenState(c)
+        : c.tool === "check_station_facilities" ? () => facilitiesState(c) : STATE[key];
       if (state === undefined) throw new Error(`no API state for ${key}`);
       state(c.args);
       const { client, close } = await connect({ refreshWait: { totalMs: 20, pollMs: 5 } });
@@ -323,6 +341,7 @@ describe("today's wording, from the parity run (lane A)", () => {
         expect(got.filter((_, i) => !gap.has(i))).toEqual(want.filter((_, i) => !gap.has(i)));
         // A gap that only drops a tail (prefix): the line says everything up to it, word for word.
         if (GAP_LINES[key]?.prefix === true) for (const i of gap) expect(want[i]!.startsWith(`${got[i]!} (`)).toBe(true);
+        if (rule?.tail !== undefined) for (const i of gap) expect(want[i]!.startsWith(`${got[i]!}${rule.tail}`)).toBe(true);
       } finally {
         await close();
       }

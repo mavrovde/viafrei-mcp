@@ -1171,7 +1171,46 @@ describe("stations", () => {
 
   it("check_station_facilities with any facility asks every kind", async () => {
     await call("check_station_facilities", { station: "Schömpingbach Hbf", facility: "any", language: "en" });
-    expect(query("listStationFacilities")).toEqual([{ lang: "en" }]);
+    expect(query("listStationFacilities")).toEqual([{ limit: "20", lang: "en" }]);
+  });
+
+  describe("check_station_facilities in today's words", () => {
+    const unit = (id: string, kind: string, position: string | null, state: string) => ({ id, kind, position, state, sourceFamily: "fasta" });
+    const facilities = (list: ReturnType<typeof unit>[]) => ({ station: { name: "Schömpingbach Hbf" }, facilities: list,
+      counts: { active: list.filter((f) => f.state === "active").length, inactive: list.filter((f) => f.state === "inactive").length, unknown: list.filter((f) => f.state !== "active" && f.state !== "inactive").length } });
+    const text = async (args: Record<string, unknown>) => body(await call("check_station_facilities", { station: "Schömpingbach Hbf", ...args }));
+    it("every unit in service, one name twice told apart by its number, and a list cut at the limit", async () => {
+      serve("listStationFacilities", facilities([unit("10", "elevator", "zu Gleis 1", "active"), unit("11", "elevator", "zu Gleis 1", "active"), unit("12", "escalator", "Westseite", "active")]));
+      expect(await text({ limit: 2, language: "de" })).toBe([
+        "In Schömpingbach Hbf sind alle 3 gemeldeten Anlagen in Betrieb. Gezählt sind die Anlagen, die die Bahn für diesen Bahnhof meldet. Aufzüge an Haltestellen städtischer Verkehrsbetriebe (Straßenbahn, Stadtbahn, U-Bahn) sind darin nicht enthalten — dazu liegen mir für diesen Bahnhof keine Live-Daten vor.",
+        "Fahrtreppe Westseite: in Betrieb", "Aufzug zu Gleis 1 (Anlage 10): in Betrieb", "… und 1 weitere.",
+      ].join("\n"));
+    });
+    it("none with a known status: not that they are out of service; DB's German names in English, or quoted", async () => {
+      serve("listStationFacilities", facilities([unit("10", "elevator", "zu Gleis 3/4 - Südsteg", "unknown"), unit("11", "escalator", "neben dem Kiosk", "unknown")]));
+      expect(await text({ language: "en" })).toBe([
+        "I cannot say whether the 2 reported facilities at Schömpingbach Hbf are in service — that does not mean they are out of service. DB reports no status for 2 facilities. Counted are the facilities DB reports for this station. Lifts at stops of the city's transport operator (tram, light rail, underground) are not included — I hold no live data on them for this station.",
+        'Escalator Provider text (German): "neben dem Kiosk": status unknown', "Lift to platform 3/4 - south footbridge: status unknown",
+      ].join("\n"));
+    });
+    it("some in service and the rest unknown: of the known ones", async () => {
+      serve("listStationFacilities", facilities([unit("10", "elevator", null, "active"), unit("11", "elevator", null, "unknown")]));
+      expect((await text({ language: "de" })).split("\n")[0]).toMatch(/^In Schömpingbach Hbf ist 1 von 1 gemeldeten Anlagen mit bekanntem Status in Betrieb\. Bei 1 Anlage meldet die Bahn keinen Status\. /u);
+    });
+    for (const language of LANGS) {
+      it(`DB lists none (${language}): what the data lists, never what the station has; a kind asked names the others`, async () => {
+        serve("listStationFacilities", facilities([]));
+        expect(await text({ language })).toBe(language === "de"
+          ? "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Schömpingbach Hbf weder ein Aufzug noch eine Fahrtreppe verzeichnet. Ob es dort Anlagen gibt, die die Bahn nicht führt, kann ich daraus nicht sagen."
+          : "DB's lift and escalator data lists neither a lift nor an escalator for Schömpingbach Hbf. Whether the station has equipment DB does not list, I cannot tell from this.");
+        mockServer.use(handlerFor("listStationFacilities", (u) => HttpResponse.json({ ...exampleOf<Body>("listStationFacilities"),
+          data: facilities(u.searchParams.get("kind") === null ? [unit("1", "escalator", null, "active"), unit("2", "escalator", null, "active")] : []) })));
+        expect(await text({ facility: "elevator", language })).toBe(language === "de"
+          ? "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Schömpingbach Hbf kein Aufzug verzeichnet, nur 2 Fahrtreppen. Ob es dort einen Aufzug gibt, den die Bahn nicht führt, kann ich daraus nicht sagen."
+          : "DB's lift and escalator data lists no lift for Schömpingbach Hbf, only 2 escalators. Whether the station has a lift DB does not list, I cannot tell from this.");
+        expect(query("listStationFacilities").slice(-2)).toEqual([{ kind: "elevator", limit: "20", lang: language }, { limit: "50", lang: language }]);
+      });
+    }
   });
 
   it("describe_station with no departures asked reads no board", async () => {

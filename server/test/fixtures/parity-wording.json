@@ -1502,6 +1502,118 @@
       },
       "isError": false,
       "body": "Hydrogen stations for cars near München (within 50 km), nearest first:\n1. München - Wilhelm-Hale-Str. — 4.3 km · Wilhelm-Hale-Str. 55, NNNNN München · 700 bar car · opening hours: Mon–Sun 06:00–22:00, public holidays 06:00–22:00 · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In Hamburg Hbf ist 1 von 3 gemeldeten Anlagen mit bekanntem Status außer Betrieb. Bei 1 Anlage meldet die Bahn keinen Status. Gezählt sind die Anlagen, die die Bahn für diesen Bahnhof meldet. Aufzüge an Haltestellen städtischer Verkehrsbetriebe (Straßenbahn, Stadtbahn, U-Bahn) sind darin nicht enthalten — dazu liegen mir für diesen Bahnhof keine Live-Daten vor.\nAufzug zu Gleis 7/8: außer Betrieb — Meldung der Bahn: „Reparaturarbeiten“\nFahrtreppe zu Gleis 11/12: Status unbekannt — Meldung der Bahn: „no data available“\nAufzug zu Gleis 5/6: in Betrieb\nFahrtreppe Zugang Wandelhalle: in Betrieb"
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Frankfurt (Main) Hbf weder ein Aufzug noch eine Fahrtreppe verzeichnet. Ob es dort Anlagen gibt, die die Bahn nicht führt, kann ich daraus nicht sagen."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Frankfurt(Main)Hbf",
+        "facility": "elevator",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Frankfurt (Main) Hbf kein Aufzug verzeichnet. Ob es dort einen Aufzug gibt, den die Bahn nicht führt, kann ich daraus nicht sagen."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Leipzig Hbf",
+        "facility": "elevator",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Leipzig Hbf kein Aufzug verzeichnet. Ob es dort einen Aufzug gibt, den die Bahn nicht führt, kann ich daraus nicht sagen."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Leipzig Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Leipzig Hbf weder ein Aufzug noch eine Fahrtreppe verzeichnet. Ob es dort Anlagen gibt, die die Bahn nicht führt, kann ich daraus nicht sagen."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Berlin Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Berlin Hbf weder ein Aufzug noch eine Fahrtreppe verzeichnet. Ob es dort Anlagen gibt, die die Bahn nicht führt, kann ich daraus nicht sagen."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "DB's lift and escalator data lists neither a lift nor an escalator for Frankfurt (Main) Hbf. Whether the station has equipment DB does not list, I cannot tell from this."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "1 of 3 reported facilities with a known status at Hamburg Hbf is out of service. DB reports no status for 1 facility. Counted are the facilities DB reports for this station. Lifts at stops of the city's transport operator (tram, light rail, underground) are not included — I hold no live data on them for this station.\nLift to platform 7/8: out of service — DB's report: \"Reparaturarbeiten\"\nEscalator to platform 11/12: status unknown — DB's report: \"no data available\"\nLift to platform 5/6: in service\nEscalator Zugang Wandelhalle: in service"
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Leipzig Hbf",
+        "facility": "elevator",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "DB's lift and escalator data lists no lift for Leipzig Hbf. Whether the station has a lift DB does not list, I cannot tell from this."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Berlin Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "DB's lift and escalator data lists neither a lift nor an escalator for Berlin Hbf. Whether the station has equipment DB does not list, I cannot tell from this."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Frankfurt(Main)Hbf",
+        "facility": "elevator",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "DB's lift and escalator data lists no lift for Frankfurt (Main) Hbf. Whether the station has a lift DB does not list, I cannot tell from this."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Leipzig Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "DB's lift and escalator data lists neither a lift nor an escalator for Leipzig Hbf. Whether the station has equipment DB does not list, I cannot tell from this."
     }
   ]
 }
