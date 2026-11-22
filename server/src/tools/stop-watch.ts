@@ -10,7 +10,7 @@ import { toolError, toolResult, type Language } from "../presentation.js";
 import { isResult, num, str, type Handler, type ToolContext } from "./context.js";
 
 /** The watch service's own credit: no provider data, every report names the source behind it. */
-const WATCH_CREDIT = {
+export const WATCH_CREDIT = {
   family: "viafrei_watch",
   text: "Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben / Watch: ViaFrei, our own service — every report names the source of the data behind it",
   licence: "ViaFrei service metadata (no provider data)",

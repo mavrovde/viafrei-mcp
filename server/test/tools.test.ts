@@ -3,6 +3,7 @@ import { HttpResponse } from "msw";
 import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
 import { connect, TEST_KEY, textOf } from "./harness.js";
 import { HANDLERS } from "../src/tools/handlers.js";
+import { WATCH_CREDIT } from "../src/tools/stop-watch.js";
 import { loadCatalogue } from "../src/catalogue.js";
 import { TOOL_CASES } from "./tool-cases.js";
 
@@ -35,9 +36,16 @@ describe("tools answer from the API contract's examples", () => {
         const meta = r._meta as { attribution: string; sources: string[] };
         const body = exampleOf(c.ops[c.ops.length - 1]!);
         const credited = (body.meta["attribution"] as { text: string }[] | undefined) ?? [];
-        for (const a of credited) {
-          expect(meta.attribution).toContain(a.text);
-          expect(textOf(r)).toContain(a.text);
+        // A newly opened watch shows no provider data, so it credits the watch service alone, as today's
+        // server does (attribution names what answered); each report it later gives names its own source.
+        if (c.tool === "watch_situation") {
+          expect(meta.attribution).toBe(WATCH_CREDIT.text);
+          for (const a of credited) expect(textOf(r)).not.toContain(a.text);
+        } else {
+          for (const a of credited) {
+            expect(meta.attribution).toContain(a.text);
+            expect(textOf(r)).toContain(a.text);
+          }
         }
         const purpose = ((body.meta["notes"] as { purpose: string[] } | undefined)?.purpose ?? [])[0];
         if (purpose !== undefined) {

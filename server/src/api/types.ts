@@ -91,7 +91,7 @@ export type RefreshData = { id: string; source: string; state: RefreshState; set
 /** StationFacilitiesData */
 export type StationFacilitiesData = { station: { name: string }; counts: { active: number; inactive: number; unknown: number }; facilities: { id: string; kind: string; position: string | null; state: string }[] };
 /** WatchData */
-export type WatchData = { watchId: string; uri: string; kind: string; key: string; from: string; until: string; ended: boolean; note: string | null; situations: RoadSituation[] };
+export type WatchData = { watchId: string; uri: string; kind: string; key: string; condition?: Record<string, unknown>; from: string; until: string; ended: boolean; note: string | null; situations: RoadSituation[] };
 /** SourceRow */
 export type SourceRow = { family: string; domain: string; publisher: string; attribution: string; licence: string; licenceUrl: string; status: string };
 /** PlacesCoverageData */

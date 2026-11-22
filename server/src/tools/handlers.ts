@@ -6,12 +6,13 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope } from "../api/client.js";
 import type * as T from "../api/types.js";
-import { berlinDateTime, berlinTime, eur, km, notAvailable, toolError, toolResult, type Language } from "../presentation.js";
+import { berlinDateTime, berlinTime, creditPlace, eur, km, notAvailable, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby } from "./nearby.js";
 import { stopWatchHandler } from "./stop-watch.js";
+import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
 import { findSpeedCameras } from "./speed-cameras.js";
 import { getTrainDepartures } from "./trains.js";
 
@@ -41,7 +42,7 @@ const NOT_KNOWN = {
 };
 
 /** A session holds at most this many open watches, as today's server does. */
-export const MAX_WATCHES = 10;
+export { MAX_WATCHES };
 
 function situationLine(s: T.RoadSituation, language: Language): string {
   const until = s.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(s.validity.until, language)}`, ` until ${berlinDateTime(s.validity.until, language)}`);
@@ -509,24 +510,32 @@ const LAT_LON = /^-?\d{1,2}(\.\d+)?,\s*-?\d{1,3}(\.\d+)?$/u;
  * position, a station id, an official key and a charging site id go through as given.
  */
 export async function watchTarget(kind: string, key: string, ctx: ToolContext): Promise<string | CallToolResult> {
-  if (kind === "road") return key.replace(/\s/g, "").toUpperCase();
+  const r = await resolveWatch(kind, key, ctx);
+  return isResult(r) ? r : r.target;
+}
+
+/** watchTarget, with what a station or a region named in words became, for the answer to say it. */
+async function resolveWatch(kind: string, key: string, ctx: ToolContext): Promise<{ target: string; resolved?: Resolved } | CallToolResult> {
+  if (kind === "road") return { target: key.replace(/\s/g, "").toUpperCase() };
   if ((kind === "place" || kind === "weather") && !LAT_LON.test(key)) {
     const pos = await position({ place: key }, ctx);
-    return isResult(pos) ? pos : atParam(pos.at);
+    return isResult(pos) ? pos : { target: atParam(pos.at) };
   }
-  if (kind === "place" || kind === "weather") return key.replace(/\s/g, "");
+  if (kind === "place" || kind === "weather") return { target: key.replace(/\s/g, "") };
   if (kind === "station" && !/^[\w:-]*\d[\w:-]*$/u.test(key)) {
     const found = await ctx.api.get<T.Station[]>("listStations", { q: key, limit: 1 });
     const first = found.data[0];
     if (first === undefined) return toolError(L(ctx.language, `Die Haltestelle „${key}“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet.`, `I could not find the stop "${key}". No watch was opened.`));
-    return first.id;
+    return { target: first.id, resolved: { from: key, label: first.name, what: { de: `Haltestelle ${first.name}, DHID ${first.id}`, en: `the stop ${first.name}, DHID ${first.id}` } } };
   }
   if (kind === "region") {
-    const { code } = await areaCode({ region: key }, ctx);
+    const { code, metas } = await areaCode({ region: key }, ctx);
     if (code === undefined) return toolError(L(ctx.language, `Die Region „${key}“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet.`, `I could not find the region "${key}". No watch was opened.`));
-    return code;
+    if (metas.length === 0) return { target: code };
+    for (const m of metas) creditPlace(m.attribution ?? []);
+    return { target: code, resolved: { from: key, label: key, what: { de: `Region ${key}, AGS ${code}`, en: `the region ${key}, AGS ${code}` } } };
   }
-  return key;
+  return { target: key };
 }
 
 const watchSituation: Handler = async (args, ctx) => {
@@ -539,18 +548,20 @@ const watchSituation: Handler = async (args, ctx) => {
       `Diese Sitzung hat bereits ${MAX_WATCHES} offene Beobachtungen — das Maximum ist ${MAX_WATCHES}. Beende eine mit stop_watch (die Liste steht in viafrei://watches) und versuche es dann noch einmal.`,
       `This session already has ${MAX_WATCHES} open watches — the limit is ${MAX_WATCHES}. End one with stop_watch (viafrei://watches lists them) and try again.`));
   }
-  const target = await watchTarget(kind, key, ctx);
-  if (isResult(target)) return target;
+  const resolved = await resolveWatch(kind, key, ctx);
+  if (isResult(resolved)) return resolved;
+  const target = resolved.target;
   const condition = args["condition"];
   const r = await ctx.api.get<T.WatchData>("getWatch", {
     kind, target, request: str(args["request"]), hours: num(args["hours"]), until: str(args["until"]),
     condition: condition === undefined ? undefined : JSON.stringify(condition),
   });
   const id = ctx.watches.add({ watchId: r.data.watchId, uri: r.data.uri, kind: r.data.kind, key: r.data.key }, key);
-  const lines = [L(language, `Beobachtung ${id} läuft bis ${berlinDateTime(r.data.until, language)}.`, `Watch ${id} runs until ${berlinDateTime(r.data.until, language)}.`)];
-  if (r.data.note !== null) lines.push(r.data.note);
-  lines.push(...r.data.situations.slice(0, 10).map((s) => situationLine(s, language)));
-  return toolResult(lines.join("\n"), [r.meta], language);
+  // A place is said by its name, as it was asked; every other kind by the key the platform watches.
+  return watchOpened({
+    language, id, kind: r.data.kind, key: r.data.kind === "place" ? key : r.data.key, condition: r.data.condition, until: r.data.until,
+    open: ctx.watches.list().length, note: r.data.note, ...(resolved.resolved === undefined ? {} : { resolved: resolved.resolved }),
+  });
 };
 
 const stopWatch = stopWatchHandler(watchTarget);

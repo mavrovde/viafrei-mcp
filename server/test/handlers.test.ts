@@ -13,6 +13,7 @@ import { connect, textOf } from "./harness.js";
 import { GAPS, lampText, nearestMotorways } from "../src/tools/handlers.js";
 import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
 import { kmText } from "../src/tools/nearby.js";
+import { conditionSentence } from "../src/tools/watch-words.js";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
@@ -994,12 +995,18 @@ describe("stations", () => {
 
 describe("watch_situation and stop_watch", () => {
   for (const language of LANGS) {
-    it(`a watch (${language}): its id, its end, the API's note and the situations; the condition sent as JSON`, async () => {
+    it(`a watch (${language}): today's sentence, the condition sent as JSON and said back with its defaults, the watch service's credit`, async () => {
       const w = ex<Record<string, unknown>>("getWatch");
-      serve("getWatch", { ...w, note: "Beobachtung läuft.", situations: [situation({ road: "A1", headline: "Stau" }), ...Array.from({ length: 11 }, (_, i) => situation({ headline: `W${i}` }))] });
+      serve("getWatch", { ...w, kind: "road", key: "A1", condition: { event: "any", events: ["restrictions", "jams"] }, note: null, situations: [situation({ road: "A1", headline: "Stau" })] });
       const r = await call("watch_situation", { kind: "road", key: "A1", request: "jams", hours: 2, until: "2026-03-30T05:00:00+02:00", condition: { event: "any" }, language });
       expect(query("getWatch")).toEqual([{ kind: "road", target: "A1", request: "jams", hours: "2", until: "2026-03-30T05:00:00+02:00", condition: '{"event":"any"}', lang: language }]);
-      await pinned("handlers", body(r));
+      const [line, , credit] = textOf(r).split("\n");
+      expect(line).toBe(language === "de"
+        ? "Ich beobachte die Straße A1 und melde mich hier. Bedingung: wenn eine Sperrung oder Einschränkung oder ein Stau (gemeldet von der Autobahn GmbH oder der Polizei) neu auftritt, aufgehoben wird oder sich auflöst. Läuft bis 30.03. 05:00. 1 von 10 Beobachtungen dieser Sitzung belegt. Nur in diesem Chat: Ich kann keine E-Mail, keine Nachricht und keinen Alarm außerhalb dieses Gesprächs schicken. Wenn die Sitzung endet, endet die Beobachtung. Zum Beenden: stop_watch mit viafrei://watch/1."
+        : "I am watching road A1 and will tell you here. Condition: when a closure or restriction or a jam (reported by the Autobahn GmbH or the police) appears, is lifted or clears. It runs until 2026-03-30 05:00. 1 of 10 watches in use for this session. In this chat only: I cannot send an e-mail, a message or any alert outside this conversation. When the session ends, the watch ends with it. To end it: stop_watch with viafrei://watch/1.");
+      expect(credit).toMatch(new RegExp(`^${language === "de" ? "Quelle" : "Source"}: Beobachtung: ViaFrei, eigener Dienst`, "u"));
+      expect(r.structuredContent).toMatchObject({ uri: "viafrei://watch/1", watchId: 1, kind: "road", key: "A1", condition: { event: "any", events: ["restrictions", "jams"] }, expiresAt: "2026-03-30T03:00:00.000Z", openWatches: 1, maxWatches: 10, scope: "session", externalChannels: false });
+      expect((r._meta as Record<string, unknown>)["conditionNote"]).toBeUndefined();
     });
     it(`a watch without kind or key (${language}) is refused by the schema before the API is asked`, async () => {
       for (const [args, issue] of [
@@ -1013,6 +1020,22 @@ describe("watch_situation and stop_watch", () => {
       expect(calls).toHaveLength(0);
     });
   }
+
+  it("the slots count the watches open now, not the id; the condition the platform applied is given with its defaults", async () => {
+    const { client, close } = await connect();
+    try {
+      serve("getWatch", { ...ex<Record<string, unknown>>("getWatch"), condition: { event: "any" }, note: null });
+      await client.callTool({ name: "watch_situation", arguments: { kind: "road", key: "A1", language: "de" } });
+      await client.callTool({ name: "watch_situation", arguments: { kind: "road", key: "A2", language: "de" } });
+      await client.callTool({ name: "stop_watch", arguments: { watch_id: 1, language: "de" } });
+      const r = (await client.callTool({ name: "watch_situation", arguments: { kind: "road", key: "A3", language: "de" } })) as CallToolResult;
+      expect(textOf(r)).toContain(" 2 von 10 Beobachtungen dieser Sitzung belegt. ");
+      expect(textOf(r)).toContain("Zum Beenden: stop_watch mit viafrei://watch/3.");
+      expect(r.structuredContent).toMatchObject({ watchId: 3, openWatches: 2, condition: { event: "any", events: ["restrictions"] } });
+    } finally {
+      await close();
+    }
+  });
 
   it("stop_watch finds a watch by uri or by kind and key; an unknown one is an error", async () => {
     const { client, close } = await connect();
@@ -1174,6 +1197,42 @@ describe("stop_watch in today's words: by number, uri or subject, among this ses
     } finally {
       await close();
     }
+  });
+});
+
+describe("watch_situation's answer: the condition said back, what a name became, a note said first", () => {
+  it("each kind's condition with its defaults filled in; a number in German with a comma", () => {
+    const de = (kind: string, c?: Record<string, unknown>) => conditionSentence(kind, c, "de");
+    expect([
+      de("road"), de("road", { event: "reopen" }), de("road", { event: "reopen", events: ["jams"] }), de("station"), de("region", { late_share: 0.125 }), de("place", { radius_km: 2.5 }), de("weather", { min_level: 3 }), de("charger"), de("charger", { point_id: "7" }),
+    ]).toEqual([
+      "Bedingung: wenn eine Sperrung oder Einschränkung neu auftritt oder aufgehoben wird.",
+      "Bedingung: nur wenn eine Sperrung oder Einschränkung aufgehoben wird.",
+      "Bedingung: nur wenn ein Stau (gemeldet von der Autobahn GmbH oder der Polizei) aufgehoben wird oder sich auflöst.",
+      "Bedingung: Abfahrten mit 10 Minuten Verspätung oder mehr.",
+      "Bedingung: mindestens 12,5 % der beobachteten Fahrten mit 5 Minuten Verspätung oder mehr, bei mindestens 10 Fahrten.",
+      "Bedingung: neue Sperrungen oder Einschränkungen im Umkreis von 2,5 km.",
+      "Bedingung: amtliche DWD-Warnungen ab Warnstufe 3.",
+      "Bedingung: wenn ein Ladepunkt des Standorts frei wird.",
+      "Bedingung: wenn der Ladepunkt 7 frei wird.",
+    ]);
+    expect([conditionSentence("region", undefined, "en"), conditionSentence("weather", null, "en")]).toEqual([
+      "Condition: at least 25 % of observed trips running 5 minutes late or more, over at least 10 trips.",
+      "Condition: official DWD warnings of level 2 or higher.",
+    ]);
+  });
+
+  it("a station named in words says what it became; a place is said by its name; the API's note is said first and carried as the condition note", async () => {
+    const w = ex<Record<string, unknown>>("getWatch");
+    serve("getWatch", { ...w, kind: "station", key: "1:de:01002:9001", condition: { delay_min: 10 }, note: null });
+    const st = await call("watch_situation", { kind: "station", key: "Leipzig Hbf", language: "de" });
+    expect(textOf(st).split("\n")[0]).toMatch(/^Ich beobachte die Haltestelle 1:de:01002:9001 und melde mich hier\. Aus "Leipzig Hbf" aufgelöst: Haltestelle Schömpingbach Hbf, DHID 1:de:01002:9001\. Bedingung: Abfahrten mit 10 Minuten/u);
+    expect(st.structuredContent).toMatchObject({ resolvedFrom: "Leipzig Hbf", resolvedLabel: "Schömpingbach Hbf" });
+    serve("getWatch", { ...w, kind: "place", key: "48.24375,7.01625", condition: { radius_km: 25 }, note: "Ein Stau wird bei einer Orts-Beobachtung nicht gemeldet." });
+    const pl = await call("watch_situation", { kind: "place", key: "Fulda", request: "Stau", language: "de" });
+    expect(textOf(pl).split("\n")[0]).toMatch(/^Ein Stau wird bei einer Orts-Beobachtung nicht gemeldet\. Ich beobachte den Ort Fulda und melde mich hier\. Bedingung: neue Sperrungen oder Einschränkungen im Umkreis von 25 km\./u);
+    expect((pl._meta as Record<string, unknown>)["conditionNote"]).toBe("Ein Stau wird bei einer Orts-Beobachtung nicht gemeldet.");
+    expect(st.structuredContent).not.toHaveProperty("conditionNote");
   });
 });
 
