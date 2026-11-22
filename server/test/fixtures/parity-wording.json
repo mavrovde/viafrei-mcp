@@ -1688,6 +1688,204 @@
       },
       "isError": false,
       "body": "Berlin Hbf — Station page: https://viafrei.de/en/station/berlin-hbf\nEuropaplatz 1, NNNNN Berlin · Berlin · station category 1 (Bahnhofskategorie) · EVA 8011160\n\nRail lamp: Amber — Limited view: real-time data may be out of date (As of HH:MM)\n\nParking and charging:\n- Car parks and charging points nearby: find_parking or find_charging_station with lat 52.NNNNN, lon 13.NNNNN."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Hamburg",
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Hamburg liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Bremen",
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Bremen liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Köln",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Köln liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Würzburg",
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Würzburg liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Dortmund",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Dortmund liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 48.7758,
+        "lon": 9.1829,
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür 48.776, 9.183 liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 50.553,
+        "lon": 9.675,
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür 50.553, 9.675 liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Wuppertal",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Wuppertal liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Osnabrück",
+        "fuel": "diesel",
+        "radius_km": 15,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Osnabrück liegen im Umkreis von 15 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Hamburg",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Hamburg liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Die Preise für diese Gegend sind beim Anbieter angefordert, für eine Frage wie diese und nicht im Hintergrund; die Anfrage wartet in der Warteschlange, bis sie an der Reihe ist. Bitte danach noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Hamburg",
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Hamburg. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Bremen",
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Bremen. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Köln",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Köln. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 48.7758,
+        "lon": 9.1829,
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of 48.776, 9.183. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Würzburg",
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Würzburg. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 50.553,
+        "lon": 9.675,
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of 50.553, 9.675. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Dortmund",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Dortmund. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Wuppertal",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Wuppertal. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Osnabrück",
+        "fuel": "diesel",
+        "radius_km": 15,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 15 km of Osnabrück. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Hamburg",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Hamburg. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
     }
   ]
 }

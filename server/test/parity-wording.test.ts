@@ -49,6 +49,16 @@ function fuelEmpty(at: ReturnType<typeof place> | null, joined: boolean): void {
 }
 
 /**
+ * find_cheapest_fuel with no price in the circle, for any place: the place as the copied sentence names it, and the
+ * area's discovery joined (an earlier call's, "angefordert") or this call's own ("gerade gefragt").
+ */
+function fuelEmptyState(c: Case): void {
+  if (!/(keine Tankstellenpreise vor|No fuel prices are held)/u.test(c.body)) throw new Error(`not an empty-area answer: ${keyOf(c)}`);
+  const name = c.args["place"] === undefined ? null : String(c.args["place"]);
+  fuelEmpty(name === null ? null : place(name, "municipality", 50, 10, "05315000"), /(beim Anbieter angefordert|have been requested from the provider)/u.test(c.body));
+}
+
+/**
  * find_fuel_station's reads: the filtered search finds nothing (its meta saying how many stations an unknown
  * opening state left out and the instant open_at named), the circle holds `held` stations, none priced in 25 km.
  */
@@ -349,7 +359,8 @@ describe("today's wording, from the parity run (lane A)", () => {
     it(`${c.tool} ${JSON.stringify(c.args)}`, async () => {
       const state = c.tool === "get_train_departures" ? () => trainState(c) : c.tool === "get_departures" && c.args["stop"] !== undefined ? () => unknownStop(c)
         : c.tool === "find_charging_station" ? () => chargingState(c) : c.tool === "find_hydrogen_station" ? () => hydrogenState(c)
-        : c.tool === "check_station_facilities" ? () => facilitiesState(c) : c.tool === "describe_station" ? () => stationPageState(c) : STATE[key];
+        : c.tool === "check_station_facilities" ? () => facilitiesState(c) : c.tool === "describe_station" ? () => stationPageState(c)
+        : c.tool === "find_cheapest_fuel" && STATE[key] === undefined ? () => fuelEmptyState(c) : STATE[key];
       if (state === undefined) throw new Error(`no API state for ${key}`);
       state(c.args);
       const { client, close } = await connect({ refreshWait: { totalMs: 20, pollMs: 5 } });
