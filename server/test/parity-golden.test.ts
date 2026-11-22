@@ -44,8 +44,8 @@ const STATE: Record<string, () => void> = {
     serve("listMotorways", ["A3", "A9"].map((road) => ({ ...(exampleOf<{ data: object[] }>("listMotorways").data[0] ?? {}), road })));
   },
   // The harness's places at the asked points with no Gemeinde near them (the run's structuredContent): the nearest
-  // settlement within 50 km and the nearest district with its point and its key's Land digits; no address is loaded,
-  // and no zone boundary is held.
+  // settlement within 50 km and the nearest district with its point and its key's Land digits; no address is loaded
+  // (so the API's every-side-empty test says the point may lie abroad), and no zone boundary is held.
   describe_location: () => {
     type P = [string, number, number];
     const near: Record<string, { city: P | null; district: P; land: string }> = {
@@ -61,11 +61,15 @@ const STATE: Record<string, () => void> = {
       const ex = exampleOf<{ meta: Record<string, unknown> }>("describeLocation");
       const n = near[url.searchParams.get("at") ?? ""]!;
       return HttpResponse.json({ ...ex, data: {
-        address: null, municipality: n.city === null ? null : place(n.city), district: place(n.district, n.land), state: null, mayLieOutsideGermany: false,
+        address: null, municipality: n.city === null ? null : place(n.city), district: place(n.district, n.land), state: null, mayLieOutsideGermany: true,
         lowEmissionZone: { verdict: "unknown", zone: null, distanceM: null, liftedOn: null },
       } });
     }));
     serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [] });
+  },
+  // The harness's motorway parking holds no site on the roads asked here.
+  find_parking: () => {
+    serve("listMotorwayParking", [], { attribution: [], generatedAt: new Date().toISOString() });
   },
   // The harness's bike-sharing data: one virtual Donkey Republic station within 1 km of each asked Kiel point (the
   // run's structuredContent: name, system, distance, bikes, e-bikes), no free-floating bike.

@@ -447,6 +447,176 @@
         "structuredContent",
         "credit"
       ]
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "road": "A7",
+        "facilities": [
+          "shower"
+        ],
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Ich kenne an der A7 keine Parkmöglichkeiten. Die Abdeckung ist bundesweit, aber nicht lückenlos.\n\nStand HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "facilities": [],
+        "facilitiesAnyKind": 0,
+        "facilitiesFilter": [
+          "shower"
+        ],
+        "facilitiesFilterScope": {
+          "sitesOfKind": 0,
+          "sitesStatingFacilities": 0
+        },
+        "facilitiesInScope": 0,
+        "kind": "any",
+        "license": "",
+        "onlyWithFreeSpaces": false,
+        "place": null,
+        "radiusKm": null,
+        "road": "A7",
+        "withoutOccupancy": 0
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "road": "A7",
+        "facilities": [
+          "shower"
+        ],
+        "language": "en"
+      },
+      "isError": false,
+      "text": "I know of no parking along the A7. Coverage is nationwide but not complete.\n\nAs of HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "facilities": [],
+        "facilitiesAnyKind": 0,
+        "facilitiesFilter": [
+          "shower"
+        ],
+        "facilitiesFilterScope": {
+          "sitesOfKind": 0,
+          "sitesStatingFacilities": 0
+        },
+        "facilitiesInScope": 0,
+        "kind": "any",
+        "license": "",
+        "onlyWithFreeSpaces": false,
+        "place": null,
+        "radiusKm": null,
+        "road": "A7",
+        "withoutOccupancy": 0
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "road": "A2",
+        "facilities": [
+          "toilet",
+          "restaurant"
+        ],
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Ich kenne an der A2 keine Parkmöglichkeiten. Die Abdeckung ist bundesweit, aber nicht lückenlos.\n\nStand HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "facilities": [],
+        "facilitiesAnyKind": 0,
+        "facilitiesFilter": [
+          "toilet",
+          "restaurant"
+        ],
+        "facilitiesFilterScope": {
+          "sitesOfKind": 0,
+          "sitesStatingFacilities": 0
+        },
+        "facilitiesInScope": 0,
+        "kind": "any",
+        "license": "",
+        "onlyWithFreeSpaces": false,
+        "place": null,
+        "radiusKm": null,
+        "road": "A2",
+        "withoutOccupancy": 0
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "road": "A2",
+        "facilities": [
+          "toilet",
+          "restaurant"
+        ],
+        "language": "en"
+      },
+      "isError": false,
+      "text": "I know of no parking along the A2. Coverage is nationwide but not complete.\n\nAs of HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "facilities": [],
+        "facilitiesAnyKind": 0,
+        "facilitiesFilter": [
+          "toilet",
+          "restaurant"
+        ],
+        "facilitiesFilterScope": {
+          "sitesOfKind": 0,
+          "sitesStatingFacilities": 0
+        },
+        "facilitiesInScope": 0,
+        "kind": "any",
+        "license": "",
+        "onlyWithFreeSpaces": false,
+        "place": null,
+        "radiusKm": null,
+        "road": "A2",
+        "withoutOccupancy": 0
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "kind": "disabled_badge",
+        "language": "de"
+      },
+      "isError": true,
+      "text": "Bitte place (Freitext), lat+lon oder road (z. B. \"A3\") angeben. Hat die Person nichts davon genannt, bitte fragen, wo: eine Stadt, eine Postleitzahl, ihren Standort oder die Autobahn. Zum Beispiel {\"place\": \"Fulda\"} oder {\"road\": \"A3\"}.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "kind": "disabled_badge",
+        "language": "en"
+      },
+      "isError": true,
+      "text": "Give a place (free text), or lat+lon, or a road like \"A3\". If the person named none, ask where: a town, a postcode, their position or the motorway. For example {\"place\": \"Fulda\"} or {\"road\": \"A3\"}.",
+      "structuredContent": null,
+      "meta": {}
     }
   ]
 }

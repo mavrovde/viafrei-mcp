@@ -337,11 +337,21 @@ const KIND_EN: Record<string, string> = { rest_area: "rest area (Rastanlage)", c
  * does not carry yet: those keep the short answer (null here) rather than a sentence that could be false.
  * Nothing was listed, so nothing is credited but the place search that found the place.
  */
-export function parkingEmpty(language: Language, where: ParkingWhere, kind: string | null, facilities: boolean, freeOnly: boolean): ((meta: DataMeta) => CallToolResult) | null {
+const parkingWhereText = (language: Language, where: ParkingWhere): string => ("road" in where
+  ? L(language, `an der ${where.road}`, `along the ${where.road}`)
+  : L(language, `um ${where.place} (Umkreis ${where.radiusKm} km)`, `around ${where.place} (within ${where.radiusKm} km)`));
+
+/** Today's answer to the free-spaces filter around a place where no site publishes an occupancy (find_parking.ts, verbatim). */
+export function parkingNoOccupancy(language: Language, where: ParkingWhere): string {
+  const whereText = parkingWhereText(language, where);
+  return language === "de"
+    ? `${whereText.charAt(0).toUpperCase()}${whereText.slice(1)} meldet keine Anlage, die ich führe, eine Belegung — ob gerade Plätze frei sind, kann ich nicht sagen. Ohne die Einschränkung auf freie Plätze nenne ich, was es dort gibt.`
+    : `No site I hold ${whereText} publishes its occupancy, so I cannot say whether spaces are free right now. Asked without the free-spaces filter, I list what is there.`;
+}
+
+export function parkingEmpty(language: Language, where: ParkingWhere, kind: string | null, facilities: boolean, freeOnly: boolean, filter?: readonly string[]): ((meta: DataMeta) => CallToolResult) | null {
   if (facilities || ("place" in where && freeOnly)) return null;
-  const whereText = "road" in where
-    ? L(language, `an der ${where.road}`, `along the ${where.road}`)
-    : L(language, `um ${where.place} (Umkreis ${where.radiusKm} km)`, `around ${where.place} (within ${where.radiusKm} km)`);
+  const whereText = parkingWhereText(language, where);
   const wider = "road" in where ? "" : L(language, ` — ein größerer Radius (bis ${PARKING_MAX_RADIUS_KM} km) hilft oft`, ` — a larger radius (up to ${PARKING_MAX_RADIUS_KM} km) often helps`);
   const text = language === "de"
     ? `Ich kenne ${whereText} ${kind === null ? "keine Parkmöglichkeiten" : (KEIN_DE[kind] ?? "keinen Parkplatz")}. Die Abdeckung ist bundesweit, aber nicht lückenlos${wider}.`
@@ -352,6 +362,8 @@ export function parkingEmpty(language: Language, where: ParkingWhere, kind: stri
     structured: {
       place: "place" in where ? where.place : null, road: "road" in where ? where.road : null, kind: kind ?? "any", radiusKm: "place" in where ? where.radiusKm : null,
       facilities: [], ...(unfiltered ? { facilitiesInScope: 0, facilitiesAnyKind: 0, withoutOccupancy: 0 } : {}), onlyWithFreeSpaces: freeOnly,
+      // The facilities filter asked where nothing at all is held: today's keys, every count 0.
+      ...(filter === undefined ? {} : { facilitiesFilter: [...filter], facilitiesFilterScope: { sitesOfKind: 0, sitesStatingFacilities: 0 } }),
     },
   });
 }
@@ -359,27 +371,43 @@ export function parkingEmpty(language: Language, where: ParkingWhere, kind: stri
 const findParking: Handler = async (args, ctx) => {
   const { language } = ctx;
   const kindArg = str(args["kind"]);
+  // Today's server asks for the place before it looks at the kind.
+  if (str(args["road"]) === undefined && str(args["place"]) === undefined && (num(args["lat"]) === undefined || num(args["lon"]) === undefined)) return placeMissing(ctx);
   if (kindArg === "disabled_badge") return notAvailable(language, "kind=disabled_badge");
   const kind = kindArg === "any" ? undefined : kindArg;
   const common = { kind, free_min: bool(args["only_with_free_spaces"]) === true ? 1 : undefined, facilities: strs(args["facilities"]), limit: num(args["limit"]) };
   const road = str(args["road"]);
-  let read;
   let where: ParkingWhere;
+  let scope: Record<string, unknown>;
+  let op: "listParkingOptions" | "listMotorwayParking";
   if (road !== undefined) {
     const code = road.replace(/\s/g, "").toUpperCase();
-    read = await parkingRead(ctx, "listMotorwayParking", { road: code, ...common });
+    op = "listMotorwayParking";
+    scope = { road: code };
     where = { road: code };
   } else {
     const pos = await position(args, ctx);
     if (isResult(pos)) return pos;
     const radiusKm = num(args["radius_km"]) ?? PARKING_DEFAULT_RADIUS_KM;
-    read = await parkingRead(ctx, "listParkingOptions", { at: atParam(pos.at), radius_m: Math.round(radiusKm * 1000), ...common });
+    op = "listParkingOptions";
+    scope = { at: atParam(pos.at), radius_m: Math.round(radiusKm * 1000) };
     where = { place: pos.label ?? `${pos.at.lat.toFixed(3)}, ${pos.at.lon.toFixed(3)}`, radiusKm };
   }
+  const read = await parkingRead(ctx, op, { ...scope, ...common });
   const { r } = read;
   if (r.data.length === 0) {
-    const empty = parkingEmpty(language, where, kind ?? null, common.facilities !== undefined, common.free_min !== undefined);
+    const facilities = common.facilities !== undefined;
+    const freeOnly = common.free_min !== undefined;
+    const empty = parkingEmpty(language, where, kind ?? null, facilities, freeOnly);
     if (empty !== null) return empty(r.meta);
+    // A filter emptied the answer. Where nothing at all is held, today's server says so, as it does without the
+    // filter (free spaces around a place: no site publishes an occupancy); where sites are held, its sentence
+    // counts them by kind and stated facility, which the API does not carry yet.
+    const any = await ctx.api.get<T.ParkingSite[]>(op, { ...scope, limit: 1 } as never);
+    if (any.data.length === 0) {
+      if ("place" in where && freeOnly) return toolResult(parkingNoOccupancy(language, where), [], language, { asOf: r.meta.generatedAt });
+      return parkingEmpty(language, where, kind ?? null, false, freeOnly, common.facilities)!(r.meta);
+    }
     return none(language, [r.meta], L(language, "Parkplätze", "car parks"));
   }
   const lines = r.data.map((p) => {

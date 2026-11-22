@@ -423,11 +423,33 @@ describe("find_parking", () => {
       expect(r.isError).toBe(true);
       expect(calls).toHaveLength(0);
     });
-    it(`a filter whose empty sentence needs counts the API does not carry keeps the short answer (${language})`, async () => {
-      serve("listParkingOptions", []);
+    it(`a filter that emptied the answer where sites are held keeps the short answer: its sentence counts them (${language})`, async () => {
+      mockServer.use(handlerFor("listParkingOptions", (url) => Response.json({ ...exampleOf("listParkingOptions"), data: url.searchParams.get("limit") === "1" ? exampleOf<{ data: unknown[] }>("listParkingOptions").data : [] })));
       expect(body(await call("find_parking", { ...at, facilities: ["shower"], language }))).toBe(language === "de" ? "Keine Parkplätze gefunden." : "No car parks found.");
-      serve("listParkingOptions", []);
+      expect(query("listParkingOptions")[1]).toEqual({ at: "52.52,13.405", radius_m: "10000", limit: "1", lang: language });
       expect(body(await call("find_parking", { ...at, only_with_free_spaces: true, language }))).toBe(language === "de" ? "Keine Parkplätze gefunden." : "No car parks found.");
+    });
+    it(`a filter that emptied the answer where nothing is held at all: today's sentences (${language})`, async () => {
+      serve("listParkingOptions", []);
+      const shower = await call("find_parking", { ...at, kind: "truck", facilities: ["shower"], language });
+      expect(body(shower)).toBe(language === "de"
+        ? "Ich kenne um 52.520, 13.405 (Umkreis 10 km) keinen Lkw-Parkplatz. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis 25 km) hilft oft."
+        : "I know of no lorry parking (Lkw-Parkplatz) around 52.520, 13.405 (within 10 km). Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
+      expect(body(await call("find_parking", { ...at, only_with_free_spaces: true, language }))).toBe(language === "de"
+        ? "Um 52.520, 13.405 (Umkreis 10 km) meldet keine Anlage, die ich führe, eine Belegung — ob gerade Plätze frei sind, kann ich nicht sagen. Ohne die Einschränkung auf freie Plätze nenne ich, was es dort gibt."
+        : "No site I hold around 52.520, 13.405 (within 10 km) publishes its occupancy, so I cannot say whether spaces are free right now. Asked without the free-spaces filter, I list what is there.");
+      serve("listMotorwayParking", []);
+      expect(body(await call("find_parking", { road: "A7", facilities: ["toilet"], only_with_free_spaces: true, language }))).toBe(language === "de"
+        ? "Ich kenne an der A7 keine Parkmöglichkeiten. Die Abdeckung ist bundesweit, aber nicht lückenlos."
+        : "I know of no parking along the A7. Coverage is nationwide but not complete.");
+    });
+    it(`disabled-badge parking without a place asks for the place first (${language})`, async () => {
+      const r = await call("find_parking", { kind: "disabled_badge", language });
+      expect(textOf(r)).toBe(language === "de"
+        ? "Bitte place (Freitext), lat+lon oder road (z. B. \"A3\") angeben. Hat die Person nichts davon genannt, bitte fragen, wo: eine Stadt, eine Postleitzahl, ihren Standort oder die Autobahn. Zum Beispiel {\"place\": \"Fulda\"} oder {\"road\": \"A3\"}."
+        : "Give a place (free text), or lat+lon, or a road like \"A3\". If the person named none, ask where: a town, a postcode, their position or the motorway. For example {\"place\": \"Fulda\"} or {\"road\": \"A3\"}.");
+      expect(calls).toHaveLength(0);
+      expect(textOf(await call("find_parking", { kind: "disabled_badge", road: "A7", language }))).toContain("kind=disabled_badge");
     });
   }
 

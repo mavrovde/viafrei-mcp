@@ -100,21 +100,20 @@ export const describeLocation: Handler = async (args, ctx): Promise<CallToolResu
   const lon = num(args["lon"])!;
   const r = await ctx.api.get<T.LocationData>("describeLocation", { at: atParam({ lat, lon }) });
   const d = r.data;
+  // Today's server first asks whether any address is loaded at all (the contract's coverage names the Länder
+  // they cover), and says a point may lie abroad only from loaded addresses: with none, every side is empty.
+  const loaded = d.address !== null || (await ctx.api.get<T.PlacesCoverageData>("getPlacesCoverage", {})).data.addresses.length > 0;
+  const abroad = loaded && d.mayLieOutsideGermany;
   const lines: string[] = [c.head(lat, lon)];
-  if (d.mayLieOutsideGermany) lines.push(`- ${c.abroad}`);
-  if (d.address !== null) {
-    lines.push(`- ${c.address(addressText(d.address), kmText(d.address.distanceM, language))}`);
-  } else {
-    // Today's server first asks whether any address is loaded at all; the contract's coverage names the Länder they cover.
-    const cov = await ctx.api.get<T.PlacesCoverageData>("getPlacesCoverage", {});
-    lines.push(`- ${cov.data.addresses.length === 0 ? c.addressNotLoaded : c.addressNone}`);
-  }
+  if (abroad) lines.push(`- ${c.abroad}`);
+  if (d.address !== null) lines.push(`- ${c.address(addressText(d.address), kmText(d.address.distanceM, language))}`);
+  else lines.push(`- ${loaded ? c.addressNone : c.addressNotLoaded}`);
   const away = (p: T.LocationPlace): string => kmText(haversineM(lat, lon, p.location.lat, p.location.lon), language);
   if (d.municipality !== null) lines.push(`- ${c.city}: ${d.municipality.name} (${away(d.municipality)})`);
   if (d.district !== null) lines.push(`- ${c.district}: ${d.district.name} (${away(d.district)})`);
   const land = landName(d, language);
   if (land !== null) lines.push(`- ${c.land}: ${land}`);
-  if (d.lowEmissionZone !== null && !d.mayLieOutsideGermany) lines.push(`- ${c.zone}: ${zoneHead(d.lowEmissionZone, language)}`);
+  if (d.lowEmissionZone !== null && !abroad) lines.push(`- ${c.zone}: ${zoneHead(d.lowEmissionZone, language)}`);
   if (d.address !== null && d.address.dataAsOf !== null) lines.push("", c.stand(d.address.dataAsOf));
   return toolResult(lines.join("\n"), [r.meta], language);
 };
