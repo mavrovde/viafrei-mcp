@@ -934,6 +934,14 @@ describe("stations", () => {
     expect(query("listStations")).toEqual([{ code: "8001001", limit: "1", lang: "en" }]);
   });
 
+  it("get_departures with only a place or a position: no empty station search (the API refuses one), the stop nearest it", async () => {
+    const r = await call("get_departures", { place: "Leipzig", language: "de" });
+    expect(r.isError).not.toBe(true);
+    expect(query("listStations")).toEqual([{ at: expect.stringMatching(/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/u) as string, limit: "1", lang: "de" }]);
+    await call("get_departures", { lat: 52.5, lon: 13.4, language: "en" });
+    expect(query("listStations").slice(-1)).toEqual([{ at: "52.5,13.4", limit: "1", lang: "en" }]);
+  });
+
   it("get_departures: no stop by name, but a place: the nearest stop to it", async () => {
     let n = 0;
     const list = exampleOf<Body>("listStations");

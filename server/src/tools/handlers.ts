@@ -448,12 +448,15 @@ const getDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
   const given = (k: string): boolean => str(args[k]) !== undefined;
   if (!given("stop") && !given("stop_id") && !given("place") && (num(args["lat"]) === undefined || num(args["lon"]) === undefined)) return placeMissing(ctx);
-  let stations = await stationOf(args, ctx);
-  if (stations.data.length === 0 && (str(args["place"]) !== undefined || num(args["lat"]) !== undefined)) {
+  // A stop named or given by id is searched first; with only a place or a position the search has no
+  // q or code to send (the API refuses that), so the stop nearest the position answers.
+  let stations = given("stop") || given("stop_id") ? await stationOf(args, ctx) : null;
+  if ((stations === null || stations.data.length === 0) && (str(args["place"]) !== undefined || num(args["lat"]) !== undefined)) {
     const pos = await position(args, ctx);
     if (isResult(pos)) return pos;
     stations = await ctx.api.get<T.Station[]>("listStations", { at: atParam(pos.at), limit: 1 });
   }
+  if (stations === null) return placeMissing(ctx);
   const station = stations.data[0];
   if (station === undefined) {
     const asked = str(args["stop"]) ?? str(args["stop_id"]);
