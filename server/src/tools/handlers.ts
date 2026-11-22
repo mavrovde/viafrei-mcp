@@ -70,15 +70,14 @@ const REASON: Record<Language, Record<string, string>> = {
   },
 };
 
-export function lampText(d: Pick<T.RoadConditionsData, "lamp" | "lampReason" | "lampReasons">, language: Language): string {
+export function lampText(d: Pick<T.RoadConditionsData, "lamp" | "lampReason">, language: Language): string {
   const lamp = LAMP[language][d.lamp] ?? d.lamp;
   if (d.lampReason === null || d.lamp === "green") {
     return L(language, `Ampel ${lamp}: von Autobahn GmbH, Polizei/Ländern und DWD nichts gemeldet — keine Garantie für freie Fahrt`, `traffic light ${lamp}: nothing reported by the Autobahn GmbH, the police/Länder or the DWD — no guarantee the road is clear`);
   }
-  // Today's ampel names its first reason and counts the others: every situation or warning that gives one.
-  const more = (d.lampReasons ?? []).reduce((n, r) => n + r.count, 0) - 1;
-  const tail = more < 1 ? "" : L(language, ` (und ${more} ${more === 1 ? "weiterer Grund" : "weitere Gründe"})`, ` (and ${more} more ${more === 1 ? "reason" : "reasons"})`);
-  return L(language, `Ampel ${lamp}: ${REASON.de[d.lampReason] ?? d.lampReason}`, `traffic light ${lamp}: ${REASON.en[d.lampReason] ?? d.lampReason}`) + tail;
+  // Today's ampel adds "(und N weitere Gründe)" over its folded reasons; the API's lampReasons count every
+  // situation unfolded (137 where today says 11 on the A9), so the count waits for the fold (viafrei-database#85).
+  return L(language, `Ampel ${lamp}: ${REASON.de[d.lampReason] ?? d.lampReason}`, `traffic light ${lamp}: ${REASON.en[d.lampReason] ?? d.lampReason}`);
 }
 
 /** The lamp's weather reasons: a DWD warning and the road-weather forecast's slippery road. */

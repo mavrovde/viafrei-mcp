@@ -223,13 +223,9 @@ const ROADS = { family: "autobahn", domain: "roads", text: "Verkehrsdaten: Autob
 
 describe("check_autobahn_traffic's lamp, as today's ampel says it", () => {
   for (const language of LANGS) {
-    it(`names the first reason and counts every other (${language})`, async () => {
-      serve("getMotorwayConditions", { ...roads([]), lamp: "red", lampReason: "road_closed", lampReasons: [{ reason: "road_closed", lamp: "red", count: 5 }, { reason: "jam", lamp: "amber", count: 3 }, { reason: "narrowing", lamp: "amber", count: 4 }] });
-      expect(body(await call("check_autobahn_traffic", { roads: ["A9"], language }))).toBe(language === "de" ? "A9 — Ampel Rot: Vollsperrung (und 11 weitere Gründe)." : "A9 — traffic light red: full closure (and 11 more reasons).");
-      serve("getMotorwayConditions", { ...roads([]), lamp: "amber", lampReason: "narrowing", lampReasons: [{ reason: "narrowing", lamp: "amber", count: 2 }] });
-      expect(body(await call("check_autobahn_traffic", { roads: ["A3"], language }))).toBe(language === "de" ? "A3 — Ampel Gelb: Baustelle, Fahrbahn eingeengt (und 1 weiterer Grund)." : "A3 — traffic light yellow: roadworks narrowing the carriageway (and 1 more reason).");
-      serve("getMotorwayConditions", { ...roads([]), lamp: "amber", lampReason: "narrowing", lampReasons: [{ reason: "narrowing", lamp: "amber", count: 1 }] });
-      expect(body(await call("check_autobahn_traffic", { roads: ["A3"], language }))).toBe(language === "de" ? "A3 — Ampel Gelb: Baustelle, Fahrbahn eingeengt." : "A3 — traffic light yellow: roadworks narrowing the carriageway.");
+    it(`names the first reason, and no count until the API folds the reasons as today's ampel does (${language})`, async () => {
+      serve("getMotorwayConditions", { ...roads([]), lamp: "red", lampReason: "road_closed", lampReasons: [{ reason: "road_closed", lamp: "red", count: 5 }, { reason: "jam", lamp: "amber", count: 3 }] });
+      expect(body(await call("check_autobahn_traffic", { roads: ["A9"], language }))).toBe(language === "de" ? "A9 — Ampel Rot: Vollsperrung." : "A9 — traffic light red: full closure.");
     });
   }
 
