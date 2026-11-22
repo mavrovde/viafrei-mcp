@@ -629,6 +629,39 @@ jobs:
             *) exit "$rc" ;;
           esac
 
+  # The container image, beside npm. image.yml's gate needs CI green on the tagged
+  # commit, and the merge this workflow made with its token started no push run, so
+  # CI is dispatched on the tag first; once it concluded success, image.yml is
+  # dispatched on the tag and reports in its own run.
+  image:
+    needs: [sync, release]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.release.outputs.tag }}
+      MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
+      VERSION: ${{ needs.sync.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: CI on the tag, then the image
+        run: |
+          set -eu
+          [ "$TAG" = "v${VERSION}" ] || { echo "The release job tagged '${TAG}', not v${VERSION}." >&2; exit 2; }
+          printf '%s' "$MERGE_SHA" | grep -Eq '^[0-9a-f]{40}$' || { echo "No 40-hex merge sha from the release job ('${MERGE_SHA}')." >&2; exit 2; }
+          since="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run ci.yml --ref "$TAG"
+          node scripts/auto-release.mjs wait-run --workflow ci.yml --sha "$MERGE_SHA" --since "$since" --deadline-s "$((13 * 60))" --interval-s 15
+          gh workflow run image.yml --ref "$TAG"
+
   # Smithery, after npm: up to ~11 min observed, so the deadline is 13.
   smithery:
     needs: [sync, release, publish, npm-wait-2, npm-wait-3, npm-wait-4]

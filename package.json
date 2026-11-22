@@ -103,6 +103,7 @@
     "test:mutation-wiring": "node scripts/mutation-workflow.test.mjs",
     "check:timeouts": "node scripts/check-timeouts.mjs",
     "test:timeouts": "node scripts/check-timeouts.test.mjs",
+    "test:image": "node scripts/image-workflow.test.mjs",
     "rules:show": "node scripts/show-rules.mjs"
   },
   "dependencies": {

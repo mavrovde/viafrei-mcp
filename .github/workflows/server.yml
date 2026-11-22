@@ -12,6 +12,9 @@ on:
   pull_request:
     paths: ['server/**', 'catalogue.json', '.github/workflows/server.yml']
   workflow_dispatch:
+  # Called by image.yml on the tagged commit, so the image is built only from a
+  # commit whose server tests passed, whatever paths that commit touched.
+  workflow_call:
 
 permissions:
   contents: read

@@ -207,6 +207,12 @@ jobs:
       - name: Job-timeout gate self-test
         run: npm run test:timeouts
 
+      # The container image release (image.yml, server/Dockerfile, the smoke and the CI
+      # gate): every action pinned by full SHA, the job order gate, server tests, scan,
+      # push by digest, sign, verify, tag, and each refusal proved.
+      - name: Image release self-test
+        run: npm run test:image
+
       # The public endpoint may be *asserted about* - one test checks that the
       # default really is it - but it may never be handed to something that
       # connects. Any occurrence outside an assertion fails the build.

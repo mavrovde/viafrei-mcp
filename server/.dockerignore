@@ -1,0 +1,11 @@
+# Only what the Dockerfile copies is let in: the manifests, the compiler
+# configuration, the sources and the catalogue. Tests, mocks, builds on this
+# machine and any environment file stay out of the build context.
+*
+!package.json
+!package-lock.json
+!tsconfig.json
+!src/
+!src/**
+!catalogue/catalogue.json
+src/**/*.test.ts
