@@ -1126,6 +1126,21 @@ describe("motorway numbers no register knows, and the lamp in words", () => {
     });
   });
 
+  it("check_road_status on a number no register knows: today's road-status refusal, the nearest numbers, nothing else read", async () => {
+    notFound("A8");
+    register(["A3", "A9"]);
+    expect(await call("check_road_status", { road: "a 8", language: "de" })).toEqual({
+      content: [{ type: "text", text: "A8 ist keine Bundesautobahn, die ich kenne — weder die Autobahn GmbH noch unser Archiv führen diese Nummer, deshalb kann ich über sie nichts sagen. Nächstliegende Nummern: A3, A9. Bitte prüfen Sie die Nummer." }],
+      isError: true,
+    });
+    notFound("A8");
+    register(["A3", "A9"]);
+    expect(textOf(await call("check_road_status", { road: "A8", language: "en" }))).toBe("A8 is not a German motorway (Bundesautobahn) I know — neither Autobahn GmbH nor our archive carries that number, so I cannot say anything about it. Nearest real numbers: A3, A9. Please check the number.");
+    notFound("A8");
+    register([]);
+    expect(textOf(await call("check_road_status", { road: "A8", language: "de" }))).toBe("A8 ist keine Bundesautobahn, die ich kenne — weder die Autobahn GmbH noch unser Archiv führen diese Nummer, deshalb kann ich über sie nichts sagen. Bitte prüfen Sie die Nummer.");
+  });
+
   it("one road unknown beside a known one: its own line, the known road answered (en)", async () => {
     notFound("A8");
     register(["A3", "A9"]);

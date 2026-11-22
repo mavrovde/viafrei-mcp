@@ -87,6 +87,14 @@ const UNKNOWN_ROAD = {
 
 const motorwayNo = (road: string): number => Number(road.slice(1));
 
+/** check_road_status's refusal of a number no register knows, in today's words (motorway-known.ts). */
+export function unknownMotorwaySentence(language: Language, road: string, suggestions: readonly string[]): string {
+  const near = suggestions.join(", ");
+  return language === "de"
+    ? `${road} ist keine Bundesautobahn, die ich kenne — weder die Autobahn GmbH noch unser Archiv führen diese Nummer, deshalb kann ich über sie nichts sagen.${near === "" ? "" : ` Nächstliegende Nummern: ${near}.`} Bitte prüfen Sie die Nummer.`
+    : `${road} is not a German motorway (Bundesautobahn) I know — neither Autobahn GmbH nor our archive carries that number, so I cannot say anything about it.${near === "" ? "" : ` Nearest real numbers: ${near}.`} Please check the number.`;
+}
+
 /** The nearest real numbers to an unknown one, in number order: the number without its last digit first, then the closest (motorway-known.ts). */
 export function nearestMotorways(road: string, registered: readonly string[], n = 3): string[] {
   const known = [...new Set(registered.filter((r) => /^A\d+$/u.test(r)))].filter((r) => r !== road);
@@ -146,7 +154,13 @@ const checkRoadStatus: Handler = async (args, ctx) => {
   let body: string;
   let at: string | undefined;
   if (road !== undefined && /^A\s?\d+$/i.test(road)) {
-    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: road.replace(/\s/g, "").toUpperCase(), horizon_days: horizon, limit });
+    const code = road.replace(/\s/g, "").toUpperCase();
+    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: code, horizon_days: horizon, limit })
+      .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; });
+    if (r === null) {
+      const registered = (await ctx.api.get<{ road: string }[]>("listMotorways", {})).data.map((m) => m.road);
+      return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)));
+    }
     metas.push(r.meta);
     body = situationsBody(r.data, language, limit);
   } else {
