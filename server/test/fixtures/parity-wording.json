@@ -972,6 +972,190 @@
       },
       "isError": false,
       "body": "No S train leaves Hamburg Hbf in the next 30 minutes.\nStation asked: Hamburg Hbf (station number 8002549)."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "München, Marienplatz",
+        "modes": [
+          "tram"
+        ],
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In München finde ich keine Haltestelle \"München, Marienplatz\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "München, Marienplatz",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In München finde ich keine Haltestelle \"München, Marienplatz\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "München, Marienplatz",
+        "modes": [
+          "tram"
+        ],
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"München, Marienplatz\" in München. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "München, Marienplatz",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"München, Marienplatz\" in München. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Köln Nippes",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In Köln finde ich keine Haltestelle \"Köln Nippes\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Köln Nippes",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"Köln Nippes\" in Köln. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hamburg, Rathausmarkt",
+        "duration_min": 60,
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In Hamburg finde ich keine Haltestelle \"Hamburg, Rathausmarkt\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hamburg, Rathausmarkt",
+        "duration_min": 60,
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"Hamburg, Rathausmarkt\" in Hamburg. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hauptbahnhof München",
+        "modes": [
+          "subway"
+        ],
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In München finde ich keine Haltestelle \"Hauptbahnhof München\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hauptbahnhof München",
+        "modes": [
+          "subway"
+        ],
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"Hauptbahnhof München\" in München. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Köln Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In Köln finde ich keine Haltestelle \"Köln Hbf\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Köln Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"Köln Hbf\" in Köln. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hamburg Landungsbrücken",
+        "modes": [
+          "ferry"
+        ],
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In Hamburg finde ich keine Haltestelle \"Hamburg Landungsbrücken\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hamburg Landungsbrücken",
+        "modes": [
+          "ferry"
+        ],
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"Hamburg Landungsbrücken\" in Hamburg. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "place": "Bahnhofstraße 12, Fulda",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Ich finde Orte, Haltestellen und Autobahnen — keine Hausnummern. Bitte den Ort oder die Haltestelle nennen."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "place": "Bahnhofstraße 12, Fulda",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I can find places, stations and motorways, not house numbers. Please name the place or the station."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Marienplatz 8, München",
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Ich finde Orte, Haltestellen und Autobahnen — keine Hausnummern. Bitte den Ort oder die Haltestelle nennen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Marienplatz 8, München",
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I can find places, stations and motorways, not house numbers. Please name the place or the station."
     }
   ]
 }

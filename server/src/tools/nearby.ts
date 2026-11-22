@@ -7,6 +7,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type * as T from "../api/types.js";
 import { toolResult, type Language } from "../presentation.js";
 import { atParam, isResult, num, position, strs, type Handler } from "./context.js";
+import { houseNumberRefusal } from "./house-number.js";
 import { fuelAreaText, fuelCoverage, readOnlyAreaWording } from "./fuel.js";
 
 export const DEFAULT_RADIUS_KM = 5;
@@ -75,6 +76,8 @@ const junctionName = (j: T.NearbyJunction): string => (j.road === null || j.name
 export const findNearby: Handler = async (args, ctx): Promise<CallToolResult> => {
   const { language } = ctx;
   const c = COPY[language];
+  const refused = await houseNumberRefusal(args, ctx);
+  if (refused !== undefined) return refused;
   const pos = await position(args, ctx);
   if (isResult(pos)) return pos;
   const radiusKm = num(args["radius_km"]) ?? DEFAULT_RADIUS_KM;

@@ -184,7 +184,21 @@ const STATE: Record<string, (args: Record<string, unknown>) => void> = {
   }),
   "find_nearby 52.52,13.405": () => nearby(null, { stations: [station("Berlin Hbf", 2.5)] }),
   "find_cheapest_fuel Kassel": () => fuelListed(place("Kassel", "municipality", 51.3127, 9.4797, "06611000"), "find_cheapest_fuel Kassel", "diesel"),
+  // A street and house number where the API holds no address data (the coverage lists none).
+  "find_cheapest_fuel Marienplatz 8, München": () => serve("getPlacesCoverage", COVERAGE),
+  "get_departures Bahnhofstraße 12, Fulda": () => serve("getPlacesCoverage", COVERAGE),
 };
+
+/**
+ * get_departures for a stop the search does not find: the place search knows the town the copied answer names
+ * ("In München finde ich keine Haltestelle …") as a municipality, and nothing else.
+ */
+function unknownStop(c: Case): void {
+  const town = /^(?:In (.+?) finde ich keine Haltestelle|I do not know a stop called ".+" in (.+?)\. )/u.exec(c.body);
+  const name = town?.[1] ?? town?.[2];
+  serve("listStations", []);
+  serve("listPlaces", (u: URL) => (name !== undefined && u.searchParams.get("q") === name ? [place(name, "municipality", 50, 10, "09162000")] : []));
+}
 
 /** Lines of today's answer (0 = the first) that need a field the contract lacks: api-gap.md, lane A. */
 const GAP_LINES: Record<string, { lines: number[]; absent?: number[]; needs: string; prefix?: true }> = {
@@ -207,7 +221,7 @@ describe("today's wording, from the parity run (lane A)", () => {
   for (const c of golden.cases) {
     const key = keyOf(c);
     it(`${c.tool} ${JSON.stringify(c.args)}`, async () => {
-      const state = c.tool === "get_train_departures" ? () => trainState(c) : STATE[key];
+      const state = c.tool === "get_train_departures" ? () => trainState(c) : c.tool === "get_departures" && c.args["stop"] !== undefined ? () => unknownStop(c) : STATE[key];
       if (state === undefined) throw new Error(`no API state for ${key}`);
       state(c.args);
       const { client, close } = await connect({ refreshWait: { totalMs: 20, pollMs: 5 } });

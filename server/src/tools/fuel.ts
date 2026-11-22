@@ -15,6 +15,7 @@ import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/clie
 import type * as T from "../api/types.js";
 import { standTime, toolResult, type Language } from "../presentation.js";
 import { atParam, bool, isResult, num, position, str, type Args, type Handler, type ToolContext } from "./context.js";
+import { houseNumberRefusal } from "./house-number.js";
 import { kmText } from "./nearby.js";
 
 /** The provider's radius ceiling (MAX_RADIUS_KM) and the default radius of a fuel question. */
@@ -209,6 +210,8 @@ const cheapestRead = (ctx: ToolContext, args: Args, at: LatLon, radiusKm: number
 
 export const findCheapestFuel: Handler = async (args, ctx): Promise<CallToolResult> => {
   const { language } = ctx;
+  const refused = await houseNumberRefusal(args, ctx);
+  if (refused !== undefined) return refused;
   const pos = await position(args, ctx);
   if (isResult(pos)) return pos;
   const radiusKm = num(args["radius_km"]) ?? FUEL_DEFAULT_RADIUS_KM;
@@ -270,6 +273,8 @@ const counted = (language: Language, n: number): string => `${n} ${STATIONS[lang
 export const findFuelStation: Handler = async (args, ctx): Promise<CallToolResult> => {
   const { language } = ctx;
   const de = language === "de";
+  const refused = await houseNumberRefusal(args, ctx);
+  if (refused !== undefined) return refused;
   const pos = await position(args, ctx);
   if (isResult(pos)) return pos;
   const radiusKm = num(args["radius_km"]) ?? FUEL_DEFAULT_RADIUS_KM;

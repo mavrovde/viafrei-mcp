@@ -12,6 +12,7 @@ import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, str
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
 import { findPlace } from "./find-place.js";
+import { houseNumberRefusal } from "./house-number.js";
 import { findCheapestFuel, findFuelStation } from "./fuel.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
@@ -485,6 +486,23 @@ const departureLine = (d: T.Departure, language: Language): string => {
   return `- ${berlinTime(d.plannedAt)} ${d.line ?? d.category ?? d.mode} → ${d.destination ?? "?"}${delay}${platform}`;
 };
 
+/**
+ * The town a stop's name carries ("München, Marienplatz", "Hauptbahnhof München", "Köln Nippes"), as today's
+ * server reads it (main get_departures.ts, the town out of the question): a part before a comma, else a word,
+ * that the place search knows as a municipality of exactly that name. undefined when none is one.
+ */
+async function townIn(q: string, ctx: ToolContext): Promise<string | undefined> {
+  const comma = q.split(",").map((p) => p.trim()).filter((p) => p !== "");
+  const words = q.split(/[\s,]+/u).filter((w) => w.length >= 3 && !/\d/u.test(w));
+  // At most four reads, on the not-found path only.
+  for (const candidate of [...new Set([...(comma.length > 1 ? comma : []), ...words])].slice(0, 4)) {
+    const r = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: candidate, kind: "municipality", limit: 1 });
+    const p = r.data[0];
+    if (p !== undefined && p.name.toLocaleLowerCase("de") === candidate.toLocaleLowerCase("de")) return p.name;
+  }
+  return undefined;
+}
+
 const getDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
   const given = (k: string): boolean => str(args[k]) !== undefined;
@@ -493,6 +511,8 @@ const getDepartures: Handler = async (args, ctx) => {
   // q or code to send (the API refuses that), so the stop nearest the position answers.
   let stations = given("stop") || given("stop_id") ? await stationOf(args, ctx) : null;
   if ((stations === null || stations.data.length === 0) && (str(args["place"]) !== undefined || num(args["lat"]) !== undefined)) {
+    const refused = await houseNumberRefusal(args, ctx);
+    if (refused !== undefined) return refused;
     const pos = await position(args, ctx);
     if (isResult(pos)) return pos;
     stations = await ctx.api.get<T.Station[]>("listStations", { at: atParam(pos.at), limit: 1 });
@@ -501,7 +521,12 @@ const getDepartures: Handler = async (args, ctx) => {
   const station = stations.data[0];
   if (station === undefined) {
     const asked = str(args["stop"]) ?? str(args["stop_id"]);
-    return asked === undefined ? none(language, [stations.meta], L(language, "Haltestellen", "stops")) : NOT_KNOWN.stop(asked, language);
+    if (asked === undefined) return none(language, [stations.meta], L(language, "Haltestellen", "stops"));
+    // Today's server reads a town out of the stop's name and says the stop is not in THAT town.
+    const town = str(args["stop"]) === undefined ? undefined : await townIn(asked, ctx);
+    return town === undefined ? NOT_KNOWN.stop(asked, language) : toolError(L(language,
+      `In ${town} finde ich keine Haltestelle "${asked}". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht.`,
+      `I do not know a stop called "${asked}" in ${town}. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town.`));
   }
   const r = await ctx.api.get<T.Board>("listStationDepartures", { stationId: station.id, from: str(args["when"]), duration_min: num(args["duration_min"]), modes: strs(args["modes"]), limit: num(args["limit"]) });
   const head = `${r.data.station.name}:`;
