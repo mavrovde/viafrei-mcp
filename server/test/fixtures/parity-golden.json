@@ -191,6 +191,70 @@
         "structuredContent",
         "credit"
       ]
+    },
+    {
+      "tool": "find_sharing",
+      "args": {
+        "lat": 54.3233,
+        "lon": 10.1228,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Leihräder nahe 54.323, 10.123 (Umkreis 1 km):\n- Förde Sparkasse Lorentzendamm (Schleswig Smile Nord) — 14 Räder frei, davon 1 E-Rad · 0,8 km\nFreie Plätze: keine Angabe — das ist eine virtuelle Station ohne Docks (eine Abstellzone), dort gibt es keine Dock-Zählung.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "find_sharing",
+      "args": {
+        "lat": 54.3233,
+        "lon": 10.1228,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Shared bikes near 54.323, 10.123 (within 1 km):\n- Förde Sparkasse Lorentzendamm (Schleswig Smile Nord) — 14 bikes available, 1 of them e-bikes · 0.8 km\nFree docks: no count — it is a virtual station without docks (a parking zone), so there is no dock count to give.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "find_sharing",
+      "args": {
+        "lat": 54.315,
+        "lon": 10.132,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Leihräder nahe 54.315, 10.132 (Umkreis 1 km):\n- Rondeel (Schleswig Smile Nord) — 5 Räder frei, davon 1 E-Rad · 0,9 km\nFreie Plätze: keine Angabe — das ist eine virtuelle Station ohne Docks (eine Abstellzone), dort gibt es keine Dock-Zählung.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "find_sharing",
+      "args": {
+        "lat": 54.315,
+        "lon": 10.132,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Shared bikes near 54.315, 10.132 (within 1 km):\n- Rondeel (Schleswig Smile Nord) — 5 bikes available, 1 of them e-bikes · 0.9 km\nFree docks: no count — it is a virtual station without docks (a parking zone), so there is no dock count to give.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
     }
   ]
 }

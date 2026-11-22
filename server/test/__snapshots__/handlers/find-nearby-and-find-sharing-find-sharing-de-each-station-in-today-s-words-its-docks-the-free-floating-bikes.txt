@@ -1,0 +1,10 @@
+Leihräder nahe 52.520, 13.405 (Umkreis 1,5 km):
+- Station 1 (Nextbike) — 4 Räder frei, davon 1 E-Rad · 2 freie Plätze · 0,3 km
+- st-2 — keine aktuelle Zählung · 0,3 km
+- Zone (Nextbike) — 4 Räder frei · 1,2 km
+- Alt (Nextbike) — zuletzt 1 Rad gemeldet (Stand 29.03. 08:00) · 0,3 km
+- Zu (Nextbike) — verleiht gerade nicht · 2 freie Plätze · 0,3 km
+- Ohne Zahl (Nextbike) — 1 Rad frei · 0,3 km
+Freie Plätze: für 1 von 3 Stationen keine Angabe — das ist eine virtuelle Station ohne Docks (eine Abstellzone), dort gibt es keine Dock-Zählung.
+Freie Plätze: für 1 Station meldet der Betreiber keine Zahl.
+Ohne Station: mindestens 201 frei abgestellte Räder im Umkreis, das nächste 0,4 km entfernt (davon 3 E-Räder).

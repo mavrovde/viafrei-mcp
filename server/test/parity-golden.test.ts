@@ -43,6 +43,17 @@ const STATE: Record<string, () => void> = {
     mockServer.use(handlerFor("getMotorwayConditions", () => problem(404, "not-found")));
     serve("listMotorways", ["A3", "A9"].map((road) => ({ ...(exampleOf<{ data: object[] }>("listMotorways").data[0] ?? {}), road })));
   },
+  // The harness's bike-sharing data: one virtual Donkey Republic station within 1 km of each asked Kiel point (the
+  // run's structuredContent: name, system, distance, bikes, e-bikes), no free-floating bike.
+  find_sharing: () => {
+    const kiel: Record<string, [string, number, number]> = { "54.3233,10.1228": ["Förde Sparkasse Lorentzendamm", 806, 14], "54.315,10.132": ["Rondeel", 850, 5] };
+    mockServer.use(handlerFor("listSharingOptions", (url) => {
+      const ex = exampleOf<{ meta: Record<string, unknown> }>("listSharingOptions");
+      const hit = kiel[url.searchParams.get("at") ?? ""];
+      const stations = hit === undefined ? [] : [{ id: "donkey:kiel", system: "donkey_kiel", location: { lat: 54.32, lon: 10.13 }, sourceFamily: "gbfs_donkey", countedAt: null, reportedAt: null, takesReturns: null, capacity: null, name: hit[0], systemLabel: "Schleswig Smile Nord", distanceM: hit[1], bikes: hit[2], electricBikes: 1, freeDocks: null, virtual: true, current: true, renting: true, available: true }];
+      return HttpResponse.json({ ...ex, data: { stations, stationsInRadius: stations.length, vehicles: { count: 0, electric: 0, atLeast: false, nearest: [] } } });
+    }));
+  },
   // The harness's gazetteer holds, of the Kreise asked here, Frankfurt am Main (the Länder are the server's own); its
   // realtime window is empty and its alert feeds are not current. A Kreis keeps the example's key: no answer here prints it.
   check_transit_disruption: () => {

@@ -1,0 +1,2 @@
+No shared bikes found within 1 km of 52.520, 13.405 — neither at a station nor free-floating. Radius up to 5 km possible. Covered are nextbike and Donkey Republic; e-scooters and operators without an open licence are not.
+The nearest shared-bike station in our data is 3.4 km away: Station 1 (Nextbike).

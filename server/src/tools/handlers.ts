@@ -18,6 +18,7 @@ import { findSpeedCameras } from "./speed-cameras.js";
 import { getTrainDepartures } from "./trains.js";
 import { landOf, regionOf } from "./region.js";
 import { checkTransitDisruption } from "./transit.js";
+import { findSharing } from "./sharing.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -458,17 +459,6 @@ const describeLocation: Handler = async (args, ctx) => {
   const zone = zoneLine(d.lowEmissionZone, language);
   if (zone !== null) lines.push(zone);
   return toolResult(lines.join("\n") || L(language, "Zu dieser Position ist nichts bekannt.", "Nothing is known about this position."), [r.meta], language);
-};
-
-const findSharing: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  const pos = await position(args, ctx);
-  if (isResult(pos)) return pos;
-  const only = bool(args["only_available"]);
-  const r = await ctx.api.get<T.SharingData>("listSharingOptions", { at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), limit: num(args["limit"]), only_available: only === undefined ? undefined : String(only) });
-  const lines = r.data.stations.map((s) => `- ${s.name ?? s.systemLabel ?? s.system} · ${km(s.distanceM, language)}${s.bikes === null ? "" : L(language, ` · ${s.bikes} Räder`, ` · ${s.bikes} bikes`)}`);
-  lines.push(L(language, `Freie Fahrzeuge im Umkreis: ${r.data.vehicles.count}`, `Free vehicles nearby: ${r.data.vehicles.count}`));
-  return toolResult(lines.join("\n"), [r.meta], language);
 };
 
 /** The official region code the contract's `area` wants: given as one, a region name through listPlaces, or a position through describeLocation. */

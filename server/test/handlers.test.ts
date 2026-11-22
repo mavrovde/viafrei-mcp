@@ -752,19 +752,52 @@ describe("find_nearby and find_sharing", () => {
     expect([kmText(49, "de"), kmText(50, "de"), kmText(1849, "en"), kmText(0, "en")]).toEqual(["49 m", "0,1 km", "1.8 km", "0 m"]);
   });
 
+  const bike = (over: Record<string, unknown> = {}) => ({
+    id: "st-1", name: "Station 1", systemLabel: "Nextbike", system: "nextbike_de", distanceM: 300, location: at, sourceFamily: "gbfs_nextbike",
+    bikes: 4, electricBikes: 1, freeDocks: 2, available: true, current: true, renting: true, virtual: false,
+    countedAt: "2026-03-30T08:00:00Z", reportedAt: "2026-03-30T08:00:00Z", ...over,
+  });
+  const fleet = (count = 0, over: Record<string, unknown> = {}) => ({ count, electric: 0, atLeast: false, nearest: count === 0 ? [] : [{ distanceM: 420, propulsion: "human", rangeLeftM: null, vehicleType: "bicycle", sourceFamily: "gbfs_donkey" }], ...over });
   for (const language of LANGS) {
-    it(`find_sharing (${language}): stations by name, system label or system, bikes, free vehicles`, async () => {
-      const s = { name: "Station 1", systemLabel: "Nextbike", system: "nextbike_de", distanceM: 300, bikes: 4, freeDocks: 2, available: true };
-      serve("listSharingOptions", { stations: [s, { ...s, name: null, bikes: null }, { ...s, name: null, systemLabel: null, distanceM: 1234 }], stationsInRadius: 3, vehicles: { count: 7, electric: 2, atLeast: false, nearest: [] } });
-      const r = await call("find_sharing", { ...at, radius_km: 1, limit: 3, only_available: false, language });
-      expect(query("listSharingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "1000", limit: "3", only_available: "false", lang: language }]);
+    it(`find_sharing (${language}): each station in today's words, its docks, the free-floating bikes`, async () => {
+      serve("listSharingOptions", {
+        stations: [
+          bike(), bike({ id: "st-2", name: null, systemLabel: null, bikes: null, current: false }), bike({ name: "Zone", virtual: true, freeDocks: 3, electricBikes: 0, distanceM: 1234 }),
+          bike({ name: "Alt", current: false, virtual: true, bikes: 1, countedAt: "2026-03-29T06:00:00Z" }), bike({ name: "Zu", renting: false }), bike({ name: "Ohne Zahl", freeDocks: null, bikes: 1, electricBikes: null }),
+        ],
+        stationsInRadius: 6, vehicles: fleet(201, { atLeast: true, electric: 3 }),
+      });
+      const r = await call("find_sharing", { ...at, radius_km: 1.5, limit: 6, only_available: false, language });
+      expect(query("listSharingOptions")).toEqual([{ at: "52.52,13.405", radius_m: String(1.5 * 1000), limit: "6", only_available: "false", lang: language }]);
+      await pinned("handlers", body(r));
+      expect(r.structuredContent).toMatchObject({
+        place: "52.520, 13.405", radiusKm: 1.5,
+        stations: [{ name: "Station 1", system: "Nextbike", distanceM: 300, lat: 52.52, lon: 13.405, vehiclesAvailable: 4, electricAvailable: 1, docksAvailable: 2, isVirtual: false, isRenting: true, countedAt: "2026-03-30T08:00:00.000Z", stale: false }, { stale: null }, { docksAvailable: null, isVirtual: true }, { stale: true }, {}, {}],
+        freeFloating: { count: 201, atLeast: true, electric: 3, nearest: [{ distanceM: 420, formFactor: "bicycle", propulsion: "human", rangeM: null }] },
+      });
+    });
+    it(`find_sharing (${language}): nothing in the radius, the nearest station within 5 km named`, async () => {
+      mockServer.use(handlerFor("listSharingOptions", (url) => Response.json({ ...exampleOf("listSharingOptions"), data: url.searchParams.get("radius_m") === "5000"
+        ? { stations: [bike({ distanceM: 3_400 })], stationsInRadius: 1, vehicles: fleet() }
+        : { stations: [], stationsInRadius: 0, vehicles: fleet() } })));
+      const r = await call("find_sharing", { ...at, language });
+      expect(query("listSharingOptions")).toEqual([{ at: "52.52,13.405", lang: language }, { at: "52.52,13.405", radius_m: "5000", limit: "1", only_available: "false", lang: language }]);
       await pinned("handlers", body(r));
     });
   }
-
-  it("find_sharing without the availability filter does not send it", async () => {
-    await call("find_sharing", { ...at, language: "en" });
-    expect(query("listSharingOptions")).toEqual([{ at: "52.52,13.405", lang: "en" }]);
+  it("find_sharing: stations in the radius but none to rent, and no wider read; nothing within 5 km says nothing more", async () => {
+    serve("listSharingOptions", { stations: [], stationsInRadius: 2, vehicles: fleet() });
+    const two = body(await call("find_sharing", { ...at, language: "de" }));
+    expect(two).toContain("2 Stationen im Umkreis, aber keine mit einem ausleihbaren Rad laut aktueller Zählung; ohne die Einschränkung auf ausleihbare Räder gefragt, nenne ich sie alle.");
+    expect(ops()).toEqual(["listSharingOptions"]);
+    serve("listSharingOptions", { stations: [], stationsInRadius: 0, vehicles: fleet() });
+    const none = body(await call("find_sharing", { ...at, radius_km: 5, only_available: false, language: "en" }));
+    expect(none).toBe("No shared bikes found within 5 km of 52.520, 13.405 — neither at a station nor free-floating. Radius up to 5 km possible. Covered are nextbike and Donkey Republic; e-scooters and operators without an open licence are not.");
+    expect(ops()).toEqual(["listSharingOptions", "listSharingOptions"]);
+  });
+  it("find_sharing: only free-floating bikes still head the answer", async () => {
+    serve("listSharingOptions", { stations: [], stationsInRadius: 0, vehicles: fleet(1) });
+    expect(body(await call("find_sharing", { ...at, language: "de" }))).toBe("Leihräder nahe 52.520, 13.405 (Umkreis 1 km):\nOhne Station: 1 frei abgestelltes Rad im Umkreis, das nächste 0,4 km entfernt.");
   });
 });
 

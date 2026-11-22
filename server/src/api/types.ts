@@ -43,8 +43,13 @@ export type NearbyData = {
   needs?: { need: string; radiusM: number; widened: boolean; places: NeedPlace[] }[];
 };
 /** SharingData */
-export type SharingStation = { name: string | null; systemLabel: string | null; system: string; distanceM: number; bikes: number | null; freeDocks: number | null; available: boolean };
-export type SharingData = { stations: SharingStation[]; stationsInRadius: number; vehicles: { count: number; electric: number; atLeast: boolean } };
+export type SharingStation = {
+  id: string; name: string | null; systemLabel: string | null; system: string; distanceM: number; location: { lat: number; lon: number }; sourceFamily: string;
+  bikes: number | null; electricBikes: number | null; freeDocks: number | null; available: boolean; current: boolean;
+  renting: boolean | null; virtual: boolean | null; countedAt: string | null; reportedAt: string | null;
+};
+export type SharingVehicle = { distanceM: number; propulsion: string | null; rangeLeftM: number | null; vehicleType: string | null; sourceFamily: string };
+export type SharingData = { stations: SharingStation[]; stationsInRadius: number; vehicles: { count: number; electric: number; atLeast: boolean; nearest: SharingVehicle[] } };
 /** RoadSituation */
 export type RoadSituation = {
   id: string; kind: string; severity: string; road: string | null; direction: string | null; directionText: string | null;
