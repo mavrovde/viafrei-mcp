@@ -209,6 +209,29 @@ const GAP_LINES: Record<string, { lines: number[]; absent?: number[]; needs: str
   "find_place Neustadt": { lines: [1, 2, 3], needs: "a place's population and its Kreis by name" },
 };
 
+/** The same gaps, by the lines' own shape, for every case of a tool. */
+const GAP_BY_TOOL: Record<string, { gap?: RegExp; absent?: RegExp; needs: string }> = {
+  // A site's line names its street address and plugs; the price and the register's release date are not held.
+  find_charging_station: { gap: /^\d+\. /u, absent: /^(Preis pro kWh|Price per kWh|Stand des Ladesäulenregisters|Charging point register as of)/u, needs: "a charging site's address and plugs, its price per kWh, the register's release date" },
+};
+
+/**
+ * find_charging_station: as many sites as the copied list numbers, none reporting a status; with "kenne ich N
+ * Ladestandorte, aber keinen", the filtered read finds none and the unfiltered one N.
+ */
+function chargingState(c: Case): void {
+  const name = String(c.args["place"]);
+  serve("listPlaces", [place(name, "municipality", 50, 10, "09162000")]);
+  const site = (i: number) => ({ id: `cs-${i}`, name: `Laden ${i}`, operator: null, location: { lat: 50, lon: 10 }, distanceM: 1000, access: "public", sourceFamily: "register",
+    summary: { chargePoints: 1, availableNow: null, maxPowerKw: 22 }, chargePoints: [{ id: `p-${i}`, current: "ac", maxPowerKw: 22, availability: null }] });
+  const listed = c.body.split("\n").filter((l) => /^\d+\. /u.test(l)).length;
+  const held = Number(/(?:kenne ich|I know) (\d+) (?:Ladestandorte|charging sites), (?:aber keinen|but none)/u.exec(c.body)?.[1] ?? 0);
+  serve("listChargingOptions", (u: URL) => {
+    const unfiltered = !["connector", "min_kw", "max_kw", "operator", "conditions", "only_available"].some((k) => u.searchParams.has(k));
+    return Array.from({ length: held > 0 ? (unfiltered ? held : 0) : listed }, (_, i) => site(i));
+  }, { page: { limit: 100, hasMore: false } });
+}
+
 const keyOf = (c: Case): string => `${c.tool} ${String(c.args["query"] ?? c.args["place"] ?? c.args["station"] ?? c.args["stop"] ?? c.args["topic"] ?? (c.args["lat"] === undefined ? "" : `${String(c.args["lat"])},${String(c.args["lon"])}`))}`;
 const bodyOf = (r: CallToolResult): string => {
   const t = textOf(r).replace(/(Stand|As of|as of) \d{2}:\d{2}/gu, "$1 HH:MM").replace(/\b\d{5}\b/gu, "NNNNN").replace(/(?<![\d.:-])\d{4}(?![\d.:-])/gu, "NNNN");
@@ -221,7 +244,8 @@ describe("today's wording, from the parity run (lane A)", () => {
   for (const c of golden.cases) {
     const key = keyOf(c);
     it(`${c.tool} ${JSON.stringify(c.args)}`, async () => {
-      const state = c.tool === "get_train_departures" ? () => trainState(c) : c.tool === "get_departures" && c.args["stop"] !== undefined ? () => unknownStop(c) : STATE[key];
+      const state = c.tool === "get_train_departures" ? () => trainState(c) : c.tool === "get_departures" && c.args["stop"] !== undefined ? () => unknownStop(c)
+        : c.tool === "find_charging_station" ? () => chargingState(c) : STATE[key];
       if (state === undefined) throw new Error(`no API state for ${key}`);
       state(c.args);
       const { client, close } = await connect({ refreshWait: { totalMs: 20, pollMs: 5 } });
@@ -229,11 +253,13 @@ describe("today's wording, from the parity run (lane A)", () => {
         const r = (await client.callTool({ name: c.tool, arguments: c.args })) as CallToolResult;
         expect(r.isError === true).toBe(c.isError);
         // A line today's answer has and the contract cannot give (absent) is left out of the comparison.
-        const absent = new Set(GAP_LINES[key]?.absent ?? []);
+        const rule = GAP_BY_TOOL[c.tool];
+        const byRule = (re: RegExp | undefined): number[] => (re === undefined ? [] : c.body.split("\n").flatMap((l, i) => (re.test(l) ? [i] : [])));
+        const absent = new Set([...(GAP_LINES[key]?.absent ?? []), ...byRule(rule?.absent)]);
         const lines = c.body.split("\n").map((l, i) => ({ l, i })).filter((x) => !absent.has(x.i));
         const want = lines.map((x) => x.l);
         const got = bodyOf(r).split("\n");
-        const gapAt = new Set(GAP_LINES[key]?.lines ?? []);
+        const gapAt = new Set([...(GAP_LINES[key]?.lines ?? []), ...byRule(rule?.gap)]);
         const gap = new Set(lines.flatMap((x, k) => (gapAt.has(x.i) ? [k] : [])));
         expect(got.length).toBe(want.length);
         expect(got.filter((_, i) => !gap.has(i))).toEqual(want.filter((_, i) => !gap.has(i)));

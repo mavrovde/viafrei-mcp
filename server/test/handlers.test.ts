@@ -345,16 +345,25 @@ describe("find_charging_station", () => {
       expect(query("listChargingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "10000", lang: language }]);
     });
     it(`a filter in a circle with no site at all (${language}): today's sentence, the filter notwithstanding`, async () => {
-      serve("listChargingOptions", [], { inRadius: 0 });
+      serve("listChargingOptions", []);
       expect(body(await call("find_charging_station", { ...at, min_power_kw: 150, language }))).toBe(language === "de"
         ? "Im Umkreis von 10 km um 52.520, 13.405 kenne ich keine Ladestandorte. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis 25 km) hilft oft."
         : "I hold no charging sites within 10 km of 52.520, 13.405. Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
-      serve("listChargingOptions", [], { inRadius: 3 });
-      expect(body(await call("find_charging_station", { ...at, min_power_kw: 150, language }))).toBe(language === "de" ? "Keine Ladestationen gefunden." : "No charging stations found.");
+      // The circle is read a second time without the filter, to count what it holds.
+      expect(query("listChargingOptions")).toEqual([
+        { at: "52.52,13.405", radius_m: "10000", min_kw: "150", lang: language },
+        { at: "52.52,13.405", radius_m: "10000", limit: "100", lang: language },
+      ]);
     });
-    it(`none matching a filter (${language}) keeps the short answer until the API counts what it dropped`, async () => {
-      serve("listChargingOptions", []);
-      expect(body(await call("find_charging_station", { place: "Leipzig", radius_km: 5, connector: "ccs2", language }))).toBe(language === "de" ? "Keine Ladestationen gefunden." : "No charging stations found.");
+    it(`none matching a filter (${language}): the sites the circle holds without it, and the filter named`, async () => {
+      const sites = ex<Record<string, unknown>[]>("listChargingOptions");
+      mockServer.use(handlerFor("listChargingOptions", (url) => {
+        const e = exampleOf<Body>("listChargingOptions");
+        return HttpResponse.json({ ...e, data: url.searchParams.get("connector") === null ? [...sites, ...sites] : [], meta: { ...e.meta, page: { limit: 100, hasMore: false } } });
+      }));
+      expect(body(await call("find_charging_station", { ...at, radius_km: 5, connector: "ccs2", min_power_kw: 50, language }))).toBe(language === "de"
+        ? "Im Umkreis von 5 km um 52.520, 13.405 kenne ich 4 Ladestandorte, aber keinen (CCS2, ≥ 50 kW). Ohne Filter oder mit größerem Radius finden Sie mehr."
+        : "Within 5 km of 52.520, 13.405 I know 4 charging sites, but none (CCS2, ≥ 50 kW). Widen the radius or drop the filter.");
       expect(query("listChargingOptions")[0]).toMatchObject({ radius_m: "5000" });
     });
   }

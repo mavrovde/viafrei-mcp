@@ -1156,6 +1156,170 @@
       },
       "isError": true,
       "body": "I can find places, stations and motorways, not house numbers. Please name the place or the station."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ingolstadt",
+        "connector": "ccs2",
+        "min_power_kw": 50,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Im Umkreis von 10 km um Ingolstadt kenne ich 1 Ladestandorte, aber keinen (CCS2, ≥ 50 kW). Ohne Filter oder mit größerem Radius finden Sie mehr."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ingolstadt",
+        "connector": "ccs2",
+        "min_power_kw": 50,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Within 10 km of Ingolstadt I know 1 charging sites, but none (CCS2, ≥ 50 kW). Widen the radius or drop the filter."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Augsburg",
+        "min_power_kw": 150,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Im Umkreis von 10 km um Augsburg kenne ich 1 Ladestandorte, aber keinen (≥ 150 kW). Ohne Filter oder mit größerem Radius finden Sie mehr."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Augsburg",
+        "min_power_kw": 150,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Within 10 km of Augsburg I know 1 charging sites, but none (≥ 150 kW). Widen the radius or drop the filter."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Hamburg",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Hamburg (Umkreis 10 km), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. Hoheluftchaussee 52, NNNNN Hamburg (HEnW-Mobil) — 3,6 km, Typ 2, bis 22 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Hamburg",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Hamburg (within 10 km), nearest first, sites wholly out of order last:\n1. Hoheluftchaussee 52, NNNNN Hamburg (HEnW-Mobil) — 3.6 km, Type 2, up to 22 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Hannover",
+        "connector": "ccs2",
+        "radius_km": 20,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Hannover (Umkreis 20 km, CCS2), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. mblty Lehrte, Straßburger Str. 4, NNNNN Lehrte (Tank & Rast Entwicklungsgesellschaft mbH) — 15,1 km, CCS2, bis 300 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Hannover",
+        "connector": "ccs2",
+        "radius_km": 20,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Hannover (within 20 km, CCS2), nearest first, sites wholly out of order last:\n1. mblty Lehrte, Straßburger Str. 4, NNNNN Lehrte (Tank & Rast Entwicklungsgesellschaft mbH) — 15.1 km, CCS2, up to 300 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ulm",
+        "limit": 3,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Ulm (Umkreis 10 km), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. Flurstück 313, NNNNN Langenau/Seligweiler (EnBW mobility+ AG und Co.KG) — 6,9 km, CCS2/CHAdeMO/Typ 2, bis 300 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ulm",
+        "limit": 3,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Ulm (within 10 km), nearest first, sites wholly out of order last:\n1. Flurstück 313, NNNNN Langenau/Seligweiler (EnBW mobility+ AG und Co.KG) — 6.9 km, CCS2/CHAdeMO/Type 2, up to 300 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ulm",
+        "min_power_kw": 150,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Ulm (Umkreis 10 km, ≥ 150 kW), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. Flurstück 313, NNNNN Langenau/Seligweiler (EnBW mobility+ AG und Co.KG) — 6,9 km, CCS2/CHAdeMO, bis 300 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ulm",
+        "min_power_kw": 150,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Ulm (within 10 km, ≥ 150 kW), nearest first, sites wholly out of order last:\n1. Flurstück 313, NNNNN Langenau/Seligweiler (EnBW mobility+ AG und Co.KG) — 6.9 km, CCS2/CHAdeMO, up to 300 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Regensburg",
+        "connector": "ccs2",
+        "min_power_kw": 50,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Regensburg (Umkreis 10 km, CCS2, ≥ 50 kW), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. Frauenhof Str. 3, NNNNN Barbing (Circle K Deutschland) — 9,9 km, CCS2/CHAdeMO, bis 175 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Regensburg",
+        "connector": "ccs2",
+        "min_power_kw": 50,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Regensburg (within 10 km, CCS2, ≥ 50 kW), nearest first, sites wholly out of order last:\n1. Frauenhof Str. 3, NNNNN Barbing (Circle K Deutschland) — 9.9 km, CCS2/CHAdeMO, up to 175 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Darmstadt",
+        "limit": 8,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Darmstadt (Umkreis 10 km), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. Hornbach Darmstadt (ENC22285X00925), Otto-Röhm-Str. 76, NNNNN Darmstadt (Pfalzwerke AG) — 2,0 km, CCS2, bis 320 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Darmstadt",
+        "limit": 8,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Darmstadt (within 10 km), nearest first, sites wholly out of order last:\n1. Hornbach Darmstadt (ENC22285X00925), Otto-Röhm-Str. 76, NNNNN Darmstadt (Pfalzwerke AG) — 2.0 km, CCS2, up to 320 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
     }
   ]
 }

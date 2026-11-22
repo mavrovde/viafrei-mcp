@@ -19,6 +19,8 @@ export type FuelStationData = { id: string; name: string | null; brand: string |
 export type ChargingSite = {
   id: string; name: string | null; operator: string | null; location: LatLon; distanceM?: number; access: string;
   summary: { chargePoints: number; availableNow: number | null; maxPowerKw: number | null };
+  /** Each point and its last report (null: none published, or one that says nothing). */
+  chargePoints?: { id: string; current: string | null; maxPowerKw: number | null; availability: { state: string; observedAt: string } | null }[];
 };
 /** HydrogenData */
 export type HydrogenStation = { name: string | null; operator: string | null; brand: string | null; distanceM: number; location: LatLon };
