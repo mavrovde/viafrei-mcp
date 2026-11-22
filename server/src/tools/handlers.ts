@@ -11,6 +11,7 @@ import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby } from "./nearby.js";
+import { stopWatchHandler } from "./stop-watch.js";
 import { findSpeedCameras } from "./speed-cameras.js";
 import { getTrainDepartures } from "./trains.js";
 
@@ -545,19 +546,14 @@ const watchSituation: Handler = async (args, ctx) => {
     kind, target, request: str(args["request"]), hours: num(args["hours"]), until: str(args["until"]),
     condition: condition === undefined ? undefined : JSON.stringify(condition),
   });
-  const id = ctx.watches.add({ watchId: r.data.watchId, uri: r.data.uri, kind: r.data.kind, key: r.data.key });
+  const id = ctx.watches.add({ watchId: r.data.watchId, uri: r.data.uri, kind: r.data.kind, key: r.data.key }, key);
   const lines = [L(language, `Beobachtung ${id} läuft bis ${berlinDateTime(r.data.until, language)}.`, `Watch ${id} runs until ${berlinDateTime(r.data.until, language)}.`)];
   if (r.data.note !== null) lines.push(r.data.note);
   lines.push(...r.data.situations.slice(0, 10).map((s) => situationLine(s, language)));
   return toolResult(lines.join("\n"), [r.meta], language);
 };
 
-const stopWatch: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  const id = num(args["watch_id"]) ?? ctx.watches.find((w) => w.uri === str(args["uri"]) || (w.kind === str(args["kind"]) && w.key === str(args["key"])));
-  if (id === undefined || !ctx.watches.remove(id)) return toolError(L(language, "Diese Beobachtung gibt es in dieser Unterhaltung nicht.", "There is no such watch in this conversation."));
-  return { content: [{ type: "text", text: L(language, `Beobachtung ${id} beendet.`, `Watch ${id} stopped.`) }] };
-};
+const stopWatch = stopWatchHandler(watchTarget);
 
 export const HANDLERS: Readonly<Record<string, Handler>> = {
   check_autobahn_traffic: checkAutobahnTraffic,

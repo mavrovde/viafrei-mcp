@@ -11,9 +11,12 @@ import type { RefreshWait } from "./trains.js";
 export class SessionWatches {
   private next = 1;
   private readonly byId = new Map<number, { watchId: string; uri: string; kind: string; key: string }>();
-  add(w: { watchId: string; uri: string; kind: string; key: string }): number {
+  /** The words each watch was asked for in, for stop_watch's subject match; never in the resource list. */
+  private readonly saidById = new Map<number, string>();
+  add(w: { watchId: string; uri: string; kind: string; key: string }, said?: string): number {
     const id = this.next++;
     this.byId.set(id, w);
+    if (said !== undefined) this.saidById.set(id, said);
     return id;
   }
   get(id: number) {
@@ -23,7 +26,11 @@ export class SessionWatches {
     for (const [id, w] of this.byId) if (pred(w)) return id;
     return undefined;
   }
+  said(id: number): string | undefined {
+    return this.saidById.get(id);
+  }
   remove(id: number): boolean {
+    this.saidById.delete(id);
     return this.byId.delete(id);
   }
   list() {

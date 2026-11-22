@@ -1021,17 +1021,21 @@ describe("watch_situation and stop_watch", () => {
       await client.callTool({ name: "watch_situation", arguments: { kind: "road", key: "A1", language: "en" } });
       await client.callTool({ name: "watch_situation", arguments: { kind: "road", key: "A2", language: "de" } });
       const byUri = (await client.callTool({ name: "stop_watch", arguments: { uri, language: "de" } })) as CallToolResult;
-      expect(textOf(byUri)).toBe("Beobachtung 1 beendet.");
+      expect(textOf(byUri).split("\n")[0]).toBe("Beobachtung beendet: viafrei://watch/1. Ich melde mich dazu nicht mehr.");
       expect(byUri.isError).toBeUndefined();
       const byKey = (await client.callTool({ name: "stop_watch", arguments: { kind: "road", key: "A103", language: "en" } })) as CallToolResult;
-      expect(textOf(byKey)).toBe("Watch 2 stopped.");
+      expect(textOf(byKey).split("\n")[0]).toBe("Watch ended: road A103 (viafrei://watch/2). You will hear nothing further about it.");
       for (const language of LANGS) {
         const gone = (await client.callTool({ name: "stop_watch", arguments: { watch_id: 1, language } })) as CallToolResult;
-        expect(gone.isError).toBe(true);
-        expect(textOf(gone)).toBe(language === "de" ? "Diese Beobachtung gibt es in dieser Unterhaltung nicht." : "There is no such watch in this conversation.");
+        expect(gone.isError).toBeUndefined();
+        expect(textOf(gone).split("\n")[0]).toBe(language === "de"
+          ? "Zu viafrei://watch/1 läuft in dieser Sitzung keine Beobachtung — entweder ist sie schon beendet oder abgelaufen, oder diese Nummer gehört nicht zu diesem Gespräch. Die offenen Beobachtungen stehen in viafrei://watches."
+          : "There is no watch at viafrei://watch/1 in this session — it has already been stopped or has expired, or that number belongs to a different conversation. viafrei://watches lists the open ones.");
       }
       const none = (await client.callTool({ name: "stop_watch", arguments: { kind: "road", key: "A9", language: "en" } })) as CallToolResult;
-      expect(none.isError).toBe(true);
+      expect(none.isError).toBeUndefined();
+      expect(textOf(none).split("\n")[0]).toBe("No watch on that is running in this session — none is open at all, so there is nothing to stop. A watch belongs to the session it was opened in: if the connection has been re-opened since, it expired with the old session and reports nothing more.");
+      expect(none.structuredContent).toMatchObject({ stopped: false, scope: "session", matched: 0, candidates: [] });
     } finally {
       await close();
     }
@@ -1094,6 +1098,82 @@ describe("a missing or unknown place, in today's words per tool", () => {
     const r = await call("get_departures", { language: "en" });
     expect(textOf(r)).toBe('Give a stop name (free text) or a stop_id from an earlier result — or a place (or lat+lon) for the nearest stops around it. If the person named none, ask which stop, or where: a town or their position. For example {"stop": "Köln Hbf"} or {"place": "Fulda"}.');
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("stop_watch in today's words: by number, uri or subject, among this session's watches only", () => {
+  const first = (r: unknown): string => textOf(r as CallToolResult).split("\n")[0]!;
+  const open = async (client: Awaited<ReturnType<typeof connect>>["client"], kind: string, key: string, stored: string) => {
+    serve("getWatch", { ...ex<Record<string, unknown>>("getWatch"), kind, key: stored });
+    await client.callTool({ name: "watch_situation", arguments: { kind, key, language: "de" } });
+  };
+  const stop = async (client: Awaited<ReturnType<typeof connect>>["client"], args: Record<string, unknown>) =>
+    (await client.callTool({ name: "stop_watch", arguments: args })) as CallToolResult;
+
+  it("names nothing, both an id and a subject, both an id and a uri, or no watch address: refused as before, nothing stopped", async () => {
+    const { client, close } = await connect();
+    try {
+      await open(client, "road", "A1", "A1");
+      for (const [args, text] of [
+        [{ language: "de" }, "Bitte die Beobachtung nennen, die beendet werden soll: `watch_id` (die Nummer), `uri` (\"viafrei://watch/12\") oder ihren Gegenstand als `kind` und/oder `key` (\"A8\"). viafrei://watches listet die offenen Beobachtungen dieser Sitzung."],
+        [{ watch_id: 1, key: "A1", language: "en" }, "Give either the watch's id (`watch_id` or `uri`) or its subject (`kind`/`key`), not both — if they disagree I would be stopping a watch nobody named."],
+        [{ watch_id: 1, uri: "viafrei://watch/1", language: "en" }, "Give either `watch_id` or `uri`, not both — if they disagree I would be stopping a watch nobody named."],
+        [{ uri: "https://alpha.example/1", language: "de" }, "Das ist keine Beobachtungs-Adresse. Erwartet wird \"viafrei://watch/12\" oder die Nummer in `watch_id`."],
+      ] as const) {
+        const r = await stop(client, args);
+        expect(r.isError).toBe(true);
+        expect(textOf(r)).toBe(text);
+      }
+      expect(JSON.parse(((await client.readResource({ uri: "viafrei://watches" })).contents[0] as { text: string }).text)).toHaveLength(1);
+    } finally {
+      await close();
+    }
+  });
+
+  it("a road in another spelling is the same subject; nothing matching lists what is open, with its credit", async () => {
+    const { client, close } = await connect();
+    try {
+      await open(client, "road", "A7", "A7");
+      await open(client, "place", "Fulda", "48.24375,7.01625");
+      const none = await stop(client, { kind: "road", key: "A9", language: "de" });
+      expect(first(none)).toBe("Dazu läuft in dieser Sitzung keine Beobachtung. Offen sind: watch_id 1 (viafrei://watch/1) für die Straße A7; watch_id 2 (viafrei://watch/2) für den Ort 48.24375,7.01625. Zum Beenden einer davon: stop_watch mit ihrer watch_id.");
+      expect(textOf(none)).toMatch(/\n\nQuelle: Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben \/ Watch: ViaFrei, our own service — every report names the source of the data behind it · Stand /u);
+      expect(none.structuredContent).toMatchObject({ stopped: false, matched: 0, candidates: [{ watchId: 1, kind: "road", key: "A7" }, { watchId: 2, kind: "place" }], license: "ViaFrei service metadata (no provider data)" });
+      const road = await stop(client, { key: "a 07", language: "de" });
+      expect(first(road)).toBe("Beobachtung für die Straße A7 beendet (viafrei://watch/1). Ich melde mich dazu nicht mehr.");
+      expect(road.structuredContent).toMatchObject({ watchId: 1, stopped: true, matched: 1, matchedBy: "subject" });
+      const place = await stop(client, { key: "fulda", language: "en" });
+      expect(first(place)).toBe("Watch ended: place 48.24375,7.01625 (viafrei://watch/2). You will hear nothing further about it.");
+      await open(client, "weather", "Dresden", "805083000");
+      expect(first(await stop(client, { key: "dresden", language: "de" }))).toBe("Beobachtung für die Wetterlage für 805083000 beendet (viafrei://watch/3). Ich melde mich dazu nicht mehr.");
+    } finally {
+      await close();
+    }
+  });
+
+  it("a station named another way is resolved as watch_situation resolved it; an id-keyed kind alone stops the only one, never one of several", async () => {
+    const { client, close } = await connect();
+    try {
+      await open(client, "station", "8001001", "1:de:01002:9001");
+      const resolved = await stop(client, { kind: "station", key: "Schömpingbach Hauptbahnhof", language: "en" });
+      expect(first(resolved)).toBe("Watch ended: stop 1:de:01002:9001 (viafrei://watch/1). You will hear nothing further about it.");
+      expect(resolved.structuredContent).toMatchObject({ matchedBy: "resolved" });
+      await open(client, "charger", "site-1", "site-1");
+      serve("listStations", []);
+      const kindOnly = await stop(client, { kind: "charger", key: "Regensburg", language: "de" });
+      expect(first(kindOnly)).toBe('Keine offene Beobachtung trägt den Schlüssel "Regensburg"; die einzige offene dieser Art ist die Beobachtung für den Ladestandort site-1 (viafrei://watch/2), deshalb habe ich sie beendet. Ich melde mich dazu nicht mehr.');
+      expect(kindOnly.structuredContent).toMatchObject({ matchedBy: "kind" });
+      await open(client, "charger", "site-3", "site-3");
+      await open(client, "charger", "site-4", "site-4");
+      const several = await stop(client, { kind: "charger", key: "Ulm", language: "en" });
+      expect(first(several)).toBe('No open watch has the key "Ulm", and several of that kind are open, so I have stopped none: watch_id 3 (viafrei://watch/3) on charging site site-3; watch_id 4 (viafrei://watch/4) on charging site site-4. Choose one and call stop_watch with its watch_id.');
+      const both = await stop(client, { kind: "charger", language: "de" });
+      expect(first(both)).toBe("Dazu passen mehrere Beobachtungen, deshalb habe ich keine beendet: watch_id 3 (viafrei://watch/3) für den Ladestandort site-3; watch_id 4 (viafrei://watch/4) für den Ladestandort site-4. Bitte eine wählen und stop_watch mit ihrer watch_id aufrufen.");
+      await open(client, "road", "A8", "A8");
+      expect(first(await stop(client, { kind: "road", key: "A9", language: "en" }))).toMatch(/^No watch on that is running in this session\. Open are: /u);
+    } finally {
+      await close();
+    }
   });
 });
 

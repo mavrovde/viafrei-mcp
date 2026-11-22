@@ -130,7 +130,7 @@ describe("special cases", () => {
     const list = await client.readResource({ uri: "viafrei://watches" });
     expect(JSON.parse((list.contents[0] as { text: string }).text)).toHaveLength(1);
     const r = await client.callTool({ name: "stop_watch", arguments: { watch_id: 1, language: "en" } });
-    expect(textOf(r)).toContain("Watch 1 stopped");
+    expect(textOf(r)).toContain("Watch ended: viafrei://watch/1.");
     await close();
   });
 
