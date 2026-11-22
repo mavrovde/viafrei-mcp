@@ -42,7 +42,7 @@ const checkAutobahnTraffic: Handler = async (args, ctx) => {
   }
   const land = str(args["land"]);
   if (land !== undefined) {
-    const r = await ctx.api.get<T.RoadConditionsData>("listStateRoadConditions", { state: land, kinds, limit, road_class: ["motorway"] });
+    const r = await ctx.api.get<T.RoadConditionsData>("listStateRoadConditions", { state: LAND_CODES[land] ?? land, kinds, limit, road_class: ["motorway"] });
     return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
   }
   const pos = await position(args, ctx);
@@ -81,6 +81,13 @@ const checkRoadStatus: Handler = async (args, ctx) => {
   return toolResult(body, metas, language);
 };
 
+/** The catalogue names a Land as today's server does (its slug); the API's path is the Land's two-digit AGS code. */
+const LAND_CODES: Readonly<Record<string, string>> = {
+  "schleswig-holstein": "01", hamburg: "02", niedersachsen: "03", bremen: "04", "nordrhein-westfalen": "05", hessen: "06",
+  "rheinland-pfalz": "07", "baden-wuerttemberg": "08", bayern: "09", saarland: "10", berlin: "11", brandenburg: "12",
+  "mecklenburg-vorpommern": "13", sachsen: "14", "sachsen-anhalt": "15", thueringen: "16",
+};
+
 const findRoadworksAhead: Handler = async (args, ctx) => {
   const { language } = ctx;
   const road = str(args["road"]);
@@ -89,8 +96,8 @@ const findRoadworksAhead: Handler = async (args, ctx) => {
     const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: road.replace(/\s/g, "").toUpperCase(), kinds: ["roadworks"], horizon_days: 14, limit });
     return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
   }
-  // A route from → to has no operation in the contract: the roadworks around the start are given instead.
-  const pos = await position({ place: args["from"] ?? args["place"] }, ctx);
+  // `from` and `to` are the window's days (YYYY-MM-DD, the schema's pattern), never a place.
+  const pos = await position({ place: args["place"] }, ctx);
   if (isResult(pos)) return pos;
   const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at: atParam(pos.at), kinds: ["roadworks"], horizon_days: 14, limit });
   return toolResult(situationsBody(r.data, language, limit), [r.meta], language);

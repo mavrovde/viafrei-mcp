@@ -97,9 +97,9 @@ describe("the board's lines", () => {
     for (const language of LANGS) {
       const r = await ask({ eva_no: "8001001", when: "soon", language });
       expect(r.isError).toBe(true);
-      expect(textOf(r)).toBe(language === "de" ? "when ist keine gültige Zeit." : "when is not a valid time.");
+      expect(textOf(r)).toBe("MCP error -32602: Input validation error: Invalid arguments for tool get_train_departures: Invalid ISO datetime at when");
     }
-    expect(ops()).toEqual(["listStations", "listStations"]);
+    expect(ops()).toEqual([]);
   });
 
   it("without `when` the window opens now", async () => {

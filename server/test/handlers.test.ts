@@ -68,11 +68,11 @@ describe("check_autobahn_traffic", () => {
   for (const language of LANGS) {
     it(`two roads (${language}): one read per road, each block headed by its road, situation details rendered`, async () => {
       serve("getMotorwayConditions", roads(rich));
-      const r = await call("check_autobahn_traffic", { roads: ["A1", "A7"], kinds: ["jam"], limit: 2, cursor: "c1", language });
+      const r = await call("check_autobahn_traffic", { roads: ["A1", "A7"], kinds: ["warning"], limit: 2, cursor: "c1", language });
       expect(r.isError).toBeUndefined();
       expect(query("getMotorwayConditions")).toEqual([
-        { kinds: "jam", limit: "2", cursor: "c1", lang: language },
-        { kinds: "jam", limit: "2", cursor: "c1", lang: language },
+        { kinds: "warning", limit: "2", cursor: "c1", lang: language },
+        { kinds: "warning", limit: "2", cursor: "c1", lang: language },
       ]);
       expect(paths("getMotorwayConditions")).toEqual(["/v1/motorways/A1/conditions", "/v1/motorways/A7/conditions"]);
       await pinned("handlers", body(r));
@@ -80,9 +80,12 @@ describe("check_autobahn_traffic", () => {
     });
   }
 
-  it("asks at most five roads; one road passes its next cursor on", async () => {
+  it("asks five roads, refuses a sixth as the schema does; one road passes its next cursor on", async () => {
     serve("getMotorwayConditions", roads([]), { page: { limit: 20, hasMore: true, nextCursor: "next-1" } });
-    await call("check_autobahn_traffic", { roads: ["A1", "A2", "A3", "A4", "A5", "A6"], language: "en" });
+    const six = await call("check_autobahn_traffic", { roads: ["A1", "A2", "A3", "A4", "A5", "A6"], language: "en" });
+    expect(textOf(six)).toBe("MCP error -32602: Input validation error: Invalid arguments for tool check_autobahn_traffic: Too big: expected array to have <=5 items at roads");
+    expect(calls).toHaveLength(0);
+    await call("check_autobahn_traffic", { roads: ["A1", "A2", "A3", "A4", "A5"], language: "en" });
     expect(paths("getMotorwayConditions")).toEqual(["A1", "A2", "A3", "A4", "A5"].map((r) => `/v1/motorways/${r}/conditions`));
     calls.length = 0;
     const one = await call("check_autobahn_traffic", { roads: ["A1"], language: "en" });
@@ -98,8 +101,8 @@ describe("check_autobahn_traffic", () => {
     expect(body(r)).not.toContain("S20");
   });
 
-  it("a Land: the state's motorway conditions", async () => {
-    const r = await call("check_autobahn_traffic", { land: "10", kinds: ["roadworks"], limit: 1, language: "en" });
+  it("a Land by its name: the state's motorway conditions, asked by its Land code", async () => {
+    const r = await call("check_autobahn_traffic", { land: "saarland", kinds: ["roadworks"], limit: 1, language: "en" });
     expect(paths("listStateRoadConditions")).toEqual(["/v1/states/10/road-conditions"]);
     expect(query("listStateRoadConditions")).toEqual([{ kinds: "roadworks", road_class: "motorway", limit: "1", lang: "en" }]);
     expect(body(r)).toBe("warning\n- A103: MaintenanceWorks");
@@ -166,8 +169,8 @@ describe("check_road_status", () => {
     expect(meta(r)["sources"]).toEqual(["dwd_eta", "roads_alpha", "lorry_bast_langlkw"]);
   });
 
-  it("a car asks no lorry rules", async () => {
-    await call("check_road_status", { road: "A1", vehicle: "car", language: "en" });
+  it("no vehicle asks no lorry rules", async () => {
+    await call("check_road_status", { road: "A1", language: "en" });
     expect(ops()).toEqual(["getMotorwayConditions"]);
   });
 
@@ -186,8 +189,8 @@ describe("find_roadworks_ahead", () => {
     expect(body(r)).toBe("weather_warning\n- A101: GeneralObstruction\n- A101: GeneralObstruction");
   });
 
-  for (const key of ["from", "place"]) {
-    it(`a route's start (${key}): the roadworks around the resolved place`, async () => {
+  for (const key of ["place"]) {
+    it(`a place (${key}): the roadworks around the resolved place`, async () => {
       const r = await call("find_roadworks_ahead", { [key]: "Köln", language: "en" });
       expect(ops()).toEqual(["listPlaces", "listRoadConditions"]);
       expect(query("listPlaces")).toEqual([{ q: "Köln", limit: "1", lang: "en" }]);
@@ -197,9 +200,9 @@ describe("find_roadworks_ahead", () => {
   }
 
   for (const language of LANGS) {
-    it(`an unknown start (${language}) is named back`, async () => {
+    it(`an unknown place (${language}) is named back`, async () => {
       serve("listPlaces", []);
-      const r = await call("find_roadworks_ahead", { from: "Nirgendwo", language });
+      const r = await call("find_roadworks_ahead", { place: "Nirgendwo", language });
       expect(r.isError).toBe(true);
       expect(textOf(r)).toBe(language === "de" ? "Den Ort „Nirgendwo“ kenne ich nicht. Bitte genauer angeben oder Koordinaten nennen." : 'I do not know the place "Nirgendwo". Please be more specific or give coordinates.');
     });
@@ -226,8 +229,8 @@ describe("fuel", () => {
 
   it("find_fuel_station: by distance, every fuel's price; each filter passed on", async () => {
     serve("listFuelOptions", stations);
-    const r = await call("find_fuel_station", { ...at, radius_km: 3, brand: "Aral", name: "Mitte", open_now: true, open_at: "2026-03-30T08:00:00+02:00", whole_day: false, sort: "price", limit: 2, language: "en" });
-    expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", radius_m: "3000", brand: "Aral", name: "Mitte", open_now: "true", open_at: "2026-03-30T08:00:00+02:00", whole_day: "false", sort: "price", limit: "2", lang: "en" }]);
+    const r = await call("find_fuel_station", { ...at, radius_km: 3, brand: "Aral", name: "Mitte", open_now: true, open_at: "2026-03-30T08:00", whole_day: false, sort: "price", limit: 2, language: "en" });
+    expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", radius_m: "3000", brand: "Aral", name: "Mitte", open_now: "true", open_at: "2026-03-30T08:00", whole_day: "false", sort: "price", limit: "2", lang: "en" }]);
     expect(body(r).split("\n").slice(1)).toEqual(["- Aral Mitte (Aral) · 1.2 km · E10 1.699 €, DIESEL 1.589 €", "- Freie Tankstelle · 640 m · – · closed"]);
   });
 
@@ -254,8 +257,8 @@ describe("find_charging_station", () => {
         site({ name: null, operator: "Strom AG" }, { chargePoints: 2, availableNow: null, maxPowerKw: null }),
         site({ name: null, operator: null, id: "cs-9" }, { chargePoints: 1, availableNow: 0, maxPowerKw: 22 }),
       ]);
-      const r = await call("find_charging_station", { ...at, radius_km: 1, connector: "ccs", min_power_kw: 50, max_power_kw: 350, operator: "Strom AG", conditions: ["free", "24h"], only_available: true, limit: 3, language });
-      expect(query("listChargingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "1000", connector: "ccs", min_kw: "50", max_kw: "350", operator: "Strom AG", conditions: "free,24h", only_available: "true", limit: "3", lang: language }]);
+      const r = await call("find_charging_station", { ...at, radius_km: 1, connector: "ccs2", min_power_kw: 50, max_power_kw: 350, operator: "Strom AG", conditions: ["free", "open247"], only_available: true, limit: 3, language });
+      expect(query("listChargingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "1000", connector: "ccs2", min_kw: "50", max_kw: "350", operator: "Strom AG", conditions: "free,open247", only_available: "true", limit: "3", lang: language }]);
       await pinned("handlers", body(r));
     });
     it(`none found (${language})`, async () => {
@@ -296,8 +299,8 @@ describe("find_parking", () => {
   for (const language of LANGS) {
     it(`renders kind, distance and free spaces (${language})`, async () => {
       serve("listParkingOptions", sites);
-      const r = await call("find_parking", { ...at, radius_km: 0.5, kind: "garage", only_with_free_spaces: true, facilities: ["ev"], limit: 4, language });
-      expect(query("listParkingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "500", kind: "garage", free_min: "1", facilities: "ev", limit: "4", lang: language }]);
+      const r = await call("find_parking", { ...at, radius_km: 1, kind: "car_park", only_with_free_spaces: true, facilities: ["charging"], limit: 4, language });
+      expect(query("listParkingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "1000", kind: "car_park", free_min: "1", facilities: "charging", limit: "4", lang: language }]);
       await pinned("handlers", body(r));
       expect(meta(r)["conditionNote"]).toBeUndefined();
     });
@@ -390,7 +393,7 @@ describe("find_place, find_poi, find_address", () => {
 
   for (const [kind, contract] of [["district", "district"], ["admin", "region"], ["station", "station_area"], ["stop", "station_area"]]) {
     it(`find_place kind=${kind} asks kind=${contract}`, async () => {
-      await call("find_place", { query: "X", kind, language: "en" });
+      await call("find_place", { query: "Xy", kind, language: "en" });
       expect(query("listPlaces")[0]!["kind"]).toBe(contract);
     });
   }
@@ -414,8 +417,8 @@ describe("find_place, find_poi, find_address", () => {
       serve("listPlaces", []);
       serve("listPois", []);
       const want = language === "de" ? "Keine Orte gefunden." : "No places found.";
-      expect(body(await call("find_place", { query: "X", language }))).toBe(want);
-      expect(body(await call("find_poi", { name: "X", language }))).toBe(want);
+      expect(body(await call("find_place", { query: "Xy", language }))).toBe(want);
+      expect(body(await call("find_poi", { name: "Xy", language }))).toBe(want);
     });
   }
 
@@ -451,7 +454,7 @@ describe("find_place, find_poi, find_address", () => {
   for (const language of LANGS) {
     it(`find_address with nothing found (${language})`, async () => {
       serve("listAddresses", { addresses: [] });
-      expect(body(await call("find_address", { query: "X", language }))).toBe(language === "de" ? "Keine Adressen gefunden." : "No addresses found.");
+      expect(body(await call("find_address", { query: "Xyz", language }))).toBe(language === "de" ? "Keine Adressen gefunden." : "No addresses found.");
     });
   }
 });
@@ -477,10 +480,10 @@ describe("describe_location", () => {
       serve("describeLocation", loc({ state: null, lowEmissionZone: { verdict: "unknown", zone: "X", distanceM: null } }));
       expect(body(await call("describe_location", { ...at, language }))).toBe(language === "de" ? "Zu dieser Position ist nichts bekannt." : "Nothing is known about this position.");
     });
-    it(`without lat and lon (${language}): asks for them`, async () => {
+    it(`without lon (${language}): the schema's refusal, as today's server words it`, async () => {
       const r = await call("describe_location", { lat: 52.5, language });
       expect(r.isError).toBe(true);
-      expect(textOf(r)).toBe(language === "de" ? "Bitte lat und lon angeben." : "Please give lat and lon.");
+      expect(textOf(r)).toBe("MCP error -32602: Input validation error: Invalid arguments for tool describe_location: Invalid input: expected number, received undefined at lon");
       expect(calls).toHaveLength(0);
     });
   }
@@ -686,7 +689,7 @@ describe("stations", () => {
     });
     it(`get_departures, no such stop (${language})`, async () => {
       serve("listStations", []);
-      expect(body(await call("get_departures", { stop: "X", language }))).toBe(language === "de" ? "Keine Haltestellen gefunden." : "No stops found.");
+      expect(body(await call("get_departures", { stop: "Xy", language }))).toBe(language === "de" ? "Keine Haltestellen gefunden." : "No stops found.");
     });
   }
 
@@ -759,15 +762,18 @@ describe("watch_situation and stop_watch", () => {
     it(`a watch (${language}): its id, its end, the API's note and the situations; the condition sent as JSON`, async () => {
       const w = ex<Record<string, unknown>>("getWatch");
       serve("getWatch", { ...w, note: "Beobachtung läuft.", situations: [situation({ road: "A1", headline: "Stau" }), ...Array.from({ length: 11 }, (_, i) => situation({ headline: `W${i}` }))] });
-      const r = await call("watch_situation", { kind: "road", key: "A1", request: "jams", hours: 2, until: "2026-03-30T05:00:00+02:00", condition: { event: "jam" }, language });
-      expect(query("getWatch")).toEqual([{ kind: "road", target: "A1", request: "jams", hours: "2", until: "2026-03-30T05:00:00+02:00", condition: '{"event":"jam"}', lang: language }]);
+      const r = await call("watch_situation", { kind: "road", key: "A1", request: "jams", hours: 2, until: "2026-03-30T05:00:00+02:00", condition: { event: "any" }, language });
+      expect(query("getWatch")).toEqual([{ kind: "road", target: "A1", request: "jams", hours: "2", until: "2026-03-30T05:00:00+02:00", condition: '{"event":"any"}', lang: language }]);
       await pinned("handlers", body(r));
     });
-    it(`a watch without kind or key (${language}) is refused before the API is asked`, async () => {
-      for (const args of [{ kind: "road" }, { key: "A1" }]) {
+    it(`a watch without kind or key (${language}) is refused by the schema before the API is asked`, async () => {
+      for (const [args, issue] of [
+        [{ kind: "road" }, "Invalid input: expected string, received undefined at key"],
+        [{ key: "A1" }, 'Invalid option: expected one of "road"|"station"|"region"|"place"|"weather"|"charger" at kind'],
+      ] as const) {
         const r = await call("watch_situation", { ...args, language });
         expect(r.isError).toBe(true);
-        expect(textOf(r)).toBe(language === "de" ? "kind und key sind nötig." : "kind and key are required.");
+        expect(textOf(r)).toBe(`MCP error -32602: Input validation error: Invalid arguments for tool watch_situation: ${issue}`);
       }
       expect(calls).toHaveLength(0);
     });

@@ -25,6 +25,7 @@ import { readPromptArgumentsFirst, registerPrompts } from "./prompts/index.js";
 import { ElicitResultSchema, SID_CONSENT_TIMEOUT_MS, SidConsent } from "./sid-consent.js";
 import { SessionWatches, type ToolContext } from "./tools/context.js";
 import { HANDLERS } from "./tools/handlers.js";
+import { inputCheck } from "./validate.js";
 import { REFRESH_WAIT, type RefreshWait } from "./tools/trains.js";
 
 export type ServerDeps = { readonly api: ApiClient; readonly catalogue: Catalogue; readonly refreshWait?: RefreshWait };
@@ -48,6 +49,7 @@ export function createServer(deps: ServerDeps): McpServer {
   const watches = new SessionWatches();
   const consent = new SidConsent(() => server.server.getClientCapabilities());
   const toolNames = new Set(catalogue.tools.map((t) => t.name));
+  const checkInput = inputCheck(catalogue.tools);
 
   server.server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: catalogue.tools }));
   server.server.setRequestHandler(CallToolRequestSchema, async (request, extra): Promise<CallToolResult> => {
@@ -56,6 +58,8 @@ export function createServer(deps: ServerDeps): McpServer {
     const language = languageOf(args["language"]);
     const handler = HANDLERS[name];
     if (!toolNames.has(name) || handler === undefined) return toolError(language === "de" ? `Unbekanntes Werkzeug: ${name}` : `Unknown tool: ${name}`);
+    const refused = checkInput(name, args);
+    if (refused !== null) return refused;
     const ctx: ToolContext = {
       api: deps.api.withLanguage(language),
       refreshWait: deps.refreshWait ?? REFRESH_WAIT,
