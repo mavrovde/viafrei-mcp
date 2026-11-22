@@ -1097,6 +1097,41 @@ describe("a missing or unknown place, in today's words per tool", () => {
   });
 });
 
+describe("watch_situation: the target is the platform's key, resolved from the person's words", () => {
+  const target = async (kind: string, key: string): Promise<string | undefined> => {
+    calls.length = 0;
+    await call("watch_situation", { kind, key, language: "de" });
+    return query("getWatch")[0]?.["target"];
+  };
+  it("a road as its number; a place and a weather watch on the place's position; a position as given", async () => {
+    expect(await target("road", "a 8")).toBe("A8");
+    expect(await target("place", "Leipzig")).toBe("48.24375,7.01625");
+    expect(query("listPlaces")).toEqual([{ q: "Leipzig", limit: "1", lang: "de" }]);
+    expect(await target("weather", "Dresden")).toBe("48.24375,7.01625");
+    expect(await target("place", "51.34, 12.37")).toBe("51.34,12.37");
+    expect(query("listPlaces")).toEqual([]);
+  });
+  it("a station on the station the search finds, a station id as given; a region on its official key, a key as given", async () => {
+    expect(await target("station", "Leipzig Hbf")).toBe("1:de:01002:9001");
+    expect(query("listStations")).toEqual([{ q: "Leipzig Hbf", limit: "1", lang: "de" }]);
+    expect(await target("station", "8010205")).toBe("8010205");
+    expect(await target("region", "Sachsen")).toBe("01");
+    expect(await target("region", "14")).toBe("14");
+    expect(await target("charger", "site-7")).toBe("site-7");
+  });
+  it("a stop or a region not found opens nothing, and says so", async () => {
+    serve("listStations", []);
+    calls.length = 0;
+    const r = await call("watch_situation", { kind: "station", key: "Nirgendwo", language: "de" });
+    expect(r).toMatchObject({ isError: true, content: [{ type: "text", text: "Die Haltestelle „Nirgendwo“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet." }] });
+    expect(query("getWatch")).toEqual([]);
+    serve("listPlaces", []);
+    const g = await call("watch_situation", { kind: "region", key: "Atlantis", language: "en" });
+    expect(textOf(g)).toBe('I could not find the region "Atlantis". No watch was opened.');
+    expect(query("getWatch")).toEqual([]);
+  });
+});
+
 describe("watch_situation: at most ten open watches a session", () => {
   it("the eleventh is refused in today's words, the API not asked", async () => {
     const { client, close } = await connect();

@@ -499,6 +499,35 @@ const describeStation: Handler = async (args, ctx) => {
   return toolResult(lines.join("\n"), [stations.meta, fac.meta, ...(board === null ? [] : [board.meta])], language);
 };
 
+const LAT_LON = /^-?\d{1,2}(\.\d+)?,\s*-?\d{1,3}(\.\d+)?$/u;
+
+/**
+ * The platform key a watch is opened on (getWatch's `target`), from the person's words the way today's
+ * server resolved them (watch_situation.ts, resolvedWatchKey): a place or a weather watch on the place's
+ * position, a station on the station the search finds, a region on its official key. A road number, a
+ * position, a station id, an official key and a charging site id go through as given.
+ */
+export async function watchTarget(kind: string, key: string, ctx: ToolContext): Promise<string | CallToolResult> {
+  if (kind === "road") return key.replace(/\s/g, "").toUpperCase();
+  if ((kind === "place" || kind === "weather") && !LAT_LON.test(key)) {
+    const pos = await position({ place: key }, ctx);
+    return isResult(pos) ? pos : atParam(pos.at);
+  }
+  if (kind === "place" || kind === "weather") return key.replace(/\s/g, "");
+  if (kind === "station" && !/^[\w:-]*\d[\w:-]*$/u.test(key)) {
+    const found = await ctx.api.get<T.Station[]>("listStations", { q: key, limit: 1 });
+    const first = found.data[0];
+    if (first === undefined) return toolError(L(ctx.language, `Die Haltestelle „${key}“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet.`, `I could not find the stop "${key}". No watch was opened.`));
+    return first.id;
+  }
+  if (kind === "region") {
+    const { code } = await areaCode({ region: key }, ctx);
+    if (code === undefined) return toolError(L(ctx.language, `Die Region „${key}“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet.`, `I could not find the region "${key}". No watch was opened.`));
+    return code;
+  }
+  return key;
+}
+
 const watchSituation: Handler = async (args, ctx) => {
   const { language } = ctx;
   const kind = str(args["kind"]);
@@ -509,9 +538,11 @@ const watchSituation: Handler = async (args, ctx) => {
       `Diese Sitzung hat bereits ${MAX_WATCHES} offene Beobachtungen — das Maximum ist ${MAX_WATCHES}. Beende eine mit stop_watch (die Liste steht in viafrei://watches) und versuche es dann noch einmal.`,
       `This session already has ${MAX_WATCHES} open watches — the limit is ${MAX_WATCHES}. End one with stop_watch (viafrei://watches lists them) and try again.`));
   }
+  const target = await watchTarget(kind, key, ctx);
+  if (isResult(target)) return target;
   const condition = args["condition"];
   const r = await ctx.api.get<T.WatchData>("getWatch", {
-    kind, target: key, request: str(args["request"]), hours: num(args["hours"]), until: str(args["until"]),
+    kind, target, request: str(args["request"]), hours: num(args["hours"]), until: str(args["until"]),
     condition: condition === undefined ? undefined : JSON.stringify(condition),
   });
   const id = ctx.watches.add({ watchId: r.data.watchId, uri: r.data.uri, kind: r.data.kind, key: r.data.key });
