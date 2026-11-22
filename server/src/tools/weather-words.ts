@@ -7,6 +7,7 @@
  */
 import type { LatLon } from "../api/client.js";
 import type { WeatherWarning } from "../api/types.js";
+import type { DataMeta } from "../api/client.js";
 import type { Language } from "../presentation.js";
 
 /** Today's look-ahead: warnings in force now and those starting within these hours. */
@@ -48,4 +49,22 @@ export function warningsHead(language: Language, around: string, shown: readonly
   return language === "de"
     ? `${n === 1 ? "Eine amtliche Meldung" : `${n} amtliche Meldungen`} für ${around}${worst === 0 ? ", nur eine Vorabinformation" : `, höchste Stufe ${worst} von 4`}:`
     : `${n === 1 ? "One official notice" : `${n} official notices`} for ${around}${worst === 0 ? ", an advance notice only" : `, highest level ${worst} of 4`}:`;
+}
+
+/** The families of the amtliche Wetterwarnungen (German original and the DWD's English). */
+const DWD_WARNING_FAMILIES = new Set(["dwd_warnings", "dwd_warnings_en"]);
+/**
+ * The DWD's terms (dwd.de/copyright, § 7 DWD-Gesetz): a warning shown altered loses its Quellvermerk,
+ * and the answer says "Datenbasis: Deutscher Wetterdienst, zusammengefasst" instead, never both. This
+ * answer states the level, headline and window in our words and never the official text, so it is always
+ * the summary form (today's server: presentation/dwd.ts, the register row `dwd.altered`).
+ */
+export const DWD_SUMMARY_CREDIT = "Datenbasis: Deutscher Wetterdienst, zusammengefasst";
+
+/** The metas with every DWD warnings credit in its summary form, under one family, so the footer says it once. */
+export function asSummary(metas: readonly DataMeta[]): DataMeta[] {
+  return metas.map((m) => ({
+    ...m,
+    attribution: (m.attribution ?? []).map((a) => (DWD_WARNING_FAMILIES.has(a.family) ? { ...a, family: "dwd_warnings", text: DWD_SUMMARY_CREDIT } : a)),
+  }));
 }

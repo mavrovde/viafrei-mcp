@@ -910,6 +910,16 @@ describe("check_weather_warnings", () => {
         : "No official warnings at level 3 or above are in force for 52.520, 13.405. 1 warning below that level is in force — asked from level 0, it is shown.");
     });
   }
+  it("a DWD warnings credit is given in its summary form, once: the official text is never shown, so its Quellvermerk is not either", async () => {
+    const dwd = (family: string) => ({ family, domain: "weather", text: "Quelle: Deutscher Wetterdienst", licence: "CC BY 4.0" });
+    const other = { family: "dwd_road_forecast", domain: "weather", text: "Quelle: Deutscher Wetterdienst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder", licence: "CC BY 4.0" };
+    for (const warnings of [[w()], []]) {
+      serve("getWeatherRisk", { warnings }, { attribution: [dwd("dwd_warnings"), dwd("dwd_warnings_en"), other] });
+      const r = await call("check_weather_warnings", { ...at, language: "de" });
+      expect((r._meta as { attribution: string }).attribution).toBe("Datenbasis: Deutscher Wetterdienst, zusammengefasst · Quelle: Deutscher Wetterdienst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder");
+      expect(textOf(r).match(/Deutscher Wetterdienst, zusammengefasst/gu)).toHaveLength(1);
+    }
+  });
   it("a place is said by its name; a lone advance notice says so", async () => {
     serve("getWeatherRisk", { warnings: [{ ...w(), level: 0 }] });
     expect(body(await call("check_weather_warnings", { place: "Leipzig", language: "de" })).split("\n")[0]).toBe("Eine amtliche Meldung für Matfienland, nur eine Vorabinformation:");
