@@ -97,7 +97,7 @@ describe("Streamable HTTP on /mcp", () => {
       expect(id).toMatch(/^[0-9a-f-]{36}$/);
       expect((await client.listTools()).tools).toHaveLength(loadCatalogue().tools.length);
       const r = await client.callTool({ name: "find_place", arguments: { query: "Köln", language: "en" } });
-      expect(textOf(r)).toContain("Matfienland (state)");
+      expect(textOf(r)).toContain("1. Matfienland — state");
       const stream = await appFetch(`${base}/mcp`, { headers: { "mcp-session-id": id, accept: "text/event-stream" } });
       // The client already holds the session's one standalone stream: the session's own transport refuses a
       // second (409), which shows the GET reached that session (an unknown one is 404, below).
@@ -191,7 +191,7 @@ describe("the legacy HTTP+SSE pair", () => {
       await client.connect(new SSEClientTransport(new URL(`${base}/sse`), { fetch: appFetch }));
       expect((await client.listTools()).tools).toHaveLength(loadCatalogue().tools.length);
       const r = await client.callTool({ name: "find_place", arguments: { query: "Köln", language: "de" } });
-      expect(textOf(r)).toContain("Matfienland (state)");
+      expect(textOf(r)).toContain("1. Matfienland — state");
       await client.close();
       for (const q of ["?sessionId=nope", ""]) {
         const m = await appFetch(`${base}/messages${q}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(LIST) });

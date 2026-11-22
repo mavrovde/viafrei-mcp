@@ -11,6 +11,7 @@ import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
+import { findPlace } from "./find-place.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
 import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
@@ -370,22 +371,6 @@ const findParking: Handler = async (args, ctx) => {
     return `- ${p.name ?? p.operator ?? p.id} (${p.kind})${p.distanceM === null || p.distanceM === undefined ? "" : ` · ${km(p.distanceM, language)}`}${occ}`;
   });
   return toolResult(lines.join("\n"), [r.meta], language, read.conditionNote === undefined ? {} : { conditionNote: read.conditionNote });
-};
-
-const PLACE_KIND: Record<string, string> = { city: "municipality", district: "district", admin: "region", station: "station_area", stop: "station_area", motorway: "motorway", junction: "junction" };
-
-const findPlace: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  const kindArg = str(args["kind"]);
-  let at: string | undefined;
-  if (str(args["near"]) !== undefined || num(args["lat"]) !== undefined) {
-    const pos = await position(args, ctx, "near");
-    if (isResult(pos)) return pos;
-    at = atParam(pos.at);
-  }
-  const r = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: str(args["query"]), kind: kindArg === undefined ? undefined : PLACE_KIND[kindArg], at, radius_m: radiusM(args["radius_km"]), limit: num(args["limit"]) });
-  if (r.data.length === 0) return none(language, [r.meta], L(language, "Orte", "places"));
-  return toolResult(r.data.map((p) => `- ${p.name} (${p.kind}) · ${p.location.lat.toFixed(5)}, ${p.location.lon.toFixed(5)}`).join("\n"), [r.meta], language);
 };
 
 const findPoi: Handler = async (args, ctx) => {

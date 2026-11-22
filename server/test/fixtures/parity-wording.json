@@ -1,0 +1,227 @@
+{
+  "_about": "Today's server's answers, copied from the parity run's old side (scripts/parity-mcp.mjs) by a script, never typed: isError and the text's body, the part before the credit line (creditFooter's, tested on its own); a per-station Stand time masked as HH:MM.",
+  "cases": [
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Fulda",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Fulda\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Fulda",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Fulda\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bad Homburg vor der Höhe",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Bad Homburg vor der Höhe\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bad Homburg vor der Höhe",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Bad Homburg vor der Höhe\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Neuburg",
+        "near": "Ingolstadt",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Neuburg\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Neuburg",
+        "near": "Ingolstadt",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Neuburg\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Essen",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Essen\" — 2 Treffer:\n1. Essen — Stadt/Gemeinde, Nordrhein-Westfalen, 586.608 Einw., 51.45560, 7.01160\n2. Essen Hbf — Bahnhof, Nordrhein-Westfalen, 51.45135, 6.95882"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Essen",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "\"Essen\" — 2 matches:\n1. Essen — town, North Rhine-Westphalia, pop. 586,608, 51.45560, 7.01160\n2. Essen Hbf — station, North Rhine-Westphalia, 51.45135, 6.95882"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Hannover",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Hannover\" — ein Treffer:\n1. Hannover — Stadt/Gemeinde, 548.186 Einw., 52.37590, 9.73200"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Hannover",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "\"Hannover\" — one match:\n1. Hannover — town, pop. 548,186, 52.37590, 9.73200"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Neustadt",
+        "near": "Hamburg",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Neustadt\" — 3 Treffer:\n1. Neustadt (Hessen) — Stadt/Gemeinde, Hessen, Kreis Marburg-Biedenkopf, 9.455 Einw., 306 km, 50.85000, 9.11670\n2. Neustadt b.Coburg — Stadt/Gemeinde, Bayern, Kreis Coburg, 15.892 Einw., 366 km, 50.32970, 11.11670\n3. Neustadt an der Weinstraße — Stadt/Gemeinde, Rheinland-Pfalz, kreisfreie Stadt, 53.353 Einw., 484 km, 49.35010, 8.13610"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Neustadt",
+        "near": "Hamburg",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "\"Neustadt\" — 3 matches:\n1. Neustadt (Hessen) — town, Hesse, district Marburg-Biedenkopf, pop. 9,455, 306 km, 50.85000, 9.11670\n2. Neustadt b.Coburg — town, Bavaria, district Coburg, pop. 15,892, 366 km, 50.32970, 11.11670\n3. Neustadt an der Weinstraße — town, Rhineland-Palatinate, independent city, pop. 53,353, 484 km, 49.35010, 8.13610"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "A9",
+        "kind": "motorway",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"A9\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "A9",
+        "kind": "motorway",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"A9\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bergheim",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Bergheim\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bergheim",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Bergheim\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bad Schandau",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Bad Schandau\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bad Schandau",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Bad Schandau\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Eisenach",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Eisenach\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Eisenach",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Eisenach\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Halle",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Halle\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Halle",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Halle\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Quedlinburg",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Quedlinburg\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Quedlinburg",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Quedlinburg\" in the place index."
+    }
+  ]
+}

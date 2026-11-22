@@ -548,7 +548,7 @@ describe("find_place, find_poi, find_address", () => {
     serve("listPlaces", [{ ...ex<object[]>("listPlaces")[0], name: "Köln", kind: "municipality", location: { lat: 50.9375123, lon: 6.9602789 } }]);
     const r = await call("find_place", { query: "Köln", kind: "city", radius_km: 10, limit: 3, language: "en" });
     expect(query("listPlaces")).toEqual([{ q: "Köln", kind: "municipality", radius_m: "10000", limit: "3", lang: "en" }]);
-    expect(body(r)).toBe("- Köln (municipality) · 50.93751, 6.96028");
+    expect(body(r)).toBe('"Köln" — one match:\n1. Köln — town, Schleswig-Holstein, 50.93751, 6.96028');
   });
 
   for (const [kind, contract] of [["district", "district"], ["admin", "region"], ["station", "station_area"], ["stop", "station_area"]]) {
@@ -576,9 +576,16 @@ describe("find_place, find_poi, find_address", () => {
     it(`find_place and find_poi with nothing found (${language})`, async () => {
       serve("listPlaces", []);
       serve("listPois", []);
+      serve("getPlacesCoverage", { kinds: [{ kind: "municipality", count: 1 }], lands: [], addresses: [] });
       const want = language === "de" ? "Keine Orte gefunden." : "No places found.";
-      expect(body(await call("find_place", { query: "Xy", language }))).toBe(want);
+      expect(body(await call("find_place", { query: "Xy", language }))).toBe(language === "de" ? '"Xy" finde ich nicht im Ortsverzeichnis.' : 'I do not find "Xy" in the place index.');
       expect(body(await call("find_poi", { name: "Xy", language }))).toBe(want);
+    });
+
+    it(`find_place with no place index loaded says so (${language})`, async () => {
+      serve("listPlaces", []);
+      serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [] });
+      expect(body(await call("find_place", { query: "Xy", language }))).toBe(language === "de" ? "Für diese Installation ist kein Ortsverzeichnis geladen." : "This installation holds no place index.");
     });
   }
 
