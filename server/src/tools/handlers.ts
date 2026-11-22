@@ -274,10 +274,11 @@ const findChargingStation: Handler = async (args, ctx) => {
     operator: str(args["operator"]), conditions: strs(args["conditions"]), only_available: bool(args["only_available"]), limit: num(args["limit"]),
   });
   if (r.data.length === 0) {
-    // With no filter, nothing listed is nothing held in the radius, said as today's server says it; a
-    // filter's empty answer needs the API's count of the sites it dropped and keeps the short answer.
     const filtered = ["connector", "min_power_kw", "max_power_kw", "operator", "conditions", "only_available"].some((k) => args[k] !== undefined && args[k] !== false);
-    if (filtered) return none(language, [r.meta], L(language, "Ladestationen", "charging stations"));
+    // meta.inRadius: the sites of the circle with every filter dropped. None at all is said as today says it,
+    // whatever the filters; a filter that dropped some keeps the short answer until its own wording is ported.
+    const inRadius = (r.meta as { inRadius?: number }).inRadius;
+    if (filtered && inRadius !== 0) return none(language, [r.meta], L(language, "Ladestationen", "charging stations"));
     const around = aroundText(pos.label, pos.at);
     return toolResult(L(language,
       `Im Umkreis von ${radiusKm} km um ${around} kenne ich keine Ladestandorte. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis ${CHARGING_MAX_RADIUS_KM} km) hilft oft.`,
