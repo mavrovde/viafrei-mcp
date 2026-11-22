@@ -998,6 +998,21 @@ describe("check_weather_warnings", () => {
       expect(lines[3]).not.toMatch(/ von | from /u);
     }
   });
+  it("a level-0 advance notice (the API's minimum is 0) is listed at min_level 0 and hidden, and counted, from level 1", async () => {
+    for (const language of LANGS) {
+      serve("getWeatherRisk", { warnings: [{ ...w(), level: 0, levelName: "Vorabinformation Unwetter", headline: "Vorabinformation UNWETTER vor STURM" }] });
+      const r = await call("check_weather_warnings", { ...at, min_level: 0, language });
+      expect(query("getWeatherRisk").at(-1)).toEqual({ at: "52.52,13.405", lang: language });
+      expect(body(r).split("\n").slice(0, 3)).toEqual([
+        language === "de" ? "Eine amtliche Meldung für 52.520, 13.405, nur eine Vorabinformation:" : "One official notice for 52.520, 13.405, an advance notice only:",
+        "",
+        expect.stringMatching(/^- Vorabinformation UNWETTER vor STURM \(Vorabinformation Unwetter\)/u),
+      ]);
+      expect(body(await call("check_weather_warnings", { ...at, min_level: 1, language }))).toBe(language === "de"
+        ? "Für 52.520, 13.405 liegen keine amtlichen Warnungen ab Stufe 1 vor. Es gilt aber 1 Warnung unterhalb dieser Stufe — ab Stufe 0 gefragt, wird sie angezeigt."
+        : "No official warnings at level 1 or above are in force for 52.520, 13.405. 1 warning below that level is in force — asked from level 0, it is shown.");
+    }
+  });
   it("a place is said by its name; a lone advance notice says so", async () => {
     serve("getWeatherRisk", { warnings: [{ ...w(), level: 0 }] });
     expect(body(await call("check_weather_warnings", { place: "Leipzig", language: "de" })).split("\n")[0]).toBe("Eine amtliche Meldung für Matfienland, nur eine Vorabinformation:");
@@ -1338,6 +1353,9 @@ describe("watch_situation's answer: the condition said back, what a name became,
       "Bedingung: amtliche DWD-Warnungen ab Warnstufe 3.",
       "Bedingung: wenn ein Ladepunkt des Standorts frei wird.",
       "Bedingung: wenn der Ladepunkt 7 frei wird.",
+    ]);
+    expect([conditionSentence("weather", { min_level: 0 }, "de"), conditionSentence("weather", { min_level: 0 }, "en")]).toEqual([
+      "Bedingung: amtliche DWD-Warnungen ab Warnstufe 0.", "Condition: official DWD warnings of level 0 or higher.",
     ]);
     expect([conditionSentence("region", undefined, "en"), conditionSentence("weather", null, "en")]).toEqual([
       "Condition: at least 25 % of observed trips running 5 minutes late or more, over at least 10 trips.",
