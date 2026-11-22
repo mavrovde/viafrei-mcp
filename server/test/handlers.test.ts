@@ -328,11 +328,33 @@ describe("find_parking", () => {
       expect(r.isError).toBe(true);
       expect(calls).toHaveLength(0);
     });
-    it(`none found (${language})`, async () => {
+    it(`a filter whose empty sentence needs counts the API does not carry keeps the short answer (${language})`, async () => {
       serve("listParkingOptions", []);
-      expect(body(await call("find_parking", { ...at, language }))).toBe(language === "de" ? "Keine Parkplätze gefunden." : "No car parks found.");
+      expect(body(await call("find_parking", { ...at, facilities: ["shower"], language }))).toBe(language === "de" ? "Keine Parkplätze gefunden." : "No car parks found.");
+      serve("listParkingOptions", []);
+      expect(body(await call("find_parking", { ...at, only_with_free_spaces: true, language }))).toBe(language === "de" ? "Keine Parkplätze gefunden." : "No car parks found.");
     });
   }
+
+  it("none held around a place: today's sentence, the 10 km default sent and said, the wider radius offered", async () => {
+    serve("listParkingOptions", []);
+    const r = await call("find_parking", { ...at, language: "de" });
+    expect(query("listParkingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "10000", lang: "de" }]);
+    expect(textOf(r).split("\n")[0]).toBe("Ich kenne um 52.520, 13.405 (Umkreis 10 km) keine Parkmöglichkeiten. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis 25 km) hilft oft.");
+    expect(r.structuredContent).toMatchObject({ place: "52.520, 13.405", road: null, kind: null, radiusKm: 10, facilities: [], facilitiesInScope: 0, facilitiesAnyKind: 0, withoutOccupancy: 0, onlyWithFreeSpaces: false });
+    serve("listParkingOptions", []);
+    const en = await call("find_parking", { place: "Kassel", kind: "car_park", radius_km: 2, language: "en" });
+    expect(textOf(en).split("\n")[0]).toBe("I know of no car park (Parkhaus) around Matfienland (within 2 km). Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
+    expect(en.structuredContent).not.toHaveProperty("facilitiesAnyKind");
+  });
+
+  it("none held along a motorway: the kind named, no radius offered, nothing credited", async () => {
+    serve("listMotorwayParking", []);
+    const r = await call("find_parking", { road: "A7", kind: "truck", only_with_free_spaces: true, language: "de" });
+    expect(textOf(r)).toMatch(/^Ich kenne an der A7 keinen Lkw-Parkplatz\. Die Abdeckung ist bundesweit, aber nicht lückenlos\.\n\nStand [\d. :]+$/u);
+    serve("listMotorwayParking", []);
+    expect(textOf(await call("find_parking", { road: "A2", language: "en" })).split("\n")[0]).toBe("I know of no parking along the A2. Coverage is nationwide but not complete.");
+  });
 
   it("no place: asks for one", async () => {
     expect((await call("find_parking", { language: "en" })).isError).toBe(true);

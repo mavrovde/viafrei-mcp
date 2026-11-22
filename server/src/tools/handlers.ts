@@ -239,6 +239,37 @@ async function parkingRead(ctx: ToolContext, op: "listParkingOptions" | "listMot
   return { r: accepted, conditionNote: SID_CONDITION_NOTE[ctx.language] };
 }
 
+export const PARKING_DEFAULT_RADIUS_KM = 10;
+const PARKING_MAX_RADIUS_KM = 25;
+type ParkingWhere = { road: string } | { place: string; radiusKm: number };
+const KEIN_DE: Record<string, string> = { rest_area: "keine Rastanlage", car_park: "kein Parkhaus", park_and_ride: "keine P+R-Anlage", truck: "keinen Lkw-Parkplatz", other: "keinen Parkplatz" };
+const KIND_EN: Record<string, string> = { rest_area: "rest area (Rastanlage)", car_park: "car park (Parkhaus)", park_and_ride: "park and ride (P+R)", truck: "lorry parking (Lkw-Parkplatz)", other: "parking area (Parkplatz)" };
+
+/**
+ * Today's server's empty answer where it says "I know of no …": nothing of what was asked is held there.
+ * A facility filter, or the free-spaces filter around a place, has its own sentence from counts the API
+ * does not carry yet: those keep the short answer (null here) rather than a sentence that could be false.
+ * Nothing was listed, so nothing is credited but the place search that found the place.
+ */
+export function parkingEmpty(language: Language, where: ParkingWhere, kind: string | null, facilities: boolean, freeOnly: boolean): ((meta: DataMeta) => CallToolResult) | null {
+  if (facilities || ("place" in where && freeOnly)) return null;
+  const whereText = "road" in where
+    ? L(language, `an der ${where.road}`, `along the ${where.road}`)
+    : L(language, `um ${where.place} (Umkreis ${where.radiusKm} km)`, `around ${where.place} (within ${where.radiusKm} km)`);
+  const wider = "road" in where ? "" : L(language, ` — ein größerer Radius (bis ${PARKING_MAX_RADIUS_KM} km) hilft oft`, ` — a larger radius (up to ${PARKING_MAX_RADIUS_KM} km) often helps`);
+  const text = language === "de"
+    ? `Ich kenne ${whereText} ${kind === null ? "keine Parkmöglichkeiten" : (KEIN_DE[kind] ?? "keinen Parkplatz")}. Die Abdeckung ist bundesweit, aber nicht lückenlos${wider}.`
+    : `I know of no ${kind === null ? "parking" : (KIND_EN[kind] ?? "parking area (Parkplatz)")} ${whereText}. Coverage is nationwide but not complete${wider}.`;
+  const unfiltered = kind === null && !freeOnly;
+  return (meta) => toolResult(text, [], language, {
+    asOf: meta.generatedAt,
+    structured: {
+      place: "place" in where ? where.place : null, road: "road" in where ? where.road : null, kind, radiusKm: "place" in where ? where.radiusKm : null,
+      facilities: [], ...(unfiltered ? { facilitiesInScope: 0, facilitiesAnyKind: 0, withoutOccupancy: 0 } : {}), onlyWithFreeSpaces: freeOnly,
+    },
+  });
+}
+
 const findParking: Handler = async (args, ctx) => {
   const { language } = ctx;
   const kindArg = str(args["kind"]);
@@ -247,14 +278,24 @@ const findParking: Handler = async (args, ctx) => {
   const common = { kind, free_min: bool(args["only_with_free_spaces"]) === true ? 1 : undefined, facilities: strs(args["facilities"]), limit: num(args["limit"]) };
   const road = str(args["road"]);
   let read;
-  if (road !== undefined) read = await parkingRead(ctx, "listMotorwayParking", { road: road.replace(/\s/g, "").toUpperCase(), ...common });
-  else {
+  let where: ParkingWhere;
+  if (road !== undefined) {
+    const code = road.replace(/\s/g, "").toUpperCase();
+    read = await parkingRead(ctx, "listMotorwayParking", { road: code, ...common });
+    where = { road: code };
+  } else {
     const pos = await position(args, ctx);
     if (isResult(pos)) return pos;
-    read = await parkingRead(ctx, "listParkingOptions", { at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), ...common });
+    const radiusKm = num(args["radius_km"]) ?? PARKING_DEFAULT_RADIUS_KM;
+    read = await parkingRead(ctx, "listParkingOptions", { at: atParam(pos.at), radius_m: Math.round(radiusKm * 1000), ...common });
+    where = { place: pos.label ?? `${pos.at.lat.toFixed(3)}, ${pos.at.lon.toFixed(3)}`, radiusKm };
   }
   const { r } = read;
-  if (r.data.length === 0) return none(language, [r.meta], L(language, "Parkplätze", "car parks"));
+  if (r.data.length === 0) {
+    const empty = parkingEmpty(language, where, kind ?? null, common.facilities !== undefined, common.free_min !== undefined);
+    if (empty !== null) return empty(r.meta);
+    return none(language, [r.meta], L(language, "Parkplätze", "car parks"));
+  }
   const lines = r.data.map((p) => {
     const occ = p.occupancy === null || p.occupancy.free === null ? "" : L(language, ` · ${p.occupancy.free} frei${p.occupancy.total === null ? "" : ` von ${p.occupancy.total}`}`, ` · ${p.occupancy.free} free${p.occupancy.total === null ? "" : ` of ${p.occupancy.total}`}`);
     return `- ${p.name ?? p.operator ?? p.id} (${p.kind})${p.distanceM === null || p.distanceM === undefined ? "" : ` · ${km(p.distanceM, language)}`}${occ}`;
