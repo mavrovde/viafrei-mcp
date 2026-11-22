@@ -64,7 +64,7 @@ export type DrivingRulesData = { topic: string; title: string; rules: DrivingRul
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
 export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; punctuality: { name: string | null; level: string; late: number; observed: number } | null; windowMin: number };
 /** WeatherRiskData */
-export type WeatherWarning = { headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null } };
+export type WeatherWarning = { headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null }; inForce?: boolean };
 export type WeatherRiskData = { warnings: WeatherWarning[] };
 /** LocationData */
 export type Named = { name?: string | null; code?: string | null } | null;

@@ -449,7 +449,9 @@ const checkWeatherWarnings: Handler = async (args, ctx) => {
   const around = aroundText(pos.label, pos.at);
   const { shown, hidden } = byLevel(r.data.warnings, minLevel);
   if (shown.length === 0) return toolResult(noWarning(language, around, minLevel, hidden), asSummary([r.meta]), language);
-  const items = shown.map((w) => `- ${w.headline} (${w.levelName})${w.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(w.validity.until, language)}`, ` until ${berlinDateTime(w.validity.until, language)}`)}`);
+  // A warning that starts within the look-ahead says when it starts, so it is never read as in force now.
+  const starts = (w: T.WeatherWarning): string => (w.inForce === false && w.validity.from !== null ? L(language, ` von ${berlinDateTime(w.validity.from, language)}`, ` from ${berlinDateTime(w.validity.from, language)}`) : "");
+  const items = shown.map((w) => `- ${w.headline} (${w.levelName})${starts(w)}${w.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(w.validity.until, language)}`, ` until ${berlinDateTime(w.validity.until, language)}`)}`);
   return toolResult([warningsHead(language, around, shown), "", ...items].join("\n"), asSummary([r.meta]), language);
 };
 

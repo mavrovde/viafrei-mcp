@@ -928,6 +928,14 @@ describe("check_weather_warnings", () => {
       expect(textOf(r).match(/Deutscher Wetterdienst, zusammengefasst/gu)).toHaveLength(1);
     }
   });
+  it("a warning that starts within the look-ahead says when it starts; one in force does not", async () => {
+    for (const language of ["de", "en"] as const) {
+      serve("getWeatherRisk", { warnings: [{ ...w(), inForce: false, validity: { from: "2026-11-22T21:16:00Z", until: "2026-11-23T05:16:00Z" } }, { ...w(), inForce: true, validity: { from: "2026-11-22T10:00:00Z", until: "2026-11-23T05:16:00Z" } }] });
+      const lines = body(await call("check_weather_warnings", { ...at, language })).split("\n");
+      expect(lines[2]).toMatch(language === "de" ? / von 22\.11\.2026, 22:16 bis 23\.11\.2026, 06:16$/u : / from .*22:16 until .*06:16$/u);
+      expect(lines[3]).not.toMatch(/ von | from /u);
+    }
+  });
   it("a place is said by its name; a lone advance notice says so", async () => {
     serve("getWeatherRisk", { warnings: [{ ...w(), level: 0 }] });
     expect(body(await call("check_weather_warnings", { place: "Leipzig", language: "de" })).split("\n")[0]).toBe("Eine amtliche Meldung für Matfienland, nur eine Vorabinformation:");
