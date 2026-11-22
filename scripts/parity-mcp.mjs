@@ -5,7 +5,7 @@
  *
  *   node scripts/parity-mcp.mjs --old '<command>' --new '<command>' --calls <calls.json>
  *        [--langs de,en] [--stub-log <file>] [--out <table.md>] [--jobs 4]
- *        [--budget-s 600] [--call-timeout-s 30] [--serial <tool,tool> --serial-gap-ms N]
+ *        [--budget-s 600] [--call-timeout-s 30] [--serial <tool,tool> --serial-gap-ms N] [--ordered <tool,tool>]
  *
  * Both servers are started over stdio from their commands (run by /bin/sh, with this
  * process's environment), side by side, and every call goes to both at once.
@@ -182,13 +182,18 @@ export function stubUnknown(path) {
  * the same per-minute DB budget) is asked slower than that budget, so a refusal by the budget
  * is never counted as a difference.
  */
-export function schedule(work, serial) {
+export function schedule(work, serial, ordered = []) {
   const lane = new Set(serial);
-  return { parallel: work.filter((c) => !lane.has(c.tool)), serial: work.filter((c) => lane.has(c.tool)) };
+  const inOrder = new Set(ordered.filter((t) => !lane.has(t)));
+  return {
+    parallel: work.filter((c) => !lane.has(c.tool) && !inOrder.has(c.tool)),
+    serial: work.filter((c) => lane.has(c.tool)),
+    ordered: work.filter((c) => inOrder.has(c.tool)),
+  };
 }
 
 function parseArgs(argv) {
-  const o = { langs: "de,en", jobs: "4", "budget-s": "600", "call-timeout-s": "30", serial: "", "serial-gap-ms": "0" };
+  const o = { langs: "de,en", jobs: "4", "budget-s": "600", "call-timeout-s": "30", serial: "", "serial-gap-ms": "0", ordered: "" };
   for (let i = 0; i < argv.length; i += 2) {
     const k = argv[i];
     if (!k?.startsWith("--") || argv[i + 1] === undefined) return null;
@@ -223,7 +228,7 @@ async function ask(side, call, timeoutMs) {
 async function main(argv) {
   const o = parseArgs(argv);
   if (o === null) {
-    console.error("usage: parity-mcp.mjs --old '<command>' --new '<command>' --calls <calls.json> [--langs de,en] [--stub-log <file>] [--out <file>] [--jobs N] [--budget-s N] [--call-timeout-s N] [--serial <tool,tool>] [--serial-gap-ms N]");
+    console.error("usage: parity-mcp.mjs --old '<command>' --new '<command>' --calls <calls.json> [--langs de,en] [--stub-log <file>] [--out <file>] [--jobs N] [--budget-s N] [--call-timeout-s N] [--serial <tool,tool>] [--serial-gap-ms N] [--ordered <tool,tool>]");
     return 2;
   }
   const calls = JSON.parse(readFileSync(o.calls, "utf8"));
@@ -242,7 +247,8 @@ async function main(argv) {
   const [oldS, newS] = started.map((s) => s.value);
   const work = langs.flatMap((lang) => calls.map((c) => ({ ...c, lang, args: { ...c.args, language: lang } })));
   const rows = [];
-  const lanes = schedule(work, o.serial.split(",").map((s) => s.trim()).filter(Boolean));
+  const list = (v) => v.split(",").map((s) => s.trim()).filter(Boolean);
+  const lanes = schedule(work, list(o.serial), list(o.ordered));
   const gapMs = Number(o["serial-gap-ms"]);
   let next = 0, outOfTime = false;
   const pair = async (call) => {
@@ -263,7 +269,16 @@ async function main(argv) {
       await pair(call);
     }
   };
-  await Promise.all([serialWorker(), ...Array.from({ length: Math.max(1, Number(o.jobs)) }, worker)]);
+  // The calls of `ordered` tools run one after another in the corpus order, with no gap: a tool whose
+  // answer depends on the calls before it in the session (watch_situation's id and its "n of 10",
+  // stop_watch's target) is asked in the same order on both servers, never in completion order.
+  const orderedWorker = async () => {
+    for (const call of lanes.ordered) {
+      if (Date.now() > deadline) { outOfTime = true; return; }
+      await pair(call);
+    }
+  };
+  await Promise.all([serialWorker(), orderedWorker(), ...Array.from({ length: Math.max(1, Number(o.jobs)) }, worker)]);
   await Promise.all([oldS.close(), newS.close()]);
   const table = tableOf(rows);
   console.log(table);

@@ -109,8 +109,10 @@ const sameCalls = (pairs) => write(`calls-${pairs.length}.json`, pairs.map(([too
 }
 
 // The pure parts.
-check("schedule: the serial tools' calls leave the pool, in their order; the rest stay", JSON.stringify(schedule([{ tool: "a", n: 1 }, { tool: "t" , n: 2 }, { tool: "a", n: 3 }, { tool: "t", n: 4 }], ["t"])) === '{"parallel":[{"tool":"a","n":1},{"tool":"a","n":3}],"serial":[{"tool":"t","n":2},{"tool":"t","n":4}]}');
+check("schedule: the serial tools' calls leave the pool, in their order; the rest stay", JSON.stringify(schedule([{ tool: "a", n: 1 }, { tool: "t" , n: 2 }, { tool: "a", n: 3 }, { tool: "t", n: 4 }], ["t"])) === '{"parallel":[{"tool":"a","n":1},{"tool":"a","n":3}],"serial":[{"tool":"t","n":2},{"tool":"t","n":4}],"ordered":[]}');
 check("schedule: no serial tool leaves every call in the pool", schedule([{ tool: "a" }], []).serial.length === 0);
+check("schedule: the ordered tools' calls leave the pool for their own lane, in corpus order; a serial tool stays serial", JSON.stringify(schedule([{ tool: "w", n: 1 }, { tool: "a", n: 2 }, { tool: "s", n: 3 }, { tool: "w", n: 4 }, { tool: "t", n: 5 }], ["t"], ["w", "s", "t"])) === '{"parallel":[{"tool":"a","n":2}],"serial":[{"tool":"t","n":5}],"ordered":[{"tool":"w","n":1},{"tool":"s","n":3},{"tool":"w","n":4}]}');
+check("schedule: no ordered tool leaves the ordered lane empty", schedule([{ tool: "a" }], []).ordered.length === 0);
 check("normalise drops asOf/requestId at every depth and sorts keys", JSON.stringify(normalise({ b: 1, asOf: 1, a: { requestId: 2, z: [{ asOf: 3, y: 1 }] } })) === '{"a":{"z":[{"y":1}]},"b":1}');
 check("viewOf keeps only the compared _meta members", JSON.stringify(viewOf(res("x", null, { other: 1, shareAlike: true })).meta) === '{"attribution":"Quelle: X","license":"CC BY 4.0","shareAlike":true}');
 check("a missing old answer is empty", judgeOld(null).empty === true);
