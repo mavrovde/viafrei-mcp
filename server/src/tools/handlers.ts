@@ -17,6 +17,28 @@ function none(language: Language, metas: readonly DataMeta[], what: string): Cal
   return toolResult(L(language, `Keine ${what} gefunden.`, `No ${what} found.`), metas, language);
 }
 
+/** Today's server's refusals of a station, stop or region it cannot find (#120 A1, 3.3): errors, verbatim. */
+const NOT_KNOWN = {
+  facilityStation: (q: string, language: Language) => toolError(L(language,
+    `Einen Bahnhof oder eine Haltestelle "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof oder an der Haltestelle steht, mit der Stadt (z. B. "Köln Hbf", "Stuttgart Charlottenplatz").`,
+    `I do not know a station or stop called "${q}". Please give the name as it appears at the station or stop, with the city (e.g. "Köln Hbf", "Stuttgart Charlottenplatz").`)),
+  station: (q: string, language: Language) => toolError(L(language,
+    `Den Bahnhof "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Köln Hbf").`,
+    `I do not know a station called "${q}". Please give the name as it appears at the station (e.g. "Köln Hbf").`)),
+  eva: (eva: string, language: Language) => toolError(L(language,
+    `Zu EVA ${eva} halten wir keinen Bahnhofseintrag. Aufzüge: check_station_facilities; Abfahrten: get_train_departures.`,
+    `We hold no station record for EVA ${eva}. Lifts: check_station_facilities; departures: get_train_departures.`)),
+  stop: (q: string, language: Language) => toolError(L(language,
+    `Die Haltestelle "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").`,
+    `I do not know a stop called "${q}". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").`)),
+  region: (q: string, language: Language) => toolError(L(language,
+    `"${q}" kenne ich als Region nicht. Die Daten sind auf Kreisebene gemeldet — bitte ein Bundesland, eine kreisfreie Stadt oder den Kreis nennen (z. B. "Bayern", "Köln", "Landkreis Fulda").`,
+    `I do not know "${q}" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").`)),
+};
+
+/** A session holds at most this many open watches, as today's server does. */
+export const MAX_WATCHES = 10;
+
 function situationLine(s: T.RoadSituation, language: Language): string {
   const until = s.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(s.validity.until, language)}`, ` until ${berlinDateTime(s.validity.until, language)}`);
   const delay = s.delayMin === null ? "" : L(language, ` (+${s.delayMin} min)`, ` (+${s.delayMin} min)`);
@@ -332,7 +354,10 @@ const checkTransitDisruption: Handler = async (args, ctx) => {
   const line = str(args["line"]);
   if (line === undefined && str(args["region"]) === undefined && (num(args["lat"]) === undefined || num(args["lon"]) === undefined)) return placeMissing(ctx);
   const area = await areaCode(args, ctx);
-  if (area.code === undefined && line === undefined) return toolResult(L(language, "Diese Region kenne ich nicht.", "I do not know this region."), area.metas, language);
+  if (area.code === undefined && line === undefined) {
+    const region = str(args["region"]);
+    return region === undefined ? toolResult(L(language, "Diese Region kenne ich nicht.", "I do not know this region."), area.metas, language) : NOT_KNOWN.region(region, language);
+  }
   const r = await ctx.api.get<T.DisruptionData>("listTransitDisruptions", { area: area.code, line, window_min: num(args["window_min"]) });
   const lines = r.data.alerts.map((a) => `- ${a.lines.length > 0 ? `${a.lines.join(", ")}: ` : ""}${a.header ?? ""}`);
   if (r.data.punctuality !== null) lines.unshift(L(language, `Pünktlichkeit ${r.data.punctuality.name ?? ""}: ${r.data.punctuality.level} (${r.data.punctuality.late} von ${r.data.punctuality.observed} verspätet)`, `Punctuality ${r.data.punctuality.name ?? ""}: ${r.data.punctuality.level} (${r.data.punctuality.late} of ${r.data.punctuality.observed} late)`));
@@ -373,7 +398,10 @@ const getDepartures: Handler = async (args, ctx) => {
     stations = await ctx.api.get<T.Station[]>("listStations", { at: atParam(pos.at), limit: 1 });
   }
   const station = stations.data[0];
-  if (station === undefined) return none(language, [stations.meta], L(language, "Haltestellen", "stops"));
+  if (station === undefined) {
+    const asked = str(args["stop"]) ?? str(args["stop_id"]);
+    return asked === undefined ? none(language, [stations.meta], L(language, "Haltestellen", "stops")) : NOT_KNOWN.stop(asked, language);
+  }
   const r = await ctx.api.get<T.Board>("listStationDepartures", { stationId: station.id, from: str(args["when"]), duration_min: num(args["duration_min"]), modes: strs(args["modes"]), limit: num(args["limit"]) });
   const head = `${r.data.station.name}:`;
   if (r.data.departures.length === 0) return toolResult(`${head} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}`, [r.meta], language);
@@ -384,7 +412,10 @@ const checkStationFacilities: Handler = async (args, ctx) => {
   const { language } = ctx;
   const stations = await stationOf(args, ctx);
   const station = stations.data[0];
-  if (station === undefined) return none(language, [stations.meta], L(language, "Bahnhöfe", "stations"));
+  if (station === undefined) {
+    const asked = str(args["station"]) ?? str(args["eva_no"]);
+    return asked === undefined ? none(language, [stations.meta], L(language, "Bahnhöfe", "stations")) : NOT_KNOWN.facilityStation(asked, language);
+  }
   const facility = str(args["facility"]);
   const r = await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id, kind: facility === "any" ? undefined : facility, limit: num(args["limit"]) });
   const d = r.data;
@@ -396,7 +427,12 @@ const describeStation: Handler = async (args, ctx) => {
   const { language } = ctx;
   const stations = await stationOf(args, ctx);
   const station = stations.data[0];
-  if (station === undefined) return none(language, [stations.meta], L(language, "Bahnhöfe", "stations"));
+  if (station === undefined) {
+    const eva = str(args["eva_no"]);
+    const name = str(args["station"]);
+    if (eva !== undefined) return NOT_KNOWN.eva(eva, language);
+    return name === undefined ? none(language, [stations.meta], L(language, "Bahnhöfe", "stations")) : NOT_KNOWN.station(name, language);
+  }
   const n = num(args["departures"]) ?? 5;
   const [fac, board] = await Promise.all([
     ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id }),
@@ -413,6 +449,11 @@ const watchSituation: Handler = async (args, ctx) => {
   const kind = str(args["kind"]);
   const key = str(args["key"]);
   if (kind === undefined || key === undefined) return toolError(L(language, "kind und key sind nötig.", "kind and key are required."));
+  if (ctx.watches.list().length >= MAX_WATCHES) {
+    return toolError(L(language,
+      `Diese Sitzung hat bereits ${MAX_WATCHES} offene Beobachtungen — das Maximum ist ${MAX_WATCHES}. Beende eine mit stop_watch (die Liste steht in viafrei://watches) und versuche es dann noch einmal.`,
+      `This session already has ${MAX_WATCHES} open watches — the limit is ${MAX_WATCHES}. End one with stop_watch (viafrei://watches lists them) and try again.`));
+  }
   const condition = args["condition"];
   const r = await ctx.api.get<T.WatchData>("getWatch", {
     kind, target: key, request: str(args["request"]), hours: num(args["hours"]), until: str(args["until"]),

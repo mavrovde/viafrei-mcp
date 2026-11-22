@@ -612,7 +612,7 @@ describe("check_transit_disruption", () => {
     it(`an unknown region (${language})`, async () => {
       serve("listPlaces", []);
       const r = await call("check_transit_disruption", { region: "Atlantis", language });
-      expect(body(r)).toBe(language === "de" ? "Diese Region kenne ich nicht." : "I do not know this region.");
+      expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? '"Atlantis" kenne ich als Region nicht. Die Daten sind auf Kreisebene gemeldet — bitte ein Bundesland, eine kreisfreie Stadt oder den Kreis nennen (z. B. "Bayern", "Köln", "Landkreis Fulda").' : 'I do not know "Atlantis" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").' }], isError: true });
       expect(ops()).toEqual(["listPlaces"]);
     });
   }
@@ -699,7 +699,7 @@ describe("stations", () => {
     });
     it(`get_departures, no such stop (${language})`, async () => {
       serve("listStations", []);
-      expect(body(await call("get_departures", { stop: "Xy", language }))).toBe(language === "de" ? "Keine Haltestellen gefunden." : "No stops found.");
+      expect(await call("get_departures", { stop: "Xy", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "Xy" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "Xy". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true });
     });
   }
 
@@ -740,9 +740,9 @@ describe("stations", () => {
     });
     it(`check_station_facilities and describe_station, no such station (${language})`, async () => {
       serve("listStations", []);
-      const want = language === "de" ? "Keine Bahnhöfe gefunden." : "No stations found.";
-      expect(body(await call("check_station_facilities", { station: "X", language }))).toBe(want);
-      expect(body(await call("describe_station", { station: "X", language }))).toBe(want);
+      expect(await call("check_station_facilities", { station: "X", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Einen Bahnhof oder eine Haltestelle "X" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof oder an der Haltestelle steht, mit der Stadt (z. B. "Köln Hbf", "Stuttgart Charlottenplatz").' : 'I do not know a station or stop called "X". Please give the name as it appears at the station or stop, with the city (e.g. "Köln Hbf", "Stuttgart Charlottenplatz").' }], isError: true });
+      expect(await call("describe_station", { station: "X", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Den Bahnhof "X" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Köln Hbf").' : 'I do not know a station called "X". Please give the name as it appears at the station (e.g. "Köln Hbf").' }], isError: true });
+      expect(await call("describe_station", { eva_no: "8000207", language })).toEqual({ content: [{ type: "text", text: language === "de" ? "Zu EVA 8000207 halten wir keinen Bahnhofseintrag. Aufzüge: check_station_facilities; Abfahrten: get_train_departures." : "We hold no station record for EVA 8000207. Lifts: check_station_facilities; departures: get_train_departures." }], isError: true });
     });
     it(`describe_station (${language}): position, lifts and escalators, the next departures`, async () => {
       serve("listStationDepartures", board(deps.slice(0, 2)));
@@ -859,5 +859,18 @@ describe("a missing or unknown place, in today's words per tool", () => {
     const r = await call("get_departures", { language: "en" });
     expect(textOf(r)).toBe('Give a stop name (free text) or a stop_id from an earlier result — or a place (or lat+lon) for the nearest stops around it. If the person named none, ask which stop, or where: a town or their position. For example {"stop": "Köln Hbf"} or {"place": "Fulda"}.');
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("watch_situation: at most ten open watches a session", () => {
+  it("the eleventh is refused in today's words, the API not asked", async () => {
+    const { client, close } = await connect();
+    const watch = async (key: string) => (await client.callTool({ name: "watch_situation", arguments: { kind: "road", key, language: "en" } })) as CallToolResult;
+    for (let i = 0; i < 10; i++) expect((await watch("A8")).isError).toBeFalsy();
+    const before = calls.length;
+    const eleventh = await watch("A9");
+    await close();
+    expect(eleventh).toEqual({ content: [{ type: "text", text: "This session already has 10 open watches — the limit is 10. End one with stop_watch (viafrei://watches lists them) and try again." }], isError: true });
+    expect(calls).toHaveLength(before);
   });
 });

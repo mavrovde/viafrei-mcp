@@ -236,7 +236,7 @@ async function main(argv) {
       const call = work[next++];
       const [a, b] = await Promise.all([ask(oldS, call, timeoutMs), ask(newS, call, timeoutMs)]);
       const oldView = a === null ? null : viewOf(a), newView = b === null ? null : viewOf(b);
-      rows.push({ tool: call.tool, lang: call.lang, kind: call.kind ?? "golden", ...classify(oldView, newView), old: judgeOld(oldView) });
+      rows.push({ tool: call.tool, lang: call.lang, kind: call.kind ?? "golden", ...classify(oldView, newView), old: judgeOld(oldView), ...(process.env.PARITY_ROWS ? { args: call.args, views: { old: oldView, new: newView } } : {}) });
     }
   };
   await Promise.all(Array.from({ length: Math.max(1, Number(o.jobs)) }, worker));
@@ -244,6 +244,8 @@ async function main(argv) {
   const table = tableOf(rows);
   console.log(table);
   if (o.out) writeFileSync(o.out, `${table}\n`);
+  // every pair with both answers, one JSON line each, for reading a difference (PARITY_ROWS=<file>)
+  if (process.env.PARITY_ROWS) writeFileSync(process.env.PARITY_ROWS, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
   const unknown = stubUnknown(o["stub-log"]);
   const gaps = seedGaps(rows);
   if (outOfTime) console.error(`parity: the budget of ${o["budget-s"]} s ran out after ${rows.length} of ${work.length} calls`);
