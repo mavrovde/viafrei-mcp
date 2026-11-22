@@ -47,6 +47,9 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci --ignore-scripts
       - run: npm test
+      # The release's mutation shards lose no mutant and count none twice
+      # (Stryker's instrumenter only, no test run; a second or so).
+      - run: npm run test:mutation-pieces
 
   e2e-mock:
     runs-on: ubuntu-24.04

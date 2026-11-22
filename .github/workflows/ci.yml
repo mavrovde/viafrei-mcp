@@ -190,13 +190,22 @@ jobs:
       - name: Snyk wiring self-test (offline)
         run: npm run test:snyk
 
-      # Mutation testing runs once per release (four shards gathered into one
+      # Mutation testing runs once per release (8 shards gathered into one
       # 70 % gate, called by the npm workflow before it publishes), never on a
       # pull request or a push. This proves the wiring offline: the triggers, the
       # matrix, the gate, that publish needs it, the shards of the real scope
       # disjoint and complete, and the gather's exit codes on planted reports.
       - name: Mutation wiring self-test (offline)
         run: npm run test:mutation-wiring
+
+      # Every GitHub job here ends within 15 minutes (owner 2026-11-22): a job with
+      # no timeout-minutes, or one above 15, fails this; longer work is split into
+      # parallel jobs or shards. The self-test proves the gate can say no.
+      - name: Every job is bounded at 15 minutes
+        run: npm run check:timeouts
+
+      - name: Job-timeout gate self-test
+        run: npm run test:timeouts
 
       # The public endpoint may be *asserted about* - one test checks that the
       # default really is it - but it may never be handed to something that

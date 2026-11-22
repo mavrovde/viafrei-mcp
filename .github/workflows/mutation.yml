@@ -8,12 +8,18 @@
 # ref. It is the full run over every in-scope file, failing below 70 %; the
 # report lists the counts per file and every mutant not detected.
 #
-# The full run is cut into four parallel shards, as everywhere: Mutation shard k
-# mutates the in-scope files at the positions p of the sorted scope with
-# p mod 4 = k - 1 (mutation.mjs shard k/4; the four are disjoint, together every
-# file and none empty, scripts/mutation-workflow.test.mjs), and the Mutation
-# testing job gathers their reports into one gate, which refuses a file with no
-# report or two. Mutation testing is green only when every shard finished green.
+# Every job ends within 15 minutes (owner 2026-11-22), and no shard may hold a
+# whole large file (src/tools/handlers.ts is a third of all mutants), so the full
+# run (~3,000 mutants; one shard of 78 ran in 10 s on a laptop) is cut into 8
+# parallel shards of PIECES, ~400 mutants each: a piece is
+# a run of one file's top-level statements, as a Stryker line range, so a large
+# file is spread over several shards; the pieces are dealt heaviest first to the
+# lightest shard (mutation.mjs shard k/8; disjoint, together every piece and none
+# empty, scripts/mutation-workflow.test.mjs; no mutant lost or counted twice,
+# server/scripts/mutation-pieces.test.mjs). The Mutation testing job gathers their
+# reports into one gate, which refuses a piece with no report or two and a mutant
+# outside its shard's pieces. Mutation testing is green only when every shard
+# finished green.
 name: Mutation
 
 on:
@@ -33,7 +39,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # The four shards of the scope, printed once; exit 2 (red) on an empty shard.
+  # The 8 shards of the scope, printed once; exit 2 (red) on an empty shard.
   plan:
     name: Mutation plan
     runs-on: ubuntu-24.04
@@ -46,9 +52,13 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - working-directory: server
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: The shards of the full run
         working-directory: server
-        run: node scripts/mutation.mjs plan 4
+        run: node scripts/mutation.mjs plan 8
 
   # One shard of the full run each, with no floor of its own; fail-fast is off,
   # so one run reports every failing shard. Exit 2 (red) on an empty shard or a
@@ -57,11 +67,11 @@ jobs:
     name: Mutation shard
     needs: plan
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -78,7 +88,7 @@ jobs:
         working-directory: server
         env:
           SHARD: ${{ matrix.shard }}
-        run: node scripts/mutation.mjs shard "$SHARD/4" "$GITHUB_WORKSPACE/mutation-shard"
+        run: node scripts/mutation.mjs shard "$SHARD/8" "$GITHUB_WORKSPACE/mutation-shard"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mutation-shard-${{ matrix.shard }}
@@ -94,7 +104,7 @@ jobs:
     needs: [plan, shards]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -103,6 +113,10 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - working-directory: server
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Every shard finished with its reports
         env:
           SHARDS: ${{ needs.shards.result }}

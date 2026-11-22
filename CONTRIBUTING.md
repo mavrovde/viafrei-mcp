@@ -52,21 +52,27 @@ and reports every mutant they do not kill. The scope is every `.ts` file under
 |---|---|---|
 | full | once per release: `publish.yml` calls `mutation.yml` on the tagged commit, and the publish job needs it next to Snyk, so a red run stops the publish; or a manual run of `mutation.yml` | below 70 % |
 
-No pull request and no push runs it. The full run is cut into four parallel
-shards: shard k mutates the files at the positions p of the sorted scope with
-p mod 4 = k - 1, and the **Mutation testing** job gathers the four reports into
-one score. It fails when a shard did not finish green, when a file has no
-report or two, and below 70 %. The job summary holds the score per file and
+No pull request and no push runs it. Every GitHub job ends within 15 minutes
+(`npm run check:timeouts` in CI), so the full run is cut into 8 parallel
+shards of pieces: a piece is a run of one file's top-level statements, given to
+Stryker as a line range, so a large file is spread over several shards; the
+pieces are dealt heaviest first to the lightest shard. The **Mutation testing**
+job gathers the 8 reports into one score. It fails when a shard did not finish
+green, when a piece has no report or two, when a mutant lies outside its
+shard's pieces, and below 70 %. The job summary holds the score per file and
 every mutant not detected; the reports are the run's artefacts.
 `npm run test:mutation-wiring` (in CI) holds the workflows to this and proves
-the four shards of the real scope disjoint and complete.
+the 8 shards of the real scope disjoint and complete; `npm run
+test:mutation-pieces` (in `server/`, in the server workflow) runs Stryker's
+instrumenter over the scope whole and shard by shard and proves that no mutant
+is lost or counted twice.
 
 A maintainer run, from `server/`:
 
 ```sh
 npm run mutation                                 # the full run, floor 70 %; report in reports/mutation/
-node scripts/mutation.mjs plan 4                 # the four shards
-node scripts/mutation.mjs shard 2/4 mut/shard-2  # one shard, no floor
+node scripts/mutation.mjs plan 8                 # the 8 shards and their pieces
+node scripts/mutation.mjs shard 2/8 mut/shard-2  # one shard, no floor
 node scripts/mutation.mjs gather mut out.md      # score the shard directories as one run
 ```
 
@@ -128,11 +134,12 @@ ahead, it prepares the release with `scripts/propose-release.mjs` and opens a
 - **A pure mirror is released automatically.** The probe found the surface
   unchanged, every offline gate passed and the leak sweep is clean. The workflow
   waits for the pull request's required checks (`build-and-test (22)`,
-  `build-and-test (24)`, `SonarCloud Code Analysis`) for at most 30 minutes,
+  `build-and-test (24)`, `SonarCloud Code Analysis`) for at most 12 minutes,
   merges it with a merge commit pinned to the head it checked, pushes the
   annotated tag `vX.Y.Z` on the merge commit, then dispatches the `npm` workflow
   on the tag (its first job is Snyk, below) and waits for it to succeed, then
-  dispatches `Smithery` and `Release page`. A red check, a check still pending at the deadline, a pull request a
+  dispatches `Smithery`, the MCP Registry entry and `Release page`, each from
+  a job of its own, side by side. A red check, a check still pending at the deadline, a pull request a
   person has touched in the meantime, or any later failure ends the run red with
   the reason, and the message says what has already happened at that stage. Nothing
   is merged on red or pending. A pull request left unmerged waits for a person, who
@@ -198,7 +205,7 @@ against the tag before it uploads anything.
 it stopped at. The daily run also turns red, with the fix, while the release stays
 stuck:
 
-- *Red before the merge* (a check red, or still pending after 30 minutes). Nothing was
+- *Red before the merge* (a check red, or still pending after 12 minutes). Nothing was
   merged. Finish by hand: merge with a merge commit, then tag.
 - *Merged but not tagged.* The next daily run reports it. Tag the merge commit
   (`git tag -a vX.Y.Z <merge sha>`) and push the tag yourself. A tag pushed by a person

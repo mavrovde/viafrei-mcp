@@ -100,6 +100,8 @@
     "test:release-notes": "node scripts/release-notes.test.mjs",
     "test:snyk": "node scripts/snyk-workflow.test.mjs",
     "test:mutation-wiring": "node scripts/mutation-workflow.test.mjs",
+    "check:timeouts": "node scripts/check-timeouts.mjs",
+    "test:timeouts": "node scripts/check-timeouts.test.mjs",
     "rules:show": "node scripts/show-rules.mjs"
   },
   "dependencies": {

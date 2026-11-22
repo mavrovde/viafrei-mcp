@@ -1,21 +1,24 @@
 #!/usr/bin/env node
 /**
  * Mutation testing's wiring (owner 2026-11-18): the full StrykerJS run of the
- * server once per release, cut into four shards and gathered into one 70 % gate,
+ * server once per release, cut into 8 shards of pieces (owner 2026-11-22: every job
+ * ends within 15 minutes) and gathered into one 70 % gate,
  * called by the npm workflow on the commit about to be published, and never on
  * a pull request or a push. Read off the workflow files and run:
  *
  *   - mutation.yml: triggers (the release call with a ref, a dispatch, nothing
- *     else), the plan, the 4-shard matrix (fail-fast off, 30 min each, each
+ *     else), the plan, the 8-shard matrix (fail-fast off, 15 min each, each
  *     uploading its report), the gate job "Mutation testing" (needs the shards,
  *     runs unless cancelled, its shard-result guard RUN under bash, the gather,
  *     the job summary, the report artefact);
  *   - publish.yml: the mutation job calls mutation.yml on the tagged commit, and
  *     publish needs it next to Snyk;
- *   - the 4 shards of the real scope are disjoint, together every in-scope file,
- *     none empty, and leave out the generated operation table;
+ *   - the 8 shards of the real scope are disjoint, together every piece of every
+ *     in-scope file, none empty, and leave out the generated operation table
+ *     (that no MUTANT is lost or counted twice is server/scripts/mutation-pieces.test.mjs,
+ *     which needs Stryker's instrumenter);
  *   - the gather on planted reports: exit 0 at the floor, 1 below it, 2 when a
- *     file has no report or two, a shard has no report, or a report strays.
+ *     piece has no report or two, a shard has no report, or a report or a mutant strays.
  * Then each planted fault in the workflows must be reported.
  *
  *   node scripts/mutation-workflow.test.mjs
@@ -28,7 +31,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createChecker } from './check-harness.mjs';
 import { resolveTool, runTool } from './tools.mjs';
-import { FLOOR, GENERATED, gather, inScope, shardOf } from '../server/scripts/mutation.mjs';
+import { FLOOR, GENERATED, PIECE_WEIGHT, SHARDS, gather, inScope, parsePiece, piecesOf, piecesOfScope, planOf, shardOf } from '../server/scripts/mutation.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -38,8 +41,9 @@ const { check, failures, passed } = createChecker();
 
 const REF = '${{ inputs.ref || github.sha }}';
 const TRIGGERS = '\non:\n  workflow_call:\n    inputs:\n      ref:\n        description: The commit to mutate (the release\'s tagged commit)\n        required: true\n        type: string\n  workflow_dispatch:\n\n';
-const MATRIX = '\n    timeout-minutes: 30\n    strategy:\n      fail-fast: false\n      matrix:\n        shard: [1, 2, 3, 4]\n';
-const SHARD_RUN = 'run: node scripts/mutation.mjs shard "$SHARD/4" "$GITHUB_WORKSPACE/mutation-shard"\n';
+const KS = Array.from({ length: SHARDS }, (_, i) => i + 1);
+const MATRIX = `\n    timeout-minutes: 15\n    strategy:\n      fail-fast: false\n      matrix:\n        shard: [${KS.join(', ')}]\n`;
+const SHARD_RUN = `run: node scripts/mutation.mjs shard "$SHARD/${SHARDS}" "$GITHUB_WORKSPACE/mutation-shard"\n`;
 const SHARD_UPLOAD = '\n        with:\n          name: mutation-shard-${{ matrix.shard }}\n          path: mutation-shard/\n          if-no-files-found: error\n';
 const GATE_HEAD = '\n  mutation:\n    name: Mutation testing\n    needs: [plan, shards]\n    if: ${{ !cancelled() }}\n';
 const GATHER = 'run: node scripts/mutation.mjs gather "$GITHUB_WORKSPACE/mutation-shards" "$GITHUB_WORKSPACE/mutation-report.md"\n';
@@ -81,11 +85,11 @@ function faults(files) {
     if (!mu.includes(TRIGGERS)) out.push("mutation.yml's trigger block is not the release call with a required ref and a dispatch");
     if (mu.includes('continue-on-error')) out.push('mutation.yml carries continue-on-error');
     if ((mu.match(/\n {10}ref: \$\{\{ inputs\.ref \|\| github\.sha \}\}\n/gu) ?? []).length !== 3) out.push(`mutation.yml does not check out ${REF} in each of its three jobs`);
-    if (!job(mu, 'plan').includes('run: node scripts/mutation.mjs plan 4\n')) out.push("mutation.yml's plan does not check the 4 shards");
+    if (!job(mu, 'plan').includes(`run: node scripts/mutation.mjs plan ${SHARDS}\n`)) out.push(`mutation.yml's plan does not check the ${SHARDS} shards`);
     const shards = job(mu, 'shards');
     if (!/^ {4}needs: plan\n/mu.test(shards)) out.push("mutation.yml's shards do not need the plan");
-    if (!shards.includes(MATRIX)) out.push("mutation.yml's shards are not the 4-shard matrix with fail-fast off and 30 minutes each");
-    if (!shards.includes(SHARD_RUN)) out.push("mutation.yml's shard does not run its quarter of the scope");
+    if (!shards.includes(MATRIX)) out.push(`mutation.yml's shards are not the ${SHARDS}-shard matrix with fail-fast off and 15 minutes each`);
+    if (!shards.includes(SHARD_RUN)) out.push(`mutation.yml's shard does not run its 1/${SHARDS} of the scope`);
     if (!shards.includes(SHARD_UPLOAD)) out.push("mutation.yml's shard does not upload its report, failing when there is none");
     const gate = job(mu, 'mutation');
     if (!mu.includes(GATE_HEAD)) out.push("mutation.yml's gate is not 'Mutation testing', needing the plan and the shards and running unless cancelled");
@@ -118,41 +122,65 @@ const files = Object.fromEntries(readdirSync(WF).filter((n) => n.endsWith('.yml'
 console.log('the workflows as committed');
 {
     const f = faults(files);
-    check('mutation testing runs once per release in 4 shards, before publish, and nowhere else', f.length === 0, f.join('; '));
+    check(`mutation testing runs once per release in ${SHARDS} shards, before publish, and nowhere else`, f.length === 0, f.join('; '));
 }
 
-console.log('the 4 shards of the real scope');
+console.log(`the ${SHARDS} shards of the real scope`);
 const scope = inScope();
+const pieces = piecesOfScope(scope);
 {
-    const shards = [1, 2, 3, 4].map((k) => shardOf(scope, k, 4));
+    const shards = KS.map((k) => shardOf(scope, k, SHARDS));
     const all = shards.flat();
     check('the scope is the server source, not empty', scope.length >= 4 && scope.every((f) => f.startsWith('src/') && f.endsWith('.ts') && !f.endsWith('.test.ts')), scope.join(' '));
     check('the generated operation table is out of the scope', GENERATED.length > 0 && GENERATED.every((g) => !scope.includes(g)));
-    check('no shard is empty', shards.every((s) => s.length > 0), shards.map((s) => s.length).join(','));
+    check('every in-scope file has a piece, and a large one several', scope.every((f) => pieces.some((p) => p.file === f)) && pieces.length > scope.length);
+    check("a file's pieces do not overlap", scope.every((f) => pieces.filter((p) => p.file === f).every((p, i, ps) => p.start <= p.end && (i === 0 || ps[i - 1].end < p.start))));
+    {
+        // Planted: a statement heavier than a piece, then two that share its last line, then one alone.
+        const root = mkdtempSync(join(tmpdir(), 'mut-pieces-'));
+        mkdirSync(join(root, 'src'));
+        const heavy = `const a = [${Array.from({ length: PIECE_WEIGHT }, (_, i) => i).join(', ')}];`;
+        writeFileSync(join(root, 'src', 'x.ts'), `${heavy} const b = 1;\n\n${heavy.replace('a', 'c')}\n`);
+        writeFileSync(join(root, 'src', 'empty.ts'), '// nothing\n');
+        const ids = piecesOf('src/x.ts', root).map((p) => p.id).join(' ');
+        check('two statements on one line stay in one piece; a heavy one is a piece alone', ids === 'src/x.ts:1-1 src/x.ts:3-3', ids);
+        const none = piecesOf('src/empty.ts', root);
+        check('a file with no statement is one piece of weight 0', none.length === 1 && none[0].weight === 0 && none[0].id === 'src/empty.ts:1-2', JSON.stringify(none));
+        rmSync(root, { recursive: true, force: true });
+    }
+    check('no shard is empty', planOf(scope, SHARDS).every((s) => s.ids.length > 0 && s.weight > 0), shards.map((s) => s.length).join(','));
     check('the shards are disjoint', new Set(all).size === all.length);
-    check('together they are every in-scope file', all.length === scope.length && scope.every((f) => all.includes(f)));
+    check('together they are every piece', all.length === pieces.length && pieces.every((p) => all.includes(p.id)));
     let threw = 0;
     for (const [k, n] of [[0, 4], [5, 4], [1, 0], [1.5, 4]]) { try { shardOf(scope, k, n); } catch { threw++; } }
     check('a bad K/N is refused', threw === 4);
-    const plan = spawnSync(process.execPath, [SCRIPT, 'plan', '4'], { encoding: 'utf8' });
-    check('mutation.mjs plan 4 passes on the real scope', plan.status === 0, plan.stderr);
-    const big = spawnSync(process.execPath, [SCRIPT, 'plan', String(scope.length + 1)], { encoding: 'utf8' });
+    const plan = spawnSync(process.execPath, [SCRIPT, 'plan', String(SHARDS)], { encoding: 'utf8' });
+    check(`mutation.mjs plan ${SHARDS} passes on the real scope`, plan.status === 0, plan.stderr);
+    const big = spawnSync(process.execPath, [SCRIPT, 'plan', String(pieces.filter((p) => p.weight > 0).length + 1)], { encoding: 'utf8' });
     check('a plan with an empty shard is exit 2', big.status === 2, `${big.status}`);
 }
 
 console.log('the gather on planted reports');
 {
     const tmp = mkdtempSync(join(tmpdir(), 'mut-gather-'));
-    const mutants = (killed, survived, extra = []) => [
-        ...Array.from({ length: killed }, (_, i) => ({ id: `k${i}`, mutatorName: 'BooleanLiteral', replacement: 'false', status: 'Killed', location: { start: { line: 1, column: 1 }, end: { line: 1, column: 2 } } })),
-        ...Array.from({ length: survived }, (_, i) => ({ id: `s${i}`, mutatorName: 'StringLiteral', replacement: '""', status: 'Survived', location: { start: { line: 2, column: 3 }, end: { line: 2, column: 4 } } })),
-        ...extra,
+    const at = (line) => ({ start: { line, column: 1 }, end: { line, column: 2 } });
+    const mutants = (line, killed, survived) => [
+        ...Array.from({ length: killed }, (_, i) => ({ id: `k${line}-${i}`, mutatorName: 'BooleanLiteral', replacement: 'false', status: 'Killed', location: at(line) })),
+        ...Array.from({ length: survived }, (_, i) => ({ id: `s${line}-${i}`, mutatorName: 'StringLiteral', replacement: '""', status: 'Survived', location: at(line) })),
     ];
-    /** Four shard dirs over the real scope, each file with `killed`/`survived` mutants; `edit` plants a fault. */
+    const N = 4;
+    /** Four shard dirs over the real scope, each piece with `killed`/`survived` mutants at its first line; `edit` plants a fault. */
     const plantRun = (name, killed, survived, edit = () => {}) => {
         const dir = join(tmp, name);
-        const shards = [1, 2, 3, 4].map((k) => ({ k, scope: shardOf(scope, k, 4) }));
-        for (const s of shards) s.report = { schemaVersion: '2', files: Object.fromEntries(s.scope.map((f) => [f, { language: 'typescript', source: '', mutants: mutants(killed, survived) }])) };
+        const shards = [1, 2, 3, 4].map((k) => ({ k, scope: shardOf(scope, k, N) }));
+        for (const s of shards) {
+            const files = {};
+            for (const id of s.scope) {
+                const p = parsePiece(id);
+                (files[p.file] ??= { language: 'typescript', source: '', mutants: [] }).mutants.push(...mutants(p.start, killed, survived));
+            }
+            s.report = { schemaVersion: '2', files };
+        }
         edit(shards);
         for (const s of shards) {
             if (s.skip) continue;
@@ -168,20 +196,25 @@ console.log('the gather on planted reports');
     const atFloor = plantRun('floor', FLOOR, 100 - FLOOR);
     const g = gather(atFloor, scope);
     check(`exactly ${FLOOR} % passes`, g.pass && Math.abs(g.score - FLOOR) < 1e-9, `${g.score}`);
+    const owners = (f) => new Set([1, 2, 3, 4].filter((k) => shardOf(scope, k, N).some((id) => parsePiece(id).file === f))).size;
+    const split = scope.find((f) => owners(f) > 1);
+    check("a file spread over several shards is scored as one, with every shard's mutants", split !== undefined && g.files[split].mutants.length === 100 * pieces.filter((p) => p.file === split).length, String(split));
     const r0 = cli(atFloor);
     check('the gather at the floor is exit 0 and writes the report', r0.status === 0 && readFileSync(join(atFloor, 'report.md'), 'utf8').includes(`| **all** | **${FLOOR.toFixed(2)} %**`), `${r0.status} ${r0.stderr}`);
-    check('the report lists every mutant not detected', readFileSync(join(atFloor, 'report.md'), 'utf8').includes(`### Not detected (${scope.length * (100 - FLOOR)})`));
+    check('the report lists every mutant not detected', readFileSync(join(atFloor, 'report.md'), 'utf8').includes(`### Not detected (${pieces.length * (100 - FLOOR)})`));
     const below = plantRun('below', FLOOR - 1, 100 - FLOOR + 1);
     check('below the floor is exit 1', cli(below).status === 1);
-    const unscored = plantRun('unscored', FLOOR, 100 - FLOOR, (sh) => { for (const s of sh) for (const f of Object.values(s.report.files)) f.mutants.push({ id: 'c', mutatorName: 'x', status: 'CompileError', location: { start: { line: 1, column: 1 } } }); });
+    const unscored = plantRun('unscored', FLOOR, 100 - FLOOR, (sh) => { for (const s of sh) for (const f of Object.values(s.report.files)) f.mutants.push({ ...f.mutants[0], id: `c${f.mutants[0].id}`, status: 'CompileError' }); });
     check('compile errors are not scored', Math.abs(gather(unscored, scope).score - FLOOR) < 1e-9);
+    const foreign = (sh) => parsePiece(sh[1].scope.find((id) => !sh[0].scope.some((o) => parsePiece(o).file === parsePiece(id).file))).file;
     const refusals = [
         ['a shard missing', (sh) => { sh[2].skip = true; }, 'has no report: no shard mutated it'],
         ['a shard without its report', (sh) => { sh[1].report = null; }, 'has no mutation.json'],
-        ['a file in two shards', (sh) => { sh[0].scope.push(sh[1].scope[0]); }, 'is in two shards'],
-        ['a report outside its shard', (sh) => { sh[0].report.files[sh[1].scope[0]] = { mutants: [] }; }, 'which is not in its scope'],
-        ['a file outside the scope', (sh) => { sh[0].scope.push('src/nope.ts'); }, 'is in a shard but not in the scope'],
-        ['a mutant not finished', (sh) => { Object.values(sh[3].report.files)[0].mutants.push({ id: 'p', status: 'Pending', location: { start: { line: 1, column: 1 } } }); }, "ended 'Pending'"],
+        ['a piece in two shards', (sh) => { sh[0].scope.push(sh[1].scope[0]); }, 'is in two shards'],
+        ['a report outside its shard', (sh) => { sh[0].report.files[foreign(sh)] = { mutants: [] }; }, 'which is not in its scope'],
+        ['a mutant outside its pieces', (sh) => { Object.values(sh[0].report.files)[0].mutants.push({ id: 'x', status: 'Killed', location: at(999_999) }); }, 'outside its pieces'],
+        ['a piece outside the scope', (sh) => { sh[0].scope.push('src/nope.ts:1-2'); }, 'is in a shard but not in the scope'],
+        ['a mutant not finished', (sh) => { const f = Object.values(sh[3].report.files)[0]; f.mutants.push({ ...f.mutants[0], id: 'p', status: 'Pending' }); }, "ended 'Pending'"],
     ];
     for (const [label, edit, want] of refusals) {
         const r = cli(plantRun(label.replace(/\W+/gu, '-'), FLOOR, 100 - FLOOR, edit));
@@ -201,17 +234,17 @@ console.log('each planted fault in the workflows is reported');
         ['a pull_request trigger', 'not the release call and a dispatch alone', plant('mutation.yml', '  workflow_dispatch:\n', '  pull_request:\n  workflow_dispatch:\n')],
         ['a push trigger', 'not the release call and a dispatch alone', plant('mutation.yml', '  workflow_dispatch:\n', '  push:\n    branches: [main]\n  workflow_dispatch:\n')],
         ['the ref not required', 'with a required ref', plant('mutation.yml', '        required: true\n', '        required: false\n')],
-        ['three shards', 'the 4-shard matrix', plant('mutation.yml', 'shard: [1, 2, 3, 4]', 'shard: [1, 2, 3]')],
-        ['fail-fast on', 'the 4-shard matrix', plant('mutation.yml', 'fail-fast: false', 'fail-fast: true')],
-        ['a longer shard timeout', 'the 4-shard matrix', plant('mutation.yml', '    timeout-minutes: 30\n    strategy:', '    timeout-minutes: 60\n    strategy:')],
-        ['a shard of 3', 'its quarter of the scope', plant('mutation.yml', '"$SHARD/4"', '"$SHARD/3"')],
+        ['a shard short', `the ${SHARDS}-shard matrix`, plant('mutation.yml', `, ${SHARDS}]`, ']')],
+        ['fail-fast on', `the ${SHARDS}-shard matrix`, plant('mutation.yml', 'fail-fast: false', 'fail-fast: true')],
+        ['a longer shard timeout', `the ${SHARDS}-shard matrix`, plant('mutation.yml', '    timeout-minutes: 15\n    strategy:', '    timeout-minutes: 30\n    strategy:')],
+        ['a shard of another count', `its 1/${SHARDS} of the scope`, plant('mutation.yml', `"$SHARD/${SHARDS}"`, '"$SHARD/4"')],
         ['a shard upload that may be empty', 'failing when there is none', plant('mutation.yml', 'if-no-files-found: error', 'if-no-files-found: ignore')],
         ['the gate renamed', "is not 'Mutation testing'", plant('mutation.yml', 'name: Mutation testing\n', 'name: Mutation\n')],
         ['the gate not needing the shards', "is not 'Mutation testing'", plant('mutation.yml', 'needs: [plan, shards]', 'needs: [plan]')],
         ['the gate if: always()', "is not 'Mutation testing'", plant('mutation.yml', '    if: ${{ !cancelled() }}\n', '    if: always()\n')],
         ['the guard accepting a failure', "exits 0 for shards 'failure'", plant('mutation.yml', '[[ $SHARDS == success ]] ||', '[[ $SHARDS != cancelled ]] ||')],
         ['the guard removed', 'no shard-result guard', plant('mutation.yml', '- name: Every shard finished with its reports', '- name: Shards')],
-        ['continue-on-error on a shard', 'carries continue-on-error', plant('mutation.yml', '    timeout-minutes: 30\n    strategy:', '    timeout-minutes: 30\n    continue-on-error: true\n    strategy:')],
+        ['continue-on-error on a shard', 'carries continue-on-error', plant('mutation.yml', '    timeout-minutes: 15\n    strategy:', '    timeout-minutes: 15\n    continue-on-error: true\n    strategy:')],
         ['no gather', 'gather the shards', plant('mutation.yml', 'scripts/mutation.mjs gather', 'scripts/mutation.mjs full')],
         ['no summary', 'job summary', plant('mutation.yml', '>> "$GITHUB_STEP_SUMMARY"', '> /dev/null')],
         ['no report artefact', 'upload the report', plant('mutation.yml', 'name: mutation-report\n', 'name: report\n')],
