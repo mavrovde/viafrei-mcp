@@ -12,6 +12,10 @@ const row = (tool, old, neu) => ({ tool, verdict: "differing", views: { old, new
 check("an identical row stays identical", attribute({ tool: "x", verdict: "identical", views: {} }), "identical");
 check("only the credit line differs",
   attribute(row("get_driving_rules", ans("A\nQuelle: X (https://alpha.example)", null, { attribution: "X (https://alpha.example)" }), ans("A\nQuelle: X", null, { attribution: "X" }))), "credit");
+check("a share-alike sentence goes with its credit",
+  attribute(row("check_transit_disruption", ans("A\nQuelle: X · Stand 10:00\nDiese Angaben stehen unter CC BY-SA (Share-alike), so lizenziert sie die Quelle; unsere Bearbeitung …", null, { attribution: "X", shareAlike: true }), ans("A\nStand 10:00", null, { attribution: "" }))), "credit");
+check("a share-alike sentence with the same credit is still a difference",
+  attribute(row("check_transit_disruption", ans("A\nQuelle: X\nDiese Angaben stehen unter CC BY-SA (Share-alike), so …"), ans("A\nQuelle: X"))) !== "identical", true);
 check("credit and structuredContent together",
   attribute(row("stop_watch", ans("A\nQuelle: X (u)", { a: 1 }), ans("A\nQuelle: X"))), "structuredContent + credit");
 check("db#72 needs the no-open-source line on the old side only",

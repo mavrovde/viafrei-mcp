@@ -138,6 +138,13 @@ describe("check_road_status", () => {
     expect(ops()).not.toContain("listPlaces");
     expect(body(r)).toBe("L1025 in Niedersachsen: Es liegt keine Meldung vor — das heißt ausdrücklich nicht, dass die Straße frei ist.");
   });
+  it("a lorry question about a city that is also a Land keeps the place's point", async () => {
+    serve("listRoadConditions", roads([]));
+    serve("listLorryRules", []);
+    await call("check_road_status", { place: "Bremen", vehicle: "lorry", language: "de" });
+    expect(ops()).not.toContain("listStateRoadConditions");
+    expect(query("listLorryRules")[0]?.["at"]).toMatch(/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/u);
+  });
   it("a Land by its English name, named in the answer's language", async () => {
     serve("listStateRoadConditions", roads([]));
     const de = await call("check_road_status", { road: "L1025", place: "Lower Saxony", language: "de" });

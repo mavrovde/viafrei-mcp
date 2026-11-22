@@ -14,7 +14,7 @@
  * warning's body lines), db#84 (the credit of an empty road answer), db#85 (the road head's fold
  * of reasons and its count line), structuredContent (dropped), "structuredContent outside the
  * API" (only the keys the API contract names are compared: parity pending the API), credit (the
- * credit line and `_meta.attribution` / `_meta.license`). A db mask only removes what its gap names.
+ * credit line, the share-alike sentence after it and `_meta.attribution` / `_meta.license` / `_meta.shareAlike`). A db mask only removes what its gap names.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -26,6 +26,9 @@ const pruneToContract = (v) => Array.isArray(v) ? v.map(pruneToContract)
 
 const ROAD = new Set(["check_road_status", "find_roadworks_ahead", "check_autobahn_traffic"]);
 const CREDIT = /^(Quelle|Quellen|Source|Sources): /u;
+const BARE_STAND = /^(Stand|As of) \d{2}:\d{2}$/u;
+/** The share-alike sentence that follows a share-alike credit: it goes where the credit goes. */
+const SHARE_ALIKE = /^(Diese Angaben|These figures|Die aufgeführten Störungsmeldungen|The service alerts listed) (stehen unter|are licensed) .+ \((Share-alike|share-alike)\)/u;
 const EMPTY_ROAD = /Es liegt keine Meldung vor|there is no report/u;
 const NO_OPEN_SOURCE = /^(Keine offene Quelle für diesen Abschnitt|No open source for this section)/u;
 const WARNING_HEAD = /^\d+\. (Stufe|Level) /u;
@@ -33,9 +36,11 @@ const FOLD = / \((und \d+ weitere Gründe|and \d+ more reasons?)\)/gu;
 const ROAD_COUNTS = /gesamte Strecke:|whole route:|\d+ Sperrungen, \d+ Einschränkungen|\d+ closures, \d+ restrictions/u;
 
 const dropCredit = (a) => {
-  a.t = a.t.filter((l) => !CREDIT.test(l));
+  // The footer goes whole: a credit line ("Quelle: … · Stand 10:00"), or the bare Stand an answer without a credit ends with.
+  a.t = a.t.filter((l) => !CREDIT.test(l) && !SHARE_ALIKE.test(l) && !BARE_STAND.test(l));
   delete a.m.attribution;
   delete a.m.license;
+  delete a.m.shareAlike;
 };
 
 /** Each mask edits one side in place; `emptyRoad` tells whether the NEW answer is the empty road answer. */

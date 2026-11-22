@@ -28,5 +28,17 @@
       },
       "today": "Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben / Watch: ViaFrei, our own service — every report names the source of the data behind it (https://viafrei.de)"
     }
+  ],
+  "shareAlike": [
+    {
+      "language": "de",
+      "licence": "CC BY-SA",
+      "today": "Diese Angaben stehen unter CC BY-SA (Share-alike), so lizenziert sie die Quelle; unsere Bearbeitung geben wir unter CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/) weiter: wer sie weitergibt oder daraus etwas Neues ableitet, muss das Ergebnis unter derselben Lizenz und mit dieser Quellenangabe weitergeben."
+    },
+    {
+      "language": "en",
+      "licence": "CC BY-SA",
+      "today": "These figures are licensed CC BY-SA (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution."
+    }
   ]
 }

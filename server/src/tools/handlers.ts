@@ -203,8 +203,9 @@ const checkRoadStatus: Handler = async (args, ctx) => {
     const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: asked, horizon_days: horizon, limit });
     metas.push(r.meta);
     body = roadStatusBody(r.data, language, limit, asked);
-  } else if (place !== undefined && args["lat"] === undefined && (land = landOf(place, language)) !== undefined) {
+  } else if (place !== undefined && args["lat"] === undefined && vehicle === undefined && (land = landOf(place, language)) !== undefined) {
     // A Land asked as the place: its situations, as today's server reads a Land (by its key, not a circle).
+    // A lorry question keeps the place's point: its rules are read around a position.
     const r = await ctx.api.get<T.RoadConditionsData>("listStateRoadConditions", { state: land.code, horizon_days: horizon, limit });
     metas.push(r.meta);
     const rows = asked === undefined ? r.data.situations : r.data.situations.filter((s) => (s.road ?? "").replace(/\s/g, "").toUpperCase() === asked);
