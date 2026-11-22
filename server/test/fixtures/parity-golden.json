@@ -697,6 +697,70 @@
         "structuredContent",
         "credit"
       ]
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "place": "Dortmund",
+        "kind": "disabled_badge",
+        "only_with_free_spaces": true,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Im Umkreis von 10 km um Dortmund meldet gerade kein Sensor einen freien Behindertenparkplatz am Straßenrand.\n\nQuelle: Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/) · Stand HH:MM",
+      "structuredContent": {
+        "attribution": "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)",
+        "bayCounts": {
+          "free": 0,
+          "occupied": 0,
+          "sensors": 0,
+          "staticSites": 0,
+          "staticSpaces": 0,
+          "total": 0,
+          "unknown": 0
+        },
+        "bays": [],
+        "kind": "disabled_badge",
+        "license": "CC BY 4.0",
+        "place": "Dortmund",
+        "radiusKm": 10
+      },
+      "meta": {
+        "attribution": "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)",
+        "license": "CC BY 4.0"
+      }
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "place": "Dortmund",
+        "kind": "disabled_badge",
+        "only_with_free_spaces": true,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "No sensor reports a free disabled-badge bay on the street within 10 km of Dortmund right now.\n\nSource: Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/) · As of HH:MM",
+      "structuredContent": {
+        "attribution": "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)",
+        "bayCounts": {
+          "free": 0,
+          "occupied": 0,
+          "sensors": 0,
+          "staticSites": 0,
+          "staticSpaces": 0,
+          "total": 0,
+          "unknown": 0
+        },
+        "bays": [],
+        "kind": "disabled_badge",
+        "license": "CC BY 4.0",
+        "place": "Dortmund",
+        "radiusKm": 10
+      },
+      "meta": {
+        "attribution": "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)",
+        "license": "CC BY 4.0"
+      }
     }
   ]
 }

@@ -26,6 +26,7 @@ import { landOf, regionOf } from "./region.js";
 import { checkTransitDisruption } from "./transit.js";
 import { findSharing } from "./sharing.js";
 import { describeLocation } from "./location.js";
+import { findDisabledBays } from "./parking-bays.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -330,7 +331,7 @@ const findParking: Handler = async (args, ctx) => {
   const kindArg = str(args["kind"]);
   // Today's server asks for the place before it looks at the kind.
   if (str(args["road"]) === undefined && str(args["place"]) === undefined && (num(args["lat"]) === undefined || num(args["lon"]) === undefined)) return placeMissing(ctx);
-  if (kindArg === "disabled_badge") return notAvailable(language, "kind=disabled_badge");
+  if (kindArg === "disabled_badge") return findDisabledBays(args, ctx);
   const kind = kindArg === "any" ? undefined : kindArg;
   const common = { kind, free_min: bool(args["only_with_free_spaces"]) === true ? 1 : undefined, facilities: strs(args["facilities"]), limit: num(args["limit"]) };
   const road = str(args["road"]);
@@ -697,7 +698,6 @@ export const HANDLERS: Readonly<Record<string, Handler>> = {
  */
 export const GAPS: readonly { tool: string; case: string; needs: string }[] = [
   { tool: "*", case: "answers in the caller's language (language=de|en)", needs: "a language parameter (or Accept-Language) on every operation" },
-  { tool: "find_parking", case: "kind=disabled_badge", needs: "a disabled-badge kind on listParkingOptions" },
   { tool: "find_roadworks_ahead", case: "a route from → to", needs: "a route/corridor road-conditions operation" },
   { tool: "watch_situation", case: "notifications when a watch reports (resources/updated)", needs: "a push or since-poll contract for watches" },
 ];

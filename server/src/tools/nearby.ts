@@ -59,7 +59,7 @@ export function kmText(m: number, language: Language): string {
 const priceText = (eur: number, language: Language): string => `${language === "de" ? eur.toFixed(3).replace(".", ",") : eur.toFixed(3)} €/l`;
 
 /** "08:05" today, "18.09. 08:05" (en "2026-09-18 08:05") another day, Berlin time. */
-function clock(iso: string, language: Language, now: Date): string {
+export function clock(iso: string, language: Language, now: Date): string {
   const day = (d: Date): string => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
   const d = new Date(iso);
   const time = new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);

@@ -72,8 +72,15 @@ const STATE: Record<string, () => void> = {
     serve("listPlaces", [], { attribution: [] });
   },
   // The harness's motorway parking holds no site on the roads asked here.
+  // Dortmund is found in GeoNames, and no disabled-badge bay sensor in reach reports a free one.
   find_parking: () => {
     serve("listMotorwayParking", [], { attribution: [], generatedAt: new Date().toISOString() });
+    mockServer.use(handlerFor("listPlaces", () => {
+      const ex = exampleOf<{ data: Record<string, unknown>[]; meta: Record<string, unknown> }>("listPlaces");
+      const geonames = { family: "geonames", domain: "places", publisher: "GeoNames", text: "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet", licence: "CC BY 4.0", licenceUrl: "https://creativecommons.org/licenses/by/4.0/", shareAlike: false, shareAlikeOffer: null, termsUrl: "https://download.geonames.org/export/dump/" };
+      return HttpResponse.json({ ...ex, data: [{ ...ex.data[0], name: "Dortmund" }], meta: { ...ex.meta, attribution: [geonames] } });
+    }));
+    serve("listParkingBays", { kind: "disabled", counts: { total: 0, sensors: 0, free: 0, occupied: 0, unknown: 0, staticSites: 0, staticSpaces: 0 }, bays: [] }, { attribution: [], generatedAt: new Date().toISOString() });
   },
   // The harness's timetable holds no stop of the name asked; its gazetteer holds Berlin.
   watch_situation: () => {

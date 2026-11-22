@@ -117,3 +117,10 @@ export type WatchData = { watchId: string; uri: string; kind: string; key: strin
 export type SourceRow = { family: string; domain: string; publisher: string; attribution: string; licence: string; licenceUrl: string; status: string };
 /** PlacesCoverageData */
 export type PlacesCoverageData = { kinds: { kind: string; count: number }[]; lands: { code: string; name: string }[]; addresses: { land: string | null; dataAsOf: string | null }[] };
+/** ParkingBaysData (listParkingBays) */
+export type ParkingBay = {
+  id: string; kind: string; publisherKind: string | null; street: string | null; houseNumber: string | null; postcode: string | null; city: string | null;
+  lat: number; lon: number; distanceM: number; sensor: boolean; state: string | null; messageAt: string | null; spaces: number | null; reservedWhen: string | null; sourceFamily: string;
+};
+export type ParkingBayCounts = { total: number; sensors: number; free: number; occupied: number; unknown: number; staticSites: number; staticSpaces: number };
+export type ParkingBaysData = { kind: string; counts: ParkingBayCounts; bays: ParkingBay[] };

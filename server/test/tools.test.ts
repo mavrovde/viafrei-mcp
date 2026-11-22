@@ -159,11 +159,11 @@ describe("special cases", () => {
     await close();
   });
 
-  it("unsupported cases answer not-available and ask nothing", async () => {
+  it("disabled-badge bays are read from listParkingBays, not the car-park search", async () => {
     const { client, close } = await connect();
     const r = await client.callTool({ name: "find_parking", arguments: { ...at, kind: "disabled_badge", language: "en" } });
-    expect(textOf(r)).toContain("not available through the ViaFrei API yet");
-    expect(calls).toHaveLength(0);
+    expect(textOf(r)).toMatch(/^Disabled-badge bays on the street around /u);
+    expect(calls.map((c) => c.operationId)).toEqual(["listParkingBays"]);
     await close();
   });
 });

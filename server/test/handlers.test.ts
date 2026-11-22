@@ -476,11 +476,74 @@ describe("find_parking", () => {
   });
 
   for (const language of LANGS) {
-    it(`a disabled-badge space is not available (${language}) and nothing is asked`, async () => {
+    it(`disabled-badge bays: today's list from listParkingBays, nearest first, with the radius counts (${language})`, async () => {
       const r = await call("find_parking", { ...at, kind: "disabled_badge", language });
-      expect(textOf(r)).toBe(language === "de" ? "Diese Auskunft ist über die ViaFrei-API derzeit nicht verfügbar. (kind=disabled_badge)" : "This answer is not available through the ViaFrei API yet. (kind=disabled_badge)");
-      expect(r.isError).toBe(true);
-      expect(calls).toHaveLength(0);
+      expect(query("listParkingBays")).toEqual([{ at: "52.52,13.405", kind: "disabled", radius_m: "10000", limit: "5", lang: language }]);
+      expect(body(r)).toBe(language === "de" ? [
+        "Behindertenparkplätze am Straßenrand um 52.520, 13.405 (Umkreis 10 km), nächste zuerst:",
+        "1. Hauptstraße 1, 10000 Schömpingbach — 23 m, frei (Sensor, 01:40)",
+        "2. Hauptstraße 7, 10000 Schömpingbach — 0,1 km, keine aktuelle Sensormeldung (zuletzt 29.03. 21:00)",
+        "3. Bahnhofstraße, 10000 Schömpingbach — 0,2 km, reservierte Plätze: 2, reserviert: Mo-Fr 8-18 Uhr (kein Sensor, keine Belegung veröffentlicht)",
+        "Im Umkreis: 2 Behindertenparkplätze mit Sensor, davon 1 frei und 0 belegt gemeldet; die übrigen ohne aktuelle Meldung.",
+        "Ohne Sensor im Umkreis: 1 Standort mit 2 reservierten Plätzen — ob ein Platz frei ist, wird nicht veröffentlicht.",
+        'Nur mit gültigem Parkausweis für Menschen mit Behinderung. "Keine aktuelle Sensormeldung" heißt unbekannt, nicht frei.',
+      ].join("\n") : [
+        "Disabled-badge bays on the street around 52.520, 13.405 (within 10 km), nearest first:",
+        "1. Hauptstraße 1, 10000 Schömpingbach — 23 m, free (sensor, 01:40)",
+        "2. Hauptstraße 7, 10000 Schömpingbach — 0.1 km, no current sensor reading (last 2026-03-29 21:00)",
+        '3. Bahnhofstraße, 10000 Schömpingbach — 0.2 km, reserved spaces: 2, reserved: Provider text (German): "Mo-Fr 8-18 Uhr" (no sensor, no occupancy published)',
+        "Within the radius: 2 disabled-badge bays with a sensor, 1 reported free and 0 occupied; the rest have no current reading.",
+        "Without a sensor within the radius: 1 site with 2 reserved spaces — whether a space is free is not published.",
+        'For holders of a disabled parking permit only. "No current sensor reading" means unknown, not free.',
+      ].join("\n"));
+      expect(footer(r)).toContain("Behindertenparkplätze: Stadt Frankfurt am Main");
+      const sc = r.structuredContent as { bayCounts: unknown; bays: Record<string, unknown>[]; onlyWithFreeSpaces: boolean };
+      expect(sc.bayCounts).toEqual({ total: 3, sensors: 2, free: 1, occupied: 0, unknown: 1, staticSites: 1, staticSpaces: 2 });
+      expect(sc.onlyWithFreeSpaces).toBe(false);
+      expect(sc.bays.map((b) => [b["bayId"], b["state"], b["distanceKm"], b["source"]])).toEqual([
+        ["dortmund:011", "free", 0.02, "dortmund_parksensoren_bays"], ["dortmund:012", "unknown", 0.09, "dortmund_parksensoren_bays"], ["frankfurt:014", "no_sensor", 0.24, "frankfurt_behindertenparkplaetze"]]);
+    });
+    it(`disabled-badge bays, free only and sensor-less sites: no counts, the plural, the time words (${language})`, async () => {
+      const base = ex<{ bays: Record<string, unknown>[]; counts: Record<string, number> }>("listParkingBays");
+      const bay = (o: Record<string, unknown>) => ({ ...base.bays[2], ...o });
+      serve("listParkingBays", { kind: "disabled", counts: { ...base.counts, sensors: 0, staticSites: 2, staticSpaces: 4 }, bays: [
+        bay({ street: "Marktplatz 3", houseNumber: "3", reservedWhen: " Werktags" }), bay({ street: null, houseNumber: null, postcode: null, city: null, id: "x:9", spaces: null, reservedWhen: null }),
+        { ...base.bays[0], state: "occupied", messageAt: null }, { ...base.bays[1], messageAt: null }] });
+      const text = body(await call("find_parking", { ...at, kind: "disabled_badge", radius_km: 2.5, limit: 4, language }));
+      expect(text.split("\n").slice(1, 5)).toEqual(language === "de" ? [
+        "1. Marktplatz 3, 10000 Schömpingbach — 0,2 km, reservierte Plätze: 2, reserviert:  Werktags (kein Sensor, keine Belegung veröffentlicht)",
+        "2. x:9 — 0,2 km, reservierte Plätze: 1 (kein Sensor, keine Belegung veröffentlicht)",
+        "3. Hauptstraße 1, 10000 Schömpingbach — 23 m, belegt (Sensor, ?)",
+        "4. Hauptstraße 7, 10000 Schömpingbach — 0,1 km, keine Sensormeldung",
+      ] : [
+        "1. Marktplatz 3, 10000 Schömpingbach — 0.2 km, reserved spaces: 2, reserved: on working days (no sensor, no occupancy published)",
+        "2. x:9 — 0.2 km, reserved spaces: 1 (no sensor, no occupancy published)",
+        "3. Hauptstraße 1, 10000 Schömpingbach — 23 m, occupied (sensor, ?)",
+        "4. Hauptstraße 7, 10000 Schömpingbach — 0.1 km, no sensor reading",
+      ]);
+      expect(text.split("\n").slice(5)).toEqual(language === "de"
+        ? ["Ohne Sensor im Umkreis: 2 Standorte mit zusammen 4 reservierten Plätzen — ob ein Platz frei ist, wird nicht veröffentlicht.", "Nur mit gültigem Parkausweis für Menschen mit Behinderung."]
+        : ["Without a sensor within the radius: 2 sites with 4 reserved spaces between them — whether a space is free is not published.", "For holders of a disabled parking permit only."]);
+      expect(query("listParkingBays")[0]).toMatchObject({ radius_m: "2500", limit: "4" });
+      serve("listParkingBays");
+      const free = body(await call("find_parking", { ...at, kind: "disabled_badge", only_with_free_spaces: true, language }));
+      expect(query("listParkingBays")[1]).toMatchObject({ only_free: "true" });
+      expect(free.split("\n")[0]).toBe(language === "de"
+        ? "Behindertenparkplätze am Straßenrand um 52.520, 13.405 (Umkreis 10 km, nur freie), nächste zuerst:"
+        : "Disabled-badge bays on the street around 52.520, 13.405 (within 10 km, free only), nearest first:");
+      expect(free).not.toMatch(/Im Umkreis:|Within the radius:|Ohne Sensor|Without a sensor/u);
+    });
+    it(`disabled-badge bays, none: today's two sentences, only the place credited (${language})`, async () => {
+      serve("listParkingBays", { kind: "disabled", counts: { total: 0, sensors: 0, free: 0, occupied: 0, unknown: 0, staticSites: 0, staticSpaces: 0 }, bays: [] });
+      const none = await call("find_parking", { ...at, kind: "disabled_badge", language });
+      expect(body(none)).toBe(language === "de"
+        ? "Im Umkreis von 10 km um 52.520, 13.405 kenne ich keine Behindertenparkplätze am Straßenrand. Ich halte sie nur, wo eine Kommune sie als offene Daten veröffentlicht; Parkhäuser mit Behindertenplätzen nennt find_parking ohne kind."
+        : "I hold no disabled-badge bays on the street within 10 km of 52.520, 13.405. I hold them only where a municipality publishes them as open data; car parks with disabled spaces are listed by find_parking without a kind.");
+      expect(footer(none)).not.toContain("Frankfurt");
+      expect(none.structuredContent).toMatchObject({ kind: "disabled_badge", bays: [], bayCounts: { total: 0 } });
+      expect(body(await call("find_parking", { ...at, kind: "disabled_badge", only_with_free_spaces: true, language }))).toBe(language === "de"
+        ? "Im Umkreis von 10 km um 52.520, 13.405 meldet gerade kein Sensor einen freien Behindertenparkplatz am Straßenrand."
+        : "No sensor reports a free disabled-badge bay on the street within 10 km of 52.520, 13.405 right now.");
     });
     it(`a filter that emptied the answer where sites are held keeps the short answer: its sentence counts them (${language})`, async () => {
       mockServer.use(handlerFor("listParkingOptions", (url) => Response.json({ ...exampleOf("listParkingOptions"), data: url.searchParams.get("limit") === "1" ? exampleOf<{ data: unknown[] }>("listParkingOptions").data : [] })));
@@ -508,7 +571,14 @@ describe("find_parking", () => {
         ? "Bitte place (Freitext), lat+lon oder road (z. B. \"A3\") angeben. Hat die Person nichts davon genannt, bitte fragen, wo: eine Stadt, eine Postleitzahl, ihren Standort oder die Autobahn. Zum Beispiel {\"place\": \"Fulda\"} oder {\"road\": \"A3\"}."
         : "Give a place (free text), or lat+lon, or a road like \"A3\". If the person named none, ask where: a town, a postcode, their position or the motorway. For example {\"place\": \"Fulda\"} or {\"road\": \"A3\"}.");
       expect(calls).toHaveLength(0);
-      expect(textOf(await call("find_parking", { kind: "disabled_badge", road: "A7", language }))).toContain("kind=disabled_badge");
+      const road = await call("find_parking", { kind: "disabled_badge", road: "A7", language });
+      expect(road).toEqual({
+        content: [{ type: "text", text: language === "de"
+          ? "Behindertenparkplätze am Straßenrand liegen in Orten, nicht an einer Autobahn: bitte place oder lat/lon statt road angeben."
+          : "Disabled-badge bays are on town streets, not along a motorway: pass place or lat/lon instead of road." }],
+        isError: true, _meta: { errorCode: "invalid_input", errorReason: "road_not_point" },
+      });
+      expect(calls).toHaveLength(0);
     });
   }
 
@@ -1496,7 +1566,7 @@ describe("the credit footer and _meta of a tool answer", () => {
   });
 
   it("the gap list names a tool, a case and the operation it needs, for each gap", () => {
-    expect(GAPS.map((g) => g.tool)).toEqual(["*", "find_parking", "find_roadworks_ahead", "watch_situation"]);
+    expect(GAPS.map((g) => g.tool)).toEqual(["*", "find_roadworks_ahead", "watch_situation"]);
     for (const g of GAPS) expect(g.case.length * g.needs.length).toBeGreaterThan(0);
   });
 });
