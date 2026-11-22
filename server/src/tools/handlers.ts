@@ -6,7 +6,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope } from "../api/client.js";
 import type * as T from "../api/types.js";
-import { berlinDateTime, berlinTime, creditPlace, eur, km, notAvailable, toolError, toolResult, type Language } from "../presentation.js";
+import { berlinDateTime, berlinTime, creditPlace, eur, km, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
