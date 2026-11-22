@@ -5,7 +5,7 @@
  *
  *   node scripts/parity-mcp.mjs --old '<command>' --new '<command>' --calls <calls.json>
  *        [--langs de,en] [--stub-log <file>] [--out <table.md>] [--jobs 4]
- *        [--budget-s 600] [--call-timeout-s 30]
+ *        [--budget-s 600] [--call-timeout-s 30] [--serial <tool,tool> --serial-gap-ms N]
  *
  * Both servers are started over stdio from their commands (run by /bin/sh, with this
  * process's environment), side by side, and every call goes to both at once.
@@ -175,8 +175,20 @@ export function stubUnknown(path) {
   return readFileSync(path, "utf8").split("\n").filter((l) => l.trim() !== "");
 }
 
+/**
+ * The calls of `serial` tools leave the parallel pool and run one after another, `gapMs` apart
+ * (--serial <tool,tool> --serial-gap-ms N): a tool whose two servers share one provider budget
+ * (the train board: today's server's on-demand reads and the live ingestor's refreshes draw on
+ * the same per-minute DB budget) is asked slower than that budget, so a refusal by the budget
+ * is never counted as a difference.
+ */
+export function schedule(work, serial) {
+  const lane = new Set(serial);
+  return { parallel: work.filter((c) => !lane.has(c.tool)), serial: work.filter((c) => lane.has(c.tool)) };
+}
+
 function parseArgs(argv) {
-  const o = { langs: "de,en", jobs: "4", "budget-s": "600", "call-timeout-s": "30" };
+  const o = { langs: "de,en", jobs: "4", "budget-s": "600", "call-timeout-s": "30", serial: "", "serial-gap-ms": "0" };
   for (let i = 0; i < argv.length; i += 2) {
     const k = argv[i];
     if (!k?.startsWith("--") || argv[i + 1] === undefined) return null;
@@ -211,7 +223,7 @@ async function ask(side, call, timeoutMs) {
 async function main(argv) {
   const o = parseArgs(argv);
   if (o === null) {
-    console.error("usage: parity-mcp.mjs --old '<command>' --new '<command>' --calls <calls.json> [--langs de,en] [--stub-log <file>] [--out <file>] [--jobs N] [--budget-s N] [--call-timeout-s N]");
+    console.error("usage: parity-mcp.mjs --old '<command>' --new '<command>' --calls <calls.json> [--langs de,en] [--stub-log <file>] [--out <file>] [--jobs N] [--budget-s N] [--call-timeout-s N] [--serial <tool,tool>] [--serial-gap-ms N]");
     return 2;
   }
   const calls = JSON.parse(readFileSync(o.calls, "utf8"));
@@ -219,27 +231,39 @@ async function main(argv) {
   const langs = o.langs.split(",").map((s) => s.trim()).filter(Boolean);
   const deadline = Date.now() + Number(o["budget-s"]) * 1000;
   const timeoutMs = Number(o["call-timeout-s"]) * 1000;
-  let sides;
-  try {
-    sides = await Promise.all([connect("old", o.old), connect("new", o.new)]);
-  } catch (e) {
-    console.error(`parity: ${e.message}`);
+  // one side that does not start: the other, if it did, is closed too, never left running
+  const started = await Promise.allSettled([connect("old", o.old), connect("new", o.new)]);
+  const failedSide = started.find((s) => s.status === "rejected");
+  if (failedSide !== undefined) {
+    await Promise.all(started.filter((s) => s.status === "fulfilled").map((s) => s.value.close()));
+    console.error(`parity: ${failedSide.reason.message}`);
     return 2;
   }
-  const [oldS, newS] = sides;
+  const [oldS, newS] = started.map((s) => s.value);
   const work = langs.flatMap((lang) => calls.map((c) => ({ ...c, lang, args: { ...c.args, language: lang } })));
   const rows = [];
+  const lanes = schedule(work, o.serial.split(",").map((s) => s.trim()).filter(Boolean));
+  const gapMs = Number(o["serial-gap-ms"]);
   let next = 0, outOfTime = false;
+  const pair = async (call) => {
+    const [a, b] = await Promise.all([ask(oldS, call, timeoutMs), ask(newS, call, timeoutMs)]);
+    const oldView = a === null ? null : viewOf(a), newView = b === null ? null : viewOf(b);
+    rows.push({ tool: call.tool, lang: call.lang, kind: call.kind ?? "golden", ...classify(oldView, newView), old: judgeOld(oldView), ...(process.env.PARITY_ROWS ? { args: call.args, views: { old: oldView, new: newView } } : {}) });
+  };
   const worker = async () => {
-    while (next < work.length) {
+    while (next < lanes.parallel.length) {
       if (Date.now() > deadline) { outOfTime = true; return; }
-      const call = work[next++];
-      const [a, b] = await Promise.all([ask(oldS, call, timeoutMs), ask(newS, call, timeoutMs)]);
-      const oldView = a === null ? null : viewOf(a), newView = b === null ? null : viewOf(b);
-      rows.push({ tool: call.tool, lang: call.lang, kind: call.kind ?? "golden", ...classify(oldView, newView), old: judgeOld(oldView), ...(process.env.PARITY_ROWS ? { args: call.args, views: { old: oldView, new: newView } } : {}) });
+      await pair(lanes.parallel[next++]);
     }
   };
-  await Promise.all(Array.from({ length: Math.max(1, Number(o.jobs)) }, worker));
+  const serialWorker = async () => {
+    for (const [i, call] of lanes.serial.entries()) {
+      if (Date.now() > deadline) { outOfTime = true; return; }
+      if (i > 0 && gapMs > 0) await new Promise((r) => setTimeout(r, gapMs));
+      await pair(call);
+    }
+  };
+  await Promise.all([serialWorker(), ...Array.from({ length: Math.max(1, Number(o.jobs)) }, worker)]);
   await Promise.all([oldS.close(), newS.close()]);
   const table = tableOf(rows);
   console.log(table);

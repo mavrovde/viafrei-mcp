@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { classify, clockish, judgeOld, main, normalise, viewOf } from "./parity-mcp.mjs";
+import { classify, clockish, judgeOld, main, normalise, schedule, viewOf } from "./parity-mcp.mjs";
 import { keyOf } from "./parity-fake-server.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -99,7 +99,18 @@ const sameCalls = (pairs) => write(`calls-${pairs.length}.json`, pairs.map(([too
   check("no --new or --calls → usage, exit 2", u.code === 2);
 }
 
+{
+  // three calls of t1 in the serial lane, 400 ms apart: at least 800 ms, every pair still compared
+  const THREE = [["t1", { place: "A" }, res("A", { items: [1] })], ["t1", { place: "A2" }, res("A2", { items: [1] })], ["t1", { place: "A3" }, res("A3", { items: [1] })], ["t2", { place: "B" }, res("B", { items: [2] })]];
+  const t0 = Date.now();
+  const r = await run(["--old", sameServer("o5.json", THREE), "--new", sameServer("n5.json", THREE), "--calls", sameCalls(THREE), "--langs", "de", "--serial", "t1", "--serial-gap-ms", "400"]);
+  const ms = Date.now() - t0;
+  check("a serial tool's calls run gap apart, and every pair is still compared", r.code === 0 && ms >= 800 && rowOf(r.out, "t1")?.identical === 3 && rowOf(r.out, "t2")?.identical === 1, `${r.code} ${ms} ms ${r.out}`);
+}
+
 // The pure parts.
+check("schedule: the serial tools' calls leave the pool, in their order; the rest stay", JSON.stringify(schedule([{ tool: "a", n: 1 }, { tool: "t" , n: 2 }, { tool: "a", n: 3 }, { tool: "t", n: 4 }], ["t"])) === '{"parallel":[{"tool":"a","n":1},{"tool":"a","n":3}],"serial":[{"tool":"t","n":2},{"tool":"t","n":4}]}');
+check("schedule: no serial tool leaves every call in the pool", schedule([{ tool: "a" }], []).serial.length === 0);
 check("normalise drops asOf/requestId at every depth and sorts keys", JSON.stringify(normalise({ b: 1, asOf: 1, a: { requestId: 2, z: [{ asOf: 3, y: 1 }] } })) === '{"a":{"z":[{"y":1}]},"b":1}');
 check("viewOf keeps only the compared _meta members", JSON.stringify(viewOf(res("x", null, { other: 1, shareAlike: true })).meta) === '{"attribution":"Quelle: X","license":"CC BY 4.0","shareAlike":true}');
 check("a missing old answer is empty", judgeOld(null).empty === true);
