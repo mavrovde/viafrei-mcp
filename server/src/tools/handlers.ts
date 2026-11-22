@@ -203,7 +203,7 @@ const checkRoadStatus: Handler = async (args, ctx) => {
     const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: asked, horizon_days: horizon, limit });
     metas.push(r.meta);
     body = roadStatusBody(r.data, language, limit, asked);
-  } else if (place !== undefined && args["lat"] === undefined && (land = await landOf(place, ctx)) !== undefined) {
+  } else if (place !== undefined && args["lat"] === undefined && (land = landOf(place, language)) !== undefined) {
     // A Land asked as the place: its situations, as today's server reads a Land (by its key, not a circle).
     const r = await ctx.api.get<T.RoadConditionsData>("listStateRoadConditions", { state: land.code, horizon_days: horizon, limit });
     metas.push(r.meta);
@@ -238,7 +238,14 @@ const findRoadworksAhead: Handler = async (args, ctx) => {
   const road = str(args["road"]);
   const limit = num(args["limit"]);
   if (road !== undefined) {
-    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: road.replace(/\s/g, "").toUpperCase(), kinds: ["roadworks"], horizon_days: 14, limit });
+    const code = road.replace(/\s/g, "").toUpperCase();
+    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: code, kinds: ["roadworks"], horizon_days: 14, limit })
+      .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; });
+    // A number no register knows: today's refusal, with the nearest real numbers (as check_road_status).
+    if (r === null) {
+      const registered = (await ctx.api.get<{ road: string }[]>("listMotorways", {})).data.map((m) => m.road);
+      return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)));
+    }
     return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
   }
   // `from` and `to` are the window's days (YYYY-MM-DD, the schema's pattern), never a place.
@@ -637,7 +644,7 @@ async function resolveWatch(kind: string, key: string, ctx: ToolContext): Promis
   if (kind === "region") {
     const { code, metas } = await areaCode({ region: key }, ctx);
     if (code === undefined) return toolError(L(ctx.language, `Die Region „${key}“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet.`, `I could not find the region "${key}". No watch was opened.`));
-    if (metas.length === 0) return { target: code };
+    if (/^[0-9]{2,12}$/u.test(key)) return { target: code };
     for (const m of metas) creditPlace(m.attribution ?? []);
     return { target: code, resolved: { from: key, label: key, what: { de: `Region ${key}, AGS ${code}`, en: `the region ${key}, AGS ${code}` } } };
   }

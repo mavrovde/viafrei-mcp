@@ -132,12 +132,19 @@ describe("check_autobahn_traffic", () => {
 
 describe("check_road_status", () => {
   it("a Land as the place: the Land's situations by its key, the road kept", async () => {
-    serve("getPlacesCoverage", { kinds: [], lands: [{ code: "03", name: "Niedersachsen", sourceFamily: "destatis_gv" }], addresses: [] });
     serve("listStateRoadConditions", roads([]));
     const r = await call("check_road_status", { road: "L1025", place: "niedersachsen", language: "de" });
     expect(paths("listStateRoadConditions")).toEqual(["/v1/states/03/road-conditions"]);
     expect(ops()).not.toContain("listPlaces");
     expect(body(r)).toBe("L1025 in Niedersachsen: Es liegt keine Meldung vor — das heißt ausdrücklich nicht, dass die Straße frei ist.");
+  });
+  it("a Land by its English name, named in the answer's language", async () => {
+    serve("listStateRoadConditions", roads([]));
+    const de = await call("check_road_status", { road: "L1025", place: "Lower Saxony", language: "de" });
+    expect(body(de)).toBe("L1025 in Niedersachsen: Es liegt keine Meldung vor — das heißt ausdrücklich nicht, dass die Straße frei ist.");
+    const en = await call("check_road_status", { road: "L1025", place: "Lower Saxony", language: "en" });
+    expect(body(en)).toBe("L1025 in Lower Saxony: there is no report — which explicitly does not mean the road is clear.");
+    expect(paths("listStateRoadConditions")).toEqual(["/v1/states/03/road-conditions", "/v1/states/03/road-conditions"]);
   });
 
   it("a motorway number in any spelling asks its conditions with the horizon", async () => {
@@ -918,7 +925,7 @@ describe("check_transit_disruption", () => {
       serve("listPlaces", []);
       const r = await call("check_transit_disruption", { region: "Atlantis", language });
       expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? '"Atlantis" kenne ich als Region nicht. Die Daten sind auf Kreisebene gemeldet — bitte ein Bundesland, eine kreisfreie Stadt oder den Kreis nennen (z. B. "Bayern", "Köln", "Landkreis Fulda").' : 'I do not know "Atlantis" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").' }], isError: true });
-      expect(ops()).toEqual(["getPlacesCoverage", "listPlaces", "listPlaces"]);
+      expect(ops()).toEqual(["listPlaces", "listPlaces"]);
     });
   }
   it("a punctuality without a name", async () => {
@@ -1467,7 +1474,7 @@ describe("watch_situation: the target is the platform's key, resolved from the p
     expect(await target("station", "Leipzig Hbf")).toBe("1:de:01002:9001");
     expect(query("listStations")).toEqual([{ q: "Leipzig Hbf", limit: "1", lang: "de" }]);
     expect(await target("station", "8010205")).toBe("8010205");
-    expect(await target("region", "Sachsen")).toBe("01");
+    expect(await target("region", "Sachsen")).toBe("14");
     expect(await target("region", "14")).toBe("14");
     expect(await target("charger", "site-7")).toBe("site-7");
   });

@@ -126,6 +126,71 @@
       "text": "I do not know \"Leipzig\" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example \"Bayern\", \"Köln\", \"Landkreis Fulda\").",
       "structuredContent": null,
       "meta": {}
+    },
+    {
+      "tool": "find_roadworks_ahead",
+      "args": {
+        "road": "A7",
+        "language": "de"
+      },
+      "isError": true,
+      "text": "A7 ist keine Bundesautobahn, die ich kenne — weder die Autobahn GmbH noch unser Archiv führen diese Nummer, deshalb kann ich über sie nichts sagen. Nächstliegende Nummern: A3, A9. Bitte prüfen Sie die Nummer.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "find_roadworks_ahead",
+      "args": {
+        "road": "A45",
+        "language": "en"
+      },
+      "isError": true,
+      "text": "A45 is not a German motorway (Bundesautobahn) I know — neither Autobahn GmbH nor our archive carries that number, so I cannot say anything about it. Nearest real numbers: A3, A9. Please check the number.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "find_roadworks_ahead",
+      "args": {
+        "road": "A2",
+        "from": "2026-11-02",
+        "to": "2026-11-15",
+        "language": "de"
+      },
+      "isError": true,
+      "text": "A2 ist keine Bundesautobahn, die ich kenne — weder die Autobahn GmbH noch unser Archiv führen diese Nummer, deshalb kann ich über sie nichts sagen. Nächstliegende Nummern: A3, A9. Bitte prüfen Sie die Nummer.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Bayern",
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Bavaria: no public-transport realtime reports from this region in the last 60 minutes.\nThe source reports changes only: these figures cover the trips whose delay moved during the window, not every trip. Few reports therefore does not by itself mean \"everything on time\".\nIndividual lines, trips or stops cannot be judged from these delay figures — the realtime data arrives with no line reference, and its licence permits region-wide totals only.\n\nService alerts for Bavaria: the alert feeds are not current right now, so I cannot say whether any diversions or closures are published.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Niedersachsen",
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Lower Saxony: no public-transport realtime reports from this region in the last 60 minutes.\nThe source reports changes only: these figures cover the trips whose delay moved during the window, not every trip. Few reports therefore does not by itself mean \"everything on time\".\nIndividual lines, trips or stops cannot be judged from these delay figures — the realtime data arrives with no line reference, and its licence permits region-wide totals only.\n\nService alerts for Lower Saxony: the alert feeds are not current right now, so I cannot say whether any diversions or closures are published.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
     }
   ]
 }

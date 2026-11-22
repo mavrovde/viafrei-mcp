@@ -1,11 +1,11 @@
 /**
- * A region asked in words, as today's server resolves it: a Land by its name first (the gazetteer's
- * Länder, getPlacesCoverage), else a Kreis by its name (listPlaces, kind district), else the Kreis a
+ * A region asked in words, as today's server resolves it: a Land by its name first (LANDS), else a Kreis by its name (listPlaces, kind district), else the Kreis a
  * town lies in (listPlaces, its districtCode; the answer says which town). A point is placed in the
  * Kreis describeLocation names. Every rule is national: no name is special-cased.
  */
 import type { DataMeta } from "../api/client.js";
 import type * as T from "../api/types.js";
+import type { Language } from "../presentation.js";
 import { atParam, num, str, type Args, type ToolContext } from "./context.js";
 
 export type Region = {
@@ -23,17 +23,32 @@ export type Region = {
 
 const fold = (s: string): string => s.normalize("NFC").toLocaleLowerCase("de").replace(/\s+/gu, " ").trim();
 
-/** The Land a name is, by the gazetteer's Länder (getPlacesCoverage); undefined when it names none. */
-export async function landOf(name: string, ctx: ToolContext): Promise<{ code: string; name: string } | undefined> {
-  const cov = await ctx.api.get<T.PlacesCoverageData>("getPlacesCoverage", {});
-  return cov.data.lands.find((l) => fold(l.name) === fold(name));
+/**
+ * The 16 Länder: the official two-digit key, the German name and the English one, as today's server holds
+ * them (its region map, Destatis). Fixed by the constitution, not data that ages, and the API's gazetteer
+ * does not hold the Länder as places (getPlacesCoverage lists only the Länder its places carry).
+ */
+export const LANDS: readonly { readonly code: string; readonly de: string; readonly en: string }[] = [
+  { code: "01", de: "Schleswig-Holstein", en: "Schleswig-Holstein" }, { code: "02", de: "Hamburg", en: "Hamburg" },
+  { code: "03", de: "Niedersachsen", en: "Lower Saxony" }, { code: "04", de: "Bremen", en: "Bremen" },
+  { code: "05", de: "Nordrhein-Westfalen", en: "North Rhine-Westphalia" }, { code: "06", de: "Hessen", en: "Hesse" },
+  { code: "07", de: "Rheinland-Pfalz", en: "Rhineland-Palatinate" }, { code: "08", de: "Baden-Württemberg", en: "Baden-Württemberg" },
+  { code: "09", de: "Bayern", en: "Bavaria" }, { code: "10", de: "Saarland", en: "Saarland" }, { code: "11", de: "Berlin", en: "Berlin" },
+  { code: "12", de: "Brandenburg", en: "Brandenburg" }, { code: "13", de: "Mecklenburg-Vorpommern", en: "Mecklenburg-Western Pomerania" },
+  { code: "14", de: "Sachsen", en: "Saxony" }, { code: "15", de: "Sachsen-Anhalt", en: "Saxony-Anhalt" }, { code: "16", de: "Thüringen", en: "Thuringia" },
+];
+
+/** The Land a name is, in either language, named in the answer's language; undefined when it names none. */
+export function landOf(name: string, language: Language): { code: string; name: string } | undefined {
+  const land = LANDS.find((l) => fold(l.de) === fold(name) || fold(l.en) === fold(name));
+  return land === undefined ? undefined : { code: land.code, name: land[language] };
 }
 
 export async function regionOf(args: Args, ctx: ToolContext): Promise<Region> {
   const region = str(args["region"]);
   if (region !== undefined && /^[0-9]{2,12}$/u.test(region)) return { code: region, label: region, fromPoint: false, metas: [] };
   if (region !== undefined) {
-    const land = await landOf(region, ctx);
+    const land = landOf(region, ctx.language);
     if (land !== undefined) return { code: land.code, label: land.name, fromPoint: false, metas: [] };
     const kreis = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: region, kind: "district", limit: 1 });
     const k = kreis.data[0];

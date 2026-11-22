@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { calls, exampleOf, handlerFor, mockServer } from "./api-mock.js";
+import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
 import { connect, textOf } from "./harness.js";
 
 /**
@@ -31,12 +31,6 @@ function serve(op: string, data: unknown, meta: Record<string, unknown> = {}): v
   }));
 }
 
-const LANDS: readonly (readonly [string, string])[] = [
-  ["01", "Schleswig-Holstein"], ["02", "Hamburg"], ["03", "Niedersachsen"], ["04", "Bremen"], ["05", "Nordrhein-Westfalen"], ["06", "Hessen"],
-  ["07", "Rheinland-Pfalz"], ["08", "Baden-Württemberg"], ["09", "Bayern"], ["10", "Saarland"], ["11", "Berlin"], ["12", "Brandenburg"],
-  ["13", "Mecklenburg-Vorpommern"], ["14", "Sachsen"], ["15", "Sachsen-Anhalt"], ["16", "Thüringen"],
-];
-
 /** The API state of the parity run, per tool: what its reads answered. */
 const STATE: Record<string, () => void> = {
   // The harness loads no OpenStreetMap addresses: the search finds none and the coverage lists no Land.
@@ -44,10 +38,14 @@ const STATE: Record<string, () => void> = {
     serve("listAddresses", { addresses: [] }, { attribution: [] });
     serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [] });
   },
-  // The harness's gazetteer holds the 16 Länder and, of the Kreise asked here, Frankfurt am Main; its
+  // The harness's motorway register holds A3 and A9; any other number is unknown to it.
+  find_roadworks_ahead: () => {
+    mockServer.use(handlerFor("getMotorwayConditions", () => problem(404, "not-found")));
+    serve("listMotorways", ["A3", "A9"].map((road) => ({ ...(exampleOf<{ data: object[] }>("listMotorways").data[0] ?? {}), road })));
+  },
+  // The harness's gazetteer holds, of the Kreise asked here, Frankfurt am Main (the Länder are the server's own); its
   // realtime window is empty and its alert feeds are not current. A Kreis keeps the example's key: no answer here prints it.
   check_transit_disruption: () => {
-    serve("getPlacesCoverage", { kinds: [], lands: LANDS.map(([code, name]) => ({ code, name, sourceFamily: "destatis_gv" })), addresses: [] });
     mockServer.use(handlerFor("listPlaces", (url) => {
       const ex = exampleOf<{ data: Record<string, unknown>[]; meta: Record<string, unknown> }>("listPlaces");
       const hit = url.searchParams.get("q") === "Frankfurt am Main" ? [{ ...ex.data[0], name: "Frankfurt am Main", kind: "district" }] : [];
