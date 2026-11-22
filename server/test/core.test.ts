@@ -97,7 +97,7 @@ describe("the result envelope", () => {
       meta({ asOf: "2026-03-29T23:00:00Z", attribution: [a("x", "X again", { licence: "CC BY 4.0" }), a("z", "Z data")], notes: { purpose: ["P1", "P2"], condition: [] } }),
       meta({ asOf: null }),
     ], "en", { conditionNote: "C2", nextCursor: "n" });
-    expect((r.content[0] as { text: string }).text).toBe("P1\nP2\nC1\nC2\nBody\n\nSource: X data · Y data · Z data · As of: 30/03/2026, 01:00");
+    expect((r.content[0] as { text: string }).text).toBe("P1\nP2\nC1\nC2\nBody\n\nSource: X data · Y data · Z data · As of 2026-03-30 01:00");
     expect(r._meta).toEqual({
       attribution: "X data · Y data · Z data",
       license: "CC BY 4.0, ODbL 1.0",
@@ -115,9 +115,9 @@ describe("the result envelope", () => {
 
   it("no attribution and no data time: the generation time, no source line, nothing optional in _meta", () => {
     const r = toolResult("B", [meta({ attribution: [a("x", "X", { shareAlike: false })] }), meta()], "de", { nextCursor: null });
-    expect((r.content[0] as { text: string }).text).toBe("B\n\nQuelle: X · Stand: 30.03.2026, 02:00");
+    expect((r.content[0] as { text: string }).text).toBe("B\n\nQuelle: X · Stand 30.03. 02:00");
     const bare = toolResult("B", [meta({ generatedAt: "2026-01-01T12:00:00Z" })], "de");
-    expect((bare.content[0] as { text: string }).text).toBe("B\n\nStand: 01.01.2026, 13:00");
+    expect((bare.content[0] as { text: string }).text).toBe("B\n\nStand 01.01. 13:00");
     expect(bare._meta).toEqual({ attribution: "", license: "", licenses: {}, asOf: "2026-01-01T12:00:00Z", asOfLocal: "01.01.2026, 13:00", sources: [] });
   });
 
@@ -133,7 +133,7 @@ describe("the result envelope", () => {
   it("a body longer than the cap is cut with an ellipsis so the notes and the footer stay whole", () => {
     expect(TOOL_RESULT_CHARS).toBe(8_000);
     const m = meta({ asOf: "2026-03-30T00:00:00Z", attribution: [a("x", "X")], notes: { purpose: ["Purpose."], condition: [] } });
-    const footer = "Source: X · As of: 30/03/2026, 02:00";
+    const footer = "Source: X · As of 2026-03-30 02:00";
     const room = 8_000 - footer.length - "Purpose.".length - 4;
     const fits = "b".repeat(room);
     expect((toolResult(fits, [m], "en").content[0] as { text: string }).text).toBe(`Purpose.\n${fits}\n\n${footer}`);
@@ -255,5 +255,20 @@ describe("a session's watches", () => {
     expect(w.remove(1)).toBe(true);
     expect(w.remove(1)).toBe(false);
     expect(w.add(one)).toBe(3);
+  });
+});
+
+describe("the credit line in today's shape", () => {
+  it("a row with its own label leads, a changed-data row goes last, no rows means the Stand alone; today's time has no day", async () => {
+    const { creditFooter, standTime } = await import("../src/presentation.js");
+    expect(creditFooter("de", ["A", "Datenbasis: DWD", "Quelle: Deutscher Wetterdienst"], "Stand 08:05")).toBe("Quelle: Deutscher Wetterdienst · A · Datenbasis: DWD · Stand 08:05");
+    expect(creditFooter("en", ["A", "B"], "As of 08:05")).toBe("Source: A · B · As of 08:05");
+    expect(creditFooter("de", ["Datenbasis: DWD"], "Stand 08:05")).toBe("Datenbasis: DWD · Stand 08:05");
+    expect(creditFooter("de", [], "Stand 08:05")).toBe("Stand 08:05");
+    const now = new Date("2026-09-18T10:00:00Z");
+    expect(standTime("2026-09-18T06:05:00Z", "de", now)).toBe("08:05");
+    expect(standTime("2026-09-17T21:59:00Z", "de", now)).toBe("17.09. 23:59");
+    expect(standTime("2026-09-17T21:59:00Z", "en", now)).toBe("2026-09-17 23:59");
+    expect(standTime("2026-09-17T22:00:00Z", "en", now)).toBe("00:00");
   });
 });

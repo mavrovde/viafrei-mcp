@@ -816,7 +816,7 @@ describe("watch_situation and stop_watch", () => {
 describe("the credit footer and _meta of a tool answer", () => {
   it("names the sources, the licence and the data time in Berlin", async () => {
     const r = await call("find_cheapest_fuel", { ...at, language: "de" });
-    expect(footer(r)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. · Stand: 30.03.2026, 01:57");
+    expect(footer(r)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. · Stand 30.03. 01:57");
     expect(meta(r)).toEqual({
       attribution: "Synthetic data from family gamma, licence CC BY 4.0.",
       license: "CC BY 4.0",

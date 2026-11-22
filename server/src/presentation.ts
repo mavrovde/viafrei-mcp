@@ -30,6 +30,41 @@ export function berlinDateTime(iso: string | null | undefined, language: Languag
   return new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-GB", { timeZone: BERLIN, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
 }
 
+const berlinDay = (d: Date): string => new Intl.DateTimeFormat("en-CA", { timeZone: BERLIN, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+
+/**
+ * When the data stood, as today's server says it (presentation/format.ts): "08:05" on the same Berlin
+ * day as `now`, else "18.09. 08:05" in German and "2026-09-18 08:05" in English.
+ */
+export function standTime(iso: string, language: Language, now: Date = new Date()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "–";
+  const time = berlinTime(iso);
+  const day = berlinDay(d);
+  if (day === berlinDay(now)) return time;
+  return language === "de" ? `${day.slice(8, 10)}.${day.slice(5, 7)}. ${time}` : `${day} ${time}`;
+}
+
+/** A row that opens with a label supplies its own (the DWD's prescribed "Quelle: Deutscher Wetterdienst"). */
+const OWN_LABELS = ["Quelle: ", "Source: "];
+/** The DWD's changed-data lead: its row goes last, and alone it carries no "Quelle:". */
+const CHANGED_DATA_LEAD = "Datenbasis: ";
+
+/**
+ * The credit line, in today's server's one shape (creditFooter, #906): "Quelle: <rows> · Stand <time>".
+ * A row that opens with a label goes first and is the line's label; a changed-data row goes last;
+ * no rows, no "Quelle:" — the Stand alone.
+ */
+export function creditFooter(language: Language, rows: readonly string[], stand: string): string {
+  if (rows.length === 0) return stand;
+  const labelled = (r: string): boolean => OWN_LABELS.some((l) => r.startsWith(l));
+  const own = rows.filter(labelled);
+  const basis = rows.filter((r) => !labelled(r) && r.startsWith(CHANGED_DATA_LEAD));
+  const rest = rows.filter((r) => !labelled(r) && !r.startsWith(CHANGED_DATA_LEAD));
+  const lead = own.length > 0 || rest.length === 0 ? "" : `${SOURCE_LABEL[language]}: `;
+  return `${lead}${[...own, ...rest, ...basis].join(" · ")} · ${stand}`;
+}
+
 export const km = (m: number | null | undefined, language: Language): string =>
   m === null || m === undefined ? "" : m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1).replace(".", language === "de" ? "," : ".")} km`;
 
@@ -71,7 +106,7 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
   const asOfs = metas.map((m) => m.asOf).filter((x): x is string => typeof x === "string").sort();
   const asOf = asOfs[0] ?? metas[0]?.generatedAt ?? new Date().toISOString();
   const attributionText = attributions.map((a) => a.text).join(" · ");
-  const footer = `${attributions.length > 0 ? `${SOURCE_LABEL[language]}: ${attributionText} · ` : ""}${AS_OF_LABEL[language]}: ${berlinDateTime(asOf, language)}`;
+  const footer = creditFooter(language, attributions.map((a) => a.text), `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`);
   const lines = [...purpose, ...condition];
   const room = TOOL_RESULT_CHARS - footer.length - lines.join("\n").length - 4;
   const text = [...lines, body.length > room ? `${body.slice(0, Math.max(0, room - 1))}…` : body, "", footer].join("\n");

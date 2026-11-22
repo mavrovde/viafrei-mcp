@@ -63,7 +63,7 @@ describe("the board's lines", () => {
       expect(body(r)).toBe(language === "de"
         ? `${head}\n- 02:12 S → ?\n- 02:20 RE 1 → Hamburg-Altona · fällt aus · Gl. 4\n- 02:30 ICE 578 → Hamburg-Altona · +5 · Gl. 7!\n- 02:40 ? → Hamburg-Altona · Gl. 4`
         : `${head}\n- 02:12 S → ?\n- 02:20 RE 1 → Hamburg-Altona · cancelled · pl. 4\n- 02:30 ICE 578 → Hamburg-Altona · +5 · pl. 7!\n- 02:40 ? → Hamburg-Altona · pl. 4`);
-      expect(textOf(r).endsWith(language === "de" ? "Stand: 30.03.2026, 02:00" : "As of: 30/03/2026, 02:00")).toBe(true);
+      expect(textOf(r).endsWith(language === "de" ? "Stand 30.03. 02:00" : "As of 2026-03-30 02:00")).toBe(true);
     });
   }
 
