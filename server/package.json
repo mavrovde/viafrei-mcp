@@ -15,6 +15,7 @@
     "test:e2e:mock": "npm run build && vitest run --config vitest.e2e.config.ts",
     "test:e2e:api": "npm run build && vitest run --config vitest.e2e.config.ts",
     "mutation": "node scripts/mutation.mjs full",
+    "test:mutation-pieces": "node scripts/mutation-pieces.test.mjs",
     "check:operations": "node scripts/gen-operations.mjs --check",
     "start:http": "node dist/http.js",
     "start:stdio": "node dist/stdio.js"

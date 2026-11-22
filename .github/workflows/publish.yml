@@ -24,7 +24,7 @@ name: npm
 # Snyk (snyk.yml, called by the snyk job below) tests the dependencies of the
 # same commit first; the publish job needs it, so a high or critical advisory
 # stops the release before anything is packed. The full mutation run of the
-# server (mutation.yml, called by the mutation job below, four shards) tests it
+# server (mutation.yml, called by the mutation job below, 8 shards) tests it
 # beside Snyk; publish needs it too, so a run below 70 % stops the release.
 
 on:
@@ -114,7 +114,9 @@ jobs:
   server-e2e-api:
     name: Server e2e (real API)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # Every job ends within 15 minutes (owner 2026-11-22): pulling two images,
+    # migrating and seeding the tiny world and one call per tool fit in it.
+    timeout-minutes: 15
     permissions:
       contents: read
       packages: read

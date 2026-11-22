@@ -389,6 +389,9 @@ console.log('version-sync.yml wiring');
     const syncJob = yml.slice(sync, release);
     const releaseJob = yml.slice(release, downstream);
     const publishJob = yml.slice(downstream);
+    // The jobs from publish on (publish, smithery, mcp-registry, release-page), each on its own.
+    const ownJobs = [...publishJob.matchAll(/^ {2}([a-z][\w-]*):\n((?: {4}.*\n|\n)*)/gmu)].map((m) => ({ id: m[1], body: m[2] }));
+    const ownJob = (id) => ownJobs.find((j) => j.id === id)?.body ?? '';
     check('sync judges an awaiting-tag reading for a stuck release, with both facts read and a failed read refused',
         /if: steps\.detect\.outputs\.state == 'awaiting-tag'/u.test(syncJob) && /auto-release\.mjs stuck --version/u.test(syncJob)
         && /2\) tag_exists=false/u.test(syncJob) && /\*\) echo "Could not ask origin/u.test(syncJob));
@@ -421,15 +424,19 @@ console.log('version-sync.yml wiring');
             registry > npmWait && npmWait > 0 && registryWait > registry, `${npmWait} ${registry} ${registryWait}`);
     }
     check('the npm dispatch publishes for real (dry_run=false) on the tag ref', /gh workflow run publish\.yml --ref "\$TAG" -f dry_run=false/u.test(publishJob));
-    {
-        const deadlines = [...publishJob.matchAll(/--deadline-s "\$\(\((\d+) \* 60\)\)"/gu)].reduce((sum, m) => sum + Number(m[1]), 0);
-        const timeout = Number(/timeout-minutes: (\d+)/u.exec(publishJob)?.[1] ?? 0);
-        check('the publish job\'s step deadlines fit inside its timeout', deadlines > 0 && deadlines < timeout, `deadlines ${deadlines} min, timeout ${timeout} min`);
+    check('npm, Smithery, the MCP Registry and the release page are each a job of their own', ['publish', 'smithery', 'mcp-registry', 'release-page'].every((id) => ownJob(id) !== ''), ownJobs.map((j) => j.id).join(' '));
+    check('the three follow-ups run only after npm', ['smithery', 'mcp-registry', 'release-page'].every((id) => /^ {4}needs: \[sync, release, publish\]$/mu.test(ownJob(id))));
+    for (const [id, wf] of [['publish', 'publish.yml'], ['smithery', 'smithery.yml'], ['mcp-registry', 'mcp-registry.yml'], ['release-page', 'release-page.yml']]) {
+        const body = ownJob(id);
+        const deadlines = [...body.matchAll(/--deadline-s "\$\(\((\d+) \* 60\)\)"/gu)].reduce((sum, m) => sum + Number(m[1]), 0);
+        const timeout = Number(/^ {4}timeout-minutes: (\d+)$/mu.exec(body)?.[1] ?? 0);
+        check(`the ${id} job dispatches and waits for ${wf}, its deadline inside its timeout, both within 15 minutes`,
+            body.includes(`gh workflow run ${wf}`) && body.includes(`wait-run --workflow ${wf}`) && deadlines > 0 && deadlines < timeout && timeout <= 15, `deadlines ${deadlines} min, timeout ${timeout} min`);
     }
     {
         const deadline = Number(/wait-checks[^\n]*--deadline-s "\$\(\((\d+) \* 60\)\)"/u.exec(releaseJob)?.[1] ?? 0);
         const timeout = Number(/timeout-minutes: (\d+)/u.exec(releaseJob)?.[1] ?? 0);
-        check('the release job\'s check deadline fits inside its timeout', deadline > 0 && deadline < timeout, `deadline ${deadline} min, timeout ${timeout} min`);
+        check('the release job\'s check deadline fits inside its timeout, within 15 minutes', deadline > 0 && deadline < timeout && timeout <= 15, `deadline ${deadline} min, timeout ${timeout} min`);
     }
     check('the workflow grants nothing at the top level', /^permissions: \{\}$/mu.test(yml));
     const uses = [...yml.matchAll(/^ *- uses: (\S+)/gmu)].map(m => m[1]);
