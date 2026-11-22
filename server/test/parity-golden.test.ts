@@ -71,6 +71,14 @@ const STATE: Record<string, () => void> = {
   find_parking: () => {
     serve("listMotorwayParking", [], { attribution: [], generatedAt: new Date().toISOString() });
   },
+  // The harness's timetable holds no stop of the name asked; its gazetteer holds Berlin.
+  watch_situation: () => {
+    serve("listStations", []);
+    mockServer.use(handlerFor("listPlaces", (url) => {
+      const ex = exampleOf<{ data: Record<string, unknown>[]; meta: Record<string, unknown> }>("listPlaces");
+      return HttpResponse.json({ ...ex, data: url.searchParams.get("q") === "Berlin" ? [{ ...ex.data[0], name: "Berlin" }] : [] });
+    }));
+  },
   // The harness's bike-sharing data: one virtual Donkey Republic station within 1 km of each asked Kiel point (the
   // run's structuredContent: name, system, distance, bikes, e-bikes), no free-floating bike.
   find_sharing: () => {

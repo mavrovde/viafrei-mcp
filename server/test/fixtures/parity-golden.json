@@ -617,6 +617,30 @@
       "text": "Give a place (free text), or lat+lon, or a road like \"A3\". If the person named none, ask where: a town, a postcode, their position or the motorway. For example {\"place\": \"Fulda\"} or {\"road\": \"A3\"}.",
       "structuredContent": null,
       "meta": {}
+    },
+    {
+      "tool": "watch_situation",
+      "args": {
+        "kind": "station",
+        "key": "Berlin Alexanderplatz",
+        "language": "de"
+      },
+      "isError": true,
+      "text": "In Berlin finde ich keine Haltestelle \"Berlin Alexanderplatz\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht. Es wurde keine Beobachtung geöffnet.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "watch_situation",
+      "args": {
+        "kind": "station",
+        "key": "Berlin Alexanderplatz",
+        "language": "en"
+      },
+      "isError": true,
+      "text": "I do not know a stop called \"Berlin Alexanderplatz\" in Berlin. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town. No watch was opened.",
+      "structuredContent": null,
+      "meta": {}
     }
   ]
 }

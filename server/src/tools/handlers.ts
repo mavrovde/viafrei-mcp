@@ -38,10 +38,14 @@ const NOT_KNOWN = {
   eva: (eva: string, language: Language) => toolError(L(language,
     `Zu EVA ${eva} halten wir keinen Bahnhofseintrag. Aufzüge: check_station_facilities; Abfahrten: get_train_departures.`,
     `We hold no station record for EVA ${eva}. Lifts: check_station_facilities; departures: get_train_departures.`)),
-  stop: (q: string, language: Language) => toolError(L(language,
-    `Die Haltestelle "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").`,
-    `I do not know a stop called "${q}". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").`)),
+  stop: (q: string, language: Language) => toolError(stopUnknown(q, language)),
 };
+
+function stopUnknown(q: string, language: Language): string {
+  return L(language,
+    `Die Haltestelle "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").`,
+    `I do not know a stop called "${q}". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").`);
+}
 
 /** A session holds at most this many open watches, as today's server does. */
 export { MAX_WATCHES };
@@ -622,6 +626,28 @@ const WEATHER_NO_CELL: Record<Language, (label: string) => string> = {
   en: (label) => `I know no DWD warn cell for ${label} yet — no warning has been held there so far — so I am not opening a weather watch that might never fire. Name a larger town nearby.`,
 };
 
+/** Verbatim from today's server (get_departures.ts unknownInTown, watch_situation.ts notOpened). */
+const STOP_IN_TOWN: Record<Language, (q: string, town: string) => string> = {
+  de: (q, town) => `In ${town} finde ich keine Haltestelle "${q}". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht.`,
+  en: (q, town) => `I do not know a stop called "${q}" in ${town}. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town.`,
+};
+const NOT_OPENED: Record<Language, string> = { de: "Es wurde keine Beobachtung geöffnet.", en: "No watch was opened." };
+
+/**
+ * A stop name the stop search does not hold. Today's server reads the name's leading words as a town (the
+ * longest first, at most three, never the whole name) and, where one is a place, says no such stop is in it;
+ * otherwise it says it does not know the stop. Either way no watch is opened.
+ */
+async function stopNotFound(key: string, ctx: ToolContext): Promise<CallToolResult> {
+  const words = key.split(/\s+/u);
+  for (let n = Math.min(words.length - 1, 3); n >= 1; n--) {
+    const found = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: words.slice(0, n).join(" "), limit: 1 });
+    const town = found.data[0];
+    if (town !== undefined) return toolError(`${STOP_IN_TOWN[ctx.language](key, town.name)} ${NOT_OPENED[ctx.language]}`);
+  }
+  return toolError(`${stopUnknown(key, ctx.language)} ${NOT_OPENED[ctx.language]}`);
+}
+
 /** watchTarget, with what a station or a region named in words became, for the answer to say it. */
 async function resolveWatch(kind: string, key: string, ctx: ToolContext): Promise<{ target: string; resolved?: Resolved; label?: string } | CallToolResult> {
   if (kind === "road") return { target: key.replace(/\s/g, "").toUpperCase() };
@@ -633,7 +659,7 @@ async function resolveWatch(kind: string, key: string, ctx: ToolContext): Promis
   if (kind === "station" && !/^[\w:-]*\d[\w:-]*$/u.test(key)) {
     const found = await ctx.api.get<T.Station[]>("listStations", { q: key, limit: 1 });
     const first = found.data[0];
-    if (first === undefined) return toolError(L(ctx.language, `Die Haltestelle „${key}“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet.`, `I could not find the stop "${key}". No watch was opened.`));
+    if (first === undefined) return stopNotFound(key, ctx);
     return { target: first.id, resolved: { from: key, label: first.name, what: { de: `Haltestelle ${first.name}, DHID ${first.id}`, en: `the stop ${first.name}, DHID ${first.id}` } } };
   }
   if (kind === "charger" && !(/\d/u.test(key) && !/\s/u.test(key))) return chargerByPlace(key, ctx);

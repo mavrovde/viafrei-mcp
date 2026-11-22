@@ -1572,7 +1572,19 @@ describe("watch_situation: the target is the platform's key, resolved from the p
     serve("listStations", []);
     calls.length = 0;
     const r = await call("watch_situation", { kind: "station", key: "Nirgendwo", language: "de" });
-    expect(r).toMatchObject({ isError: true, content: [{ type: "text", text: "Die Haltestelle „Nirgendwo“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet." }] });
+    expect(r).toMatchObject({ isError: true, content: [{ type: "text", text: 'Die Haltestelle "Nirgendwo" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz"). Es wurde keine Beobachtung geöffnet.' }] });
+    expect(query("getWatch")).toEqual([]);
+    expect(query("listPlaces")).toEqual([]);
+    // A name whose leading words are a town: no such stop in that town; the longest reading first, at most three words.
+    mockServer.use(handlerFor("listPlaces", (url) => Response.json({ ...exampleOf("listPlaces"), data: ["Bad Neu", "Berlin"].includes(url.searchParams.get("q") ?? "") ? [{ ...exampleOf<{ data: object[] }>("listPlaces").data[0], name: url.searchParams.get("q") === "Berlin" ? "Berlin" : "Bad Neustadt" }] : [] })));
+    calls.length = 0;
+    const town = await call("watch_situation", { kind: "station", key: "Berlin Ost Platz Nord Süd", language: "en" });
+    expect(textOf(town)).toBe('I do not know a stop called "Berlin Ost Platz Nord Süd" in Berlin. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town. No watch was opened.');
+    expect(town.isError).toBe(true);
+    expect(query("listPlaces").map((q) => q["q"])).toEqual(["Berlin Ost Platz", "Berlin Ost", "Berlin"]);
+    calls.length = 0;
+    const de = await call("watch_situation", { kind: "station", key: "Bad Neu Ost", language: "de" });
+    expect(textOf(de)).toBe('In Bad Neustadt finde ich keine Haltestelle "Bad Neu Ost". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht. Es wurde keine Beobachtung geöffnet.');
     expect(query("getWatch")).toEqual([]);
     serve("listPlaces", []);
     const g = await call("watch_situation", { kind: "region", key: "Atlantis", language: "en" });
