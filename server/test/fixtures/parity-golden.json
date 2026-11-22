@@ -641,6 +641,30 @@
       "text": "I do not know a stop called \"Berlin Alexanderplatz\" in Berlin. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town. No watch was opened.",
       "structuredContent": null,
       "meta": {}
+    },
+    {
+      "tool": "check_road_status",
+      "args": {
+        "place": "Bremen-Gröpelingen",
+        "vehicle": "lorry",
+        "language": "de"
+      },
+      "isError": true,
+      "text": "Ort \"Bremen-Gröpelingen\" nicht gefunden. Bitte genauer angeben, z. B. mit Postleitzahl.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "check_road_status",
+      "args": {
+        "place": "Bremen-Gröpelingen",
+        "vehicle": "lorry",
+        "language": "en"
+      },
+      "isError": true,
+      "text": "Place \"Bremen-Gröpelingen\" not found. Please be more specific, e.g. with a postcode.",
+      "structuredContent": null,
+      "meta": {}
     }
   ]
 }

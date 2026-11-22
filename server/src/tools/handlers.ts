@@ -223,7 +223,11 @@ const checkRoadStatus: Handler = async (args, ctx) => {
     const rows = asked === undefined ? r.data.situations : r.data.situations.filter((s) => (s.road ?? "").replace(/\s/g, "").toUpperCase() === asked);
     body = roadStatusBody({ ...r.data, situations: rows }, language, limit, asked === undefined ? land.name : L(language, `${asked} in ${land.name}`, `${asked} in ${land.name}`));
   } else {
-    const pos = await position(args, ctx);
+    // A lorry question is today's lorry answer (check_road_status.lorry.ts), which words a place it cannot find
+    // in its own sentence.
+    const pos = await position(args, ctx, "place", vehicle === undefined ? undefined : (q) => toolError(L(language,
+      `Ort "${q}" nicht gefunden. Bitte genauer angeben, z. B. mit Postleitzahl.`,
+      `Place "${q}" not found. Please be more specific, e.g. with a postcode.`)));
     if (isResult(pos)) return pos;
     at = atParam(pos.at);
     const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at, horizon_days: horizon, limit });

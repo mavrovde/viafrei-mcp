@@ -67,6 +67,10 @@ const STATE: Record<string, () => void> = {
     }));
     serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [] });
   },
+  // The harness's gazetteer holds no Bremen-Gröpelingen, nor a town in its leading words.
+  check_road_status: () => {
+    serve("listPlaces", [], { attribution: [] });
+  },
   // The harness's motorway parking holds no site on the roads asked here.
   find_parking: () => {
     serve("listMotorwayParking", [], { attribution: [], generatedAt: new Date().toISOString() });

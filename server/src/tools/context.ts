@@ -97,7 +97,7 @@ export function looksLikeHouseNumber(query: string): boolean {
 }
 
 /** The position a tool asks about: lat/lon as given, else the place name resolved through the API's place search. */
-export async function position(args: Args, ctx: ToolContext, placeKey = "place"): Promise<Position | CallToolResult> {
+export async function position(args: Args, ctx: ToolContext, placeKey = "place", unknown?: (q: string) => CallToolResult): Promise<Position | CallToolResult> {
   const lat = num(args["lat"]);
   const lon = num(args["lon"]);
   if (lat !== undefined && lon !== undefined) return { at: { lat, lon }, label: null };
@@ -110,7 +110,7 @@ export async function position(args: Args, ctx: ToolContext, placeKey = "place")
   }
   const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: 1 });
   const first = found.data[0];
-  if (first === undefined) return (await townCentre(q, ctx)) ?? placeUnknown(ctx, q);
+  if (first === undefined) return (await townCentre(q, ctx)) ?? (unknown === undefined ? placeUnknown(ctx, q) : unknown(q));
   creditPlace(found.meta.attribution);
   return { at: first.location, label: first.name };
 }

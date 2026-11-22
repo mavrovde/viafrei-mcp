@@ -146,6 +146,19 @@ describe("check_road_status", () => {
     expect(ops()).not.toContain("listStateRoadConditions");
     expect(query("listLorryRules")[0]?.["at"]).toMatch(/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/u);
   });
+  for (const language of LANGS) {
+    it(`a lorry question about a place not found: the lorry answer's own sentence; without a vehicle, the tool's (${language})`, async () => {
+      serve("listPlaces", []);
+      const lorry = await call("check_road_status", { place: "Bremen-Gröpelingen", vehicle: "lorry", language });
+      expect(lorry.isError).toBe(true);
+      expect(textOf(lorry)).toBe(language === "de"
+        ? 'Ort "Bremen-Gröpelingen" nicht gefunden. Bitte genauer angeben, z. B. mit Postleitzahl.'
+        : 'Place "Bremen-Gröpelingen" not found. Please be more specific, e.g. with a postcode.');
+      const plain = await call("check_road_status", { place: "Bremen-Gröpelingen", language });
+      expect(textOf(plain)).not.toContain("Postleitzahl");
+      expect(textOf(plain)).not.toContain("postcode");
+    });
+  }
   it("a Land by its English name, named in the answer's language", async () => {
     serve("listStateRoadConditions", roads([]));
     const de = await call("check_road_status", { road: "L1025", place: "Lower Saxony", language: "de" });
