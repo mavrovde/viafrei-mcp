@@ -1206,9 +1206,9 @@ describe("watch_situation and stop_watch", () => {
 describe("the credit footer and _meta of a tool answer", () => {
   it("names the sources, the licence and the data time in Berlin", async () => {
     const r = await call("find_cheapest_fuel", { ...at, language: "de" });
-    expect(footer(r)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. · Stand 30.03. 01:57");
+    expect(footer(r)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 01:57");
     expect(meta(r)).toEqual({
-      attribution: "Synthetic data from family gamma, licence CC BY 4.0.",
+      attribution: "Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0)",
       license: "CC BY 4.0",
       licenses: { tankerkoenig_gamma: "CC BY 4.0" },
       asOf: "2026-03-29T23:57:30Z",
@@ -1222,10 +1222,10 @@ describe("the credit footer and _meta of a tool answer", () => {
     const place = { family: "gazetteer_x", text: "Ortsdaten: Gazetteer X", licence: "CC BY 4.0", shareAlike: false };
     serve("listPlaces", ex<unknown[]>("listPlaces"), { attribution: [place], asOf: "2020-01-01T00:00:00Z" });
     const named = await call("find_cheapest_fuel", { place: "Köln", language: "de" });
-    expect(footer(named)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. · Ortsdaten: Gazetteer X · Stand 30.03. 01:57");
+    expect(footer(named)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Ortsdaten: Gazetteer X · Stand 30.03. 01:57");
     expect(meta(named)["sources"]).toEqual(["tankerkoenig_gamma", "gazetteer_x"]);
     expect(meta(named)["asOf"]).toBe("2026-03-29T23:57:30Z");
-    expect(footer(await call("find_cheapest_fuel", { ...at, language: "de" }))).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. · Stand 30.03. 01:57");
+    expect(footer(await call("find_cheapest_fuel", { ...at, language: "de" }))).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 01:57");
   });
 
   it("the gap list names a tool, a case and the operation it needs, for each gap", () => {

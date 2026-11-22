@@ -102,6 +102,19 @@ export const TOOL_RESULT_CHARS = 8_000;
 const SOURCE_LABEL: Record<Language, string> = { de: "Quelle", en: "Source" };
 const AS_OF_LABEL: Record<Language, string> = { de: "Stand", en: "As of" };
 
+/**
+ * One credit row as today's server prints it (creditWithLinks): the line, then "(<terms url>; Lizenz:
+ * <licence>, <licence url>)". A part the line already carries is left out (a prescribed string that spells
+ * its own address), and so is a part the API does not give; no part left, no bracket.
+ */
+export function creditWithLinks(a: Attribution): string {
+  const line = a.text;
+  const bare = a.licenceUrl?.replace(/^https?:\/\//u, "").replace(/\/$/u, "");
+  const ref = a.licence !== undefined && a.licenceUrl !== undefined && bare !== undefined && !line.includes(bare) ? `Lizenz: ${a.licence}, ${a.licenceUrl}` : null;
+  const links = [...(typeof a.termsUrl === "string" && a.termsUrl !== "" && !line.includes(a.termsUrl) ? [a.termsUrl] : []), ...(ref === null ? [] : [ref])];
+  return links.length === 0 ? line : `${line} (${links.join("; ")})`;
+}
+
 function uniqueAttributions(list: readonly Attribution[]): Attribution[] {
   const seen = new Set<string>();
   return list.filter((a) => (seen.has(a.family) ? false : (seen.add(a.family), true)));
@@ -126,8 +139,9 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
   const condition = [...new Set([...metas.flatMap((m) => m.notes?.condition ?? []), ...(extra.conditionNote ? [extra.conditionNote] : [])])];
   const asOfs = metas.map((m) => m.asOf).filter((x): x is string => typeof x === "string").sort();
   const asOf = extra.asOf ?? asOfs[0] ?? metas[0]?.generatedAt ?? new Date().toISOString();
-  const attributionText = attributions.map((a) => a.text).join(" · ");
-  const footer = creditFooter(language, attributions.map((a) => a.text), extra.asOfLabel ?? `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`) + (extra.note === undefined ? "" : `\n${extra.note}`);
+  const credits = attributions.map(creditWithLinks);
+  const attributionText = credits.join(" · ");
+  const footer = creditFooter(language, credits, extra.asOfLabel ?? `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`) + (extra.note === undefined ? "" : `\n${extra.note}`);
   const lines = [...purpose, ...condition];
   const room = TOOL_RESULT_CHARS - footer.length - lines.join("\n").length - 4;
   const text = [...lines, body.length > room ? `${body.slice(0, Math.max(0, room - 1))}…` : body, "", footer].join("\n");
