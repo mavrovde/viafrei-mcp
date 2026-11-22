@@ -1,12 +1,9 @@
-import { createApp } from "./app.js";
-import { depsFromEnv } from "./deps.js";
-import { log } from "./log.js";
+// The HTTP entrypoint: everything is in `http-server.ts`; a refused configuration prints its reason and exits 2.
+import { startHttp } from "./http-server.js";
 
-const port = Number(process.env["PORT"] ?? 8_787);
-const host = process.env["HOST"] ?? "127.0.0.1";
-const server = createApp(depsFromEnv()).listen(port, host, () => log.info({ port, host }, "mcp server listening"));
-const stop = (): void => {
-  server.close(() => process.exit(0));
-};
-process.on("SIGTERM", stop);
-process.on("SIGINT", stop);
+try {
+  startHttp();
+} catch (err) {
+  console.error(err instanceof Error ? err.message : String(err));
+  process.exit(2);
+}

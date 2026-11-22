@@ -170,6 +170,7 @@ describe("arguments the tool's schema refuses (as the SDK answers them, before a
     expect(await refuse("find_place", { kind: "junction", language: "de" })).toEqual({
       content: [{ type: "text", text: "MCP error -32602: Input validation error: Invalid arguments for tool find_place: Invalid input: expected string, received undefined at query" }],
       isError: true,
+      _meta: { errorCode: "invalid_input" },
     });
     expect(calls).toHaveLength(0);
   });
@@ -188,7 +189,7 @@ describe("a date-time argument the schema refuses", () => {
     const { client, close } = await connect();
     try {
       const r = (await client.callTool({ name: "get_train_departures", arguments: { language: "de", when: "soon", eva_no: "8001001" } })) as CallToolResult;
-      expect(r).toEqual({ content: [{ type: "text", text: "MCP error -32602: Input validation error: Invalid arguments for tool get_train_departures: Invalid ISO datetime at when" }], isError: true });
+      expect(r).toEqual({ content: [{ type: "text", text: "MCP error -32602: Input validation error: Invalid arguments for tool get_train_departures: Invalid ISO datetime at when" }], isError: true, _meta: { errorCode: "invalid_input" } });
       const ok = (await client.callTool({ name: "get_train_departures", arguments: { language: "de", when: "2026-03-30T05:00:00+02:00", eva_no: "8001001" } })) as CallToolResult;
       expect(textOf(ok)).not.toMatch(/^MCP error -32602/u);
     } finally {

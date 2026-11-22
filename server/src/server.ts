@@ -16,7 +16,8 @@ import {
   type ReadResourceResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { ApiClient } from "./api/client.js";
-import { ApiError } from "./api/client.js";
+import { ApiError, type ApiFailure } from "./api/client.js";
+import { toolErrorCodeOf, type ToolErrorCode } from "./usage-names.js";
 import type * as T from "./api/types.js";
 import type { Catalogue } from "./catalogue.js";
 import { log } from "./log.js";
@@ -35,6 +36,25 @@ const RULES_TOPICS: Readonly<Record<string, readonly string[]>> = {
   "viafrei://rules/low-emission-zones": ["lez"],
   "viafrei://emergency": ["emergency"],
   "viafrei://rules/electric-driving": ["ev"],
+};
+
+/**
+ * The reason code a tool error carries in `_meta.errorCode`, as the server this one replaces sets it: the usage
+ * counters and the request log count an error by it, never by its text. A code the handler set is kept.
+ */
+export function withErrorCode(result: CallToolResult, code: ToolErrorCode): CallToolResult {
+  if (result.isError !== true || toolErrorCodeOf(result) !== null) return result;
+  return { ...result, _meta: { ...result._meta, errorCode: code } };
+}
+
+/** Each API failure's reason code. */
+export const API_FAILURE_CODE: Readonly<Record<ApiFailure, ToolErrorCode>> = {
+  not_found: "not_found",
+  invalid: "invalid_input",
+  rate_limited: "limit_reached",
+  not_configured: "unavailable",
+  refused: "unavailable",
+  unavailable: "unavailable",
 };
 
 export function createServer(deps: ServerDeps): McpServer {
@@ -57,9 +77,9 @@ export function createServer(deps: ServerDeps): McpServer {
     const args = (request.params.arguments ?? {}) as Record<string, unknown>;
     const language = languageOf(args["language"]);
     const handler = HANDLERS[name];
-    if (!toolNames.has(name) || handler === undefined) return toolError(language === "de" ? `Unbekanntes Werkzeug: ${name}` : `Unknown tool: ${name}`);
+    if (!toolNames.has(name) || handler === undefined) return withErrorCode(toolError(language === "de" ? `Unbekanntes Werkzeug: ${name}` : `Unknown tool: ${name}`), "not_found");
     const refused = checkInput(name, args);
-    if (refused !== null) return refused;
+    if (refused !== null) return withErrorCode(refused, "invalid_input");
     const ctx: ToolContext = {
       tool: name,
       api: deps.api.withLanguage(language),
@@ -76,8 +96,8 @@ export function createServer(deps: ServerDeps): McpServer {
       return result;
     } catch (err) {
       log.warn({ tool: name, ms: Date.now() - started, error: err instanceof Error ? err.name : "error", kind: err instanceof ApiError ? err.kind : null }, "tool call failed");
-      if (err instanceof ApiError) return apiFailure(err, language);
-      return toolError(language === "de" ? "Bei dieser Anfrage ist ein Fehler aufgetreten." : "Something went wrong with this request.");
+      if (err instanceof ApiError) return withErrorCode(apiFailure(err, language), API_FAILURE_CODE[err.kind]);
+      return withErrorCode(toolError(language === "de" ? "Bei dieser Anfrage ist ein Fehler aufgetreten." : "Something went wrong with this request."), "internal");
     }
   });
 
