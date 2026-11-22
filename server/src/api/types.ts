@@ -23,7 +23,11 @@ export type ChargingSite = {
   chargePoints?: { id: string; current: string | null; maxPowerKw: number | null; availability: { state: string; observedAt: string } | null }[];
 };
 /** HydrogenData */
-export type HydrogenStation = { name: string | null; operator: string | null; brand: string | null; distanceM: number; location: LatLon };
+export type HydrogenStation = {
+  name: string | null; operator: string | null; brand: string | null; distanceM: number; location: LatLon;
+  /** The publisher's address, refill solutions and opening periods, verbatim; null when not published. */
+  address?: unknown; refill?: unknown; opening?: unknown; providerUpdatedAt: string | null;
+};
 export type HydrogenData = { stations: HydrogenStation[]; nearest: HydrogenStation | null };
 /** ParkingSite */
 export type ParkingSite = {

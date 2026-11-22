@@ -232,6 +232,64 @@ function chargingState(c: Case): void {
   }, { page: { limit: 100, hasMore: false } });
 }
 
+/**
+ * find_hydrogen_station: each copied station line read back into the API's station (name, distance, address,
+ * pumps, operator, opening periods, record date), and the clock set to the run's day so the record's age is
+ * today's.
+ */
+function hydrogenState(c: Case): void {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-22T17:00:00Z"));
+  if (c.args["place"] !== undefined) serve("listPlaces", [place(String(c.args["place"]), "municipality", 50, 10, "09162000")]);
+  const pumps: Record<string, string> = {
+    "700 bar Pkw": "gaseousHydrogen700barCar", "350 bar Pkw": "gaseousHydrogen350barCar", "350 bar Lkw/Bus": "gaseousHydrogen350barTruck",
+    "700 bar car": "gaseousHydrogen700barCar", "350 bar car": "gaseousHydrogen350barCar", "350 bar truck/bus": "gaseousHydrogen350barTruck",
+  };
+  const days: Record<string, string> = { Mo: "monday", Di: "tuesday", Mi: "wednesday", Do: "thursday", Fr: "friday", Sa: "saturday", So: "sunday", Feiertage: "publicholidays",
+    Mon: "monday", Tue: "tuesday", Wed: "wednesday", Thu: "thursday", Fri: "friday", Sat: "saturday", Sun: "sunday", "public holidays": "publicholidays" };
+  const order = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const opening = (text: string): { day: string; from: string; to: string }[] | null => {
+    if (/nicht veröffentlicht|not published/u.test(text)) return null;
+    const out: { day: string; from: string; to: string }[] = [];
+    let last: string[] = [];
+    for (const seg of text.replace(/^(Öffnungszeiten|opening hours): /u, "").split(", ")) {
+      const m = /^(?:(.+) )?(\d\d:\d\d)–(\d\d:\d\d)$/u.exec(seg);
+      if (m === null) throw new Error(`opening hours not read: ${seg}`);
+      if (m[1] !== undefined) {
+        const [a, b] = m[1].split("–").map((w) => days[w]!);
+        last = b === undefined ? [a!] : order.slice(order.indexOf(a!), order.indexOf(b) + 1);
+      }
+      for (const day of last) out.push({ day, from: m[2]!, to: m[3]! });
+    }
+    return out;
+  };
+  const station = (line: string) => {
+    const [name, rest] = line.split(" — ");
+    const parts = rest!.split(" · ");
+    const km = parts.shift()!;
+    const updated = parts.pop()!;
+    const hours = parts.pop()!;
+    const operator = /^(Betreiber|operator): /u.test(parts[parts.length - 1] ?? "") ? parts.pop()!.replace(/^(Betreiber|operator): /u, "") : null;
+    const refill = parts.pop()!.split(", ").flatMap((p) => { const m = /^(?:(\d+)× )?(.+)$/u.exec(p)!; return Array.from({ length: Number(m[1] ?? 1) }, () => ({ solution: pumps[m[2]!] ?? m[2]! })); });
+    const addr = parts.pop();
+    const cut = addr?.lastIndexOf(", ") ?? -1;
+    const [street, town] = addr === undefined ? [null, null] : cut >= 0 ? [addr.slice(0, cut), addr.slice(cut + 2)] : /^NNNNN /u.test(addr) ? [null, addr] : [addr, null];
+    const date = /(\d\d)\.(\d\d)\.(\d{4})|(\d{4})-(\d\d)-(\d\d)/u.exec(updated);
+    const m = /^([\d.,]+) (km|m)$/u.exec(km)!;
+    return {
+      name: /^(Wasserstofftankstelle|Hydrogen station)$/u.test(name!) ? null : name!, operator, brand: null, location: { lat: 50, lon: 10 },
+      distanceM: m[2] === "m" ? Number(m[1]) : Math.round(Number(m[1]!.replace(",", ".")) * 1000),
+      address: street === null && town === null ? null : { street, house_number: null, postcode: town?.split(" ")[0] ?? null, city: town?.split(" ").slice(1).join(" ") ?? null },
+      refill, opening: opening(hours), sourceFamily: "h2",
+      providerUpdatedAt: date === null ? null : `${date[3] ?? date[4]!}-${date[2] ?? date[5]!}-${date[1] ?? date[6]!}T10:00:00Z`,
+    };
+  };
+  const lines = c.body.split("\n");
+  const listed = lines.filter((l) => /^\d+\. /u.test(l)).map((l) => station(l.replace(/^\d+\. /u, "")));
+  const beyond = lines.find((l) => /^(Die nächste liegt außerhalb des Umkreises|The nearest one is outside the radius): /u.test(l));
+  serve("listHydrogenOptions", { stations: listed, nearest: beyond === undefined ? null : station(beyond.replace(/^[^:]+: /u, "")) });
+}
+
 const keyOf = (c: Case): string => `${c.tool} ${String(c.args["query"] ?? c.args["place"] ?? c.args["station"] ?? c.args["stop"] ?? c.args["topic"] ?? (c.args["lat"] === undefined ? "" : `${String(c.args["lat"])},${String(c.args["lon"])}`))}`;
 const bodyOf = (r: CallToolResult): string => {
   const t = textOf(r).replace(/(Stand|As of|as of) \d{2}:\d{2}/gu, "$1 HH:MM").replace(/\b\d{5}\b/gu, "NNNNN").replace(/(?<![\d.:-])\d{4}(?![\d.:-])/gu, "NNNN");
@@ -245,7 +303,7 @@ describe("today's wording, from the parity run (lane A)", () => {
     const key = keyOf(c);
     it(`${c.tool} ${JSON.stringify(c.args)}`, async () => {
       const state = c.tool === "get_train_departures" ? () => trainState(c) : c.tool === "get_departures" && c.args["stop"] !== undefined ? () => unknownStop(c)
-        : c.tool === "find_charging_station" ? () => chargingState(c) : STATE[key];
+        : c.tool === "find_charging_station" ? () => chargingState(c) : c.tool === "find_hydrogen_station" ? () => hydrogenState(c) : STATE[key];
       if (state === undefined) throw new Error(`no API state for ${key}`);
       state(c.args);
       const { client, close } = await connect({ refreshWait: { totalMs: 20, pollMs: 5 } });

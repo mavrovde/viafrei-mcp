@@ -1320,6 +1320,188 @@
       },
       "isError": false,
       "body": "Charging around Darmstadt (within 10 km), nearest first, sites wholly out of order last:\n1. Hornbach Darmstadt (ENC22285X00925), Otto-Röhm-Str. 76, NNNNN Darmstadt (Pfalzwerke AG) — 2.0 km, CCS2, up to 320 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "lat": 50.1109,
+        "lon": 8.6821,
+        "vehicle": "car",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Pkw nahe 50.111, 8.682 (Umkreis 50 km), nächste zuerst:\n1. Frankfurt - Hanauer Landstr. — 4,5 km · Hanauer Landstr. 334, NNNNN Frankfurt am Main · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n2. Frankfurt - Industriepark Höchst — 10,4 km · Otto-Horn-Straße, NNNNN Frankfurt am Main · 700 bar Pkw, 350 bar Lkw/Bus · Betreiber: Infraserv GmbH & Co. Höchst KG · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 09.10.2026 (vor 44 Tagen)\n3. Bad Homburg — 11,3 km · Ober-Eschbacher-Str. 142, NNNNN Bad Homburg · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n4. Weiterstadt — 24,3 km · Robert-Koch-Str. 1, NNNNN Weiterstadt · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n5. Stadtwerke Aschaffenburg — 37,2 km · Hefner-Alteneck-Straße 28, NNNNN Aschaffenburg · 350 bar Lkw/Bus, 700 bar Pkw · Betreiber: Stadtwerke Aschaffenburg · Öffnungszeiten: Mo–Sa 07:00–19:00, So 12:00–19:00, Feiertage 12:00–19:00 · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "lat": 51.3397,
+        "lon": 12.3731,
+        "radius_km": 150,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen nahe 51.340, 12.373 (Umkreis 150 km), nächste zuerst:\n1. TotalEnergies H2 Leipzig — 9,4 km · Poststraße 3, NNNNN Leipzig · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 06.08.2026 (vor 3 Monaten)\n2. Dresden — 101,9 km · Wiener Strasse 39, NNNNN Dresden · 700 bar Pkw, 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n3. Magdeburg - 350 bar — 108,4 km · Glindenberger Weg 3, NNNNN Magdeburg · 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n4. Magdeburg — 108,4 km · Glindenberger Weg 3, NNNNN Magdeburg · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n5. Berg bei Hof — 115,2 km · Sieggrubenstraße 5, NNNNN Berg bei Hof · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Berlin Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen nahe Berlin Hbf (Umkreis 50 km), nächste zuerst:\n1. Berlin - Tempelhofer Weg — 9,4 km · Tempelhofer Weg 102, NNNNN Berlin · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n2. Berlin - Rummelsburger Landstr. — 10,3 km · Rummelsburger Landstr. 16, NNNNN Berlin · 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n3. TotalEnergies H2 Schönefeld - Berlin — 20,4 km · Elly-Beinhorn-Ring 2, NNNNN Berlin Schönefeld · 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Hamburg",
+        "vehicle": "truck",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Lkw/Bus nahe Hamburg (Umkreis 50 km), nächste zuerst:\n1. Hamburg - Schnackenburgallee — 5,5 km · Schnackenburgallee 12, NNNNN Hamburg · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n2. Hamburg - Flughafen — 7,9 km · Weg beim Jäger 193, NNNNN Hamburg · 700 bar Pkw, 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n3. Hamburg - Großmoorbogen — 10,1 km · Großmoorbogen 1, NNNNN Hamburg · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Hannover",
+        "vehicle": "truck",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Lkw/Bus nahe Hannover (Umkreis 50 km), nächste zuerst:\n1. Langenhagen — 9,1 km · Münchner Straße 14, NNNNN Langenhagen · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 17.09.2026 (vor 2 Monaten)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Ingolstadt",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Keine Wasserstofftankstelle im Umkreis von 50 km um Ingolstadt.\nDie nächste liegt außerhalb des Umkreises: Landshut — 56,0 km · Ludwig-Erhard-Str. 14, NNNNN Landshut · 700 bar Pkw · Öffnungszeiten: Mo–So 07:00–24:00, Feiertage 07:00–24:00 · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nRadius bis 150 km möglich.\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Kassel",
+        "radius_km": 100,
+        "vehicle": "car",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Pkw nahe Kassel (Umkreis 100 km), nächste zuerst:\n1. CE Station GmbH - Gießen — 99,3 km · Schiffenberger Weg 123, NNNNN Gießen · 700 bar Pkw, 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Köln",
+        "vehicle": "truck",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Lkw/Bus nahe Köln (Umkreis 50 km), nächste zuerst:\n1. Frechen - Kölner Straße — 9,0 km · Kölner Straße 209, NNNNN Frechen · 700 bar Pkw, 350 bar Pkw, 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n2. Köln/Bonn Flughafen — 12,5 km · Nordallee 1, NNNNN Köln · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n3. Wesseling — 14,2 km · Ahrstraße 99, NNNNN Wesseling · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: Mo–So 06:00–22:00, Feiertage 06:00–22:00 · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n4. Düsseldorf - Oerschbachstraße — 29,0 km · Oerschbachstraße 142 (71), NNNNN Düsseldorf · 700 bar Pkw, 350 bar Pkw, 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n5. Düsseldorf - Höherweg — 33,1 km · Höherweg 202a, NNNNN Düsseldorf · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "München",
+        "vehicle": "car",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Pkw nahe München (Umkreis 50 km), nächste zuerst:\n1. München - Wilhelm-Hale-Str. — 4,3 km · Wilhelm-Hale-Str. 55, NNNNN München · 700 bar Pkw · Öffnungszeiten: Mo–So 06:00–22:00, Feiertage 06:00–22:00 · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "lat": 50.1109,
+        "lon": 8.6821,
+        "vehicle": "car",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for cars near 50.111, 8.682 (within 50 km), nearest first:\n1. Frankfurt - Hanauer Landstr. — 4.5 km · Hanauer Landstr. 334, NNNNN Frankfurt am Main · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n2. Frankfurt - Industriepark Höchst — 10.4 km · Otto-Horn-Straße, NNNNN Frankfurt am Main · 700 bar car, 350 bar truck/bus · operator: Infraserv GmbH & Co. Höchst KG · opening hours: not published (unknown) · record last changed 2026-10-09 (44 days ago)\n3. Bad Homburg — 11.3 km · Ober-Eschbacher-Str. 142, NNNNN Bad Homburg · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n4. Weiterstadt — 24.3 km · Robert-Koch-Str. 1, NNNNN Weiterstadt · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n5. Stadtwerke Aschaffenburg — 37.2 km · Hefner-Alteneck-Straße 28, NNNNN Aschaffenburg · 350 bar truck/bus, 700 bar car · operator: Stadtwerke Aschaffenburg · opening hours: Mon–Sat 07:00–19:00, Sun 12:00–19:00, public holidays 12:00–19:00 · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "lat": 51.3397,
+        "lon": 12.3731,
+        "radius_km": 150,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations near 51.340, 12.373 (within 150 km), nearest first:\n1. TotalEnergies H2 Leipzig — 9.4 km · Poststraße 3, NNNNN Leipzig · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-08-06 (3 months ago)\n2. Dresden — 101.9 km · Wiener Strasse 39, NNNNN Dresden · 700 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n3. Magdeburg - 350 bar — 108.4 km · Glindenberger Weg 3, NNNNN Magdeburg · 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n4. Magdeburg — 108.4 km · Glindenberger Weg 3, NNNNN Magdeburg · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n5. Berg bei Hof — 115.2 km · Sieggrubenstraße 5, NNNNN Berg bei Hof · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Berlin Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations near Berlin Hbf (within 50 km), nearest first:\n1. Berlin - Tempelhofer Weg — 9.4 km · Tempelhofer Weg 102, NNNNN Berlin · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n2. Berlin - Rummelsburger Landstr. — 10.3 km · Rummelsburger Landstr. 16, NNNNN Berlin · 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n3. TotalEnergies H2 Schönefeld - Berlin — 20.4 km · Elly-Beinhorn-Ring 2, NNNNN Berlin Schönefeld · 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Hamburg",
+        "vehicle": "truck",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for trucks/buses near Hamburg (within 50 km), nearest first:\n1. Hamburg - Schnackenburgallee — 5.5 km · Schnackenburgallee 12, NNNNN Hamburg · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n2. Hamburg - Flughafen — 7.9 km · Weg beim Jäger 193, NNNNN Hamburg · 700 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n3. Hamburg - Großmoorbogen — 10.1 km · Großmoorbogen 1, NNNNN Hamburg · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Hannover",
+        "vehicle": "truck",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for trucks/buses near Hannover (within 50 km), nearest first:\n1. Langenhagen — 9.1 km · Münchner Straße 14, NNNNN Langenhagen · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-09-17 (2 months ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Ingolstadt",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "No hydrogen station within 50 km of Ingolstadt.\nThe nearest one is outside the radius: Landshut — 56.0 km · Ludwig-Erhard-Str. 14, NNNNN Landshut · 700 bar car · opening hours: Mon–Sun 07:00–24:00, public holidays 07:00–24:00 · record last changed 2026-10-13 (40 days ago)\nRadius up to 150 km possible.\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Kassel",
+        "radius_km": 100,
+        "vehicle": "car",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for cars near Kassel (within 100 km), nearest first:\n1. CE Station GmbH - Gießen — 99.3 km · Schiffenberger Weg 123, NNNNN Gießen · 700 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Köln",
+        "vehicle": "truck",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for trucks/buses near Köln (within 50 km), nearest first:\n1. Frechen - Kölner Straße — 9.0 km · Kölner Straße 209, NNNNN Frechen · 700 bar car, 350 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n2. Köln/Bonn Flughafen — 12.5 km · Nordallee 1, NNNNN Köln · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n3. Wesseling — 14.2 km · Ahrstraße 99, NNNNN Wesseling · 350 bar truck/bus, 700 bar car · opening hours: Mon–Sun 06:00–22:00, public holidays 06:00–22:00 · record last changed 2026-10-13 (40 days ago)\n4. Düsseldorf - Oerschbachstraße — 29.0 km · Oerschbachstraße 142 (71), NNNNN Düsseldorf · 700 bar car, 350 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n5. Düsseldorf - Höherweg — 33.1 km · Höherweg 202a, NNNNN Düsseldorf · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "München",
+        "vehicle": "car",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for cars near München (within 50 km), nearest first:\n1. München - Wilhelm-Hale-Str. — 4.3 km · Wilhelm-Hale-Str. 55, NNNNN München · 700 bar car · opening hours: Mon–Sun 06:00–22:00, public holidays 06:00–22:00 · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
     }
   ]
 }

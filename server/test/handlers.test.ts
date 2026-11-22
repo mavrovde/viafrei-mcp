@@ -4,7 +4,7 @@
  * in `_meta`, and the model-actionable errors. Every answer starts from the API contract's v0.3.0 example
  * (test/fixtures/api-openapi.json), changed only in the fields a case is about.
  */
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
@@ -371,20 +371,44 @@ describe("find_charging_station", () => {
 
 describe("find_hydrogen_station", () => {
   const h2 = (o: Record<string, unknown>) => ({ ...ex<{ stations: Record<string, unknown>[] }>("listHydrogenOptions").stations[0], ...o });
-  it("lists the stations in the radius, named by name, operator, brand or H2", async () => {
-    serve("listHydrogenOptions", { stations: [h2({}), h2({ name: null, operator: "H2 Mobility" }), h2({ name: null, operator: null, brand: "Shell" }), h2({ name: null, operator: null, brand: null, distanceM: 950 })], nearest: null });
+  it("lists the stations in the radius: name or brand, address, pumps, operator, hours, the record's age", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-22T17:00:00Z"));
+    serve("listHydrogenOptions", { stations: [
+      h2({ address: { street: "Hafenweg", house_number: "3", postcode: "10001", city: "Kansilkamp" }, refill: [{ solution: "gaseousHydrogen700barCar" }, { solution: "gaseousHydrogen700barCar" }, { solution: "gaseousHydrogen350barTruck" }],
+        opening: [...["monday", "tuesday", "wednesday", "thursday", "friday"].map((day) => ({ day, from: "06:00", to: "22:00" })), { day: "sunday", from: "08:00", to: "20:00" }], providerUpdatedAt: "2026-10-13T08:00:00Z" }),
+      h2({ name: null, operator: null, brand: "Shell", refill: [{ solution: "liquidHydrogen" }], providerUpdatedAt: "2026-11-21T08:00:00Z" }),
+      h2({ name: null, operator: null, brand: null, distanceM: 950 }),
+    ], nearest: null });
     const r = await call("find_hydrogen_station", { ...at, radius_km: 100, vehicle: "car", limit: 4, language: "de" });
+    vi.useRealTimers();
     expect(query("listHydrogenOptions")).toEqual([{ at: "52.52,13.405", radius_m: "100000", vehicle: "car", limit: "4", lang: "de" }]);
-    expect(body(r)).toBe("- H2 Schömpingbach · 62,4 km\n- H2 Mobility · 62,4 km\n- Shell · 62,4 km\n- H2 · 950 m");
+    expect(body(r)).toBe([
+      "Wasserstofftankstellen für Pkw nahe 52.520, 13.405 (Umkreis 100 km), nächste zuerst:",
+      "1. H2 Schömpingbach — 62,4 km · Hafenweg 3, 10001 Kansilkamp · 2× 700 bar Pkw, 350 bar Lkw/Bus · Betreiber: H2 Synthetic · Öffnungszeiten: Mo–Fr 06:00–22:00, So 08:00–20:00 · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)",
+      "2. Shell — 62,4 km · Wasserstoff (liquidHydrogen) · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 21.11.2026 (gestern)",
+      "3. Wasserstofftankstelle — 1,0 km · 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Änderungsdatum des Eintrags unbekannt",
+      "Verfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist.",
+    ].join("\n"));
   });
-  it("none in the radius: the nearest one", async () => {
+  it("none in the radius: the nearest one beyond it, and the wider radius when it reaches", async () => {
     serve("listHydrogenOptions", { stations: [], nearest: h2({ name: "H2 Fern", distanceM: 120_000 }) });
-    expect(body(await call("find_hydrogen_station", { ...at, language: "en" }))).toBe("- H2 Fern · 120.0 km");
+    expect(body(await call("find_hydrogen_station", { ...at, language: "en" }))).toBe([
+      "No hydrogen station within 50 km of 52.520, 13.405.",
+      "The nearest one is outside the radius: H2 Fern — 120.0 km · 700 bar car · operator: H2 Synthetic · opening hours: not published (unknown) · record date unknown",
+      "Radius up to 150 km possible.",
+      "No live availability, price or operating status is published — check that the station is working before you drive.",
+    ].join("\n"));
+    expect(query("listHydrogenOptions")).toEqual([{ at: "52.52,13.405", radius_m: "50000", limit: "5", lang: "en" }]);
+    serve("listHydrogenOptions", { stations: [], nearest: h2({ name: "H2 Fern", distanceM: 160_000 }) });
+    expect(body(await call("find_hydrogen_station", { ...at, language: "en" }))).not.toContain("Radius up to");
   });
   for (const language of LANGS) {
     it(`none at all (${language})`, async () => {
       serve("listHydrogenOptions", { stations: [], nearest: null });
-      expect(body(await call("find_hydrogen_station", { ...at, language }))).toBe(language === "de" ? "Keine Wasserstofftankstellen gefunden." : "No hydrogen stations found.");
+      expect(body(await call("find_hydrogen_station", { ...at, vehicle: "truck", language }))).toBe(language === "de"
+        ? "Keine Wasserstofftankstelle für Lkw/Bus im Umkreis von 50 km um 52.520, 13.405.\nIn unseren Daten gibt es keine Wasserstofftankstelle mit Lkw/Bus-Zapfpunkt."
+        : "No hydrogen station for trucks/buses within 50 km of 52.520, 13.405.\nOur data holds no hydrogen station with a truck/bus pump.");
     });
   }
 });

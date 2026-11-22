@@ -15,6 +15,7 @@ import { findPlace } from "./find-place.js";
 import { houseNumberRefusal } from "./house-number.js";
 import { findCheapestFuel, findFuelStation } from "./fuel.js";
 import { findChargingStation } from "./charging.js";
+import { findHydrogenStation } from "./hydrogen.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
 import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
@@ -243,16 +244,6 @@ const findRoadworksAhead: Handler = async (args, ctx) => {
   if (isResult(pos)) return pos;
   const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at: atParam(pos.at), kinds: ["roadworks"], horizon_days: 14, limit });
   return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
-};
-
-const findHydrogenStation: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  const pos = await position(args, ctx);
-  if (isResult(pos)) return pos;
-  const r = await ctx.api.get<T.HydrogenData>("listHydrogenOptions", { at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), vehicle: str(args["vehicle"]), limit: num(args["limit"]) });
-  const rows = r.data.stations.length > 0 ? r.data.stations : r.data.nearest === null ? [] : [r.data.nearest];
-  if (rows.length === 0) return none(language, [r.meta], L(language, "Wasserstofftankstellen", "hydrogen stations"));
-  return toolResult(rows.map((s) => `- ${s.name ?? s.operator ?? s.brand ?? "H2"} · ${km(s.distanceM, language)}`).join("\n"), [r.meta], language);
 };
 
 async function parkingRead(ctx: ToolContext, op: "listParkingOptions" | "listMotorwayParking", params: Record<string, unknown>): Promise<{ r: Envelope<T.ParkingSite[]>; conditionNote?: string }> {
