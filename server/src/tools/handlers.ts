@@ -468,8 +468,15 @@ const getDepartures: Handler = async (args, ctx) => {
   return toolResult([head, ...r.data.departures.map((d) => departureLine(d, language))].join("\n"), [stations.meta, r.meta], language);
 };
 
+/** Today's words when a station tool is called with no station at all: ask, never search for nothing. */
+const NEED_STATION = (language: Language): CallToolResult => toolError(L(language,
+  'Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {"station": "Hannover Hbf"}.',
+  'Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {"station": "Hannover Hbf"}.'));
+const noStation = (args: Args): boolean => str(args["station"]) === undefined && str(args["eva_no"]) === undefined;
+
 const checkStationFacilities: Handler = async (args, ctx) => {
   const { language } = ctx;
+  if (noStation(args)) return NEED_STATION(language);
   const stations = await stationOf(args, ctx);
   const station = stations.data[0];
   if (station === undefined) {
@@ -485,6 +492,7 @@ const checkStationFacilities: Handler = async (args, ctx) => {
 
 const describeStation: Handler = async (args, ctx) => {
   const { language } = ctx;
+  if (noStation(args)) return NEED_STATION(language);
   const stations = await stationOf(args, ctx);
   const station = stations.data[0];
   if (station === undefined) {

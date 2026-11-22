@@ -934,6 +934,16 @@ describe("stations", () => {
     expect(query("listStations")).toEqual([{ code: "8001001", limit: "1", lang: "en" }]);
   });
 
+  for (const tool of ["check_station_facilities", "describe_station"]) {
+    it(`${tool} with no station asks which one, in today's words, and searches nothing`, async () => {
+      const de = await call(tool, { language: "de" });
+      expect(de).toEqual({ content: [{ type: "text", text: 'Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {"station": "Hannover Hbf"}.' }], isError: true });
+      const en = await call(tool, { language: "en" });
+      expect(textOf(en)).toBe('Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {"station": "Hannover Hbf"}.');
+      expect(query("listStations")).toEqual([]);
+    });
+  }
+
   it("get_departures with only a place or a position: no empty station search (the API refuses one), the stop nearest it", async () => {
     const r = await call("get_departures", { place: "Leipzig", language: "de" });
     expect(r.isError).not.toBe(true);
