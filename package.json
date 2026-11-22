@@ -95,10 +95,15 @@
     "propose:release": "node scripts/propose-release.mjs",
     "test:propose": "node scripts/propose-release.test.mjs",
     "test:auto-release": "node scripts/auto-release.test.mjs",
+    "test:parity": "node scripts/parity-mcp.test.mjs",
     "test:verify": "node scripts/verify-published.test.mjs",
     "test:verify-smithery": "node scripts/verify-smithery.test.mjs",
     "test:release-notes": "node scripts/release-notes.test.mjs",
     "test:snyk": "node scripts/snyk-workflow.test.mjs",
+    "test:mutation-wiring": "node scripts/mutation-workflow.test.mjs",
+    "check:timeouts": "node scripts/check-timeouts.mjs",
+    "test:timeouts": "node scripts/check-timeouts.test.mjs",
+    "test:image": "node scripts/image-workflow.test.mjs",
     "rules:show": "node scripts/show-rules.mjs"
   },
   "dependencies": {

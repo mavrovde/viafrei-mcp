@@ -1,0 +1,21 @@
+{
+  "any": [],
+  "car_park": [
+    "+ 1. find_parking at Berlin with kind=\"car_park\", radius_km=5 (at most 25) and limit=10. Pass only_with_free_spaces=true only if they said they need a space that is free right now — most German operators publish no occupancy at all, and the filter would hide the sites that simply say nothing.",
+    "- 1. find_parking at Berlin, radius_km=5 (at most 25) and limit=10. Pass only_with_free_spaces=true only if they said they need a space that is free right now — most German operators publish no occupancy at all, and the filter would hide the sites that simply say nothing."
+  ],
+  "park_and_ride": [
+    "+ 1. find_parking at Berlin with kind=\"park_and_ride\", radius_km=5 (at most 25) and limit=10. Pass only_with_free_spaces=true only if they said they need a space that is free right now — most German operators publish no occupancy at all, and the filter would hide the sites that simply say nothing.",
+    "+ 2. get_train_departures from the station that P+R site serves, so they know the onward connection before they park.",
+    "- 1. find_parking at Berlin, radius_km=5 (at most 25) and limit=10. Pass only_with_free_spaces=true only if they said they need a space that is free right now — most German operators publish no occupancy at all, and the filter would hide the sites that simply say nothing.",
+    "- 2. Only if they said they are parking in order to travel on: get_train_departures from the nearest station."
+  ],
+  "rest_area": [
+    "+ 1. find_parking at Berlin with kind=\"rest_area\", radius_km=5 (at most 25) and limit=10. Pass only_with_free_spaces=true only if they said they need a space that is free right now — most German operators publish no occupancy at all, and the filter would hide the sites that simply say nothing.",
+    "- 1. find_parking at Berlin, radius_km=5 (at most 25) and limit=10. Pass only_with_free_spaces=true only if they said they need a space that is free right now — most German operators publish no occupancy at all, and the filter would hide the sites that simply say nothing."
+  ],
+  "truck": [
+    "+ 1. find_parking at Berlin with kind=\"truck\", radius_km=5 (at most 25) and limit=10. Pass only_with_free_spaces=true only if they said they need a space that is free right now — most German operators publish no occupancy at all, and the filter would hide the sites that simply say nothing.",
+    "- 1. find_parking at Berlin, radius_km=5 (at most 25) and limit=10. Pass only_with_free_spaces=true only if they said they need a space that is free right now — most German operators publish no occupancy at all, and the filter would hide the sites that simply say nothing."
+  ]
+}

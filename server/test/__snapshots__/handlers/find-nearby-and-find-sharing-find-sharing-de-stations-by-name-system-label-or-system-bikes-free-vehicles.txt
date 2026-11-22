@@ -1,0 +1,4 @@
+- Station 1 · 300 m · 4 Räder
+- Nextbike · 300 m
+- nextbike_de · 1,2 km · 4 Räder
+Freie Fahrzeuge im Umkreis: 7

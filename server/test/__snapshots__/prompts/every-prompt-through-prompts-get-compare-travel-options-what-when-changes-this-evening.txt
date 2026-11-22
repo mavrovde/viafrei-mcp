@@ -1,0 +1,6 @@
+{
+  "this evening": [
+    "+ Compare driving against taking the train: München → Berlin, this evening.",
+    "- Compare driving against taking the train: München → Berlin, leaving now."
+  ]
+}

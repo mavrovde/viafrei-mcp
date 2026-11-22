@@ -1,0 +1,7 @@
+# The ViaFrei API release the MCP server's pre-release end-to-end job runs against:
+# its published image on GHCR, on the database release that API release pins,
+# seeded with the API repository's synthetic fixture world (the tiny profile).
+api_repo=mavrovde/viafrei-api
+api_image=ghcr.io/mavrovde/viafrei-api
+api_version=0.3.2
+fixture_profile=tiny

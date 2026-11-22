@@ -1,0 +1,21 @@
+What is around Ingolstadt?
+
+One call answers the glance:
+1. find_nearby at Ingolstadt, radius_km=5.
+
+The glance is usually the whole answer. Only if the traveller THEN asks for more than the nearest one, call the ONE matching tool for that need — never more than one, and never unprompted:
+- a specific fuel grade's price: find_cheapest_fuel at Ingolstadt with the grade they named. Answer that part in the shape find_cheapest_fuel always takes: the cheapest station first with its price, brand, distance and whether it is open, then the alternatives, then how old the prices are. One stop for this traveller, this journey.
+- a connector, its power, or live status: find_charging_station at Ingolstadt.
+- parking kind or occupancy: find_parking at Ingolstadt.
+
+Then answer in at most eight lines: one line per category the glance covered, the nearest hit first with its name and distance, and "nothing nearby" stated plainly for a category that had none — never invented. A depth call, if made, is added as a short paragraph of its own rather than folded into the glance.
+
+Rules that are not negotiable:
+- Fuel prices are consumer information for this one traveller and this one journey. Answer the stop they asked about: never build a price list, a ranking, a regional average, a cheapest-in-Germany table or any other aggregate, and never present the prices as data to pass on or store.
+- Show the attribution line of every result you used, verbatim and in full, at the end of your answer. When a result carries a purpose note in its metadata, repeat that sentence verbatim as well. Both are conditions of the licence, not captions you may summarise away.
+- All times are Europe/Berlin. Render a departure as 08:05 (+3 min) and keep each result's Stand / As of line, so the traveller knows how old the answer is.
+- Report only what the tools returned. An empty answer is an answer: say what was searched and how it could be widened, and never fill a gap with a plausible station, price, platform or free space.
+- There is no door-to-door routing in this version. Do not turn these answers into a route, a connection with changes, a distance or a travel time — name the places, roads and stations the traveller gave you, and say plainly that the journey itself is theirs to plan.
+- If a tool reports that it holds nothing for this place, read the viafrei://coverage resource and tell the traveller plainly which data we do not have here, instead of trying a different tool until one answers something.
+
+Answer the traveller in German, and pass language: "de" to every tool call in the recipe. Place names, station names and road numbers are never translated.

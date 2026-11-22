@@ -22,8 +22,10 @@
  * 0 (it decided either way) or 2 (the prepare file could not be read).
  * `wait-checks` and `wait-run` read the GitHub REST API with GH_TOKEN at GITHUB_API_URL
  * for GITHUB_REPOSITORY, all three as Actions sets them (none is defaulted), and exit
- * 0 = concluded success, 1 = concluded otherwise or the deadline passed, 2 = could not
- * run at all. Their failure message says what has ALREADY happened at that stage and
+ * 0 = concluded success, 1 = concluded otherwise or (wait-checks) the deadline passed,
+ * 2 = could not run at all, 3 = (wait-run) not concluded by the deadline: a run that
+ * takes longer than one 15-minute job is waited for by the next job of a chain, with
+ * the same --since. Their failure message says what has ALREADY happened at that stage and
  * what a person does next, because "left for a person" is only true before the merge.
  * `stuck` judges an `awaiting-tag` reading (main carries the server's version, npm does
  * not): exit 1 with the remedy when the automatic path stopped halfway, 0 otherwise.
@@ -350,6 +352,10 @@ async function main(argv) {
             sleep,
             log: line => console.log(`  ${line}`)
         });
+        if (result.state === 'timeout') {
+            console.log(`auto-release: ${flags.workflow} on ${flags.sha}: still running (${result.detail})`);
+            process.exit(3);
+        }
         return finish(`${flags.workflow} on ${flags.sha}`, result, remedy(flags.workflow, { version: flags.version }));
     }
     if (command === 'stuck') {

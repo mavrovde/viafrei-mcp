@@ -364,8 +364,9 @@ jobs:
     needs: sync
     if: needs.sync.outputs.auto == 'true'
     runs-on: ubuntu-24.04
-    # 30 min for the checks (CI is ~2 min, SonarCloud a few) plus the merge and tag.
-    timeout-minutes: 40
+    # 12 min for the checks (CI is ~2 min, SonarCloud a few) plus the merge and tag,
+    # inside the 15 every job ends in (owner 2026-11-22).
+    timeout-minutes: 15
     # `checks` to read the required checks, `pull-requests` + `contents` to merge,
     # `contents` to push the tag. Nothing else.
     permissions:
@@ -406,10 +407,10 @@ jobs:
           printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "No version from the sync job ('$VERSION')." >&2; exit 2; }
           echo "pull request #${PR}, head ${SHA}, version ${VERSION}"
 
-      # Bounded: green within 30 minutes or the run ends red and the pull request
+      # Bounded: green within 12 minutes or the run ends red and the pull request
       # waits for a person. A red check ends the wait at once.
       - name: Wait for the required checks (CI + SonarCloud)
-        run: node scripts/auto-release.mjs wait-checks --sha "$SHA" --required "$REQUIRED_CHECKS" --deadline-s "$((30 * 60))" --interval-s 20
+        run: node scripts/auto-release.mjs wait-checks --sha "$SHA" --required "$REQUIRED_CHECKS" --deadline-s "$((12 * 60))" --interval-s 20
 
       # The state is read again right before the merge: a person may have taken the
       # pull request over in the meantime (converted it to a draft, pushed to it,
@@ -470,21 +471,30 @@ jobs:
   # release page. Each is
   # DISPATCHED, because the tag above was pushed with GITHUB_TOKEN and therefore
   # started nothing. Each is waited for, so this run's colour is the release's.
+  # Every job ends within 15 minutes (owner 2026-11-22), so each follow-up is a job
+  # of its own after npm, and the three run side by side; a failed one names
+  # itself and its remedy, and the others still run.
+  #
+  # The npm run (publish.yml) is not quick: Snyk, the mutation run and the real-API
+  # e2e (15) run side by side before its publish job (15); the longest of them is the
+  # mutation run (plan 5 + shards 15 + gate 10 min), so the run may take up to 45
+  # minutes by its own job limits, plus runner queueing. One job cannot wait that long, so the
+  # wait is a chain: publish dispatches and waits 12 minutes; while the run is still
+  # going (wait-run exit 3) npm-wait-2, -3 and -4 wait on for 13 minutes each with
+  # the same --since, 51 minutes in all. A run that concluded red ends the chain red
+  # at once; only the last link reads "still going" as a failure.
   publish:
     needs: [sync, release]
     runs-on: ubuntu-24.04
-    # The step deadlines are 20 min (npm) + 20 min (Smithery) + 10 min (the MCP
-    # Registry, waited after Smithery) + 10 min (the page, waited after that) = 60,
-    # plus checkout and dispatch; 70 keeps every deadline reachable, so a slow stage
-    # fails with its own message and remedy rather than being killed by the job
-    # timeout without one. Observed: npm ~2 min, Smithery up to ~11, the page ~1;
-    # the registry run is expected near 1 (unmeasured on this path).
-    timeout-minutes: 70
+    timeout-minutes: 15
     # `actions: write` to dispatch and read the runs. Publishing itself happens in
     # the dispatched workflows, under their own permissions and environments.
     permissions:
       actions: write
       contents: read
+    outputs:
+      since: ${{ steps.npm.outputs.since }}
+      npm: ${{ steps.npm.outputs.npm }}
     env:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ needs.release.outputs.tag }}
@@ -500,34 +510,246 @@ jobs:
           node-version: '24'
 
       - name: npm — dispatch on the tag and wait for success
+        id: npm
         run: |
           set -eu
           [ "$TAG" = "v${VERSION}" ] || { echo "The release job tagged '${TAG}', not v${VERSION}." >&2; exit 2; }
           printf '%s' "$MERGE_SHA" | grep -Eq '^[0-9a-f]{40}$' || { echo "No 40-hex merge sha from the release job ('${MERGE_SHA}')." >&2; exit 2; }
           since="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "since=${since}" >> "$GITHUB_OUTPUT"
           gh workflow run publish.yml --ref "$TAG" -f dry_run=false
           # Matched by the tagged COMMIT and the dispatch time, not by the ref's name.
-          node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$since" --deadline-s "$((20 * 60))" --interval-s 15
+          rc=0
+          node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$since" --deadline-s "$((12 * 60))" --interval-s 15 || rc=$?
+          case "$rc" in
+            0) echo "npm=success" >> "$GITHUB_OUTPUT" ;;
+            3) echo "npm=pending" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$rc" ;;
+          esac
 
-      # All three dispatched before any is waited for; each is waited for even when
-      # an earlier one fails, so the log names every failure, and the step fails if any did.
-      - name: Smithery, the MCP Registry and the release page — dispatch and wait
+  npm-wait-2:
+    needs: [sync, release, publish]
+    if: ${{ needs.publish.outputs.npm == 'pending' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      npm: ${{ steps.wait.outputs.npm }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
+      VERSION: ${{ needs.sync.outputs.version }}
+      SINCE: ${{ needs.publish.outputs.since }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: npm — wait on, the same run (part 2 of 4)
+        id: wait
         run: |
           set -eu
-          # Both run on main; a dispatched run's head is main's head at that moment,
-          # which is read here so each run is matched by commit as well as by time.
+          rc=0
+          node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$SINCE" --deadline-s "$((13 * 60))" --interval-s 15 || rc=$?
+          case "$rc" in
+            0) echo "npm=success" >> "$GITHUB_OUTPUT" ;;
+            3) echo "npm=pending" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$rc" ;;
+          esac
+
+  npm-wait-3:
+    needs: [sync, release, publish, npm-wait-2]
+    if: ${{ needs.npm-wait-2.outputs.npm == 'pending' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      npm: ${{ steps.wait.outputs.npm }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
+      VERSION: ${{ needs.sync.outputs.version }}
+      SINCE: ${{ needs.publish.outputs.since }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: npm — wait on, the same run (part 3 of 4)
+        id: wait
+        run: |
+          set -eu
+          rc=0
+          node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$SINCE" --deadline-s "$((13 * 60))" --interval-s 15 || rc=$?
+          case "$rc" in
+            0) echo "npm=success" >> "$GITHUB_OUTPUT" ;;
+            3) echo "npm=pending" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$rc" ;;
+          esac
+
+  npm-wait-4:
+    needs: [sync, release, publish, npm-wait-2, npm-wait-3]
+    if: ${{ needs.npm-wait-3.outputs.npm == 'pending' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      npm: ${{ steps.wait.outputs.npm }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
+      VERSION: ${{ needs.sync.outputs.version }}
+      SINCE: ${{ needs.publish.outputs.since }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: npm — wait on, the same run (part 4 of 4)
+        id: wait
+        run: |
+          set -eu
+          rc=0
+          node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$SINCE" --deadline-s "$((13 * 60))" --interval-s 15 || rc=$?
+          case "$rc" in
+            0) echo "npm=success" >> "$GITHUB_OUTPUT" ;;
+            3) echo "::error::publish.yml on ${MERGE_SHA} has not concluded after 51 minutes of waiting (four jobs), longer than its own jobs allow; read its run, then finish the release by hand (CONTRIBUTING.md)." >&2; exit 1 ;;
+            *) exit "$rc" ;;
+          esac
+
+  # The container image, beside npm. image.yml's gate needs CI green on the tagged
+  # commit, and the merge this workflow made with its token started no push run, so
+  # CI is dispatched on the tag first; once it concluded success, image.yml is
+  # dispatched on the tag and reports in its own run.
+  image:
+    needs: [sync, release]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.release.outputs.tag }}
+      MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
+      VERSION: ${{ needs.sync.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: CI on the tag, then the image
+        run: |
+          set -eu
+          [ "$TAG" = "v${VERSION}" ] || { echo "The release job tagged '${TAG}', not v${VERSION}." >&2; exit 2; }
+          printf '%s' "$MERGE_SHA" | grep -Eq '^[0-9a-f]{40}$' || { echo "No 40-hex merge sha from the release job ('${MERGE_SHA}')." >&2; exit 2; }
+          since="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run ci.yml --ref "$TAG"
+          node scripts/auto-release.mjs wait-run --workflow ci.yml --sha "$MERGE_SHA" --since "$since" --deadline-s "$((13 * 60))" --interval-s 15
+          gh workflow run image.yml --ref "$TAG"
+
+  # Smithery, after npm: up to ~11 min observed, so the deadline is 13.
+  smithery:
+    needs: [sync, release, publish, npm-wait-2, npm-wait-3, npm-wait-4]
+    # After npm published, whichever link of the chain saw it.
+    if: ${{ !cancelled() && (needs.publish.outputs.npm == 'success' || needs.npm-wait-2.outputs.npm == 'success' || needs.npm-wait-3.outputs.npm == 'success' || needs.npm-wait-4.outputs.npm == 'success') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.sync.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      # It runs on main; a dispatched run's head is main's head at that moment,
+      # which is read here so the run is matched by commit as well as by time.
+      - name: Smithery — dispatch and wait
+        run: |
+          set -eu
           main_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
           printf '%s' "$main_sha" | grep -Eq '^[0-9a-f]{40}$' || { echo "Could not read main's head ('${main_sha}')." >&2; exit 2; }
           since="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           gh workflow run smithery.yml --ref main -f version="$VERSION"
+          node scripts/auto-release.mjs wait-run --workflow smithery.yml --sha "$main_sha" --version "$VERSION" --since "$since" --deadline-s "$((13 * 60))" --interval-s 15
+
+  # The MCP Registry entry, after npm. An automatic release's npm run is
+  # DISPATCHED, which mcp-registry.yml's workflow_run filter skips, so this
+  # dispatch is the only way it runs.
+  mcp-registry:
+    needs: [sync, release, publish, npm-wait-2, npm-wait-3, npm-wait-4]
+    # After npm published, whichever link of the chain saw it.
+    if: ${{ !cancelled() && (needs.publish.outputs.npm == 'success' || needs.npm-wait-2.outputs.npm == 'success' || needs.npm-wait-3.outputs.npm == 'success' || needs.npm-wait-4.outputs.npm == 'success') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.sync.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: MCP Registry — dispatch and wait
+        run: |
+          set -eu
+          main_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
+          printf '%s' "$main_sha" | grep -Eq '^[0-9a-f]{40}$' || { echo "Could not read main's head ('${main_sha}')." >&2; exit 2; }
+          since="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           gh workflow run mcp-registry.yml --ref main -f version="$VERSION"
+          node scripts/auto-release.mjs wait-run --workflow mcp-registry.yml --sha "$main_sha" --version "$VERSION" --since "$since" --deadline-s "$((10 * 60))" --interval-s 15
+
+  # The release page, after npm (observed ~1 min).
+  release-page:
+    needs: [sync, release, publish, npm-wait-2, npm-wait-3, npm-wait-4]
+    # After npm published, whichever link of the chain saw it.
+    if: ${{ !cancelled() && (needs.publish.outputs.npm == 'success' || needs.npm-wait-2.outputs.npm == 'success' || needs.npm-wait-3.outputs.npm == 'success' || needs.npm-wait-4.outputs.npm == 'success') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.release.outputs.tag }}
+      VERSION: ${{ needs.sync.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: Release page — dispatch and wait
+        run: |
+          set -eu
+          main_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
+          printf '%s' "$main_sha" | grep -Eq '^[0-9a-f]{40}$' || { echo "Could not read main's head ('${main_sha}')." >&2; exit 2; }
+          since="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           gh workflow run release-page.yml --ref main -f tag="$TAG"
-          failed=0
-          node scripts/auto-release.mjs wait-run --workflow smithery.yml --sha "$main_sha" --version "$VERSION" --since "$since" --deadline-s "$((20 * 60))" --interval-s 15 || failed=1
-          node scripts/auto-release.mjs wait-run --workflow mcp-registry.yml --sha "$main_sha" --version "$VERSION" --since "$since" --deadline-s "$((10 * 60))" --interval-s 15 || failed=1
-          node scripts/auto-release.mjs wait-run --workflow release-page.yml --sha "$main_sha" --version "$VERSION" --since "$since" --deadline-s "$((10 * 60))" --interval-s 15 || failed=1
-          if [ "$failed" != 0 ]; then
-            echo "npm published ${TAG}; at least one follow-up did not conclude success (named above with its remedy)." >&2
-            exit 1
-          fi
-          echo "${TAG}: npm, Smithery, the MCP Registry and the release page all concluded success."
+          node scripts/auto-release.mjs wait-run --workflow release-page.yml --sha "$main_sha" --version "$VERSION" --since "$since" --deadline-s "$((10 * 60))" --interval-s 15

@@ -1,0 +1,4 @@
+- Station 1 · 300 m · 4 bikes
+- Nextbike · 300 m
+- nextbike_de · 1.2 km · 4 bikes
+Free vehicles nearby: 7

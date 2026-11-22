@@ -1,0 +1,6 @@
+{
+  "10": [
+    "+ 1. find_cheapest_fuel at Ingolstadt with radius_km=10 (at most 25), fuel=\"e10\" and limit=10. Nobody named a grade: e10 is the standard German petrol and the tool's own default, so say in one clause that you assumed it, and ask which grade only if the answer would change.",
+    "- 1. find_cheapest_fuel at Ingolstadt with radius_km=5 (at most 25), fuel=\"e10\" and limit=10. Nobody named a grade: e10 is the standard German petrol and the tool's own default, so say in one clause that you assumed it, and ask which grade only if the answer would change."
+  ]
+}

@@ -1,0 +1,68 @@
+name: Server
+
+# The MCP server (server/): typecheck, the unit tests (MSW mocks of the API
+# contract) and the end-to-end run over Streamable HTTP against Prism mocking
+# the same contract. All three are required. Nothing here contacts the API,
+# the public MCP endpoint or a data provider.
+
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', 'catalogue.json', '.github/workflows/server.yml']
+  pull_request:
+    paths: ['server/**', 'catalogue.json', '.github/workflows/server.yml']
+  workflow_dispatch:
+  # Called by image.yml on the tagged commit, so the image is built only from a
+  # commit whose server tests passed, whatever paths that commit touched.
+  workflow_call:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: server
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run check:operations
+
+  unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      # The release's mutation shards lose no mutant and count none twice
+      # (Stryker's instrumenter only, no test run; a second or so).
+      - run: npm run test:mutation-pieces
+
+  e2e-mock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run test:e2e:mock

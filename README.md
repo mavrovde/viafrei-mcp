@@ -2653,11 +2653,39 @@ one thing we cannot get any other way.
 
 ## The server itself
 
-The MCP server is a **hosted service**, and its source is closed. It is not in
-this repository and is not published. What is public is the part meant to be:
-the tool names, descriptions, input schemas, result shapes and attribution
-lines, which is everything a client reads from `tools/list`. We say this plainly
-so nobody spends an evening looking for the server code.
+The MCP server lives in [`server/`](server/): Streamable HTTP on `/mcp`, the
+legacy HTTP+SSE pair on `/sse` + `/messages`, and stdio. Every answer it gives
+comes from the ViaFrei API; it holds no data of its own. Each release is also a
+container image, `ghcr.io/mavrovde/viafrei-mcp:<version>`, for linux/amd64 and
+linux/arm64, signed keyless with cosign and carrying SLSA provenance and an SPDX
+SBOM. It runs as uid 10001 with a read-only root file system.
+
+```sh
+cosign verify ghcr.io/mavrovde/viafrei-mcp:<version> \
+  --certificate-identity https://github.com/mavrovde/viafrei-mcp/.github/workflows/image.yml@refs/tags/v<version> \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+docker run --read-only --tmpfs /tmp -p 127.0.0.1:8787:8787 \
+  -e MCP_HOST=0.0.0.0 -e MCP_ALLOW_PUBLIC=1 -e VIAFREI_API_URL=<the API> \
+  ghcr.io/mavrovde/viafrei-mcp:<version>
+```
+
+The server binds 127.0.0.1 unless told otherwise, and binding any other address
+needs `MCP_ALLOW_PUBLIC=1`, because `/mcp` has no auth of its own. Put a proxy in
+front and list its public origin in `MCP_ALLOWED_ORIGINS` and `MCP_PUBLIC_URL`.
+
+| key | default | what it bounds |
+|-|-|-|
+| `MCP_HOST`, `MCP_PORT` | `127.0.0.1`, `8787` | the bind (`HOST`, `PORT` are read when these are unset) |
+| `MCP_ALLOWED_ORIGINS` | the loopback origins | browser `Origin`s; any other is 403 |
+| `MCP_PUBLIC_URL` | none | the public URL; its host is an accepted `Host` |
+| `MCP_MAX_BODY_KB` | `64` | the request body; larger is 413 |
+| `MCP_SESSION_TTL_S`, `MCP_SESSION_SWEEP_S` | `1800`, `60` | the idle session lifetime and its sweep |
+| `MCP_MAX_SESSIONS`, `MCP_MAX_SESSIONS_PER_ADDRESS` | `500`, `0` (off) | open sessions; past the cap 503 or 429 with `Retry-After` |
+| `MCP_IP_MAX_INFLIGHT`, `MCP_IP_RATE_PER_MIN`, `MCP_IP_RATE_BURST` | `8`, `240`, `60` | per client address; past it 429 with `Retry-After` |
+| `MCP_TRUSTED_PROXY_CIDR` | none | the proxies whose `X-Forwarded-For` is read |
+
+`/healthz` is liveness, `/readyz` readiness (the API's own). On SIGTERM the server
+stops listening, writes its last usage counts and exits 143.
 
 ## Contributing · Security · Licence
 

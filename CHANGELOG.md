@@ -5,6 +5,17 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+- **The server's container image**, `ghcr.io/mavrovde/viafrei-mcp:<version>` (`image.yml`, `server/Dockerfile`). It is released only from an annotated `vX.Y.Z` tag on main that equals both `package.json` versions, with CI green on that commit and the server's tests passed in the same run. Trivy must find nothing HIGH or CRITICAL before anything is pushed. The image is pushed by digest, signed keyless and attested (SLSA provenance, SPDX SBOM). It is tagged only after cosign verify passes with the identity pinned to this workflow, and after the digest has run as uid 10001 with a read-only root file system and answered `/healthz`. Every action is pinned by full SHA, and every job ends within 15 minutes (`npm run test:image`).
+- **The HTTP hardening the hosted server runs**: the `Host` and `Origin` allow-list (403) and CORS; the session caps; the per-address limits behind a trusted proxy; the body bound; the idle session lifetime and its sweep; and the usage counters, one structured log line per bucket. Each is set by the `MCP_*` keys in the README. The SSE keep-alive and idle connection timeouts outlast the edge's limits. SIGTERM writes the last usage bucket, then exits 143.
+- The server card at `/.well-known/mcp.json`, `/.well-known/mcp/server-card.json` and `/mcp/server-card`, readable from any origin; `/.well-known/security.txt` and the favicons redirect to viafrei.de.
+- **A fault line beside each request line that went wrong**, as the hosted server writes it: `server_5xx` (error), and `rpc_unknown_method`, `tool_unknown`, `tool_error` (with the tool's `code` and `reason`) and `rpc_error` (warn). A refused request (429) writes none. The line holds the same closed field list as the request line, never an argument or an address.
+
+### Changed
+- **The HTTP answers are the hosted server's again.** A GET or HEAD on `/mcp` without a session is 405 with `Allow`, and so is any other method. A request naming an ended session is 404 with -32001, and one with no session is 400. A body that is not JSON is 400 with -32700, an oversized one is 413 with -32600, and JSON that is no JSON-RPC message is 400 with -32600. An unknown `/messages` session is 400. `/readyz` answers `ok`, `slow` or `degraded`. Any other path is a JSON 404 naming the endpoint, and `/` is a bare 404.
+- The server's copy of the catalogue and its version follow main's 2.6.40.
+- Every tool error carries `_meta.errorCode` (`invalid_input`, `not_found`, `limit_reached`, `unavailable`, `internal`).
+
 ## [2.6.40] - 2026-11-20
 
 **Mirrors the server.** The bridge is versioned to match the ViaFrei MCP server it

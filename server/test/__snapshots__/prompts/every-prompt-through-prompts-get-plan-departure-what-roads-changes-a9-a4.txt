@@ -1,0 +1,6 @@
+{
+  "A9, A4": [
+    "+ 2. check_road_status once per motorway (A9, A4), with horizon_days=1 for a departure today and horizon_days=3 when they are leaving tomorrow.",
+    "- 2. check_road_status once per motorway (no road was named — name the obvious motorways for this pair yourself, say in one clause that you assumed them, and ask only if the pair is genuinely ambiguous), with horizon_days=1 for a departure today and horizon_days=3 when they are leaving tomorrow."
+  ]
+}
