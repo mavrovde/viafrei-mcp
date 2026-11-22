@@ -7,6 +7,7 @@ import type { DataMeta } from "../api/client.js";
 import type * as T from "../api/types.js";
 import type { Language } from "../presentation.js";
 import { atParam, num, str, type Args, type ToolContext } from "./context.js";
+import { haversineM } from "./location.js";
 
 export type Region = {
   /** The official key: two digits a Land, five a Kreis; undefined when nothing was found. */
@@ -17,6 +18,8 @@ export type Region = {
   readonly town?: string;
   /** Whether the region came from a point rather than a name. */
   readonly fromPoint: boolean;
+  /** From a point: metres from it to the region's own point (today's "Mittelpunkt … entfernt"). */
+  readonly distanceM?: number;
   /** The reads whose credit the answer carries (the place search, the point's location). */
   readonly metas: DataMeta[];
 };
@@ -67,5 +70,8 @@ export async function regionOf(args: Args, ctx: ToolContext): Promise<Region> {
   if (lat === undefined || lon === undefined) return { code: undefined, label: undefined, fromPoint: false, metas: [] };
   const r = await ctx.api.get<T.LocationData>("describeLocation", { at: atParam({ lat, lon }) });
   const named = r.data.district ?? r.data.state;
-  return { code: named?.code ?? undefined, label: named?.name ?? undefined, fromPoint: true, metas: [r.meta] };
+  return {
+    code: named?.code ?? undefined, label: named?.name ?? undefined, fromPoint: true, metas: [r.meta],
+    ...(named === null ? {} : { distanceM: Math.round(haversineM(lat, lon, named.location.lat, named.location.lon)) }),
+  };
 }

@@ -8,6 +8,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type * as T from "../api/types.js";
 import { toolError, toolResult, type Language } from "../presentation.js";
 import { num, placeMissing, str, type Handler } from "./context.js";
+import { kmText } from "./nearby.js";
 import { regionOf, type Region } from "./region.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
@@ -23,6 +24,7 @@ export const TRANSIT_WORDS = {
     en: "Individual lines, trips or stops cannot be judged from these delay figures — the realtime data arrives with no line reference, and its licence permits region-wide totals only.",
   },
   window: (language: Language, minutes: number): string => L(language, `in den letzten ${minutes} Minuten`, `in the last ${minutes} minutes`),
+  placed: (language: Language, m: number): string => L(language, ` (nächstgelegene Region zum Punkt, Mittelpunkt ${kmText(m, language)} entfernt)`, ` (nearest region to the point, centre ${kmText(m, language)} away)`),
   town: (language: Language, town: string): string => L(language, ` (der Kreis, in dem ${town} liegt — die Daten sind je Kreis erfasst)`, ` (the district ${town} lies in — the data is filed per district)`),
   alertsNotCurrent: (language: Language, label: string): string => L(language,
     `Störungsmeldungen für ${label}: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.`,
@@ -36,7 +38,7 @@ export const TRANSIT_WORDS = {
 const emptyWindow = (p: T.DisruptionData["punctuality"]): boolean => p === null || (p.observed === 0 && (p.stopsReporting ?? 0) === 0 && (p.untimed ?? 0) === 0);
 
 function emptyAnswer(language: Language, where: Region & { label: string }, windowMin: number): string {
-  const label = `${where.label}${where.town === undefined ? "" : TRANSIT_WORDS.town(language, where.town)}`;
+  const label = `${where.label}${where.distanceM === undefined ? "" : TRANSIT_WORDS.placed(language, where.distanceM)}${where.town === undefined ? "" : TRANSIT_WORDS.town(language, where.town)}`;
   const window = TRANSIT_WORDS.window(language, windowMin);
   const head = L(language,
     `${label}: ${window} keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.`,
@@ -55,9 +57,8 @@ export const checkTransitDisruption: Handler = async (args, ctx): Promise<CallTo
   }
   const r = await ctx.api.get<T.DisruptionData>("listTransitDisruptions", { area: where.code, line, window_min: num(args["window_min"]) });
   const metas = [r.meta, ...where.metas];
-  // Today's words for a window with nothing in it, when the region is named and not a point (whose
-  // answer states the distance to the region's centre, which the API does not give).
-  if (line === undefined && where.label !== undefined && !where.fromPoint && emptyWindow(r.data.punctuality) && r.data.alerts.length === 0 && r.data.alertsChecked === false) {
+  // Today's words for a window with nothing in it; a point's region is said with its centre's distance.
+  if (line === undefined && where.label !== undefined && emptyWindow(r.data.punctuality) && r.data.alerts.length === 0 && r.data.alertsChecked === false) {
     return toolResult(emptyAnswer(language, { ...where, label: where.label }, r.data.windowMin), metas, language);
   }
   const lines = r.data.alerts.map((a) => `- ${a.lines.length > 0 ? `${a.lines.join(", ")}: ` : ""}${a.header ?? ""}`);

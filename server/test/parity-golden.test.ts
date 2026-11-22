@@ -102,6 +102,8 @@ const STATE: Record<string, () => void> = {
       const hit = url.searchParams.get("q") === "Frankfurt am Main" ? [{ ...ex.data[0], name: "Frankfurt am Main", kind: "district" }] : [];
       return HttpResponse.json({ ...ex, data: hit, meta: { ...ex.meta, attribution: [] } });
     }));
+    // A point: the harness's nearest Kreis is Hamburg, its BKG point 48 m from the one asked.
+    serve("describeLocation", { address: null, municipality: null, district: { id: "hamburg", name: "Hamburg", code: String(2_000).padStart(5, "0"), location: { lat: 53.5511, lon: 9.9937 }, distanceM: null, sourceFamily: "bkg_gvisys" }, state: null, mayLieOutsideGermany: false, lowEmissionZone: null });
     mockServer.use(handlerFor("listTransitDisruptions", (url) => {
       const ex = exampleOf<{ data: unknown; meta: Record<string, unknown> }>("listTransitDisruptions");
       const windowMin = Number(url.searchParams.get("window_min") ?? 60);

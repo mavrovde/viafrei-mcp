@@ -1099,7 +1099,7 @@ describe("check_transit_disruption", () => {
     expect(query("listTransitDisruptions")).toEqual([{ line: "S1", lang: "en" }]);
   });
   it("a position: the district's code, else the Land's", async () => {
-    serve("describeLocation", { ...ex<object>("describeLocation"), district: { name: "Köln", code: "05315" } });
+    serve("describeLocation", { ...ex<object>("describeLocation"), district: { name: "Köln", code: "05315", location: { lat: 50.94, lon: 6.96 } } });
     await call("check_transit_disruption", { ...at, language: "en" });
     expect(query("describeLocation")).toEqual([{ at: "52.52,13.405", lang: "en" }]);
     expect(query("listTransitDisruptions")).toEqual([{ area: "05315", lang: "en" }]);
@@ -1109,11 +1109,23 @@ describe("check_transit_disruption", () => {
     expect(query("listTransitDisruptions")).toEqual([{ area: "01", lang: "en" }]);
   });
   it("a position with no code at all and no line: the region is unknown, its read credited", async () => {
-    serve("describeLocation", { ...ex<object>("describeLocation"), state: { name: "X", code: null } });
+    serve("describeLocation", { ...ex<object>("describeLocation"), state: { name: "X", code: null, location: { lat: 52.5, lon: 13.4 } } });
     const r = await call("check_transit_disruption", { ...at, language: "en" });
     expect(body(r)).toBe("I do not know this region.");
     expect(meta(r)["sources"]).toEqual(["geonames", "osm"]);
   });
+  for (const language of LANGS) {
+    it(`a position with nothing in the window: today's words, the region with its centre's distance (${language})`, async () => {
+      serve("describeLocation", { ...ex<object>("describeLocation"), district: { name: "Hamburg", code: String(2_000).padStart(5, "0"), location: { lat: 53.5511, lon: 9.9937 } } });
+      serve("listTransitDisruptions", { alerts: [], alertsTotal: 0, alertsChecked: false, duplicatesOmitted: 0, punctuality: null, windowMin: 60 });
+      const r = await call("check_transit_disruption", { lat: 53.551, lon: 9.993, language });
+      expect(body(r).split("\n")[0]).toBe(language === "de"
+        ? "Hamburg (nächstgelegene Region zum Punkt, Mittelpunkt 48 m entfernt): in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region."
+        : "Hamburg (nearest region to the point, centre 48 m away): no public-transport realtime reports from this region in the last 60 minutes.");
+      serve("describeLocation", { ...ex<object>("describeLocation"), district: { name: "Hamburg", code: String(2_000).padStart(5, "0"), location: { lat: 53.6, lon: 9.9937 } } });
+      expect(body(await call("check_transit_disruption", { lat: 53.551, lon: 9.993, language }))).toContain(language === "de" ? "Mittelpunkt 5,4 km entfernt" : "centre 5.4 km away");
+    });
+  }
   it("only a latitude: no position, no region, so no place in today's words", async () => {
     const r = await call("check_transit_disruption", { lat: 52.5, language: "en" });
     expect(r).toEqual({

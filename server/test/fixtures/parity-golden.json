@@ -665,6 +665,38 @@
       "text": "Place \"Bremen-Gröpelingen\" not found. Please be more specific, e.g. with a postcode.",
       "structuredContent": null,
       "meta": {}
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "lat": 53.551,
+        "lon": 9.993,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Hamburg (nächstgelegene Region zum Punkt, Mittelpunkt 48 m entfernt): in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Hamburg (nächstgelegene Region zum Punkt, Mittelpunkt 48 m entfernt): Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "lat": 53.551,
+        "lon": 9.993,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Hamburg (nearest region to the point, centre 48 m away): no public-transport realtime reports from this region in the last 60 minutes.\nThe source reports changes only: these figures cover the trips whose delay moved during the window, not every trip. Few reports therefore does not by itself mean \"everything on time\".\nIndividual lines, trips or stops cannot be judged from these delay figures — the realtime data arrives with no line reference, and its licence permits region-wide totals only.\n\nService alerts for Hamburg (nearest region to the point, centre 48 m away): the alert feeds are not current right now, so I cannot say whether any diversions or closures are published.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
     }
   ]
 }
