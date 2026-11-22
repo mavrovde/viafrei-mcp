@@ -264,7 +264,7 @@ export function parkingEmpty(language: Language, where: ParkingWhere, kind: stri
   return (meta) => toolResult(text, [], language, {
     asOf: meta.generatedAt,
     structured: {
-      place: "place" in where ? where.place : null, road: "road" in where ? where.road : null, kind, radiusKm: "place" in where ? where.radiusKm : null,
+      place: "place" in where ? where.place : null, road: "road" in where ? where.road : null, kind: kind ?? "any", radiusKm: "place" in where ? where.radiusKm : null,
       facilities: [], ...(unfiltered ? { facilitiesInScope: 0, facilitiesAnyKind: 0, withoutOccupancy: 0 } : {}), onlyWithFreeSpaces: freeOnly,
     },
   });

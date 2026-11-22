@@ -341,7 +341,7 @@ describe("find_parking", () => {
     const r = await call("find_parking", { ...at, language: "de" });
     expect(query("listParkingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "10000", lang: "de" }]);
     expect(textOf(r).split("\n")[0]).toBe("Ich kenne um 52.520, 13.405 (Umkreis 10 km) keine Parkmöglichkeiten. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis 25 km) hilft oft.");
-    expect(r.structuredContent).toMatchObject({ place: "52.520, 13.405", road: null, kind: null, radiusKm: 10, facilities: [], facilitiesInScope: 0, facilitiesAnyKind: 0, withoutOccupancy: 0, onlyWithFreeSpaces: false });
+    expect(r.structuredContent).toMatchObject({ place: "52.520, 13.405", road: null, kind: "any", radiusKm: 10, facilities: [], facilitiesInScope: 0, facilitiesAnyKind: 0, withoutOccupancy: 0, onlyWithFreeSpaces: false });
     serve("listParkingOptions", []);
     const en = await call("find_parking", { place: "Kassel", kind: "car_park", radius_km: 2, language: "en" });
     expect(textOf(en).split("\n")[0]).toBe("I know of no car park (Parkhaus) around Matfienland (within 2 km). Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
