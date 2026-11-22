@@ -348,6 +348,11 @@ const waitArgs = ['wait-checks', '--sha', SHA, '--required', REQUIRED_TEXT, '--d
     check('wait-run: the run list is not narrowed by a ref name it cannot be sure of', ok.seen.every(url => !url.includes('branch=')), ok.seen.join(' '));
     const red = await withApi(runsApi('failure'), base => cli(args, { GITHUB_API_URL: base }));
     check('wait-run: a failed npm run → exit 1 saying MERGED and TAGGED, with the recovery', red.status === 1 && /MERGED and v9\.9\.9 is TAGGED/u.test(red.out) && !/left for a person/u.test(red.out), red.out);
+    const running = url => (url.includes('/actions/workflows/publish.yml/runs')
+        ? { status: 200, json: { workflow_runs: [{ id: 5, head_sha: SHA, created_at: new Date().toISOString(), status: 'in_progress', conclusion: null }] } }
+        : { status: 404, json: {} });
+    const late = await withApi(running, base => cli(args, { GITHUB_API_URL: base }));
+    check('wait-run: a run still going at the deadline → exit 3 (the next job of the chain waits on), never 0 or 1', late.status === 3 && /still running/u.test(late.out), `${late.status} ${late.out}`);
 }
 {
     const yes = await cli(['stuck', '--version', '9.9.9', '--tag-exists', 'true', '--merged-by', '']);
@@ -425,7 +430,24 @@ console.log('version-sync.yml wiring');
     }
     check('the npm dispatch publishes for real (dry_run=false) on the tag ref', /gh workflow run publish\.yml --ref "\$TAG" -f dry_run=false/u.test(publishJob));
     check('npm, Smithery, the MCP Registry and the release page are each a job of their own', ['publish', 'smithery', 'mcp-registry', 'release-page'].every((id) => ownJob(id) !== ''), ownJobs.map((j) => j.id).join(' '));
-    check('the three follow-ups run only after npm', ['smithery', 'mcp-registry', 'release-page'].every((id) => /^ {4}needs: \[sync, release, publish\]$/mu.test(ownJob(id))));
+    const LINKS = ['publish', 'npm-wait-2', 'npm-wait-3', 'npm-wait-4'];
+    const published = LINKS.map((id) => `needs.${id}.outputs.npm == 'success'`);
+    check('the three follow-ups run only after npm published, whichever link of the wait saw it',
+        ['smithery', 'mcp-registry', 'release-page'].every((id) => /^ {4}needs: \[sync, release, publish, npm-wait-2, npm-wait-3, npm-wait-4\]$/mu.test(ownJob(id))
+            && published.every((cond) => (ownJob(id).match(/^ {4}if: (.*)$/mu)?.[1] ?? '').includes(cond))));
+    {
+        // publish.yml runs Snyk, the mutation shards and gate and the real-API e2e
+        // before npm: up to ~45 minutes, longer than one 15-minute job may wait.
+        const waits = LINKS.map((id) => Number(ownJob(id).match(/wait-run --workflow publish\.yml[^\n]*--deadline-s "\$\(\((\d+) \* 60\)\)"/u)?.[1] ?? 0));
+        check('the npm wait is a chain of four jobs, together long enough for the whole publish.yml run (≥ 45 min)', waits.every((m) => m > 0) && waits.reduce((a, b) => a + b, 0) >= 45, waits.join(' '));
+        check('every later link waits on the same dispatch (--since from publish) and runs only while the run is still going',
+            LINKS.slice(1).every((id, i) => ownJob(id).includes('--since "$SINCE"') && ownJob(id).includes('SINCE: ${{ needs.publish.outputs.since }}')
+                && ownJob(id).includes(`if: \${{ needs.${LINKS[i]}.outputs.npm == 'pending' }}`)));
+        check('exit 3 (still going) hands on to the next link, and only the last link reads it as red; any other exit is red at once',
+            LINKS.slice(0, 3).every((id) => /3\) echo "npm=pending" >> "\$GITHUB_OUTPUT" ;;/u.test(ownJob(id)))
+                && /3\) echo "::error::[^\n]*; exit 1 ;;/u.test(ownJob('npm-wait-4')) && !ownJob('npm-wait-4').includes('npm=pending')
+                && LINKS.every((id) => ownJob(id).includes('*) exit "$rc" ;;') && ownJob(id).includes('0) echo "npm=success" >> "$GITHUB_OUTPUT" ;;')));
+    }
     for (const [id, wf] of [['publish', 'publish.yml'], ['smithery', 'smithery.yml'], ['mcp-registry', 'mcp-registry.yml'], ['release-page', 'release-page.yml']]) {
         const body = ownJob(id);
         const deadlines = [...body.matchAll(/--deadline-s "\$\(\((\d+) \* 60\)\)"/gu)].reduce((sum, m) => sum + Number(m[1]), 0);

@@ -308,17 +308,30 @@ describe("structuredContent: the shape the server sent before the move", () => {
     expect(r.structuredContent).toEqual({ station: expect.any(String), evaNo: "8001001", evaNos: ["8001001"], windowMin: 60, departures: [], dbTimetables: { answered: false, reason: "unavailable" }, ...META });
   });
 
-  it("a stop that is no DB station: the API board's departures, no EVA number", async () => {
+  it("a stop that is no DB station: the API board's departures, every field, the category where no line is given", async () => {
     const stations = exampleOf<Body>("listStations");
     const first = (stations.data as unknown as Record<string, unknown>[])[0]!;
-    mockServer.use(handlerFor("listStations", () => HttpResponse.json({ ...stations, data: [{ ...first, eva: null, evaNumbers: [] }] })));
-    const r = await ask({ station: "Teststadt" });
-    const sc = r.structuredContent as Record<string, unknown>;
-    expect(sc["evaNo"]).toBeNull();
-    expect(sc["evaNos"]).toEqual([]);
-    expect(Array.isArray(sc["departures"])).toBe(true);
-    expect(sc["station"]).toEqual(expect.any(String));
-    expect(sc).toMatchObject({ windowMin: 60, asOf: expect.any(String) });
+    const board = exampleOf<Body>("listStationDepartures");
+    const row = (o: Record<string, unknown>) => ({
+      line: "RB 31", category: "RB", destination: "Teststadt Nord", plannedAt: "2026-03-30T00:20:00Z", expectedAt: "2026-03-30T00:24:00Z", delayMin: 4,
+      platform: "2", plannedPlatform: "1", platformChanged: true, cancelled: false, mode: "rail", ...o,
+    });
+    mockServer.use(
+      handlerFor("listStations", () => HttpResponse.json({ ...stations, data: [{ ...first, eva: null, evaNumbers: [] }] })),
+      handlerFor("listStationDepartures", () => HttpResponse.json({ ...board, data: { ...board.data, station: { id: "st-1", name: "Teststadt Süd" }, departures: [
+        row({}),
+        row({ line: null, category: "S", destination: null, plannedAt: "2026-03-30T00:30:00Z", expectedAt: null, delayMin: null, platform: null, plannedPlatform: null, platformChanged: false, cancelled: true }),
+      ] } })),
+    );
+    const r = await ask({ station: "Teststadt", duration_min: 30, categories: ["RB", "S"] });
+    expect(r.structuredContent).toEqual({
+      station: "Teststadt Süd", evaNo: null, evaNos: [], windowMin: 30, categories: ["RB", "S"],
+      departures: [
+        { line: "RB 31", category: "RB", destination: "Teststadt Nord", plannedAt: "2026-03-30T00:20:00Z", expectedAt: "2026-03-30T00:24:00Z", delayMin: 4, platform: "2", plannedPlatform: "1", platformChanged: true, cancelled: false },
+        { line: "S", category: "S", destination: null, plannedAt: "2026-03-30T00:30:00Z", expectedAt: null, delayMin: null, platform: null, plannedPlatform: null, platformChanged: false, cancelled: true },
+      ],
+      asOf: expect.any(String), attribution: expect.any(String), license: expect.any(String),
+    });
     expect(ops()).toContain("listStationDepartures");
   });
 });
