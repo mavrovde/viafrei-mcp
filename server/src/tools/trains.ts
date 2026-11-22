@@ -6,6 +6,11 @@
  * answers from the board the API then holds (getTrainBoard). A board that is not fresh is never shown as
  * current: the answer says when the newest board held was fetched. A stop that is no DB station has no EVA
  * number; its board is the API's own departure board (listStationDepartures).
+ *
+ * structuredContent keeps the server's earlier shape: station, evaNo, evaNos, windowMin, categories when asked,
+ * and departures (line, category, destination, plannedAt, expectedAt, delayMin, platform, plannedPlatform,
+ * platformChanged, cancelled); a board that is not current lists none and says
+ * `dbTimetables: { answered: false, reason: "unavailable" }`.
  */
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope } from "../api/client.js";
@@ -76,6 +81,12 @@ async function part(ctx: ToolContext, eva: string): Promise<Part> {
 
 const lineOf = (d: T.TrainBoardDeparture): string => d.line ?? ([d.category, d.number].filter((x) => x !== null && x !== "").join(" ") || "?");
 
+/** One departure of a DB board in structuredContent. */
+const departureStructured = (d: T.TrainBoardDeparture): Record<string, unknown> => ({
+  line: lineOf(d), category: d.category, destination: d.destination, plannedAt: d.plannedAt, expectedAt: d.expectedAt, delayMin: d.delayMin,
+  platform: d.platform, plannedPlatform: d.plannedPlatform, platformChanged: d.platformChanged, cancelled: d.cancelled,
+});
+
 function departureLine(d: T.TrainBoardDeparture, language: Language): string {
   const delay = d.cancelled ? L(language, " · fällt aus", " · cancelled") : d.delayMin > 0 ? ` · +${d.delayMin}` : "";
   const platform = d.platform === null ? "" : `${L(language, " · Gl. ", " · pl. ")}${d.platform}${d.platformChanged ? "!" : ""}`;
@@ -105,9 +116,11 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
   const when = str(args["when"]);
   const from = when === undefined ? new Date() : new Date(when);
   if (Number.isNaN(from.getTime())) return toolError(L(language, "when ist keine gültige Zeit.", "when is not a valid time."));
-  const until = from.getTime() + (num(args["duration_min"]) ?? 60) * 60_000;
+  const windowMin = num(args["duration_min"]) ?? 60;
+  const until = from.getTime() + windowMin * 60_000;
   const asked = evas.slice(0, MAX_BOARD_PARTS);
   const station = stationName ?? asked.join(", ");
+  const head = { station, evaNo: asked[0], evaNos: asked, windowMin, ...(categories === undefined ? {} : { categories: [...categories] }) };
 
   let parts: Part[];
   try {
@@ -125,7 +138,9 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
     const outcome: Outcome = parts.some((p) => p.outcome === "timed_out") ? "timed_out" : parts.every((p) => p.outcome === "failed") ? "failed" : newest.outcome;
     const text = staleLine(station, newest.board.data, outcome, language);
     if (outcome === "failed") return toolError(text);
-    return toolResult(text, [...metas, { ...newest.board.meta, asOf: newest.board.data.fetchedAt }], language);
+    return toolResult(text, [...metas, { ...newest.board.meta, asOf: newest.board.data.fetchedAt }], language, {
+      structured: { ...head, departures: [], dbTimetables: { answered: false, reason: "unavailable" } },
+    });
   }
 
   const seen = new Set<string>();
@@ -142,10 +157,12 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
     .sort((a, b) => a.plannedAt.localeCompare(b.plannedAt))
     .slice(0, limit);
   const notes = parts.filter((p) => !p.board.data.fresh).map((p) => staleLine(`${station} (${p.eva})`, p.board.data, p.outcome, language));
-  const head = `${station}:`;
-  const body = rows.length === 0 ? `${head} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}` : [head, ...rows.map((d) => departureLine(d, language))].join("\n");
+  const title = `${station}:`;
+  const body = rows.length === 0 ? `${title} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}` : [title, ...rows.map((d) => departureLine(d, language))].join("\n");
   const oldest = fresh.map((p) => p.board.data.fetchedAt).filter((x): x is string => x !== null).sort()[0] ?? null;
-  return toolResult([body, ...notes].join("\n"), [...metas, { ...fresh[0]!.board.meta, asOf: oldest }], language);
+  return toolResult([body, ...notes].join("\n"), [...metas, { ...fresh[0]!.board.meta, asOf: oldest }], language, {
+    structured: { ...head, departures: rows.map(departureStructured) },
+  });
 }
 
 export const getTrainDepartures: Handler = async (args, ctx) => {
@@ -156,7 +173,10 @@ export const getTrainDepartures: Handler = async (args, ctx) => {
   const stations = await ctx.api.get<T.Station[]>("listStations", { code: eva, q: eva === undefined ? name : undefined, limit: 1 });
   const station = stations.data[0];
   if (eva !== undefined) return liveBoard([eva], station?.name ?? null, args, ctx, [stations.meta]);
-  if (station === undefined) return toolResult(L(language, "Diesen Bahnhof kenne ich nicht.", "I do not know this station."), [stations.meta], language);
+  if (station === undefined) {
+    const q = name ?? "";
+    return toolError(L(language, `Den Bahnhof "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Hamburg Hbf", "Köln Hbf").`, `I do not know a station called "${q}". Please give the name as it appears at the station (e.g. "Hamburg Hbf", "Köln Hbf").`));
+  }
   const evas = station.evaNumbers.length > 0 ? station.evaNumbers : station.eva === null ? [] : [station.eva];
   if (evas.length > 0) return liveBoard(evas, station.name, args, ctx, [stations.meta]);
   const r = await ctx.api.get<T.Board>("listStationDepartures", {
@@ -164,5 +184,14 @@ export const getTrainDepartures: Handler = async (args, ctx) => {
   });
   const rows = r.data.departures.map((d) => `- ${berlinTime(d.plannedAt)} ${d.line ?? d.category ?? ""} → ${d.destination ?? "?"}${d.cancelled ? L(language, " · fällt aus", " · cancelled") : d.delayMin ? ` · +${d.delayMin}` : ""}${d.platform === null ? "" : `${L(language, " · Gl. ", " · pl. ")}${d.platform}`}`);
   const body = rows.length === 0 ? `${r.data.station.name}: ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}` : [`${r.data.station.name}:`, ...rows].join("\n");
-  return toolResult(body, [stations.meta, r.meta], language);
+  const categories = strs(args["categories"]);
+  return toolResult(body, [stations.meta, r.meta], language, {
+    structured: {
+      station: r.data.station.name, evaNo: null, evaNos: [], windowMin: num(args["duration_min"]) ?? 60, ...(categories === undefined ? {} : { categories: [...categories] }),
+      departures: r.data.departures.map((d) => ({
+        line: d.line ?? d.category, category: d.category, destination: d.destination, plannedAt: d.plannedAt, expectedAt: d.expectedAt, delayMin: d.delayMin,
+        platform: d.platform, plannedPlatform: d.plannedPlatform, platformChanged: d.platformChanged, cancelled: d.cancelled,
+      })),
+    },
+  });
 };

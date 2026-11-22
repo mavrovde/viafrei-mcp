@@ -218,9 +218,14 @@ describe("which station", () => {
       expect(textOf(r)).toBe(language === "de" ? "Bitte einen Bahnhof (station) oder eine EVA-Nummer angeben." : "Please give a station or an EVA number.");
       expect(calls).toHaveLength(0);
     });
-    it(`an unknown station name (${language})`, async () => {
+    it(`an unknown station name (${language}): an error naming it and how to say it, as before the move`, async () => {
       mockServer.use(handlerFor("listStations", () => HttpResponse.json({ ...exampleOf<Body>("listStations"), data: [] })));
-      expect(body(await ask({ station: "Atlantis", language }))).toBe(language === "de" ? "Diesen Bahnhof kenne ich nicht." : "I do not know this station.");
+      const r = await ask({ station: "Atlantis", language });
+      expect(r.isError).toBe(true);
+      expect(textOf(r)).toBe(language === "de"
+        ? 'Den Bahnhof "Atlantis" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Hamburg Hbf", "Köln Hbf").'
+        : 'I do not know a station called "Atlantis". Please give the name as it appears at the station (e.g. "Hamburg Hbf", "Köln Hbf").');
+      expect(ops()).toEqual(["listStations"]);
     });
   }
 
@@ -261,4 +266,59 @@ describe("which station", () => {
       expect(body(await ask({ station: "Schömpingbach Mitte", language }))).toBe(`Pienköckheim Nord: ${language === "de" ? "keine Abfahrten im Zeitfenster." : "no departures in the window."}`);
     });
   }
+});
+
+describe("structuredContent: the shape the server sent before the move", () => {
+  const META = { asOf: expect.any(String), attribution: expect.stringContaining("Deutsche Bahn"), license: expect.stringContaining("CC BY 4.0") };
+
+  it("a fresh board: station, numbers, window, categories and every listed departure, with asOf, attribution and licence", async () => {
+    mockServer.use(settled(), boards({ "8001001": { departures: [
+      dep({ plannedAt: "2026-03-30T00:30:00Z", expectedAt: "2026-03-30T00:35:00Z", delayMin: 5, platformChanged: true, platform: "7" }),
+      dep({ plannedAt: "2026-03-30T00:20:00Z", line: "RE 1", category: "RE", cancelled: true }),
+    ] } }));
+    const r = await ask({ eva_no: "8001001", duration_min: 90, categories: ["ICE", "RE"] });
+    expect(r.isError).toBeFalsy();
+    const sc = r.structuredContent as Record<string, unknown>;
+    expect(sc).toEqual({
+      station: expect.any(String), evaNo: "8001001", evaNos: ["8001001"], windowMin: 90, categories: ["ICE", "RE"],
+      departures: [
+        { line: "RE 1", category: "RE", destination: "Hamburg-Altona", plannedAt: "2026-03-30T00:20:00Z", expectedAt: "2026-03-30T00:12:00Z", delayMin: 0, platform: "4", plannedPlatform: "4", platformChanged: false, cancelled: true },
+        { line: "ICE 578", category: "ICE", destination: "Hamburg-Altona", plannedAt: "2026-03-30T00:30:00Z", expectedAt: "2026-03-30T00:35:00Z", delayMin: 5, platform: "7", plannedPlatform: "4", platformChanged: true, cancelled: false },
+      ],
+      ...META,
+    });
+    expect(sc["asOf"]).toBe((r._meta as Record<string, unknown>)["asOf"]);
+    expect(sc["attribution"]).toBe((r._meta as Record<string, unknown>)["attribution"]);
+  });
+
+  it("no category asked: no categories key; the window defaults to 60", async () => {
+    mockServer.use(settled(), boards({}));
+    const sc = (await ask({ eva_no: "8001001" })).structuredContent as Record<string, unknown>;
+    expect(sc).not.toHaveProperty("categories");
+    expect(sc["windowMin"]).toBe(60);
+    expect(sc["departures"]).toHaveLength(1);
+  });
+
+  it("a board that is not current: no departure, DB marked as not answered", async () => {
+    mockServer.use(http.post(`${API_BASE}/v1/refreshes`, () => HttpResponse.json({ ...exampleOf<Body>("getRefresh"), data: { ...exampleOf<Body>("getRefresh").data, state: "pending" } }, { status: 202 })),
+      handlerFor("getRefresh", () => HttpResponse.json({ ...exampleOf<Body>("getRefresh"), data: { ...exampleOf<Body>("getRefresh").data, state: "pending" } })),
+      boards({ "8001001": { fresh: false, fetchedAt: "2026-03-29T23:40:00Z", ageSeconds: 1_200, departures: [] } }));
+    const r = await ask({ eva_no: "8001001" }, { totalMs: 20, pollMs: 5 });
+    expect(r.isError).toBeFalsy();
+    expect(r.structuredContent).toEqual({ station: expect.any(String), evaNo: "8001001", evaNos: ["8001001"], windowMin: 60, departures: [], dbTimetables: { answered: false, reason: "unavailable" }, ...META });
+  });
+
+  it("a stop that is no DB station: the API board's departures, no EVA number", async () => {
+    const stations = exampleOf<Body>("listStations");
+    const first = (stations.data as unknown as Record<string, unknown>[])[0]!;
+    mockServer.use(handlerFor("listStations", () => HttpResponse.json({ ...stations, data: [{ ...first, eva: null, evaNumbers: [] }] })));
+    const r = await ask({ station: "Teststadt" });
+    const sc = r.structuredContent as Record<string, unknown>;
+    expect(sc["evaNo"]).toBeNull();
+    expect(sc["evaNos"]).toEqual([]);
+    expect(Array.isArray(sc["departures"])).toBe(true);
+    expect(sc["station"]).toEqual(expect.any(String));
+    expect(sc).toMatchObject({ windowMin: 60, asOf: expect.any(String) });
+    expect(ops()).toContain("listStationDepartures");
+  });
 });

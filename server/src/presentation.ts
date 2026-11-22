@@ -59,8 +59,12 @@ function uniqueAttributions(list: readonly Attribution[]): Attribution[] {
   return list.filter((a) => (seen.has(a.family) ? false : (seen.add(a.family), true)));
 }
 
-/** Builds the result: body, footer, `_meta`. Several envelopes' metas may be merged (one answer from several reads). */
-export function toolResult(body: string, metas: readonly DataMeta[], language: Language, extra: { conditionNote?: string; nextCursor?: string | null } = {}): CallToolResult {
+/**
+ * Builds the result: body, footer, `_meta`. Several envelopes' metas may be merged (one answer from several
+ * reads). When the handler gives `structured`, `structuredContent` carries those fields plus the same asOf,
+ * attribution, licence and notes, as the server before the move sent them.
+ */
+export function toolResult(body: string, metas: readonly DataMeta[], language: Language, extra: { conditionNote?: string; nextCursor?: string | null; structured?: Record<string, unknown> } = {}): CallToolResult {
   const attributions = uniqueAttributions(metas.flatMap((m) => m.attribution ?? []));
   const purpose = [...new Set(metas.flatMap((m) => m.notes?.purpose ?? []))];
   const condition = [...new Set([...metas.flatMap((m) => m.notes?.condition ?? []), ...(extra.conditionNote ? [extra.conditionNote] : [])])];
@@ -85,7 +89,19 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
   if (condition.length > 0) meta.conditionNote = condition.join(" ");
   if (attributions.some((a) => a.shareAlike === true)) meta.shareAlike = true;
   if (extra.nextCursor) meta.nextCursor = extra.nextCursor;
-  return { content: [{ type: "text", text }], _meta: meta };
+  const result: CallToolResult = { content: [{ type: "text", text }], _meta: meta };
+  if (extra.structured !== undefined) {
+    result.structuredContent = {
+      ...extra.structured,
+      asOf: meta.asOf,
+      attribution: meta.attribution,
+      license: meta.license,
+      ...(meta.purposeNote === undefined ? {} : { purposeNote: meta.purposeNote }),
+      ...(meta.conditionNote === undefined ? {} : { conditionNote: meta.conditionNote }),
+      ...(meta.shareAlike === undefined ? {} : { shareAlike: true }),
+    };
+  }
+  return result;
 }
 
 /** A tool error the assistant can act on. */
