@@ -279,11 +279,15 @@ describe("fuel", () => {
     station({ name: "Freie Tankstelle", brand: null, distanceM: 640.4, openingState: "closed", prices: [] }),
   ];
 
+  const address = { street: "Marktweg", number: "1", postcode: "10001", place: "Kansilkamp" };
+  const withAddress = () => serve("getFuelStation", { ...ex<Record<string, unknown>>("getFuelStation"), address });
+
   for (const language of LANGS) {
     it(`find_cheapest_fuel (${language}): e10 by price unless asked otherwise, only the asked fuel's price`, async () => {
       serve("listFuelOptions", stations);
+      withAddress();
       const r = await call("find_cheapest_fuel", { ...at, language });
-      expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", fuel: "e10", sort: "price", lang: language }]);
+      expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", radius_m: "5000", fuel: "e10", sort: "price", limit: "5", lang: language }]);
       await pinned("handlers", body(r));
       expect(meta(r)["purposeNote"]).toBe("For consumer information only (synthetic).");
       expect(textOf(r).startsWith("For consumer information only (synthetic).\n")).toBe(true);
@@ -291,22 +295,31 @@ describe("fuel", () => {
   }
 
   it("find_fuel_station: by distance, every fuel's price; each filter passed on", async () => {
-    serve("listFuelOptions", stations);
+    serve("listFuelOptions", stations, { query: { at: { lat: 52.52, lon: 13.405 }, radiusM: 3000, sort: "price", matched: 2, droppedClosed: 0, droppedUnknown: 0, droppedNotWholeDay: 0, openAt: "2026-03-30T06:00:00Z" } });
+    withAddress();
     const r = await call("find_fuel_station", { ...at, radius_km: 3, brand: "Aral", name: "Mitte", open_now: true, open_at: "2026-03-30T08:00", whole_day: false, sort: "price", limit: 2, language: "en" });
     expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", radius_m: "3000", brand: "Aral", name: "Mitte", open_now: "true", open_at: "2026-03-30T08:00", whole_day: "false", sort: "price", limit: "2", lang: "en" }]);
-    expect(body(r).split("\n").slice(1)).toEqual(["- Aral Mitte (Aral) · 1.2 km · E10 1.699 €, DIESEL 1.589 €", "- Freie Tankstelle · 640 m · – · closed"]);
+    expect(body(r).split("\n").slice(1)).toEqual([
+      'Filling stations around 52.520, 13.405 (within 3 km) — brand Aral, name contains "Mitte", open now, open at 2026-03-30T08:00+02:00:',
+      "1. Aral, Marktweg 1, 10001 Kansilkamp — diesel 1.589 €/l, Super E10 1.699 €/l, 1.2 km, open",
+      "2. Freie Tankstelle, Marktweg 1, 10001 Kansilkamp — no price yet, 0.6 km, closed",
+    ]);
   });
 
-  it("find_fuel_station without a sort sorts by distance", async () => {
+  it("find_fuel_station without a sort sorts by distance and sends today's 5 km default", async () => {
     await call("find_fuel_station", { ...at, fuel: "diesel", language: "en" });
-    expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", fuel: "diesel", sort: "distance", lang: "en" }]);
+    expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", radius_m: "5000", fuel: "diesel", sort: "distance", lang: "en" }]);
   });
 
   for (const language of LANGS) {
-    it(`no station (${language}) says so`, async () => {
-      serve("listFuelOptions", []);
+    it(`no station held and none priced in reach (${language}): today's sentence, and the refresher is asked`, async () => {
+      serve("listFuelOptions", [], { query: { at: { lat: 52.52, lon: 13.405 }, radiusM: 5000, sort: "price", matched: 0, droppedClosed: 0, droppedUnknown: 0, droppedNotWholeDay: 0, openAt: null } });
+      serve("createRefresh", { id: "7", source: "fuel-prices-de", state: "refused", createdAt: "2026-03-30T00:00:00Z", settledAt: "2026-03-30T00:00:00Z", reason: "spacing", reused: false, queue: null });
       const r = await call("find_cheapest_fuel", { ...at, language });
-      expect(body(r).split("\n").at(-1)).toBe(language === "de" ? "Keine Tankstellen gefunden." : "No filling stations found.");
+      expect(body(r).split("\n").at(-1)).toBe(language === "de"
+        ? "Für 52.520, 13.405 liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Diese Gegend beobachten wir noch nicht, und gerade können wir sie nicht beim Anbieter abfragen — neue Gegenden fragen wir nacheinander ab, höchstens eine Anfrage je Minute, und eine schon abgefragte so bald nicht noch einmal. Bitte später noch einmal fragen."
+        : "No fuel prices are held within 5 km of 52.520, 13.405. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. We do not watch this area yet, and we cannot ask the provider about it right now — new areas are asked about one at a time, at most one request a minute, and one already asked about not again for a while. Please ask again later.");
+      expect(ops()).toContain("createRefresh");
     });
   }
 });

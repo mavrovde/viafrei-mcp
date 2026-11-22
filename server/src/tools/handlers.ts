@@ -12,6 +12,7 @@ import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, str
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
 import { findPlace } from "./find-place.js";
+import { findCheapestFuel, findFuelStation } from "./fuel.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
 import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
@@ -240,24 +241,6 @@ const findRoadworksAhead: Handler = async (args, ctx) => {
   if (isResult(pos)) return pos;
   const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at: atParam(pos.at), kinds: ["roadworks"], horizon_days: 14, limit });
   return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
-};
-
-const fuelLine = (s: T.FuelStation, fuel: string | undefined, language: Language): string => {
-  const prices = s.prices.filter((p) => fuel === undefined || p.fuel === fuel).map((p) => `${p.fuel.toUpperCase()} ${eur(p.priceEur, language)}`).join(", ");
-  return `- ${s.name}${s.brand ? ` (${s.brand})` : ""} · ${km(s.distanceM, language)} · ${prices || "–"}${s.openingState === "closed" ? L(language, " · geschlossen", " · closed") : ""}`;
-};
-
-const fuelSearch = (sortDefault: "price" | "distance"): Handler => async (args, ctx) => {
-  const { language } = ctx;
-  const pos = await position(args, ctx);
-  if (isResult(pos)) return pos;
-  const fuel = str(args["fuel"]) ?? (sortDefault === "price" ? "e10" : undefined);
-  const r = await ctx.api.get<T.FuelStation[]>("listFuelOptions", {
-    at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), fuel, brand: str(args["brand"]), name: str(args["name"]),
-    open_now: bool(args["open_now"]), open_at: str(args["open_at"]), whole_day: bool(args["whole_day"]), sort: str(args["sort"]) ?? sortDefault, limit: num(args["limit"]),
-  });
-  if (r.data.length === 0) return none(language, [r.meta], L(language, "Tankstellen", "filling stations"));
-  return toolResult(r.data.map((s) => fuelLine(s, fuel, language)).join("\n"), [r.meta], language);
 };
 
 /** find_charging_station's default and largest radius (today's schema). */
@@ -671,8 +654,8 @@ const stopWatch = stopWatchHandler(watchTarget);
 
 export const HANDLERS: Readonly<Record<string, Handler>> = {
   check_autobahn_traffic: checkAutobahnTraffic,
-  find_cheapest_fuel: fuelSearch("price"),
-  find_fuel_station: fuelSearch("distance"),
+  find_cheapest_fuel: findCheapestFuel,
+  find_fuel_station: findFuelStation,
   find_parking: findParking,
   check_road_status: checkRoadStatus,
   find_roadworks_ahead: findRoadworksAhead,

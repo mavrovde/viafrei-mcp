@@ -1,5 +1,5 @@
 {
-  "_about": "Today's server's answers, copied from the parity run's old side (scripts/parity-mcp.mjs) by a script, never typed: isError and the text's body, the part before the credit line (creditFooter's, tested on its own); a per-station Stand time masked as HH:MM.",
+  "_about": "Today's server's answers, copied from the parity run's old side (scripts/parity-mcp.mjs) by a script, never typed: isError and the text's body, the part before the credit line (creditFooter's, tested on its own); a per-station Stand time masked as HH:MM, a five-digit number (a postcode) as NNNNN.",
   "cases": [
     {
       "tool": "find_place",
@@ -64,7 +64,7 @@
         "language": "de"
       },
       "isError": false,
-      "body": "\"Essen\" — 2 Treffer:\n1. Essen — Stadt/Gemeinde, Nordrhein-Westfalen, 586.608 Einw., 51.45560, 7.01160\n2. Essen Hbf — Bahnhof, Nordrhein-Westfalen, 51.45135, 6.95882"
+      "body": "\"Essen\" — 2 Treffer:\n1. Essen — Stadt/Gemeinde, Nordrhein-Westfalen, 586.608 Einw., 51.NNNNN, 7.NNNNN\n2. Essen Hbf — Bahnhof, Nordrhein-Westfalen, 51.NNNNN, 6.NNNNN"
     },
     {
       "tool": "find_place",
@@ -73,7 +73,7 @@
         "language": "en"
       },
       "isError": false,
-      "body": "\"Essen\" — 2 matches:\n1. Essen — town, North Rhine-Westphalia, pop. 586,608, 51.45560, 7.01160\n2. Essen Hbf — station, North Rhine-Westphalia, 51.45135, 6.95882"
+      "body": "\"Essen\" — 2 matches:\n1. Essen — town, North Rhine-Westphalia, pop. 586,608, 51.NNNNN, 7.NNNNN\n2. Essen Hbf — station, North Rhine-Westphalia, 51.NNNNN, 6.NNNNN"
     },
     {
       "tool": "find_place",
@@ -82,7 +82,7 @@
         "language": "de"
       },
       "isError": false,
-      "body": "\"Hannover\" — ein Treffer:\n1. Hannover — Stadt/Gemeinde, 548.186 Einw., 52.37590, 9.73200"
+      "body": "\"Hannover\" — ein Treffer:\n1. Hannover — Stadt/Gemeinde, 548.186 Einw., 52.NNNNN, 9.NNNNN"
     },
     {
       "tool": "find_place",
@@ -91,7 +91,7 @@
         "language": "en"
       },
       "isError": false,
-      "body": "\"Hannover\" — one match:\n1. Hannover — town, pop. 548,186, 52.37590, 9.73200"
+      "body": "\"Hannover\" — one match:\n1. Hannover — town, pop. 548,186, 52.NNNNN, 9.NNNNN"
     },
     {
       "tool": "find_place",
@@ -101,7 +101,7 @@
         "language": "de"
       },
       "isError": false,
-      "body": "\"Neustadt\" — 3 Treffer:\n1. Neustadt (Hessen) — Stadt/Gemeinde, Hessen, Kreis Marburg-Biedenkopf, 9.455 Einw., 306 km, 50.85000, 9.11670\n2. Neustadt b.Coburg — Stadt/Gemeinde, Bayern, Kreis Coburg, 15.892 Einw., 366 km, 50.32970, 11.11670\n3. Neustadt an der Weinstraße — Stadt/Gemeinde, Rheinland-Pfalz, kreisfreie Stadt, 53.353 Einw., 484 km, 49.35010, 8.13610"
+      "body": "\"Neustadt\" — 3 Treffer:\n1. Neustadt (Hessen) — Stadt/Gemeinde, Hessen, Kreis Marburg-Biedenkopf, 9.455 Einw., 306 km, 50.NNNNN, 9.NNNNN\n2. Neustadt b.Coburg — Stadt/Gemeinde, Bayern, Kreis Coburg, 15.892 Einw., 366 km, 50.NNNNN, 11.NNNNN\n3. Neustadt an der Weinstraße — Stadt/Gemeinde, Rheinland-Pfalz, kreisfreie Stadt, 53.353 Einw., 484 km, 49.NNNNN, 8.NNNNN"
     },
     {
       "tool": "find_place",
@@ -111,7 +111,7 @@
         "language": "en"
       },
       "isError": false,
-      "body": "\"Neustadt\" — 3 matches:\n1. Neustadt (Hessen) — town, Hesse, district Marburg-Biedenkopf, pop. 9,455, 306 km, 50.85000, 9.11670\n2. Neustadt b.Coburg — town, Bavaria, district Coburg, pop. 15,892, 366 km, 50.32970, 11.11670\n3. Neustadt an der Weinstraße — town, Rhineland-Palatinate, independent city, pop. 53,353, 484 km, 49.35010, 8.13610"
+      "body": "\"Neustadt\" — 3 matches:\n1. Neustadt (Hessen) — town, Hesse, district Marburg-Biedenkopf, pop. 9,455, 306 km, 50.NNNNN, 9.NNNNN\n2. Neustadt b.Coburg — town, Bavaria, district Coburg, pop. 15,892, 366 km, 50.NNNNN, 11.NNNNN\n3. Neustadt an der Weinstraße — town, Rhineland-Palatinate, independent city, pop. 53,353, 484 km, 49.NNNNN, 8.NNNNN"
     },
     {
       "tool": "find_place",
@@ -222,6 +222,382 @@
       },
       "isError": false,
       "body": "I do not find \"Quedlinburg\" in the place index."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 48.137,
+        "lon": 11.576,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür 48.137, 11.576 liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 48.137,
+        "lon": 11.576,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of 48.137, 11.576. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Dresden",
+        "radius_km": 10,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Dresden liegen im Umkreis von 10 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Dresden",
+        "radius_km": 10,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 10 km of Dresden. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Leipzig",
+        "fuel": "e5",
+        "limit": 5,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Leipzig liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E5-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Leipzig",
+        "fuel": "e10",
+        "limit": 5,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Leipzig liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Die Preise für diese Gegend sind beim Anbieter angefordert, für eine Frage wie diese und nicht im Hintergrund; die Anfrage wartet in der Warteschlange, bis sie an der Reihe ist. Bitte danach noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Leipzig",
+        "fuel": "e5",
+        "limit": 5,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Leipzig. Within the largest radius the provider allows (25 km) we watch no station there with a Super E5 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Leipzig",
+        "fuel": "e10",
+        "limit": 5,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Leipzig. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Kassel",
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nDiesel um Kassel (Umkreis 5 km), günstigste zuerst:\n1. TotalEnergies, Chausseestr. 61-62, NNNNN Berlin — 2,449 €/l, 1,9 km, zuletzt offen (Stand HH:MM)\n2. ESSO, LESSINGSTR. 4, NNNNN BERLIN — 2,459 €/l, 1,2 km, zuletzt offen (Stand HH:MM)\n3. AGIP ENI, Westhafenstrasse 1, NNNNN Berlin — 2,459 €/l, 1,2 km, zuletzt offen (Stand HH:MM)\n4. ARAL, Levetzowstraße 9, NNNNN Berlin — 2,459 €/l, 1,5 km, zuletzt offen (Stand HH:MM)\n5. ARAL, Beusselstraße 55, NNNNN Berlin — 2,459 €/l, 1,7 km, zuletzt offen (Stand HH:MM)"
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Kassel",
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\ndiesel around Kassel (within 5 km), cheapest first:\n1. TotalEnergies, Chausseestr. 61-62, NNNNN Berlin — 2.449 €/l, 1.9 km, open when last seen (as of HH:MM)\n2. ESSO, LESSINGSTR. 4, NNNNN BERLIN — 2.459 €/l, 1.2 km, open when last seen (as of HH:MM)\n3. AGIP ENI, Westhafenstrasse 1, NNNNN Berlin — 2.459 €/l, 1.2 km, open when last seen (as of HH:MM)\n4. ARAL, Levetzowstraße 9, NNNNN Berlin — 2.459 €/l, 1.5 km, open when last seen (as of HH:MM)\n5. ARAL, Beusselstraße 55, NNNNN Berlin — 2.459 €/l, 1.7 km, open when last seen (as of HH:MM)"
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Hamburg Hbf",
+        "fuel": "diesel",
+        "sort": "distance",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Hamburg Hbf im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (Diesel). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Hamburg Hbf",
+        "fuel": "diesel",
+        "sort": "distance",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Hamburg Hbf matching that (diesel). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Leipzig",
+        "whole_day": true,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Leipzig im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (durchgehend geöffnet). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Leipzig",
+        "whole_day": true,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Leipzig matching that (open 24 h). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Bad Hersfeld",
+        "name": "Autohof",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Bad Hersfeld im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (Name enthält \"Autohof\"). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Bad Hersfeld",
+        "name": "Autohof",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Bad Hersfeld matching that (name contains \"Autohof\"). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Regensburg",
+        "open_at": "02:00",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Regensburg im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (geöffnet am 2026-11-23T02:00+01:00). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Regensburg",
+        "open_at": "02:00",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Regensburg matching that (open at 2026-11-23T02:00+01:00). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Magdeburg",
+        "brand": "TotalEnergies",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Magdeburg im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (Marke TotalEnergies). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Magdeburg",
+        "brand": "TotalEnergies",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Magdeburg matching that (brand TotalEnergies). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Passau",
+        "open_at": "06:00",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Passau im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (geöffnet am 2026-11-23T06:00+01:00). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Passau",
+        "open_at": "06:00",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Passau matching that (open at 2026-11-23T06:00+01:00). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Trier",
+        "sort": "name",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Trier im Umkreis von 5 km keine Tankstelle. In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Trier",
+        "sort": "name",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Trier. Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Kassel",
+        "brand": "ARAL",
+        "open_at": "23:30",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIm Umkreis von 5 km um Kassel kenne ich 12 Tankstellen, aber keine, auf die das zutrifft (Marke ARAL, geöffnet am 2026-11-22T23:30+01:00).\n5 Tankstellen in der Nähe habe ich weggelassen, weil ihre Öffnungszeiten hier nicht bekannt sind — sie können trotzdem offen sein."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Kassel",
+        "brand": "ARAL",
+        "open_at": "23:30",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nWithin 5 km of Kassel I know 12 filling stations, but none matching that (brand ARAL, open at 2026-11-22T23:30+01:00).\n5 stations nearby were left out because their opening hours are not known here — they may well be open."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Ingolstadt",
+        "brand": "Shell",
+        "radius_km": 10,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nTankstellen um Ingolstadt (Umkreis 10 km) — Marke Shell:\n1. Shell, Paulstr. 20, NNNNN Berlin — Diesel 2,509 €/l, Super E10 2,349 €/l, Super E5 2,409 €/l, 1,0 km, Öffnung unbekannt (Öffnungszeiten nie abgerufen)\n2. Shell, Kaiserin-Auguste-Allee 9-9 A, NNNNN Berlin — Diesel 2,459 €/l, Super E10 2,309 €/l, Super E5 2,369 €/l, 2,1 km, Öffnung unbekannt (Öffnungszeiten nie abgerufen)"
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Ingolstadt",
+        "brand": "Shell",
+        "radius_km": 10,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFilling stations around Ingolstadt (within 10 km) — brand Shell:\n1. Shell, Paulstr. 20, NNNNN Berlin — diesel 2.509 €/l, Super E10 2.349 €/l, Super E5 2.409 €/l, 1.0 km, opening state unknown (opening hours never fetched)\n2. Shell, Kaiserin-Auguste-Allee 9-9 A, NNNNN Berlin — diesel 2.459 €/l, Super E10 2.309 €/l, Super E5 2.369 €/l, 2.1 km, opening state unknown (opening hours never fetched)"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "place": "Leipzig",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In der Nähe von Leipzig (Umkreis 5 km):\n- Tankstellen: keine Preise im Umkreis — In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute.\n- Ladepunkte: nichts im Umkreis\n- Parkplätze: nichts im Umkreis\n- Bahnhöfe: Leipzig Hbf (0,9 km)\n- Autobahnanschlüsse: nichts im Umkreis"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "place": "Leipzig",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Near Leipzig (within 5 km):\n- fuel stations: no prices nearby — Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute.\n- charging: nothing nearby\n- parking: nothing nearby\n- stations: Leipzig Hbf (0.9 km)\n- motorway junctions: nothing nearby"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "place": "Kassel",
+        "radius_km": 5,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIn der Nähe von Kassel (Umkreis 5 km):\n- Tankstellen, Super E5: TotalEnergies, 2,369 €/l (1,9 km); Shell, 2,369 €/l (2,0 km); ARAL, 2,369 €/l (3,2 km)\n- Ladepunkte: nichts im Umkreis\n- Parkplätze: nichts im Umkreis\n- Bahnhöfe: Kassel-Wilhelmshöhe (2,3 km)\n- Autobahnanschlüsse: nichts im Umkreis"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "place": "Kassel",
+        "radius_km": 5,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNear Kassel (within 5 km):\n- fuel stations, Super E5: TotalEnergies, 2.369 €/l (1.9 km); Shell, 2.369 €/l (2.0 km); ARAL, 2.369 €/l (3.2 km)\n- charging: nothing nearby\n- parking: nothing nearby\n- stations: Kassel-Wilhelmshöhe (2.3 km)\n- motorway junctions: nothing nearby"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "lat": 53.5511,
+        "lon": 9.9937,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In der Nähe von 53.551, 9.994 (Umkreis 5 km):\n- Tankstellen: keine Preise im Umkreis — In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute.\n- Ladepunkte: HEnW-Mobil, Hoheluftchaussee 52 (3,6 km)\n  Stand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit.\n- Parkplätze: nichts im Umkreis\n- Bahnhöfe: Hamburg Hbf (0,9 km)\n- Autobahnanschlüsse: nichts im Umkreis"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "lat": 53.5511,
+        "lon": 9.9937,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Near 53.551, 9.994 (within 5 km):\n- fuel stations: no prices nearby — Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute.\n- charging: HEnW-Mobil, Hoheluftchaussee 52 (3.6 km)\n  Charging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness.\n- parking: nothing nearby\n- stations: Hamburg Hbf (0.9 km)\n- motorway junctions: nothing nearby"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "lat": 52.52,
+        "lon": 13.405,
+        "categories": [
+          "station",
+          "junction"
+        ],
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In der Nähe von 52.520, 13.405 (Umkreis 5 km):\n- Bahnhöfe: Berlin Hbf (2,5 km)\n- Autobahnanschlüsse: nichts im Umkreis"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "lat": 52.52,
+        "lon": 13.405,
+        "categories": [
+          "station",
+          "junction"
+        ],
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Near 52.520, 13.405 (within 5 km):\n- stations: Berlin Hbf (2.5 km)\n- motorway junctions: nothing nearby"
     }
   ]
 }

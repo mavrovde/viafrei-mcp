@@ -75,7 +75,7 @@ describe("special cases", () => {
     mockServer.use(handlerFor("listFuelOptions", () => HttpResponse.json({ ...body, data: [] })));
     const { client, close } = await connect();
     const r = await client.callTool({ name: "find_cheapest_fuel", arguments: { ...at, language: "en" } });
-    expect(textOf(r)).toContain("No filling stations found.");
+    expect(textOf(r)).toContain("Within 5 km of 52.520, 13.405 I know 1 filling station, but none with a Super E10 price.");
     expect((r._meta as { attribution: string }).attribution.length).toBeGreaterThan(0);
     await close();
   });

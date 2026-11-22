@@ -12,6 +12,9 @@ export type AddressData = { addresses: Address[] };
 /** FuelStation */
 export type FuelPrice = { fuel: string; priceEur: number; reportedAt: string; current: boolean };
 export type FuelStation = { id: string; name: string; brand: string | null; location: LatLon; distanceM?: number; openingState: string; prices: FuelPrice[] };
+/** FuelStationData (getFuelStation): one station with its postal address. */
+export type FuelAddress = { street: string | null; number: string | null; postcode: string | null; place: string | null };
+export type FuelStationData = { id: string; name: string | null; brand: string | null; location: LatLon; address: FuelAddress | null; aroundTheClock: boolean; openingState: string; prices: FuelPrice[] };
 /** ChargingSite */
 export type ChargingSite = {
   id: string; name: string | null; operator: string | null; location: LatLon; distanceM?: number; access: string;
