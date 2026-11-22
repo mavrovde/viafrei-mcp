@@ -1,0 +1,43 @@
+{
+  "_about": "Today's server's answers, copied from the parity run's old side (scripts/parity-mcp.mjs) by a script, never typed: the text (its Stand time masked as HH:MM), structuredContent (asOf left out) and _meta attribution and license.",
+  "cases": [
+    {
+      "tool": "find_address",
+      "args": {
+        "query": "Domplatz 1, Magdeburg",
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Für diese Installation sind keine OpenStreetMap-Adressdaten geladen — ich kann nach Orten und Haltestellen suchen, aber nicht nach Hausnummern.\n\nStand HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "found": 0,
+        "license": "",
+        "query": "Domplatz 1, Magdeburg"
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "find_address",
+      "args": {
+        "query": "Domplatz 1, Magdeburg",
+        "language": "en"
+      },
+      "isError": false,
+      "text": "This installation holds no OpenStreetMap address data — I can look up towns and stations, but not house numbers.\n\nAs of HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "found": 0,
+        "license": "",
+        "query": "Domplatz 1, Magdeburg"
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    }
+  ]
+}

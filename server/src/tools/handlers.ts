@@ -402,10 +402,22 @@ const findPoi: Handler = async (args, ctx) => {
   return toolResult(lines.join("\n"), [r.meta], language, { nextCursor: r.meta.page?.nextCursor ?? null });
 };
 
+/** Today's server's find_address sentences (main packages/mcp/src/tools/find_address.ts, COPY), verbatim. */
+const ADDRESS_WORDS = {
+  de: { notLoaded: "Für diese Installation sind keine OpenStreetMap-Adressdaten geladen — ich kann nach Orten und Haltestellen suchen, aber nicht nach Hausnummern." },
+  en: { notLoaded: "This installation holds no OpenStreetMap address data — I can look up towns and stations, but not house numbers." },
+} as const;
+
 const findAddress: Handler = async (args, ctx) => {
   const { language } = ctx;
   const r = await ctx.api.get<T.AddressData>("listAddresses", { q: str(args["query"]), limit: num(args["limit"]) });
-  if (r.data.addresses.length === 0) return none(language, [r.meta], L(language, "Adressen", "addresses"));
+  if (r.data.addresses.length === 0) {
+    // Today's server first asks whether any address is loaded at all (osmAddressesLoaded): with none, it says so,
+    // credits nothing and lists found 0. The contract's coverage names the Länder the addresses cover.
+    const cov = await ctx.api.get<T.PlacesCoverageData>("getPlacesCoverage", {});
+    if (cov.data.addresses.length === 0) return toolResult(ADDRESS_WORDS[language].notLoaded, [], language, { structured: { found: 0, query: str(args["query"]) } });
+    return none(language, [r.meta], L(language, "Adressen", "addresses"));
+  }
   return toolResult(r.data.addresses.map((a) => `- ${[[a.street, a.number].filter(Boolean).join(" "), [a.postcode, a.place].filter(Boolean).join(" ")].filter(Boolean).join(", ")} · ${a.location.lat.toFixed(5)}, ${a.location.lon.toFixed(5)}`).join("\n"), [r.meta], language);
 };
 
