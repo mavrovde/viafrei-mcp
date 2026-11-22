@@ -884,19 +884,36 @@ describe("check_transit_disruption", () => {
 });
 
 describe("check_weather_warnings", () => {
+  const w = () => ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!;
   for (const language of LANGS) {
-    it(`warnings with their level and end (${language})`, async () => {
-      const w = ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!;
-      serve("getWeatherRisk", { warnings: [w, { ...w, headline: "Sturm", levelName: "Stufe 3", validity: { from: null, until: null } }] });
+    it(`warnings (${language}): today's head with the count and the highest level, highest first; the level applied here, not asked of the API`, async () => {
+      serve("getWeatherRisk", { warnings: [w(), { ...w(), headline: "Sturm", level: 3, levelName: "Stufe 3", validity: { from: null, until: null } }, { ...w(), headline: "Frost", level: 1 }] });
       const r = await call("check_weather_warnings", { ...at, min_level: 2, language });
-      expect(query("getWeatherRisk")).toEqual([{ at: "52.52,13.405", min_level: "2", lang: language }]);
-      await pinned("handlers", body(r));
+      expect(query("getWeatherRisk")).toEqual([{ at: "52.52,13.405", lang: language }]);
+      const lines = body(r).split("\n");
+      expect(lines.slice(0, 3)).toEqual(language === "de"
+        ? ["2 amtliche Meldungen für 52.520, 13.405, höchste Stufe 3 von 4:", "", "- Sturm (Stufe 3)"]
+        : ["2 official notices for 52.520, 13.405, highest level 3 of 4:", "", "- Sturm (Stufe 3)"]);
+      expect(lines[3]).toMatch(/^- Warnung vor uv \(Stufe 2\) \(Stufe 2\) (bis|until) /u);
+      expect(lines).toHaveLength(4);
     });
-    it(`none (${language})`, async () => {
+    it(`none (${language}): no all-clear, the look-ahead said`, async () => {
       serve("getWeatherRisk", { warnings: [] });
-      expect(body(await call("check_weather_warnings", { ...at, language }))).toBe(language === "de" ? "Keine amtlichen Wetterwarnungen." : "No official weather warnings.");
+      expect(body(await call("check_weather_warnings", { ...at, language }))).toBe(language === "de"
+        ? "Für 52.520, 13.405 liegt derzeit keine amtliche Wetterwarnung des DWD vor (geprüft für jetzt und die nächsten 24 Stunden). Das ist keine Entwarnung für die weitere Strecke: Warnungen gelten je Gebiet und können kurzfristig neu herausgegeben werden."
+        : "No official DWD weather warning is currently in force for 52.520, 13.405 (checked for now and the next 24 hours). That is not an all-clear for the rest of the route: warnings are issued per area and can be published at short notice.");
+    });
+    it(`below the level asked (${language}): how many it hid, never "none"`, async () => {
+      serve("getWeatherRisk", { warnings: [{ ...w(), level: 1 }] });
+      expect(body(await call("check_weather_warnings", { ...at, min_level: 3, language }))).toBe(language === "de"
+        ? "Für 52.520, 13.405 liegen keine amtlichen Warnungen ab Stufe 3 vor. Es gilt aber 1 Warnung unterhalb dieser Stufe — ab Stufe 0 gefragt, wird sie angezeigt."
+        : "No official warnings at level 3 or above are in force for 52.520, 13.405. 1 warning below that level is in force — asked from level 0, it is shown.");
     });
   }
+  it("a place is said by its name; a lone advance notice says so", async () => {
+    serve("getWeatherRisk", { warnings: [{ ...w(), level: 0 }] });
+    expect(body(await call("check_weather_warnings", { place: "Leipzig", language: "de" })).split("\n")[0]).toBe("Eine amtliche Meldung für Matfienland, nur eine Vorabinformation:");
+  });
 });
 
 describe("stations", () => {

@@ -13,6 +13,7 @@ import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
+import { aroundText, byLevel, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
 import { findSpeedCameras } from "./speed-cameras.js";
 import { getTrainDepartures } from "./trains.js";
 
@@ -426,9 +427,15 @@ const checkWeatherWarnings: Handler = async (args, ctx) => {
   const { language } = ctx;
   const pos = await position(args, ctx);
   if (isResult(pos)) return pos;
-  const r = await ctx.api.get<T.WeatherRiskData>("getWeatherRisk", { at: atParam(pos.at), min_level: num(args["min_level"]) });
-  if (r.data.warnings.length === 0) return toolResult(L(language, "Keine amtlichen Wetterwarnungen.", "No official weather warnings."), [r.meta], language);
-  return toolResult(r.data.warnings.map((w) => `- ${w.headline} (${w.levelName})${w.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(w.validity.until, language)}`, ` until ${berlinDateTime(w.validity.until, language)}`)}`).join("\n"), [r.meta], language);
+  // Every warning the API holds for now and the look-ahead; the level is applied here, so the ones it
+  // hides are counted and said, as today's server says them.
+  const r = await ctx.api.get<T.WeatherRiskData>("getWeatherRisk", { at: atParam(pos.at) });
+  const minLevel = num(args["min_level"]) ?? MIN_LEVEL;
+  const around = aroundText(pos.label, pos.at);
+  const { shown, hidden } = byLevel(r.data.warnings, minLevel);
+  if (shown.length === 0) return toolResult(noWarning(language, around, minLevel, hidden), [r.meta], language);
+  const items = shown.map((w) => `- ${w.headline} (${w.levelName})${w.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(w.validity.until, language)}`, ` until ${berlinDateTime(w.validity.until, language)}`)}`);
+  return toolResult([warningsHead(language, around, shown), "", ...items].join("\n"), [r.meta], language);
 };
 
 /** The station a station tool asks about: an EVA number or a name, through the API's station search. */
