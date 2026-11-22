@@ -10,9 +10,20 @@ export type PlaceWords = {
   readonly missing: Readonly<Record<Language, string>>;
   readonly unknown?: Readonly<Record<Language, (q: string) => string>>;
   readonly ignorePlace?: true;
+  /** Today's server answers this tool's unknown place with no error code in `_meta`. */
+  readonly uncoded?: true;
 };
 
 export const PLACE_WORDS: Readonly<Record<string, PlaceWords>> = {
+  get_driving_rules: {
+    // A place is optional here: only a place given and not found is answered.
+    missing: { de: "Bitte einen Ort (place) oder Koordinaten (lat und lon) angeben.", en: "Please give a place (place) or coordinates (lat and lon)." },
+    unknown: {
+      de: (q) => `„${q}“ habe ich als Ort nicht gefunden.`,
+      en: (q) => `I could not find "${q}" as a place.`,
+    },
+    uncoded: true,
+  },
   check_autobahn_traffic: {
     missing: {
       de: "Bitte roads (Autobahnnummern, z. B. [\"A9\"]) oder land (ein Bundesland, z. B. \"bayern\") angeben. Hat die Person nichts davon genannt, bitte fragen, welche Autobahn oder welches Bundesland; für den Verkehr in einer Stadt check_road_status. Zum Beispiel {\"roads\": [\"A9\"]} oder {\"land\": \"bayern\"}.",

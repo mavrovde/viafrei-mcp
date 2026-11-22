@@ -71,8 +71,10 @@ export function placeMissing(ctx: ToolContext): CallToolResult {
 }
 
 function placeUnknown(ctx: ToolContext, q: string): CallToolResult {
-  const unknown = ctx.tool === undefined ? undefined : PLACE_WORDS[ctx.tool]?.unknown;
+  const words = ctx.tool === undefined ? undefined : PLACE_WORDS[ctx.tool];
+  const unknown = words?.unknown;
   if (unknown === undefined) return toolError(NO_PLACE[ctx.language](q));
+  if (words?.uncoded === true) return toolError(unknown[ctx.language](q));
   return { ...toolError(unknown[ctx.language](q)), _meta: { errorCode: "not_found" } };
 }
 

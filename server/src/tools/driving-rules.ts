@@ -75,7 +75,7 @@ const ruleLine = (r: T.DrivingRule, language: Language): Line => {
 
 /** The zone list's entry for a city: the line, and the headline it gives the answer. */
 function zoneCityLines(z: T.ZoneCity, language: Language): { head: string; line: Line } {
-  if (z.zone === null) {
+  if (!z.covered && z.zone === null) {
     return {
       head: L(language, `Umweltzone ${z.name}: kein Eintrag bei uns — das heißt nicht, dass es keine Zone gibt.`, `Low-emission zone ${z.name}: no entry with us — that does not mean there is no zone.`),
       line: { key: "lez.city.unknown", text: bullet(L(language, `Zu „${z.name}“ liegt uns kein Zoneneintrag vor — das heißt nicht, dass es dort keine Umweltzone gibt. ${LEZ_LIST_CAVEAT.de}`, `We have no zone entry for "${z.name}" — that does not mean the city has no low-emission zone. ${LEZ_LIST_CAVEAT.en}`)) },
@@ -90,13 +90,18 @@ function zoneCityLines(z: T.ZoneCity, language: Language): { head: string; line:
   const green = z.plakette === "green";
   return {
     head: green ? L(language, `Umweltzone ${z.name}: Ja, Sie brauchen die grüne Feinstaubplakette.`, `Low-emission zone ${z.name}: yes, you need the green Feinstaubplakette.`) : `${z.name}: ${z.zone}`,
-    line: { key: "lez.city", text: bullet(`${z.name}: ${green ? `${z.zone} ${LEZ_GREEN_PLAQUE[language]}` : z.zone}`) },
+    line: { key: "lez.city", text: bullet(`${z.name}: ${[z.zone, green ? LEZ_GREEN_PLAQUE[language] : null].filter((x): x is string => x !== null).join(" ")}`) },
   };
 }
 
 const factJson = (r: T.DrivingRule, topic: string): Record<string, unknown> => ({
   key: r.id, topic, text: r.text, source: r.sourceUrl, sourceName: r.legalBasis, lastReviewed: r.reviewedOn, ...(r.unconfirmed === null ? {} : { toVerify: r.unconfirmed }),
 });
+
+/** A point we hold no zone boundary for: no boundary is no all-clear. */
+export const lezNoBoundaryCaveat = (where: string, language: Language): string => L(language,
+  `Achtung: Für ${where} liegt uns keine Umweltzonen-Grenze vor. Daraus folgt NICHT, dass Sie dort ohne Plakette fahren dürfen — es kann dort eine Umweltzone geben; maßgeblich ist die Beschilderung (Zeichen 270.1), die vollständige Liste der Zonen führt das Umweltbundesamt.`,
+  `Caution: we hold no low-emission-zone boundary for ${where}. That does NOT mean you may drive there without a plaque — there may be a zone; the signs (sign 270.1) decide, and the Umweltbundesamt keeps the complete list of zones.`);
 
 const oldest = (dates: readonly string[]): string => [...dates].sort()[0] ?? "";
 
@@ -112,13 +117,14 @@ export const getDrivingRules: Handler = async (args, ctx): Promise<CallToolResul
     const pos = await position(args, ctx);
     if (isResult(pos)) return pos;
     at = atParam(pos.at);
-    placeLabel = pos.label;
+    placeLabel = pos.label ?? `${pos.at.lat.toFixed(3)}, ${pos.at.lon.toFixed(3)}`;
   }
   const metas: DataMeta[] = [];
   const lines: Line[] = [];
   const used: { rule: T.DrivingRule; topic: string }[] = [];
   let head: string;
   let zoneCity: T.ZoneCity | undefined;
+  let zoneVerdict: T.ZoneVerdict | undefined;
   if (topic === undefined) {
     // The overview: the first rule of every topic, under the topic's title.
     const reads = await Promise.all(RULE_TOPICS.map((t) => ctx.api.get<T.DrivingRulesData>("getDrivingRules", { topic: t, city: t === "lez" ? city : undefined })));
@@ -138,6 +144,7 @@ export const getDrivingRules: Handler = async (args, ctx): Promise<CallToolResul
     metas.push(r.meta);
     const d = r.data;
     zoneCity = d.zoneCity;
+    zoneVerdict = d.zoneVerdict;
     const z = topic === "lez" && city !== undefined && zoneCity !== undefined ? zoneCityLines(zoneCity, language) : null;
     if (z !== null) lines.push(z.line);
     lines.push(...d.rules.map((x) => ruleLine(x, language)));
@@ -167,7 +174,12 @@ export const getDrivingRules: Handler = async (args, ctx): Promise<CallToolResul
     "Hinweis: Ein Ort (place oder lat/lon) wird nur für Umweltzonen geprüft (topic=lez); diese Regeln gelten bundesweit.",
     "Note: a place (place or lat/lon) is checked for low-emission zones only (topic=lez); these rules apply across Germany.") : null;
   const more = moreLine(omitted, language, topic);
-  const text = [head, ...(pointNote === null ? [] : [pointNote]), ...kept.map((l) => l.text), ...(more === null ? [] : [more])].join("\n");
+  // No boundary held for the point: the caveat leads the answer and rides as its condition, since a late, soft
+  // sentence was read as "no plaque needed"; the zone block is then empty, a blank line before the rules.
+  const verdict = zoneVerdict;
+  const caveat = placeLabel !== null && verdict?.kind === "unknown" ? lezNoBoundaryCaveat(placeLabel, language) : null;
+  const zoneLines = placeLabel === null ? [] : [""];
+  const text = [head, ...(pointNote === null ? [] : [pointNote]), ...zoneLines, ...kept.map((l) => l.text), ...(more === null ? [] : [more])].join("\n");
   const structured: Record<string, unknown> = {
     topic: topic ?? null,
     city: city ?? null,
@@ -188,5 +200,6 @@ export const getDrivingRules: Handler = async (args, ctx): Promise<CallToolResul
     asOf: new Date(`${reviewedAt}T00:00:00Z`).toISOString(),
     asOfLabel: L(language, `Stand ${reviewDate(reviewedAt, "de")}`, `As of ${reviewDate(reviewedAt, "en")}`),
     note: disclaimer(reviewedAt, language),
+    ...(caveat === null ? {} : { conditionNote: caveat }),
   });
 };

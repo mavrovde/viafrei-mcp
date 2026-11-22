@@ -740,10 +740,34 @@ describe("get_driving_rules", () => {
     expect(body(r).split("\n")[1]).toBe("Note: a place (place or lat/lon) is checked for low-emission zones only (topic=lez); these rules apply across Germany.");
   });
 
-  it("an unknown place says so", async () => {
-    serve("listPlaces", []);
-    expect((await call("get_driving_rules", { place: "Nirgendwo", language: "en" })).isError).toBe(true);
-    expect(ops()).toEqual(["listPlaces"]);
+  for (const language of LANGS) {
+    it(`an unknown place in today's words, with no error code (${language})`, async () => {
+      serve("listPlaces", []);
+      expect(await call("get_driving_rules", { place: "Nirgendwo", language })).toEqual({
+        content: [{ type: "text", text: language === "de" ? "„Nirgendwo“ habe ich als Ort nicht gefunden." : 'I could not find "Nirgendwo" as a place.' }],
+        isError: true,
+      });
+      expect(ops()).toEqual(["listPlaces"]);
+    });
+  }
+
+  it("a point we hold no boundary for: the caveat opens the answer and is its condition; the zone block is a blank line", async () => {
+    serve("getDrivingRules", rulesOf("lez", [rule("lez.1")], { zoneVerdict: { kind: "unknown", distanceM: null } }), { notes: { purpose: [], condition: [] } });
+    const r = await call("get_driving_rules", { lat: 50.9413, lon: 6.9583, language: "de" });
+    const caveat = "Achtung: Für 50.941, 6.958 liegt uns keine Umweltzonen-Grenze vor. Daraus folgt NICHT, dass Sie dort ohne Plakette fahren dürfen — es kann dort eine Umweltzone geben; maßgeblich ist die Beschilderung (Zeichen 270.1), die vollständige Liste der Zonen führt das Umweltbundesamt.";
+    expect(body(r).split("\n").slice(0, 4)).toEqual([caveat, "Umweltzone und Plakette — 50.941, 6.958:", "", "• Text lez.1. (§ lez.1 StVO)"]);
+    expect(meta(r)["conditionNote"]).toBe(caveat);
+    serve("getDrivingRules", rulesOf("lez", [rule("lez.1")], { zoneVerdict: { kind: "outside", distanceM: 4000 } }), { notes: { purpose: [], condition: [] } });
+    const inside = await call("get_driving_rules", { lat: 50.9413, lon: 6.9583, language: "en" });
+    expect(body(inside).split("\n")[0]).toBe("Low-emission zone and plaque — 50.941, 6.958:");
+    expect(meta(inside)["conditionNote"]).toBeUndefined();
+  });
+
+  it("a list entry that carries no description yet is still an entry: green plaque, not 'no entry'", async () => {
+    serve("getDrivingRules", rulesOf("lez", [rule("lez.1")], { zoneCity: { name: "Berlin", zone: null, plakette: "green", covered: true } }));
+    const lines = body(await call("get_driving_rules", { topic: "lez", city: "Berlin", language: "en" })).split("\n");
+    expect(lines[0]).toBe("Low-emission zone Berlin: yes, you need the green Feinstaubplakette.");
+    expect(lines[1]).toBe("• Berlin: Required: the green plaque (emission group 4). You can buy it at vehicle registration offices, TÜV/DEKRA/GTÜ/KÜS and approved garages on presentation of the vehicle registration document (part I).");
   });
 });
 
