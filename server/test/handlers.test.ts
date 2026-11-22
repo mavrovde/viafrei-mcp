@@ -1436,7 +1436,7 @@ describe("stop_watch in today's words: by number, uri or subject, among this ses
       await open(client, "place", "Fulda", "48.24375,7.01625");
       const none = await stop(client, { kind: "road", key: "A9", language: "de" });
       expect(first(none)).toBe("Dazu läuft in dieser Sitzung keine Beobachtung. Offen sind: watch_id 1 (viafrei://watch/1) für die Straße A7; watch_id 2 (viafrei://watch/2) für den Ort 48.24375,7.01625. Zum Beenden einer davon: stop_watch mit ihrer watch_id.");
-      expect(textOf(none)).toMatch(/\n\nQuelle: Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben \/ Watch: ViaFrei, our own service — every report names the source of the data behind it · Stand /u);
+      expect(textOf(none)).toMatch(/\n\nQuelle: Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben \/ Watch: ViaFrei, our own service — every report names the source of the data behind it \(https:\/\/viafrei\.de\) · Stand /u);
       expect(none.structuredContent).toMatchObject({ stopped: false, matched: 0, candidates: [{ watchId: 1, kind: "road", key: "A7" }, { watchId: 2, kind: "place" }], license: "ViaFrei service metadata (no provider data)" });
       const road = await stop(client, { key: "a 07", language: "de" });
       expect(first(road)).toBe("Beobachtung für die Straße A7 beendet (viafrei://watch/1). Ich melde mich dazu nicht mehr.");
