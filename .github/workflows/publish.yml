@@ -90,7 +90,7 @@ jobs:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
   # The full mutation run of the server once per release, on the commit about
-  # to be published (mutation.yml, four shards gathered into one 70 % gate;
+  # to be published (mutation.yml, 8 shards gathered into one 70 % gate;
   # never on a pull request or a push). A red run stops the release: publish
   # needs this job. Like Snyk it runs on a tag only and needs no secret.
   mutation:

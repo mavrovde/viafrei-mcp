@@ -1,6 +1,6 @@
 // Mutation testing of the server (StrykerJS, vitest runner): once per release,
 // never per pull request. publish.yml calls .github/workflows/mutation.yml on the
-// commit about to be published; it runs four shards and gathers them into one
+// commit about to be published; it runs 8 shards and gathers them into one
 // gate that stops the publish below 70 %. scripts/mutation.mjs drives every run
 // (`npm run mutation` is the full run for a maintainer) and sets the variables
 // read below; a bare `npx stryker run` is the full run with the floor.

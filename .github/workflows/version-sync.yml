@@ -474,18 +474,27 @@ jobs:
   # Every job ends within 15 minutes (owner 2026-11-22), so each follow-up is a job
   # of its own after npm, and the three run side by side; a failed one names
   # itself and its remedy, and the others still run.
+  #
+  # The npm run (publish.yml) is not quick: Snyk, the mutation run and the real-API
+  # e2e (15) run side by side before its publish job (15); the longest of them is the
+  # mutation run (plan 5 + shards 15 + gate 10 min), so the run may take up to 45
+  # minutes by its own job limits, plus runner queueing. One job cannot wait that long, so the
+  # wait is a chain: publish dispatches and waits 12 minutes; while the run is still
+  # going (wait-run exit 3) npm-wait-2, -3 and -4 wait on for 13 minutes each with
+  # the same --since, 51 minutes in all. A run that concluded red ends the chain red
+  # at once; only the last link reads "still going" as a failure.
   publish:
     needs: [sync, release]
     runs-on: ubuntu-24.04
-    # The step deadline is 12 min (npm, observed ~2) plus checkout and dispatch, so
-    # a slow publish fails with its own message and remedy rather than being killed
-    # by the job timeout without one.
     timeout-minutes: 15
     # `actions: write` to dispatch and read the runs. Publishing itself happens in
     # the dispatched workflows, under their own permissions and environments.
     permissions:
       actions: write
       contents: read
+    outputs:
+      since: ${{ steps.npm.outputs.since }}
+      npm: ${{ steps.npm.outputs.npm }}
     env:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ needs.release.outputs.tag }}
@@ -501,18 +510,130 @@ jobs:
           node-version: '24'
 
       - name: npm — dispatch on the tag and wait for success
+        id: npm
         run: |
           set -eu
           [ "$TAG" = "v${VERSION}" ] || { echo "The release job tagged '${TAG}', not v${VERSION}." >&2; exit 2; }
           printf '%s' "$MERGE_SHA" | grep -Eq '^[0-9a-f]{40}$' || { echo "No 40-hex merge sha from the release job ('${MERGE_SHA}')." >&2; exit 2; }
           since="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "since=${since}" >> "$GITHUB_OUTPUT"
           gh workflow run publish.yml --ref "$TAG" -f dry_run=false
           # Matched by the tagged COMMIT and the dispatch time, not by the ref's name.
-          node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$since" --deadline-s "$((12 * 60))" --interval-s 15
+          rc=0
+          node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$since" --deadline-s "$((12 * 60))" --interval-s 15 || rc=$?
+          case "$rc" in
+            0) echo "npm=success" >> "$GITHUB_OUTPUT" ;;
+            3) echo "npm=pending" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$rc" ;;
+          esac
+
+  npm-wait-2:
+    needs: [sync, release, publish]
+    if: ${{ needs.publish.outputs.npm == 'pending' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      npm: ${{ steps.wait.outputs.npm }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
+      VERSION: ${{ needs.sync.outputs.version }}
+      SINCE: ${{ needs.publish.outputs.since }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: npm — wait on, the same run (part 2 of 4)
+        id: wait
+        run: |
+          set -eu
+          rc=0
+          node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$SINCE" --deadline-s "$((13 * 60))" --interval-s 15 || rc=$?
+          case "$rc" in
+            0) echo "npm=success" >> "$GITHUB_OUTPUT" ;;
+            3) echo "npm=pending" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$rc" ;;
+          esac
+
+  npm-wait-3:
+    needs: [sync, release, publish, npm-wait-2]
+    if: ${{ needs.npm-wait-2.outputs.npm == 'pending' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      npm: ${{ steps.wait.outputs.npm }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
+      VERSION: ${{ needs.sync.outputs.version }}
+      SINCE: ${{ needs.publish.outputs.since }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: npm — wait on, the same run (part 3 of 4)
+        id: wait
+        run: |
+          set -eu
+          rc=0
+          node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$SINCE" --deadline-s "$((13 * 60))" --interval-s 15 || rc=$?
+          case "$rc" in
+            0) echo "npm=success" >> "$GITHUB_OUTPUT" ;;
+            3) echo "npm=pending" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$rc" ;;
+          esac
+
+  npm-wait-4:
+    needs: [sync, release, publish, npm-wait-2, npm-wait-3]
+    if: ${{ needs.npm-wait-3.outputs.npm == 'pending' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      npm: ${{ steps.wait.outputs.npm }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
+      VERSION: ${{ needs.sync.outputs.version }}
+      SINCE: ${{ needs.publish.outputs.since }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: npm — wait on, the same run (part 4 of 4)
+        id: wait
+        run: |
+          set -eu
+          rc=0
+          node scripts/auto-release.mjs wait-run --workflow publish.yml --sha "$MERGE_SHA" --version "$VERSION" --since "$SINCE" --deadline-s "$((13 * 60))" --interval-s 15 || rc=$?
+          case "$rc" in
+            0) echo "npm=success" >> "$GITHUB_OUTPUT" ;;
+            3) echo "::error::publish.yml on ${MERGE_SHA} has not concluded after 51 minutes of waiting (four jobs), longer than its own jobs allow; read its run, then finish the release by hand (CONTRIBUTING.md)." >&2; exit 1 ;;
+            *) exit "$rc" ;;
+          esac
 
   # Smithery, after npm: up to ~11 min observed, so the deadline is 13.
   smithery:
-    needs: [sync, release, publish]
+    needs: [sync, release, publish, npm-wait-2, npm-wait-3, npm-wait-4]
+    # After npm published, whichever link of the chain saw it.
+    if: ${{ !cancelled() && (needs.publish.outputs.npm == 'success' || needs.npm-wait-2.outputs.npm == 'success' || needs.npm-wait-3.outputs.npm == 'success' || needs.npm-wait-4.outputs.npm == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -543,7 +664,9 @@ jobs:
   # DISPATCHED, which mcp-registry.yml's workflow_run filter skips, so this
   # dispatch is the only way it runs.
   mcp-registry:
-    needs: [sync, release, publish]
+    needs: [sync, release, publish, npm-wait-2, npm-wait-3, npm-wait-4]
+    # After npm published, whichever link of the chain saw it.
+    if: ${{ !cancelled() && (needs.publish.outputs.npm == 'success' || needs.npm-wait-2.outputs.npm == 'success' || needs.npm-wait-3.outputs.npm == 'success' || needs.npm-wait-4.outputs.npm == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -570,7 +693,9 @@ jobs:
 
   # The release page, after npm (observed ~1 min).
   release-page:
-    needs: [sync, release, publish]
+    needs: [sync, release, publish, npm-wait-2, npm-wait-3, npm-wait-4]
+    # After npm published, whichever link of the chain saw it.
+    if: ${{ !cancelled() && (needs.publish.outputs.npm == 'success' || needs.npm-wait-2.outputs.npm == 'success' || needs.npm-wait-3.outputs.npm == 'success' || needs.npm-wait-4.outputs.npm == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:

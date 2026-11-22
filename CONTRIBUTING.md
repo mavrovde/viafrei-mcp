@@ -137,7 +137,9 @@ ahead, it prepares the release with `scripts/propose-release.mjs` and opens a
   `build-and-test (24)`, `SonarCloud Code Analysis`) for at most 12 minutes,
   merges it with a merge commit pinned to the head it checked, pushes the
   annotated tag `vX.Y.Z` on the merge commit, then dispatches the `npm` workflow
-  on the tag (its first job is Snyk, below) and waits for it to succeed, then
+  on the tag (its first job is Snyk, below) and waits for it to succeed: up to
+  51 minutes, as a chain of four jobs of 12 and 13 minutes, because the mutation
+  run and the e2e come before the npm publish and no job runs longer than 15; then
   dispatches `Smithery`, the MCP Registry entry and `Release page`, each from
   a job of its own, side by side. A red check, a check still pending at the deadline, a pull request a
   person has touched in the meantime, or any later failure ends the run red with
