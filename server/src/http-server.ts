@@ -9,6 +9,7 @@ import { parseTrustedProxies } from "./client-ip.js";
 import { depsFromEnv } from "./deps.js";
 import { allowedHostsOf, allowedOriginsOf, isLoopback, mcpEnv, type McpEnv } from "./env.js";
 import { log } from "./log.js";
+import { requestErrorLine } from "./request-log.js";
 import { createReadiness, READINESS_DEADLINE_MS, type ReadyState } from "./readiness.js";
 import { createUsageLedger, usageLogFields, type UsageLedger } from "./usage.js";
 
@@ -67,6 +68,7 @@ export function startHttp(source: Record<string, string | undefined> = process.e
     warn: (fields, message) => { log.warn(fields, message); },
   });
   usage.start();
+  const toolNames: ReadonlySet<string> = new Set(deps.catalogue.tools.map((t) => t.name));
   const mcp = createMcpApp({
     deps,
     allowedOrigins: allowedOriginsOf(e),
@@ -77,8 +79,13 @@ export function startHttp(source: Record<string, string | undefined> = process.e
     // Liveness is process state; nothing here may await.
     health: () => ({ ok: true }),
     ready,
-    // One line per MCP request; its fields are a closed list, no argument and no address.
-    requestLog: (line) => { log.info(line, "mcp request"); },
+    // One line per MCP request; its fields are a closed list, no argument and no address. A request that
+    // went wrong gets a second line, warn or error, naming the fault (request-log.ts).
+    requestLog: (line) => {
+      log.info(line, "mcp request");
+      const fault = requestErrorLine(line, toolNames);
+      if (fault !== null) log[fault.level](fault.fields, fault.message);
+    },
     usage: usage.record,
     ipLimits: { maxInflight: e.MCP_IP_MAX_INFLIGHT, ratePerMin: e.MCP_IP_RATE_PER_MIN, burst: e.MCP_IP_RATE_BURST },
     trustedProxies: parseTrustedProxies(e.MCP_TRUSTED_PROXY_CIDR),
