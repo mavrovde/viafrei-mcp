@@ -94,9 +94,40 @@ export async function position(args: Args, ctx: ToolContext, placeKey = "place")
   if (q === undefined) return placeMissing(ctx);
   const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: 1 });
   const first = found.data[0];
-  if (first === undefined) return placeUnknown(ctx, q);
+  if (first === undefined) return (await townCentre(q, ctx)) ?? placeUnknown(ctx, q);
   creditPlace(found.meta.attribution);
   return { at: first.location, label: first.name };
+}
+
+/** Verbatim from today's server (place.ts CENTRE_NOTE): what was measured from, and what was not found. */
+export const CENTRE_NOTE: Record<Language, (thing: string) => string> = {
+  de: (thing) => ` (gemessen ab der Ortsmitte — „${thing}“ finde ich dort nicht)`,
+  en: (thing) => ` (measured from the town centre — I found no "${thing}" there)`,
+};
+
+/** Words that name a town's centre itself (today's CENTRE_WORDS): the centre is then the answer, nothing missed. */
+const CENTRE_WORDS = /^(city|centre|center|city\s+centre|city\s+center|downtown|zentrum|innenstadt|stadtmitte|stadtzentrum|ortsmitte|ortskern|stadtkern)$/iu;
+
+/**
+ * "<town> <thing>" that the place search does not hold as a whole ("Köln Hbf" where no such stop is loaded):
+ * the town's own point, the longest leading words first, its label saying it is the centre and what was not
+ * found — as today's server answers it (#674). Undefined when no leading part is a place either.
+ */
+const TOWN_READINGS = 3;
+
+async function townCentre(q: string, ctx: ToolContext): Promise<Position | undefined> {
+  const words = q.split(/\s+/u);
+  // At most TOWN_READINGS searches: a town is its first few words, never a long sentence's.
+  for (let n = Math.min(words.length - 1, TOWN_READINGS); n >= 1; n--) {
+    const town = words.slice(0, n).join(" ");
+    const thing = words.slice(n).join(" ");
+    const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q: town, limit: 1 });
+    const first = found.data[0];
+    if (first === undefined) continue;
+    creditPlace(found.meta.attribution);
+    return { at: first.location, label: CENTRE_WORDS.test(thing) ? first.name : `${first.name}${CENTRE_NOTE[ctx.language](thing)}` };
+  }
+  return undefined;
 }
 
 export const isResult = (v: unknown): v is CallToolResult => typeof v === "object" && v !== null && "content" in v;

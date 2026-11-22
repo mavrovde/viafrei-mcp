@@ -16,6 +16,8 @@ import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
 import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
 import { findSpeedCameras } from "./speed-cameras.js";
 import { getTrainDepartures } from "./trains.js";
+import { landOf, regionOf } from "./region.js";
+import { checkTransitDisruption } from "./transit.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -37,9 +39,6 @@ const NOT_KNOWN = {
   stop: (q: string, language: Language) => toolError(L(language,
     `Die Haltestelle "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").`,
     `I do not know a stop called "${q}". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").`)),
-  region: (q: string, language: Language) => toolError(L(language,
-    `"${q}" kenne ich als Region nicht. Die Daten sind auf Kreisebene gemeldet — bitte ein Bundesland, eine kreisfreie Stadt oder den Kreis nennen (z. B. "Bayern", "Köln", "Landkreis Fulda").`,
-    `I do not know "${q}" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").`)),
 };
 
 /** A session holds at most this many open watches, as today's server does. */
@@ -183,6 +182,8 @@ const checkRoadStatus: Handler = async (args, ctx) => {
   const limit = num(args["limit"]);
   const horizon = num(args["horizon_days"]);
   const vehicle = str(args["vehicle"]);
+  const place = str(args["place"]);
+  let land: { code: string; name: string } | undefined;
   const metas: DataMeta[] = [];
   let body: string;
   let at: string | undefined;
@@ -202,6 +203,12 @@ const checkRoadStatus: Handler = async (args, ctx) => {
     const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: asked, horizon_days: horizon, limit });
     metas.push(r.meta);
     body = roadStatusBody(r.data, language, limit, asked);
+  } else if (place !== undefined && args["lat"] === undefined && (land = await landOf(place, ctx)) !== undefined) {
+    // A Land asked as the place: its situations, as today's server reads a Land (by its key, not a circle).
+    const r = await ctx.api.get<T.RoadConditionsData>("listStateRoadConditions", { state: land.code, horizon_days: horizon, limit });
+    metas.push(r.meta);
+    const rows = asked === undefined ? r.data.situations : r.data.situations.filter((s) => (s.road ?? "").replace(/\s/g, "").toUpperCase() === asked);
+    body = roadStatusBody({ ...r.data, situations: rows }, language, limit, asked === undefined ? land.name : L(language, `${asked} in ${land.name}`, `${asked} in ${land.name}`));
   } else {
     const pos = await position(args, ctx);
     if (isResult(pos)) return pos;
@@ -458,34 +465,9 @@ const findSharing: Handler = async (args, ctx) => {
 
 /** The official region code the contract's `area` wants: given as one, a region name through listPlaces, or a position through describeLocation. */
 async function areaCode(args: Args, ctx: ToolContext): Promise<{ code: string | undefined; metas: DataMeta[] }> {
-  const region = str(args["region"]);
-  if (region !== undefined && /^[0-9]{2,12}$/.test(region)) return { code: region, metas: [] };
-  if (region !== undefined) {
-    const r = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: region, limit: 1 });
-    return { code: r.data[0]?.districtCode ?? undefined, metas: [r.meta] };
-  }
-  const lat = num(args["lat"]);
-  const lon = num(args["lon"]);
-  if (lat === undefined || lon === undefined) return { code: undefined, metas: [] };
-  const r = await ctx.api.get<T.LocationData>("describeLocation", { at: atParam({ lat, lon }) });
-  return { code: r.data.district?.code ?? r.data.state?.code ?? undefined, metas: [r.meta] };
+  const { code, metas } = await regionOf(args, ctx);
+  return { code, metas };
 }
-
-const checkTransitDisruption: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  const line = str(args["line"]);
-  if (line === undefined && str(args["region"]) === undefined && (num(args["lat"]) === undefined || num(args["lon"]) === undefined)) return placeMissing(ctx);
-  const area = await areaCode(args, ctx);
-  if (area.code === undefined && line === undefined) {
-    const region = str(args["region"]);
-    return region === undefined ? toolResult(L(language, "Diese Region kenne ich nicht.", "I do not know this region."), area.metas, language) : NOT_KNOWN.region(region, language);
-  }
-  const r = await ctx.api.get<T.DisruptionData>("listTransitDisruptions", { area: area.code, line, window_min: num(args["window_min"]) });
-  const lines = r.data.alerts.map((a) => `- ${a.lines.length > 0 ? `${a.lines.join(", ")}: ` : ""}${a.header ?? ""}`);
-  if (r.data.punctuality !== null) lines.unshift(L(language, `Pünktlichkeit ${r.data.punctuality.name ?? ""}: ${r.data.punctuality.level} (${r.data.punctuality.late} von ${r.data.punctuality.observed} verspätet)`, `Punctuality ${r.data.punctuality.name ?? ""}: ${r.data.punctuality.level} (${r.data.punctuality.late} of ${r.data.punctuality.observed} late)`));
-  if (lines.length === 0) return none(language, [r.meta], L(language, "Störungen", "disruptions"));
-  return toolResult(lines.join("\n"), [r.meta], language);
-};
 
 const checkWeatherWarnings: Handler = async (args, ctx) => {
   const { language } = ctx;
@@ -631,12 +613,18 @@ async function chargerByPlace(key: string, ctx: ToolContext): Promise<{ target: 
   } } };
 }
 
+/** Verbatim from today's server (watch_situation.ts weatherNoCell). */
+const WEATHER_NO_CELL: Record<Language, (label: string) => string> = {
+  de: (label) => `Für ${label} kenne ich noch keine Warnzelle des DWD — dort wurde bisher keine Warnung geführt —, deshalb öffne ich keine Wetter-Beobachtung, die womöglich nie auslöst. Bitte einen größeren Ort in der Nähe nennen.`,
+  en: (label) => `I know no DWD warn cell for ${label} yet — no warning has been held there so far — so I am not opening a weather watch that might never fire. Name a larger town nearby.`,
+};
+
 /** watchTarget, with what a station or a region named in words became, for the answer to say it. */
-async function resolveWatch(kind: string, key: string, ctx: ToolContext): Promise<{ target: string; resolved?: Resolved } | CallToolResult> {
+async function resolveWatch(kind: string, key: string, ctx: ToolContext): Promise<{ target: string; resolved?: Resolved; label?: string } | CallToolResult> {
   if (kind === "road") return { target: key.replace(/\s/g, "").toUpperCase() };
   if ((kind === "place" || kind === "weather") && !LAT_LON.test(key)) {
     const pos = await position({ place: key }, ctx);
-    return isResult(pos) ? pos : { target: atParam(pos.at) };
+    return isResult(pos) ? pos : { target: atParam(pos.at), label: pos.label ?? key };
   }
   if (kind === "place" || kind === "weather") return { target: key.replace(/\s/g, "") };
   if (kind === "station" && !/^[\w:-]*\d[\w:-]*$/u.test(key)) {
@@ -670,10 +658,15 @@ const watchSituation: Handler = async (args, ctx) => {
   if (isResult(resolved)) return resolved;
   const target = resolved.target;
   const condition = args["condition"];
-  const r = await ctx.api.get<T.WatchData>("getWatch", {
+  const asked = ctx.api.get<T.WatchData>("getWatch", {
     kind, target, request: str(args["request"]), hours: num(args["hours"]), until: str(args["until"]),
     condition: condition === undefined ? undefined : JSON.stringify(condition),
   });
+  // A place with no DWD warn cell: a fact of the data, answered as today's server answers it, not an error.
+  const r = kind === "weather" && resolved.label !== undefined
+    ? await asked.catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; })
+    : await asked;
+  if (r === null) return toolResult(WEATHER_NO_CELL[language](resolved.label!), [], language, { structured: { watchOpened: false, reason: "no_warn_cell" } });
   const id = ctx.watches.add({ watchId: r.data.watchId, uri: r.data.uri, kind: r.data.kind, key: r.data.key }, key);
   // A place is said by its name, as it was asked; every other kind by the key the platform watches.
   return watchOpened({

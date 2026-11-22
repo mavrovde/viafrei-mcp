@@ -131,6 +131,15 @@ describe("check_autobahn_traffic", () => {
 });
 
 describe("check_road_status", () => {
+  it("a Land as the place: the Land's situations by its key, the road kept", async () => {
+    serve("getPlacesCoverage", { kinds: [], lands: [{ code: "03", name: "Niedersachsen", sourceFamily: "destatis_gv" }], addresses: [] });
+    serve("listStateRoadConditions", roads([]));
+    const r = await call("check_road_status", { road: "L1025", place: "niedersachsen", language: "de" });
+    expect(paths("listStateRoadConditions")).toEqual(["/v1/states/03/road-conditions"]);
+    expect(ops()).not.toContain("listPlaces");
+    expect(body(r)).toBe("L1025 in Niedersachsen: Es liegt keine Meldung vor — das heißt ausdrücklich nicht, dass die Straße frei ist.");
+  });
+
   it("a motorway number in any spelling asks its conditions with the horizon", async () => {
     serve("getMotorwayConditions", roads(rich));
     const r = await call("check_road_status", { road: "a 1", horizon_days: 3, limit: 5, language: "en" });
@@ -909,7 +918,7 @@ describe("check_transit_disruption", () => {
       serve("listPlaces", []);
       const r = await call("check_transit_disruption", { region: "Atlantis", language });
       expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? '"Atlantis" kenne ich als Region nicht. Die Daten sind auf Kreisebene gemeldet — bitte ein Bundesland, eine kreisfreie Stadt oder den Kreis nennen (z. B. "Bayern", "Köln", "Landkreis Fulda").' : 'I do not know "Atlantis" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").' }], isError: true });
-      expect(ops()).toEqual(["listPlaces"]);
+      expect(ops()).toEqual(["getPlacesCoverage", "listPlaces", "listPlaces"]);
     });
   }
   it("a punctuality without a name", async () => {
@@ -918,7 +927,7 @@ describe("check_transit_disruption", () => {
   });
   it("a region name: its district code through the place search", async () => {
     await call("check_transit_disruption", { region: "VBB", language: "en" });
-    expect(query("listPlaces")).toEqual([{ q: "VBB", limit: "1", lang: "en" }]);
+    expect(query("listPlaces")).toEqual([{ q: "VBB", kind: "district", limit: "1", lang: "en" }, { q: "VBB", limit: "1", lang: "en" }, { q: ex<{ name: string }[]>("listPlaces")[0]!.name, kind: "district", limit: "5", lang: "en" }]);
     expect(query("listTransitDisruptions")).toEqual([{ area: "01", lang: "en" }]);
   });
   it("a region name the place search has no code for, with a line: the line alone", async () => {
@@ -950,6 +959,38 @@ describe("check_transit_disruption", () => {
       _meta: { errorCode: "invalid_input", errorReason: "place_missing" },
     });
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("a town and a thing the place search does not hold", () => {
+  const placesOnly = (known: string) => mockServer.use(handlerFor("listPlaces", (url) => {
+    const e = ex<Record<string, unknown>[]>("listPlaces");
+    return HttpResponse.json({ ...exampleOf<object>("listPlaces"), data: url.searchParams.get("q") === known ? [{ ...e[0], name: known }] : [] });
+  }));
+  for (const language of LANGS) {
+    it(`the town's centre, saying what was not found (${language})`, async () => {
+      placesOnly("Köln");
+      serve("getWeatherRisk", { warnings: [] });
+      const r = await call("check_weather_warnings", { place: "Köln Hbf", language });
+      expect(query("listPlaces").map((q) => q["q"])).toEqual(["Köln Hbf", "Köln"]);
+      expect(body(r)).toContain(language === "de" ? "Köln (gemessen ab der Ortsmitte — „Hbf“ finde ich dort nicht)" : 'Köln (measured from the town centre — I found no "Hbf" there)');
+    });
+  }
+  it("a centre word: the centre is the answer, no note", async () => {
+    placesOnly("Kiel");
+    serve("getWeatherRisk", { warnings: [] });
+    const r = await call("check_weather_warnings", { place: "Kiel Zentrum", language: "de" });
+    expect(body(r)).toContain("Kiel");
+    expect(body(r)).not.toContain("Ortsmitte");
+  });
+  it("the longest leading words first, at most three", async () => {
+    placesOnly("Frankfurt am Main");
+    serve("getWeatherRisk", { warnings: [] });
+    await call("check_weather_warnings", { place: "Frankfurt am Main Hbf", language: "de" });
+    expect(query("listPlaces").map((q) => q["q"])).toEqual(["Frankfurt am Main Hbf", "Frankfurt am Main"]);
+    calls.length = 0;
+    await call("check_weather_warnings", { place: "a b c d e", language: "de" });
+    expect(query("listPlaces").map((q) => q["q"])).toEqual(["a b c d e", "a b c", "a b", "a"]);
   });
 });
 
@@ -1453,6 +1494,26 @@ describe("watch_situation: at most ten open watches a session", () => {
     await close();
     expect(eleventh).toEqual({ content: [{ type: "text", text: "This session already has 10 open watches — the limit is 10. End one with stop_watch (viafrei://watches lists them) and try again." }], isError: true });
     expect(calls).toHaveLength(before);
+  });
+});
+
+describe("a weather watch where the DWD holds no warn cell", () => {
+  for (const language of LANGS) {
+    it(`today's answer, no watch opened, not an error (${language})`, async () => {
+      mockServer.use(handlerFor("getWatch", () => problem(404, "not-found")));
+      const name = ex<{ name: string }[]>("listPlaces")[0]!.name;
+      const r = await call("watch_situation", { kind: "weather", key: "Hamburg", language });
+      expect(r.isError).toBeUndefined();
+      expect(body(r)).toBe(language === "de"
+        ? `Für ${name} kenne ich noch keine Warnzelle des DWD — dort wurde bisher keine Warnung geführt —, deshalb öffne ich keine Wetter-Beobachtung, die womöglich nie auslöst. Bitte einen größeren Ort in der Nähe nennen.`
+        : `I know no DWD warn cell for ${name} yet — no warning has been held there so far — so I am not opening a weather watch that might never fire. Name a larger town nearby.`);
+      expect(r.structuredContent).toMatchObject({ watchOpened: false, reason: "no_warn_cell" });
+    });
+  }
+  it("a road the platform does not know stays the API's refusal", async () => {
+    mockServer.use(handlerFor("getWatch", () => problem(404, "not-found")));
+    const r = await call("watch_situation", { kind: "road", key: "A999", language: "en" });
+    expect(r.isError).toBe(true);
   });
 });
 

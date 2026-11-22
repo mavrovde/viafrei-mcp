@@ -38,6 +38,94 @@
         "attribution": "",
         "license": ""
       }
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Bayern",
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Bayern: in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Bayern: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Hamburg",
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Hamburg: in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Hamburg: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Brandenburg",
+        "window_min": 30,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Brandenburg: in den letzten 30 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Brandenburg: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Frankfurt am Main",
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Frankfurt am Main: in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Frankfurt am Main: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Hessen",
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Hessen: in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Hessen: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Leipzig",
+        "window_min": 120,
+        "language": "en"
+      },
+      "isError": true,
+      "text": "I do not know \"Leipzig\" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example \"Bayern\", \"Köln\", \"Landkreis Fulda\").",
+      "structuredContent": null,
+      "meta": {}
     }
   ]
 }

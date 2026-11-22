@@ -65,7 +65,7 @@ export type ZoneVerdict = { kind: "inside" | "transfer" | "outside" | "unknown";
 export type DrivingRulesData = { topic: string; title: string; rules: DrivingRule[]; reviewedOn: string; disclaimer: string; zoneCity?: ZoneCity; zoneVerdict?: ZoneVerdict };
 /** DisruptionData */
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
-export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; punctuality: { name: string | null; level: string; late: number; observed: number } | null; windowMin: number };
+export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; alertsChecked?: boolean; punctuality: { name: string | null; level: string; late: number; observed: number; stopsReporting?: number; untimed?: number } | null; windowMin: number };
 /** WeatherRiskData */
 export type WeatherWarning = { headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null }; inForce?: boolean };
 export type WeatherRiskData = { warnings: WeatherWarning[] };
