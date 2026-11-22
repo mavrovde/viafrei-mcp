@@ -10,6 +10,7 @@ import { berlinDateTime, berlinTime, eur, km, notAvailable, toolError, toolResul
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
+import { findSpeedCameras } from "./speed-cameras.js";
 import { getTrainDepartures } from "./trains.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
@@ -258,16 +259,6 @@ const findParking: Handler = async (args, ctx) => {
     return `- ${p.name ?? p.operator ?? p.id} (${p.kind})${p.distanceM === null || p.distanceM === undefined ? "" : ` · ${km(p.distanceM, language)}`}${occ}`;
   });
   return toolResult(lines.join("\n"), [r.meta], language, read.conditionNote === undefined ? {} : { conditionNote: read.conditionNote });
-};
-
-const findSpeedCameras: Handler = async (args, ctx) => {
-  const { language } = ctx;
-  const pos = await position(args, ctx);
-  if (isResult(pos)) return pos;
-  const r = await ctx.api.get<T.SpeedData>("listSpeedCameras", { at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), limit: num(args["limit"]) });
-  const rows = [...r.data.official, ...r.data.osm];
-  if (rows.length === 0) return none(language, [r.meta], L(language, "Blitzer", "speed cameras"));
-  return toolResult(rows.map((c) => `- ${[c.street, c.municipality].filter(Boolean).join(", ") || c.locationLabel || c.id} (${c.kind})${c.limitKmh === null ? "" : ` · ${c.limitKmh} km/h`}`).join("\n"), [r.meta], language);
 };
 
 const PLACE_KIND: Record<string, string> = { city: "municipality", district: "district", admin: "region", station: "station_area", stop: "station_area", motorway: "motorway", junction: "junction" };

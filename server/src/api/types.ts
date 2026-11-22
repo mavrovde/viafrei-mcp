@@ -26,7 +26,7 @@ export type ParkingSite = {
   occupancy: { free: number | null; total: number | null; state: string; observedAt: string | null } | null; termsRequired: boolean;
 };
 /** SpeedData */
-export type SpeedCamera = { id: string; kind: string; street: string | null; municipality: string | null; limitKmh: number | null; locationLabel: string | null; firstDay: string | null; lastDay: string | null };
+export type SpeedCamera = { id: string; kind: string; enforces: string | null; street: string | null; locationLabel: string | null; municipality: string | null; direction: string | null; limitKmh: number | null; lorryLimitKmh: number | null; firstDay: string | null; lastDay: string | null; dataAsOf: string | null; staleYear: number | null; location: LatLon | null; sourceFamily: string };
 export type SpeedData = { official: SpeedCamera[]; officialTotal: number; osm: SpeedCamera[]; osmTotal: number };
 /** Poi, PoiPage */
 export type Poi = { name: string | null; category: string; kind: string | null; street: string | null; number: string | null; postcode: string | null; place: string | null; distanceM: number | null };

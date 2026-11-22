@@ -11,6 +11,7 @@ import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js
 import { pinned } from "./pinned.js";
 import { connect, textOf } from "./harness.js";
 import { GAPS, lampText, nearestMotorways } from "../src/tools/handlers.js";
+import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
@@ -369,22 +370,81 @@ describe("find_parking", () => {
 
 describe("find_speed_cameras", () => {
   const cam = (o: Record<string, unknown>) => ({ ...ex<{ osm: Record<string, unknown>[] }>("listSpeedCameras").osm[0], ...o });
-  it("official cameras first, then OSM; located by street and town, label or id", async () => {
-    serve("listSpeedCameras", {
-      official: [cam({ street: "Ringstraße", municipality: "Köln", kind: "mobile", limitKmh: 30 })],
-      officialTotal: 1,
-      osm: [cam({ street: "Allee", municipality: null }), cam({ locationLabel: null, id: "osm:1", limitKmh: null })],
-      osmTotal: 2,
-    });
-    const r = await call("find_speed_cameras", { ...at, radius_km: 2, limit: 3, language: "en" });
-    expect(query("listSpeedCameras")).toEqual([{ at: "52.52,13.405", radius_m: "2000", limit: "3", lang: "en" }]);
-    expect(body(r)).toBe(`${String(meta(r)["conditionNote"])}\n- Ringstraße, Köln (mobile) · 30 km/h\n- Allee (fixed) · 50 km/h\n- osm:1 (fixed)`);
-    expect(String(meta(r)["conditionNote"])).toMatch(/^Note on use \(§ 23 Abs\. 1c StVO\)/);
+  const OFFICIAL_ATTR = { family: "city_x_speed", text: "Geschwindigkeitsüberwachung X: Stadt X, dl-de/by-2-0", licence: "dl-de/by-2-0" };
+  const withOfficial = (attr: Record<string, unknown>[]) => ({
+    attribution: [...attr, ...(exampleOf<Body>("listSpeedCameras").meta["attribution"] as Record<string, unknown>[])],
+    freshness: [{ family: "city_x_speed", dataAsOf: "2026-03-28T08:00:00Z", ageS: 1, staleAfterS: 9, stale: false }, ...(exampleOf<Body>("listSpeedCameras").meta["freshness"] as Record<string, unknown>[])],
   });
   for (const language of LANGS) {
-    it(`none (${language})`, async () => {
+    it(`the official lists by kind, then OpenStreetMap's block, each with its own more-count, one Stand per source (${language})`, async () => {
+      serve("listSpeedCameras", {
+        official: [
+          cam({ id: "x:1", kind: "fixed", street: "Ringstraße", municipality: "Köln", enforces: "speed_red_light", limitKmh: 50, lorryLimitKmh: 40, direction: "Nord", sourceFamily: "city_x_speed", dataAsOf: "2026-03-01" }),
+          cam({ id: "x:3", kind: "fixed", street: "Hauptstraße", municipality: "Köln", limitKmh: null, sourceFamily: "city_x_speed", dataAsOf: null }),
+          cam({ id: "x:2", kind: "mobile_announced", street: "Allee", municipality: "Köln", limitKmh: 30, firstDay: "2026-03-30", lastDay: "2026-03-31", staleYear: 2024, sourceFamily: "city_x_speed", dataAsOf: "2026-03-02" }),
+        ],
+        officialTotal: 4,
+        osm: [cam({ locationLabel: null, location: { lat: 49.001349, lon: 8.3450512 }, limitKmh: null }), cam({ locationLabel: null, location: null, limitKmh: null, enforces: null })],
+        osmTotal: 3,
+      }, withOfficial([OFFICIAL_ATTR]));
+      const r = await call("find_speed_cameras", { place: "Köln", radius_km: 2.5, limit: 2, language });
+      expect(query("listSpeedCameras")).toEqual([{ at: "48.24375,7.01625", radius_m: "2500", limit: "2", lang: language }]);
+      const lines = body(r).split("\n");
+      const head = language === "de" ? lines.slice(1) : lines.slice(4);
+      if (language === "en") expect(lines.slice(1, 4)).toEqual(["The notice in its original wording (German):", SPEED_NOTICE_DE, ""]);
+      expect(head).toEqual(language === "de" ? [
+        "Geschwindigkeitsüberwachung — veröffentlichte Standorte für Matfienland (Umkreis 2,5 km), nach Art und Straße:",
+        "Feste Anlagen:",
+        "- Ringstraße, Köln — Geschwindigkeit und Rotlicht · 50 km/h · Lkw 40 km/h · Richtung Nord",
+        "- Hauptstraße, Köln — Geschwindigkeit",
+        "Angekündigte mobile Kontrollen:",
+        "- Allee, Köln — Geschwindigkeit · 30 km/h · 2026-03-30 bis 2026-03-31 · Datenstand 2024, älter als ein Jahr",
+        "… und 1 weitere Standorte in diesem Gebiet.",
+        "Feste Anlagen (OpenStreetMap):",
+        "- 49.00135, 8.34505 — Geschwindigkeit",
+        "- Ort ohne Straßenangabe — ",
+        "… und 1 weitere in OpenStreetMap eingetragene Anlagen in diesem Gebiet.",
+        "Stand Geschwindigkeitsüberwachung X: gelesen 28.03.2026, Datenstand 02.03.2026",
+        "Stand Blitzer (OpenStreetMap): gelesen 29.03.2026, Datenstand 28.02.2026",
+      ] : [
+        "Speed enforcement — published locations for Matfienland (radius 2.5 km), by kind and street:",
+        "Fixed cameras:",
+        "- Ringstraße, Köln — speed and red light · 50 km/h · HGV 40 km/h · direction Nord",
+        "- Hauptstraße, Köln — speed",
+        "Announced mobile checks:",
+        "- Allee, Köln — speed · 30 km/h · 2026-03-30 to 2026-03-31 · data from 2024, over a year old",
+        "… and 1 more locations in this area.",
+        "Fixed cameras (OpenStreetMap):",
+        "- 49.00135, 8.34505 — speed",
+        "- place without a street — ",
+        "… and 1 more cameras mapped in OpenStreetMap in this area.",
+        "Stand Geschwindigkeitsüberwachung X: read 2026-03-28, data as of 2026-03-02",
+        "Stand Blitzer (OpenStreetMap): read 2026-03-29, data as of 2026-02-28",
+      ]);
+      const sc = r.structuredContent as Record<string, unknown>;
+      expect(sc["asOf"]).toBe("2026-03-29T12:00:00Z");
+      expect(sc["stand"]).toEqual([
+        { source: "city_x_speed", name: "Geschwindigkeitsüberwachung X", readAt: "2026-03-28T08:00:00Z", dataAsOf: "2026-03-02" },
+        { source: "osm_speed_cameras", name: "Blitzer (OpenStreetMap)", readAt: "2026-03-29T12:00:00Z", dataAsOf: "2026-02-28" },
+      ]);
+      expect({ place: sc["place"], radiusKm: sc["radiusKm"], total: sc["total"], osmTotal: sc["osmTotal"], planningOnly: sc["planningOnly"], noticeDe: sc["noticeDe"] })
+        .toEqual({ place: "Matfienland", radiusKm: 2.5, total: 4, osmTotal: 3, planningOnly: true, noticeDe: SPEED_NOTICE_DE });
+      expect((sc["locations"] as Record<string, unknown>[])[0]).toEqual({
+        kind: "fixed", kindLabel: language === "de" ? "Feste Anlagen" : "Fixed cameras", enforces: "speed_red_light", enforcesLabel: language === "de" ? "Geschwindigkeit und Rotlicht" : "speed and red light",
+        street: "Ringstraße", locationText: "Blitzer Kansilkamp", municipality: "Köln", direction: "Nord", maxSpeedKmh: 50, maxSpeedHgvKmh: 40,
+        validFrom: null, validTo: null, dataAsOf: "2026-03-01", staleYear: null, lat: 47.655653, lon: 7.799556, source: "city_x_speed",
+      });
+    });
+  }
+  for (const language of LANGS) {
+    it(`none: nothing published is not no checks; coordinates name the point; the Stand is the time we looked (${language})`, async () => {
       serve("listSpeedCameras", { official: [], officialTotal: 0, osm: [], osmTotal: 0 });
-      expect(body(await call("find_speed_cameras", { ...at, language })).split("\n").at(-1)).toBe(language === "de" ? "Keine Blitzer gefunden." : "No speed cameras found.");
+      const r = await call("find_speed_cameras", { ...at, language });
+      expect(body(r).split("\n").at(-1)).toBe(language === "de"
+        ? "Für 52.520, 13.405 (Umkreis 5 km) ist in unseren Quellen kein Standort veröffentlicht. Das heißt nicht, dass dort nicht kontrolliert wird."
+        : "No location is published in our sources for 52.520, 13.405 (radius 5 km). That does not mean there are no checks there.");
+      expect(query("listSpeedCameras")).toEqual([{ at: "52.52,13.405", radius_m: "5000", lang: language }]);
+      expect((r.structuredContent as Record<string, unknown>)["asOf"]).toBe("2026-03-30T00:00:00Z");
     });
   }
 });
