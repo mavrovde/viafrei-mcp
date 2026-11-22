@@ -67,7 +67,7 @@ describe("special cases", () => {
     const { client, close } = await connect();
     const r = await client.callTool({ name: "check_autobahn_traffic", arguments: { roads: ["A999"], language: "en" } });
     expect(r.isError).toBe(true);
-    expect(textOf(r)).toContain("found nothing");
+    expect(textOf(r)).toEqual('No data for A999 — that is not a motorway number I know, so not a German motorway I can say anything about. 3 motorways are on record. Nearest real numbers: A100, A101, A102. Please check the number (e.g. "A9", "A100").');
     await close();
   });
 

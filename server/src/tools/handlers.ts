@@ -4,7 +4,7 @@
  * API's live refresher for a fresh board. A tool whose operation the API contract lacks answers `notAvailable` and is listed in GAPS.
  */
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { DataMeta, Envelope } from "../api/client.js";
+import { ApiError, type DataMeta, type Envelope } from "../api/client.js";
 import type * as T from "../api/types.js";
 import { berlinDateTime, berlinTime, eur, km, notAvailable, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
@@ -46,9 +46,62 @@ function situationLine(s: T.RoadSituation, language: Language): string {
   return `- ${s.road ?? ""}${dir}: ${s.headline}${delay}${until}${s.distanceM === undefined ? "" : ` · ${km(s.distanceM, language)}`}`;
 }
 
+/** The lamp's colour and its reason in words, as today's server says them (autobahn-ampel.ts); the code is never read out. */
+const LAMP: Record<Language, Record<string, string>> = {
+  de: { red: "Rot", amber: "Gelb", green: "Grün" },
+  en: { red: "red", amber: "yellow", green: "green" },
+};
+const REASON: Record<Language, Record<string, string>> = {
+  de: {
+    road_closed: "Vollsperrung", ramp_closed: "Anschlussstelle gesperrt", safety: "Gefahr auf der Fahrbahn", bridge_closed: "Brücke gesperrt",
+    long_jam: "Stau", jam: "Stau", weather_warning: "DWD-Warnung", slippery: "Glättegefahr", warning: "Verkehrsmeldung",
+    narrowing: "Baustelle, Fahrbahn eingeengt", limited_sight: "eingeschränkte Sicht — eine Quelle ist nicht aktuell oder nicht lesbar",
+  },
+  en: {
+    road_closed: "full closure", ramp_closed: "a junction ramp closed", safety: "danger on the road", bridge_closed: "bridge closed",
+    long_jam: "jam", jam: "jam", weather_warning: "DWD warning", slippery: "slippery road", warning: "traffic report",
+    narrowing: "roadworks narrowing the carriageway", limited_sight: "limited sight — a source is not current or could not be read",
+  },
+};
+
+export function lampText(d: Pick<T.RoadConditionsData, "lamp" | "lampReason">, language: Language): string {
+  const lamp = LAMP[language][d.lamp] ?? d.lamp;
+  if (d.lampReason === null || d.lamp === "green") {
+    return L(language, `Ampel ${lamp}: von Autobahn GmbH, Polizei/Ländern und DWD nichts gemeldet — keine Garantie für freie Fahrt`, `traffic light ${lamp}: nothing reported by the Autobahn GmbH, the police/Länder or the DWD — no guarantee the road is clear`);
+  }
+  return L(language, `Ampel ${lamp}: ${REASON.de[d.lampReason] ?? d.lampReason}`, `traffic light ${lamp}: ${REASON.en[d.lampReason] ?? d.lampReason}`);
+}
+
+/** Today's refusal of motorway numbers no register knows (check_autobahn_traffic.ts, motorway-known.ts). */
+const UNKNOWN_ROAD = {
+  all: (roads: string, count: number, near: string, language: Language) => L(language,
+    `Für ${roads} liegen keine Daten vor — das ist keine mir bekannte Autobahnnummer, also keine Bundesautobahn, über die ich etwas sagen kann. ${count} Autobahnen sind erfasst.${near === "" ? "" : ` Nächstliegende Nummern: ${near}.`} Bitte prüfen Sie die Nummer (z. B. "A9", "A100").`,
+    `No data for ${roads} — that is not a motorway number I know, so not a German motorway I can say anything about. ${count} motorways are on record.${near === "" ? "" : ` Nearest real numbers: ${near}.`} Please check the number (e.g. "A9", "A100").`),
+  one: (road: string, near: string, language: Language) => L(language,
+    `${road}: keine bekannte Autobahnnummer — keine Bundesautobahn, über die ich etwas sagen kann. ${near === "" ? 'Bitte prüfen Sie die Nummer (z. B. "A9", "A100").' : `Nächstliegende Nummern: ${near}.`}`,
+    `${road}: not a known motorway number — not a German motorway I can say anything about. ${near === "" ? 'Please check the number (e.g. "A9", "A100").' : `Nearest real numbers: ${near}.`}`),
+};
+
+const motorwayNo = (road: string): number => Number(road.slice(1));
+
+/** The nearest real numbers to an unknown one, in number order: the number without its last digit first, then the closest (motorway-known.ts). */
+export function nearestMotorways(road: string, registered: readonly string[], n = 3): string[] {
+  const known = [...new Set(registered.filter((r) => /^A\d+$/u.test(r)))].filter((r) => r !== road);
+  if (known.length === 0 || !/^A\d+$/u.test(road)) return [];
+  const target = motorwayNo(road);
+  const picked: string[] = [];
+  const prefix = road.length > 2 ? road.slice(0, -1) : null;
+  if (prefix !== null && known.includes(prefix)) picked.push(prefix);
+  for (const r of known.filter((x) => !picked.includes(x)).sort((a, b) => Math.abs(motorwayNo(a) - target) - Math.abs(motorwayNo(b) - target) || motorwayNo(a) - motorwayNo(b))) {
+    if (picked.length >= n) break;
+    picked.push(r);
+  }
+  return picked.sort((a, b) => motorwayNo(a) - motorwayNo(b));
+}
+
 function situationsBody(d: T.RoadConditionsData, language: Language, limit: number | undefined): string {
   const rows = d.situations.slice(0, limit ?? 20);
-  const head = `${d.lampReason}`;
+  const head = `${lampText(d, language)}.`;
   return rows.length === 0 ? head : [head, ...rows.map((s) => situationLine(s, language))].join("\n");
 }
 
@@ -58,9 +111,16 @@ const checkAutobahnTraffic: Handler = async (args, ctx) => {
   const kinds = strs(args["kinds"]);
   const limit = num(args["limit"]);
   if (roads.length > 0) {
-    const reads = await Promise.all(roads.slice(0, 5).map((road) => ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road, kinds, limit, cursor: str(args["cursor"]) })));
-    const body = reads.map((r, i) => `${roads[i]}: ${situationsBody(r.data, language, limit)}`).join("\n\n");
-    return toolResult(body, reads.map((r) => r.meta), language, { nextCursor: reads.length === 1 ? (reads[0]!.meta.page?.nextCursor ?? null) : null });
+    const asked = roads.slice(0, 5);
+    const all = await Promise.all(asked.map((road) => ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road, kinds, limit, cursor: str(args["cursor"]) })
+      .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; })));
+    const registered = all.includes(null) ? (await ctx.api.get<{ road: string }[]>("listMotorways", {})).data.map((m) => m.road) : [];
+    const known = all.filter((r): r is NonNullable<typeof r> => r !== null);
+    if (known.length === 0) {
+      return toolError(UNKNOWN_ROAD.all(asked.join(", "), registered.length, asked.length === 1 ? nearestMotorways(asked[0]!, registered).join(", ") : "", language));
+    }
+    const body = all.map((r, i) => (r === null ? UNKNOWN_ROAD.one(asked[i]!, nearestMotorways(asked[i]!, registered).join(", "), language) : `${asked[i]} — ${situationsBody(r.data, language, limit)}`)).join("\n\n");
+    return toolResult(body, known.map((r) => r.meta), language, { nextCursor: all.length === 1 ? (known[0]!.meta.page?.nextCursor ?? null) : null });
   }
   const land = str(args["land"]);
   if (land !== undefined) {

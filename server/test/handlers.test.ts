@@ -7,10 +7,10 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { calls, exampleOf, handlerFor, mockServer } from "./api-mock.js";
+import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
 import { pinned } from "./pinned.js";
 import { connect, textOf } from "./harness.js";
-import { GAPS } from "../src/tools/handlers.js";
+import { GAPS, lampText, nearestMotorways } from "../src/tools/handlers.js";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
@@ -57,7 +57,7 @@ const meta = (r: CallToolResult) => r._meta as Record<string, unknown>;
 
 type Sit = Record<string, unknown>;
 const situation = (o: Sit = {}): Sit => ({ ...(ex<{ situations: Sit[] }>("getMotorwayConditions").situations[0] as Sit), ...o });
-const roads = (situations: Sit[], lampReason = "roadworks"): Record<string, unknown> => ({ ...ex<object>("getMotorwayConditions"), lampReason, situations });
+const roads = (situations: Sit[], lampReason = "narrowing"): Record<string, unknown> => ({ ...ex<object>("getMotorwayConditions"), lampReason, situations });
 const rich = [
   situation({ road: "A1", directionText: "Richtung Köln", headline: "Stau", delayMin: 12, validity: { from: "2026-03-30T08:00:00Z", until: "2026-03-30T10:00:00Z" }, distanceM: 1800 }),
   situation({ road: null, headline: "Unfall", delayMin: null, distanceM: 400 }),
@@ -90,7 +90,7 @@ describe("check_autobahn_traffic", () => {
     calls.length = 0;
     const one = await call("check_autobahn_traffic", { roads: ["A1"], language: "en" });
     expect(meta(one)["nextCursor"]).toBe("next-1");
-    expect(body(one)).toBe("A1: roadworks");
+    expect(body(one)).toBe("A1 — traffic light yellow: roadworks narrowing the carriageway.");
   });
 
   it("without a limit lists twenty situations", async () => {
@@ -105,13 +105,13 @@ describe("check_autobahn_traffic", () => {
     const r = await call("check_autobahn_traffic", { land: "saarland", kinds: ["roadworks"], limit: 1, language: "en" });
     expect(paths("listStateRoadConditions")).toEqual(["/v1/states/10/road-conditions"]);
     expect(query("listStateRoadConditions")).toEqual([{ kinds: "roadworks", road_class: "motorway", limit: "1", lang: "en" }]);
-    expect(body(r)).toBe("warning\n- A103: MaintenanceWorks");
+    expect(body(r)).toBe("traffic light yellow: traffic report.\n- A103: MaintenanceWorks");
   });
 
   it("a position: the motorway conditions around it, the radius in metres", async () => {
     const r = await call("check_autobahn_traffic", { ...at, radius_km: 3, language: "en" });
     expect(query("listRoadConditions")).toEqual([{ at: "52.52,13.405", radius_m: "3000", road_class: "motorway", lang: "en" }]);
-    expect(body(r)).toBe("narrowing\n- A103: MaintenanceWorks · 500 m");
+    expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m");
   });
 
   for (const language of LANGS) {
@@ -140,7 +140,7 @@ describe("check_road_status", () => {
     serve("listRoadConditions", roads(rich, "narrowing"));
     const r = await call("check_road_status", { ...at, road: "b27", horizon_days: 2, language: "en" });
     expect(query("listRoadConditions")).toEqual([{ at: "52.52,13.405", horizon_days: "2", lang: "en" }]);
-    expect(body(r)).toBe("narrowing\n- B 27: Baustelle");
+    expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- B 27: Baustelle");
   });
 
   it("no road at a position keeps every situation", async () => {
@@ -168,7 +168,7 @@ describe("check_road_status", () => {
     serve("listLorryRules", []);
     const r = await call("check_road_status", { ...at, vehicle: "long_lorry", language: "en" });
     expect(query("listLorryRules")).toEqual([{ vehicle: "long_lorry", at: "52.52,13.405", lang: "en" }]);
-    expect(body(r)).toBe(`${String(meta(r)["conditionNote"])}\nnarrowing\n- A103: MaintenanceWorks · 500 m`);
+    expect(body(r)).toBe(`${String(meta(r)["conditionNote"])}\ntraffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m`);
     expect(meta(r)["sources"]).toEqual(["dwd_eta", "roads_alpha", "lorry_bast_langlkw"]);
   });
 
@@ -189,7 +189,7 @@ describe("find_roadworks_ahead", () => {
     const r = await call("find_roadworks_ahead", { road: "a 3", limit: 4, language: "en" });
     expect(paths("getMotorwayConditions")).toEqual(["/v1/motorways/A3/conditions"]);
     expect(query("getMotorwayConditions")).toEqual([{ kinds: "roadworks", horizon_days: "14", limit: "4", lang: "en" }]);
-    expect(body(r)).toBe("weather_warning\n- A101: GeneralObstruction\n- A101: GeneralObstruction");
+    expect(body(r)).toBe("traffic light yellow: DWD warning.\n- A101: GeneralObstruction\n- A101: GeneralObstruction");
   });
 
   for (const key of ["place"]) {
@@ -198,7 +198,7 @@ describe("find_roadworks_ahead", () => {
       expect(ops()).toEqual(["listPlaces", "listRoadConditions"]);
       expect(query("listPlaces")).toEqual([{ q: "Köln", limit: "1", lang: "en" }]);
       expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", horizon_days: "14", lang: "en" }]);
-      expect(body(r)).toBe("narrowing\n- A103: MaintenanceWorks · 500 m");
+      expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m");
     });
   }
 
@@ -872,5 +872,43 @@ describe("watch_situation: at most ten open watches a session", () => {
     await close();
     expect(eleventh).toEqual({ content: [{ type: "text", text: "This session already has 10 open watches — the limit is 10. End one with stop_watch (viafrei://watches lists them) and try again." }], isError: true });
     expect(calls).toHaveLength(before);
+  });
+});
+
+describe("motorway numbers no register knows, and the lamp in words", () => {
+  const notFound = (road: string) =>
+    mockServer.use(handlerFor("getMotorwayConditions", (url) => (url.pathname.endsWith(`/${road}/conditions`)
+      ? problem(404, "not-found")
+      : HttpResponse.json(exampleOf<Body>("getMotorwayConditions")))));
+  const register = (roads: string[]) => serve("listMotorways", roads.map((road) => ({ ...(exampleOf<{ data: object[] }>("listMotorways").data[0] ?? {}), road })));
+
+  it("every road asked unknown: today's refusal with the register's count and, for one road, the nearest numbers (de)", async () => {
+    notFound("A8");
+    register(["A3", "A9"]);
+    expect(await call("check_autobahn_traffic", { roads: ["A8"], language: "de" })).toEqual({
+      content: [{ type: "text", text: 'Für A8 liegen keine Daten vor — das ist keine mir bekannte Autobahnnummer, also keine Bundesautobahn, über die ich etwas sagen kann. 2 Autobahnen sind erfasst. Nächstliegende Nummern: A3, A9. Bitte prüfen Sie die Nummer (z. B. "A9", "A100").' }],
+      isError: true,
+    });
+  });
+
+  it("one road unknown beside a known one: its own line, the known road answered (en)", async () => {
+    notFound("A8");
+    register(["A3", "A9"]);
+    const r = await call("check_autobahn_traffic", { roads: ["A8", "A9"], language: "en" });
+    expect(r.isError).toBeFalsy();
+    expect(body(r).split("\n\n")[0]).toEqual("A8: not a known motorway number — not a German motorway I can say anything about. Nearest real numbers: A3, A9.");
+    expect(body(r).split("\n\n")[1]!.startsWith("A9 — traffic light ")).toBe(true);
+  });
+
+  it("the nearest numbers: the number without its last digit first, then the closest, in number order", () => {
+    expect(nearestMotorways("A34", ["A3", "A33", "A36", "A7", "A340"])).toEqual(["A3", "A33", "A36"]);
+    expect(nearestMotorways("A8", ["A8"])).toEqual([]);
+  });
+
+  it("limited sight and a green lamp are said in words, never as a code", () => {
+    expect(lampText({ lamp: "amber", lampReason: "limited_sight" }, "de")).toEqual("Ampel Gelb: eingeschränkte Sicht — eine Quelle ist nicht aktuell oder nicht lesbar");
+    expect(lampText({ lamp: "amber", lampReason: "limited_sight" }, "en")).toEqual("traffic light yellow: limited sight — a source is not current or could not be read");
+    expect(lampText({ lamp: "green", lampReason: null }, "en")).toEqual("traffic light green: nothing reported by the Autobahn GmbH, the police/Länder or the DWD — no guarantee the road is clear");
+    expect(lampText({ lamp: "red", lampReason: "road_closed" }, "de")).toEqual("Ampel Rot: Vollsperrung");
   });
 });
