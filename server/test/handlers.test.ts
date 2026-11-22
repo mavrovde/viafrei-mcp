@@ -270,9 +270,17 @@ describe("find_charging_station", () => {
       expect(query("listChargingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "1000", connector: "ccs2", min_kw: "50", max_kw: "350", operator: "Strom AG", conditions: "free,open247", only_available: "true", limit: "3", lang: language }]);
       await pinned("handlers", body(r));
     });
-    it(`none found (${language})`, async () => {
+    it(`none held in the radius (${language}): today's sentence, the 10 km default sent and said`, async () => {
       serve("listChargingOptions", []);
-      expect(body(await call("find_charging_station", { ...at, language }))).toBe(language === "de" ? "Keine Ladestationen gefunden." : "No charging stations found.");
+      expect(body(await call("find_charging_station", { ...at, language }))).toBe(language === "de"
+        ? "Im Umkreis von 10 km um 52.520, 13.405 kenne ich keine Ladestandorte. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis 25 km) hilft oft."
+        : "I hold no charging sites within 10 km of 52.520, 13.405. Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
+      expect(query("listChargingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "10000", lang: language }]);
+    });
+    it(`none matching a filter (${language}) keeps the short answer until the API counts what it dropped`, async () => {
+      serve("listChargingOptions", []);
+      expect(body(await call("find_charging_station", { place: "Leipzig", radius_km: 5, connector: "ccs2", language }))).toBe(language === "de" ? "Keine Ladestationen gefunden." : "No charging stations found.");
+      expect(query("listChargingOptions")[0]).toMatchObject({ radius_m: "5000" });
     });
   }
 });

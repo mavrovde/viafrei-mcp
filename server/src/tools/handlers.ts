@@ -223,15 +223,30 @@ const fuelSearch = (sortDefault: "price" | "distance"): Handler => async (args, 
   return toolResult(r.data.map((s) => fuelLine(s, fuel, language)).join("\n"), [r.meta], language);
 };
 
+/** find_charging_station's default and largest radius (today's schema). */
+const CHARGING_RADIUS_KM = 10;
+const CHARGING_MAX_RADIUS_KM = 25;
+
 const findChargingStation: Handler = async (args, ctx) => {
   const { language } = ctx;
   const pos = await position(args, ctx);
   if (isResult(pos)) return pos;
+  // Today's default radius, always sent and said: the API's own default is not the one the answer names.
+  const radiusKm = num(args["radius_km"]) ?? CHARGING_RADIUS_KM;
   const r = await ctx.api.get<T.ChargingSite[]>("listChargingOptions", {
-    at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), connector: str(args["connector"]), min_kw: num(args["min_power_kw"]), max_kw: num(args["max_power_kw"]),
+    at: atParam(pos.at), radius_m: radiusKm * 1000, connector: str(args["connector"]), min_kw: num(args["min_power_kw"]), max_kw: num(args["max_power_kw"]),
     operator: str(args["operator"]), conditions: strs(args["conditions"]), only_available: bool(args["only_available"]), limit: num(args["limit"]),
   });
-  if (r.data.length === 0) return none(language, [r.meta], L(language, "Ladestationen", "charging stations"));
+  if (r.data.length === 0) {
+    // With no filter, nothing listed is nothing held in the radius, said as today's server says it; a
+    // filter's empty answer needs the API's count of the sites it dropped and keeps the short answer.
+    const filtered = ["connector", "min_power_kw", "max_power_kw", "operator", "conditions", "only_available"].some((k) => args[k] !== undefined && args[k] !== false);
+    if (filtered) return none(language, [r.meta], L(language, "Ladestationen", "charging stations"));
+    const around = aroundText(pos.label, pos.at);
+    return toolResult(L(language,
+      `Im Umkreis von ${radiusKm} km um ${around} kenne ich keine Ladestandorte. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis ${CHARGING_MAX_RADIUS_KM} km) hilft oft.`,
+      `I hold no charging sites within ${radiusKm} km of ${around}. Coverage is nationwide but not complete — a larger radius (up to ${CHARGING_MAX_RADIUS_KM} km) often helps.`), [r.meta], language);
+  }
   const lines = r.data.map((s) => `- ${s.name ?? s.operator ?? s.id} · ${km(s.distanceM, language)} · ${s.summary.chargePoints} ${L(language, "Ladepunkte", "points")}${s.summary.maxPowerKw === null ? "" : `, max ${s.summary.maxPowerKw} kW`}${s.summary.availableNow === null ? "" : L(language, `, ${s.summary.availableNow} frei`, `, ${s.summary.availableNow} free`)}`);
   return toolResult(lines.join("\n"), [r.meta], language);
 };
