@@ -6,7 +6,7 @@
  * every other line, and the line count, must be today's.
  */
 import { readFileSync } from "node:fs";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { calls, exampleOf, handlerFor, mockServer } from "./api-mock.js";
@@ -16,7 +16,7 @@ type Case = { tool: string; args: Record<string, unknown>; isError: boolean; bod
 const golden = JSON.parse(readFileSync(new URL("./fixtures/parity-wording.json", import.meta.url), "utf8")) as { cases: Case[] };
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
-afterEach(() => { mockServer.resetHandlers(); calls.length = 0; });
+afterEach(() => { mockServer.resetHandlers(); calls.length = 0; vi.useRealTimers(); });
 afterAll(() => mockServer.close());
 
 type Meta = Record<string, unknown>;
@@ -97,6 +97,48 @@ function nearby(at: ReturnType<typeof place> | null, d: Record<string, unknown[]
   serve("listFuelOptions", [], { query: { at: { lat: 0, lon: 0 }, radiusM: 5000, sort: "distance", matched: 0, droppedClosed: 0, droppedUnknown: 0, droppedNotWholeDay: 0, openAt: null } });
 }
 
+/** Berlin wall time hh:mm on the parity run's day (2026-11-22, CET) as an instant. */
+const PARITY_DAY = "2026-11-22";
+const cet = (hhmm: string, plusMin = 0): string => new Date(new Date(`${PARITY_DAY}T${hhmm}:00+01:00`).getTime() + plusMin * 60_000).toISOString();
+
+/**
+ * get_train_departures: the API rows behind a copied answer, read back from its own lines ("18:28 ICE 606 →
+ * Hamburg-Altona, Gleis 11, +13 min (ca. 18:41)"), so no train is typed here. The clock is set to the run's
+ * minute: a capped board's "bis 19:17" less the window, else one minute before the first train. A capped board
+ * gets as many trains after the last one shown as it says are left; an empty one names its number.
+ */
+function trainState(c: Case): void {
+  const lines = c.body.split("\n");
+  const station = /^(?:Abfahrten ab|Departures from) (.+) \(/u.exec(lines[0]!)?.[1] ?? /(?:Abgefragt habe ich den Bahnhof|Station asked:) (.+) \((?:Bahnhofsnummer|station number) (\d+)\)\.$/u.exec(lines.at(-1)!)?.[1];
+  if (station === undefined) {
+    serve("listStations", []); // a name the station search does not find, or no station at all (nothing is asked)
+    return;
+  }
+  const eva = /(?:Bahnhofsnummer|station number) (\d+)\)\.$/u.exec(lines.at(-1)!)?.[1] ?? "8000001";
+  const window = Number(c.args["duration_min"] ?? 60);
+  const row = /^(\d\d:\d\d) (.+?) → (.+), (?:Gleis|platform) (\S+)(?: \((?:statt|instead of) (\S+)\))?, (.+)$/u;
+  const deps = lines.flatMap((l) => {
+    const m = row.exec(l);
+    if (m === null) return [];
+    const [, at, line, destination, platform, was, state] = m as unknown as [string, string, string, string, string, string | undefined, string];
+    const delay = /^\+(\d+) min/u.exec(state);
+    const delayMin = delay === null ? 0 : Number(delay[1]);
+    return [{ line, category: line.split(" ")[0]!.replace(/\d+$/u, ""), number: null, destination, plannedAt: cet(at), expectedAt: cet(at, delayMin), delayMin, platform, plannedPlatform: was ?? platform, platformChanged: was !== undefined, cancelled: false }];
+  });
+  const capped = /(?:mindestens|at least) (\d+) (?:weitere bis|more until) (\d\d:\d\d)/u.exec(lines.at(-1)!);
+  const now = capped !== null ? cet(capped[2]!, -window) : deps.length > 0 ? cet(berlinOf(deps[0]!.plannedAt), -1) : cet("18:10");
+  const extra = Array.from({ length: Number(capped?.[1] ?? 0) }, (_, i) => ({ ...deps.at(-1)!, line: `RB ${90 + i}`, plannedAt: cet(capped![2]!, -1), expectedAt: cet(capped![2]!, -1) }));
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(now));
+  const categories = c.args["categories"] as string[] | undefined;
+  // The asked type filter applies to the copied rows too: a type-filtered empty board holds a train of another type.
+  const other = categories === undefined ? [] : [{ line: "RE 1", category: "RE", number: null, destination: "Kiel", plannedAt: now, expectedAt: now, delayMin: 0, platform: "1", plannedPlatform: "1", platformChanged: false, cancelled: false }];
+  serve("listStations", [{ id: `s-${station}`, name: station, location: { lat: 0, lon: 0 }, stopCode: null, eva, evaNumbers: [eva] }]);
+  serve("createRefresh", { id: "1", source: "train-board-de", state: "refreshed", createdAt: now, settledAt: now, reason: null, reused: false, queue: null });
+  serve("getTrainBoard", { eva, fresh: true, fetchedAt: now, ageSeconds: 0, departures: [...deps, ...extra, ...other] });
+}
+const berlinOf = (iso: string): string => new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(iso));
+
 const COVERAGE = { kinds: [{ kind: "municipality", count: 1 }], lands: [], addresses: [] };
 
 /** The API state per case, by tool and the call's main argument. */
@@ -155,7 +197,7 @@ const GAP_LINES: Record<string, { lines: number[]; absent?: number[]; needs: str
 
 const keyOf = (c: Case): string => `${c.tool} ${String(c.args["query"] ?? c.args["place"] ?? c.args["station"] ?? c.args["stop"] ?? c.args["topic"] ?? (c.args["lat"] === undefined ? "" : `${String(c.args["lat"])},${String(c.args["lon"])}`))}`;
 const bodyOf = (r: CallToolResult): string => {
-  const t = textOf(r).replace(/(Stand|As of|as of) \d{2}:\d{2}/gu, "$1 HH:MM").replace(/\b\d{5}\b/gu, "NNNNN");
+  const t = textOf(r).replace(/(Stand|As of|as of) \d{2}:\d{2}/gu, "$1 HH:MM").replace(/\b\d{5}\b/gu, "NNNNN").replace(/(?<![\d.:-])\d{4}(?![\d.:-])/gu, "NNNN");
   if (r.isError === true) return t;
   const i = t.lastIndexOf("\n\n");
   return i < 0 ? t : t.slice(0, i);
@@ -165,7 +207,7 @@ describe("today's wording, from the parity run (lane A)", () => {
   for (const c of golden.cases) {
     const key = keyOf(c);
     it(`${c.tool} ${JSON.stringify(c.args)}`, async () => {
-      const state = STATE[key];
+      const state = c.tool === "get_train_departures" ? () => trainState(c) : STATE[key];
       if (state === undefined) throw new Error(`no API state for ${key}`);
       state(c.args);
       const { client, close } = await connect({ refreshWait: { totalMs: 20, pollMs: 5 } });

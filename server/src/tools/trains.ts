@@ -87,10 +87,81 @@ const departureStructured = (d: T.TrainBoardDeparture): Record<string, unknown> 
   platform: d.platform, plannedPlatform: d.plannedPlatform, platformChanged: d.platformChanged, cancelled: d.cancelled,
 });
 
-function departureLine(d: T.TrainBoardDeparture, language: Language): string {
-  const delay = d.cancelled ? L(language, " · fällt aus", " · cancelled") : d.delayMin > 0 ? ` · +${d.delayMin}` : "";
-  const platform = d.platform === null ? "" : `${L(language, " · Gl. ", " · pl. ")}${d.platform}${d.platformChanged ? "!" : ""}`;
-  return `- ${berlinTime(d.plannedAt)} ${lineOf(d)} → ${d.destination ?? "?"}${delay}${platform}`;
+const berlinDay = (d: Date): string => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+
+/** Always with the day: "18.09. 08:05" / "2026-09-18 08:05" (main presentation/format.ts berlinDatedTime). */
+function datedClock(iso: string, language: Language): string {
+  const dd = berlinDay(new Date(iso));
+  return `${language === "de" ? `${dd.slice(8, 10)}.${dd.slice(5, 7)}.` : dd} ${berlinTime(iso)}`;
+}
+
+/** "08:05" on the day of `now`, the dated form on another (main berlinTime). */
+const clockAt = (iso: string, now: Date, language: Language): string => (berlinDay(new Date(iso)) === berlinDay(now) ? berlinTime(iso) : datedClock(iso, language));
+
+/** Today's server's words for a DB board (main get_train_departures.ts COPY, get_train_departures.schema.ts). */
+const COPY = {
+  de: {
+    needStation: 'Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {"station": "Hannover Hbf"}.',
+    head: (station: string, window: string) => `Abfahrten ab ${station} (${window}):`,
+    headOfType: (station: string, window: string, types: string) => `Abfahrten ab ${station} (${window}, nur ${types}):`,
+    nextMinutes: (n: number) => `nächste ${n} Minuten`,
+    windowFromTo: (from: string, to: string) => `${from} bis ${to}`,
+    withinNext: (n: number) => `in den nächsten ${n} Minuten`,
+    withinSpan: (from: string, to: string) => `zwischen ${from} und ${to}`,
+    empty: (station: string, within: string) => `Ab ${station} fährt ${within} kein Zug ab.`,
+    emptyOfType: (station: string, within: string, types: string) => `Ab ${station} fährt ${within} kein Zug der Art ${types} ab.`,
+    capped: (more: number, until: string, limit: number, max: number) =>
+      `… und mindestens ${more} weitere bis ${until} — die Tafel zeigt die ersten ${limit}${limit < max ? `; mit limit bis ${max} mehr` : ""}, oder mit when ab einer späteren Zeit.`,
+    stationRead: (station: string, eva: string) => `Abgefragt habe ich den Bahnhof ${station} (Bahnhofsnummer ${eva}).`,
+    noDestination: "Ziel nicht angegeben",
+    platform: (p: string) => `Gleis ${p}`,
+    platformChanged: (now: string, was: string) => `Gleis ${now} (statt ${was})`,
+    cancelled: "fällt aus",
+    onTime: "pünktlich",
+    expected: "ca.",
+    unavailable: "Die Bahn-Daten sind gerade nicht vollständig erreichbar.",
+  },
+  en: {
+    needStation: 'Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {"station": "Hannover Hbf"}.',
+    head: (station: string, window: string) => `Departures from ${station} (${window}):`,
+    headOfType: (station: string, window: string, types: string) => `Departures from ${station} (${window}, ${types} only):`,
+    nextMinutes: (n: number) => `next ${n} minutes`,
+    windowFromTo: (from: string, to: string) => `${from} to ${to}`,
+    withinNext: (n: number) => `in the next ${n} minutes`,
+    withinSpan: (from: string, to: string) => `between ${from} and ${to}`,
+    empty: (station: string, within: string) => `No train leaves ${station} ${within}.`,
+    emptyOfType: (station: string, within: string, types: string) => `No ${types} train leaves ${station} ${within}.`,
+    capped: (more: number, until: string, limit: number, max: number) =>
+      `… and at least ${more} more until ${until} — the board shows the first ${limit}${limit < max ? `; raise limit up to ${max} for more` : ""}, or set when to a later time.`,
+    stationRead: (station: string, eva: string) => `Station asked: ${station} (station number ${eva}).`,
+    noDestination: "destination not given",
+    platform: (p: string) => `platform ${p}`,
+    platformChanged: (now: string, was: string) => `platform ${now} (instead of ${was})`,
+    cancelled: "cancelled",
+    onTime: "on time",
+    expected: "expected",
+    unavailable: "The railway data is not fully reachable right now.",
+  },
+} as const;
+
+/** Today's largest board (MAX_DEPARTURES), named by the capped line's "limit up to". */
+const MAX_DEPARTURES = 15;
+
+/** The asked train types as the answer names them: "ICE, IC" / "ICE/IC" (main typesOf). */
+function typesOf(categories: readonly string[], language: Language): string {
+  const list = categories.join(language === "de" ? ", " : "/");
+  return categories.includes("IC") ? `${list} ${language === "de" ? "(IC mit EC, RJ, NJ, EN, TGV)" : "(IC including EC, RJ, NJ, EN, TGV)"}` : list;
+}
+
+/** "18:42 ICE 594 → Berlin Hbf, Gleis 7, +12 min (ca. 18:54)": planned time first, then the track, then the state. */
+function departureLine(d: T.TrainBoardDeparture, language: Language, now: Date): string {
+  const c = COPY[language];
+  const parts: string[] = [];
+  if (d.platform !== null) parts.push(d.platformChanged && d.plannedPlatform !== null ? c.platformChanged(d.platform, d.plannedPlatform) : c.platform(d.platform));
+  if (d.cancelled) parts.push(c.cancelled);
+  else if (d.delayMin > 0) parts.push(`+${d.delayMin} min (${c.expected} ${clockAt(d.expectedAt, now, language)})`);
+  else parts.push(c.onTime);
+  return `${clockAt(d.plannedAt, now, language)} ${lineOf(d)} → ${d.destination ?? c.noDestination}, ${parts.join(", ")}`;
 }
 
 /** The sentence a board that is not fresh gets: when the newest board held was fetched, or that none is. */
@@ -144,7 +215,7 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
   }
 
   const seen = new Set<string>();
-  const rows = fresh
+  const inWindow = fresh
     .flatMap((p) => p.board.data.departures)
     .filter((d) => {
       const at = new Date(d.cancelled ? d.plannedAt : d.expectedAt).getTime();
@@ -154,14 +225,31 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
       const key = `${lineOf(d)}\u0000${d.plannedAt}\u0000${d.destination ?? ""}`;
       return seen.has(key) ? false : (seen.add(key), true);
     })
-    .sort((a, b) => a.plannedAt.localeCompare(b.plannedAt))
-    .slice(0, limit);
-  const notes = parts.filter((p) => !p.board.data.fresh).map((p) => staleLine(`${station} (${p.eva})`, p.board.data, p.outcome, language));
-  const title = `${station}:`;
-  const body = rows.length === 0 ? `${title} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}` : [title, ...rows.map((d) => departureLine(d, language))].join("\n");
+    .sort((a, b) => a.plannedAt.localeCompare(b.plannedAt) || a.expectedAt.localeCompare(b.expectedAt));
+  const rows = inWindow.slice(0, limit);
+  const c = COPY[language];
+  const now = new Date();
+  const end = new Date(until).toISOString();
+  const windowText = when === undefined ? c.nextMinutes(windowMin) : c.windowFromTo(datedClock(from.toISOString(), language), clockAt(end, from, language));
+  const within = when === undefined ? c.withinNext(windowMin) : c.withinSpan(datedClock(from.toISOString(), language), clockAt(end, from, language));
+  const types = categories === undefined ? null : typesOf(categories, language);
+  const lines: string[] = [];
+  if (rows.length === 0) {
+    // Today's empty board names the station asked, by its number. Today's DELFI timetable reading beside it (a
+    // train the timetable plans that DB does not carry) is not in the contract: api-gap.md, lane A.
+    lines.push(types === null ? c.empty(station, within) : c.emptyOfType(station, within, types), c.stationRead(station, asked[0]!));
+  } else {
+    lines.push(types === null ? c.head(station, windowText) : c.headOfType(station, windowText, types), ...rows.map((d) => departureLine(d, language, now)));
+    // A capped board says so. The board holds only the hours the API fetched, so the count is a floor.
+    if (inWindow.length > rows.length) lines.push(c.capped(inWindow.length - rows.length, clockAt(end, now, language), limit, MAX_DEPARTURES));
+  }
+  // A part not current leaves the board incomplete: today's note, after the credit line. A number no board was
+  // ever held for, and whose refresh did not fail, is one DB does not file trains under: today says nothing of it.
+  const degraded = parts.some((p) => !p.board.data.fresh && (p.outcome === "failed" || p.board.data.fetchedAt !== null));
   const oldest = fresh.map((p) => p.board.data.fetchedAt).filter((x): x is string => x !== null).sort()[0] ?? null;
-  return toolResult([body, ...notes].join("\n"), [...metas, { ...fresh[0]!.board.meta, asOf: oldest }], language, {
+  return toolResult(lines.join("\n"), [...metas, { ...fresh[0]!.board.meta, asOf: oldest }], language, {
     structured: { ...head, departures: rows.map(departureStructured) },
+    ...(degraded ? { note: c.unavailable } : {}),
   });
 }
 
@@ -169,7 +257,7 @@ export const getTrainDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
   const eva = str(args["eva_no"]);
   const name = str(args["station"]);
-  if (eva === undefined && name === undefined) return toolError(L(language, "Bitte einen Bahnhof (station) oder eine EVA-Nummer angeben.", "Please give a station or an EVA number."));
+  if (eva === undefined && name === undefined) return toolError(COPY[language].needStation);
   const stations = await ctx.api.get<T.Station[]>("listStations", { code: eva, q: eva === undefined ? name : undefined, limit: 1 });
   const station = stations.data[0];
   if (eva !== undefined) return liveBoard([eva], station?.name ?? null, args, ctx, [stations.meta]);

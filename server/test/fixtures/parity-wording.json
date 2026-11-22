@@ -1,5 +1,5 @@
 {
-  "_about": "Today's server's answers, copied from the parity run's old side (scripts/parity-mcp.mjs) by a script, never typed: isError and the text's body, the part before the credit line (creditFooter's, tested on its own); a per-station Stand time masked as HH:MM, a five-digit number (a postcode) as NNNNN.",
+  "_about": "Today's server's answers, copied from the parity run's old side (scripts/parity-mcp.mjs) by a script, never typed: isError and the text's body, the part before the credit line (creditFooter's, tested on its own); a per-station Stand time masked as HH:MM, a five-digit number (a postcode) as NNNNN, a bare four-digit one (a train number) as NNNN.",
   "cases": [
     {
       "tool": "find_place",
@@ -598,6 +598,380 @@
       },
       "isError": false,
       "body": "Near 52.520, 13.405 (within 5 km):\n- stations: Berlin Hbf (2.5 km)\n- motorway junctions: nothing nearby"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Kassel-Wilhelmshöhe",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Kassel-Wilhelmshöhe (nächste 60 Minuten):\n18:18 ICE NNNN → Köln Hbf, Gleis 4, pünktlich\n18:22 RE8 → Leinefelde, Gleis 1, pünktlich\n18:23 RE98 → Frankfurt (Main) Hbf, Gleis 7, pünktlich\n18:28 RB5 → Fulda, Gleis 7, pünktlich\n18:29 ICE 76 → Hamburg Hbf, Gleis 3, pünktlich\n18:35 RE5 → Kassel Hbf, Gleis 9, pünktlich\n18:39 ICE 583 → Nürnberg Hbf, Gleis 2, pünktlich\n18:39 RT5 → Melsungen, Gleis 7, pünktlich\n18:44 RE30 → Kassel Hbf, Gleis 9, pünktlich\n18:51 RT5 → Auestadion, Kassel, Gleis 9, pünktlich\n… und mindestens 2 weitere bis 19:17 — die Tafel zeigt die ersten 10; mit limit bis 15 mehr, oder mit when ab einer späteren Zeit."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Kassel-Wilhelmshöhe",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Kassel-Wilhelmshöhe (next 60 minutes):\n18:22 RE8 → Leinefelde, platform 1, on time\n18:23 RE98 → Frankfurt (Main) Hbf, platform 7, on time\n18:28 RB5 → Fulda, platform 7, on time\n18:29 ICE 76 → Hamburg Hbf, platform 3, on time\n18:35 RE5 → Kassel Hbf, platform 9, on time\n18:39 ICE 583 → Nürnberg Hbf, platform 2, on time\n18:39 RT5 → Melsungen, platform 7, on time\n18:44 RE30 → Kassel Hbf, platform 9, on time\n18:51 RT5 → Auestadion, Kassel, platform 9, on time\n18:52 ICE 886 → Hamburg Hbf, platform 3, on time\n… and at least 1 more until 19:19 — the board shows the first 10; raise limit up to 15 for more, or set when to a later time."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Leipzig Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Leipzig Hbf (nächste 60 Minuten):\n18:28 ICE 606 → Hamburg-Altona, Gleis 11, +13 min (ca. 18:41)\n19:01 ICE NNNN → München Hbf, Gleis 13, pünktlich"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Leipzig Hbf",
+        "limit": 5,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Leipzig Hbf (nächste 60 Minuten):\n18:28 ICE 606 → Hamburg-Altona, Gleis 11, +13 min (ca. 18:41)\n19:01 ICE NNNN → München Hbf, Gleis 13, pünktlich"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Leipzig Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Leipzig Hbf (next 60 minutes):\n18:28 ICE 606 → Hamburg-Altona, platform 11, +13 min (expected 18:41)\n19:01 ICE NNNN → München Hbf, platform 13, on time"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Leipzig Hbf",
+        "limit": 5,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Leipzig Hbf (next 60 minutes):\n18:28 ICE 606 → Hamburg-Altona, platform 11, +13 min (expected 18:41)\n19:01 ICE NNNN → München Hbf, platform 13, on time"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "eva_no": "8002549",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Hamburg Hbf (nächste 60 Minuten):\n18:58 ICE 594 → Berlin Hbf, Gleis 7, pünktlich\n19:06 RE 4 → Lübeck Hbf, Gleis 8, pünktlich\n19:11 S 1 → Wedel (Holstein), Gleis 3, pünktlich"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "eva_no": "8002549",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Hamburg Hbf (next 60 minutes):\n18:58 ICE 594 → Berlin Hbf, platform 7, on time\n19:06 RE 4 → Lübeck Hbf, platform 8, on time\n19:11 S 1 → Wedel (Holstein), platform 3, on time"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Hbf",
+        "duration_min": 120,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Berlin Hbf (nächste 120 Minuten):\n18:38 RE FEX → Flughafen BER, Gleis 4 (statt 1), pünktlich\n18:41 RE8 → Wismar, Gleis 7, pünktlich"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Hbf",
+        "duration_min": 120,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Berlin Hbf (next 120 minutes):\n18:38 RE FEX → Flughafen BER, platform 4 (instead of 1), on time\n18:41 RE8 → Wismar, platform 7, on time"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hannover Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Hannover Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Nürnberg Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Nürnberg Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {\"station\": \"Hannover Hbf\"}."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Köln Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Köln Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Munich Central",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Munich Central\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "limit": 5,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Ab Frankfurt (Main) Hbf fährt in den nächsten 60 Minuten kein Zug ab.\nAbgefragt habe ich den Bahnhof Frankfurt (Main) Hbf (Bahnhofsnummer 8000105)."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Stuttgart Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Stuttgart Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Dresden Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Dresden Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Fulda",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Fulda\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Hamburg Hbf (nächste 60 Minuten):\n18:58 ICE 594 → Berlin Hbf, Gleis 7, pünktlich\n19:06 RE 4 → Lübeck Hbf, Gleis 8, pünktlich\n19:11 S 1 → Wedel (Holstein), Gleis 3, pünktlich"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Alexanderplatz",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Berlin Alexanderplatz\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "München Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"München Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Friedrichstraße",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Berlin Friedrichstraße\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hannover Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Hannover Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Nürnberg Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Nürnberg Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "language": "en"
+      },
+      "isError": true,
+      "body": "Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {\"station\": \"Hannover Hbf\"}."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Köln Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Köln Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Munich Central",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Munich Central\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "limit": 5,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "No train leaves Frankfurt (Main) Hbf in the next 60 minutes.\nStation asked: Frankfurt (Main) Hbf (station number 8000105)."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Stuttgart Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Stuttgart Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Dresden Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Dresden Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Fulda",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Fulda\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Hamburg Hbf (next 60 minutes):\n18:58 ICE 594 → Berlin Hbf, platform 7, on time\n19:06 RE 4 → Lübeck Hbf, platform 8, on time\n19:11 S 1 → Wedel (Holstein), platform 3, on time"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Alexanderplatz",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Berlin Alexanderplatz\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "München Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"München Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Friedrichstraße",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Berlin Friedrichstraße\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "duration_min": 30,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Ab Hamburg Hbf fährt in den nächsten 30 Minuten kein Zug ab.\nAbgefragt habe ich den Bahnhof Hamburg Hbf (Bahnhofsnummer 8002549)."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "categories": [
+          "S"
+        ],
+        "duration_min": 30,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Ab Hamburg Hbf fährt in den nächsten 30 Minuten kein Zug der Art S ab.\nAbgefragt habe ich den Bahnhof Hamburg Hbf (Bahnhofsnummer 8002549)."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "duration_min": 30,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "No train leaves Hamburg Hbf in the next 30 minutes.\nStation asked: Hamburg Hbf (station number 8002549)."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "categories": [
+          "S"
+        ],
+        "duration_min": 30,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "No S train leaves Hamburg Hbf in the next 30 minutes.\nStation asked: Hamburg Hbf (station number 8002549)."
     }
   ]
 }
