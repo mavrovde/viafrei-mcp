@@ -13,7 +13,7 @@ import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
-import { aroundText, asSummary, byLevel, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
+import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
 import { findSpeedCameras } from "./speed-cameras.js";
 import { getTrainDepartures } from "./trains.js";
 
@@ -70,12 +70,34 @@ const REASON: Record<Language, Record<string, string>> = {
   },
 };
 
-export function lampText(d: Pick<T.RoadConditionsData, "lamp" | "lampReason">, language: Language): string {
+export function lampText(d: Pick<T.RoadConditionsData, "lamp" | "lampReason" | "lampReasons">, language: Language): string {
   const lamp = LAMP[language][d.lamp] ?? d.lamp;
   if (d.lampReason === null || d.lamp === "green") {
     return L(language, `Ampel ${lamp}: von Autobahn GmbH, Polizei/Ländern und DWD nichts gemeldet — keine Garantie für freie Fahrt`, `traffic light ${lamp}: nothing reported by the Autobahn GmbH, the police/Länder or the DWD — no guarantee the road is clear`);
   }
-  return L(language, `Ampel ${lamp}: ${REASON.de[d.lampReason] ?? d.lampReason}`, `traffic light ${lamp}: ${REASON.en[d.lampReason] ?? d.lampReason}`);
+  // Today's ampel names its first reason and counts the others: every situation or warning that gives one.
+  const more = (d.lampReasons ?? []).reduce((n, r) => n + r.count, 0) - 1;
+  const tail = more < 1 ? "" : L(language, ` (und ${more} ${more === 1 ? "weiterer Grund" : "weitere Gründe"})`, ` (and ${more} more ${more === 1 ? "reason" : "reasons"})`);
+  return L(language, `Ampel ${lamp}: ${REASON.de[d.lampReason] ?? d.lampReason}`, `traffic light ${lamp}: ${REASON.en[d.lampReason] ?? d.lampReason}`) + tail;
+}
+
+/** The lamp's weather reasons: a DWD warning and the road-weather forecast's slippery road. */
+const WEATHER_REASONS = new Set(["weather_warning", "slippery"]);
+/**
+ * A road answer's weather credits, as today's ampel gives them: the lamp's weather part is our summary, so a
+ * weather family is credited in its summary form ("Datenbasis: …, zusammengefasst") and only when a weather
+ * reason is among the lamp's reasons; with none, or with no lamp shown, the weather families are not credited.
+ */
+export function roadWeatherCredits(metas: readonly DataMeta[], d: Pick<T.RoadConditionsData, "lampReasons"> | null): DataMeta[] {
+  const weatherShown = d !== null && (d.lampReasons ?? []).some((r) => WEATHER_REASONS.has(r.reason));
+  return metas.map((m) => ({
+    ...m,
+    attribution: (m.attribution ?? []).flatMap((a) => {
+      if (a.domain !== "weather") return [a];
+      if (!weatherShown) return [];
+      return [{ ...a, text: a.text.includes("Datenquelle: BMVBS") ? `${DWD_SUMMARY_CREDIT}. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder` : DWD_SUMMARY_CREDIT }];
+    }),
+  }));
 }
 
 /** Today's refusal of motorway numbers no register knows (check_autobahn_traffic.ts, motorway-known.ts). */
@@ -113,6 +135,15 @@ export function nearestMotorways(road: string, registered: readonly string[], n 
   return picked.sort((a, b) => motorwayNo(a) - motorwayNo(b));
 }
 
+/** check_road_status's list: today's answer shows no lamp; nothing listed is never "the road is clear". */
+function roadStatusBody(d: T.RoadConditionsData, language: Language, limit: number | undefined, what: string): string {
+  const rows = d.situations.slice(0, limit ?? 20);
+  if (rows.length === 0) {
+    return L(language, `${what}: Es liegt keine Meldung vor — das heißt ausdrücklich nicht, dass die Straße frei ist.`, `${what}: there is no report — which explicitly does not mean the road is clear.`);
+  }
+  return rows.map((s) => situationLine(s, language)).join("\n");
+}
+
 function situationsBody(d: T.RoadConditionsData, language: Language, limit: number | undefined): string {
   const rows = d.situations.slice(0, limit ?? 20);
   const head = `${lampText(d, language)}.`;
@@ -134,17 +165,17 @@ const checkAutobahnTraffic: Handler = async (args, ctx) => {
       return toolError(UNKNOWN_ROAD.all(asked.join(", "), registered.length, asked.length === 1 ? nearestMotorways(asked[0]!, registered).join(", ") : "", language));
     }
     const body = all.map((r, i) => (r === null ? UNKNOWN_ROAD.one(asked[i]!, nearestMotorways(asked[i]!, registered).join(", "), language) : `${asked[i]} — ${situationsBody(r.data, language, limit)}`)).join("\n\n");
-    return toolResult(body, known.map((r) => r.meta), language, { nextCursor: all.length === 1 ? (known[0]!.meta.page?.nextCursor ?? null) : null });
+    return toolResult(body, known.flatMap((r) => roadWeatherCredits([r.meta], r.data)), language, { nextCursor: all.length === 1 ? (known[0]!.meta.page?.nextCursor ?? null) : null });
   }
   const land = str(args["land"]);
   if (land !== undefined) {
     const r = await ctx.api.get<T.RoadConditionsData>("listStateRoadConditions", { state: LAND_CODES[land] ?? land, kinds, limit, road_class: ["motorway"] });
-    return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
+    return toolResult(situationsBody(r.data, language, limit), roadWeatherCredits([r.meta], r.data), language);
   }
   const pos = await position(args, ctx);
   if (isResult(pos)) return pos;
   const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), kinds, limit, road_class: ["motorway"] });
-  return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
+  return toolResult(situationsBody(r.data, language, limit), roadWeatherCredits([r.meta], r.data), language);
 };
 
 const checkRoadStatus: Handler = async (args, ctx) => {
@@ -156,8 +187,9 @@ const checkRoadStatus: Handler = async (args, ctx) => {
   const metas: DataMeta[] = [];
   let body: string;
   let at: string | undefined;
+  const asked = road?.replace(/\s/g, "").toUpperCase();
   if (road !== undefined && /^A\s?\d+$/i.test(road)) {
-    const code = road.replace(/\s/g, "").toUpperCase();
+    const code = asked!;
     const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: code, horizon_days: horizon, limit })
       .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; });
     if (r === null) {
@@ -165,22 +197,27 @@ const checkRoadStatus: Handler = async (args, ctx) => {
       return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)));
     }
     metas.push(r.meta);
-    body = situationsBody(r.data, language, limit);
+    body = roadStatusBody(r.data, language, limit, code);
+  } else if (asked !== undefined && /^[BLS]\d{1,4}$/u.test(asked) && args["place"] === undefined && args["lat"] === undefined) {
+    // A federal or Land road asked by its number alone: the API reads the situations naming it (a Kreisstraße is no reference).
+    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: asked, horizon_days: horizon, limit });
+    metas.push(r.meta);
+    body = roadStatusBody(r.data, language, limit, asked);
   } else {
     const pos = await position(args, ctx);
     if (isResult(pos)) return pos;
     at = atParam(pos.at);
     const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at, horizon_days: horizon, limit });
     metas.push(r.meta);
-    const rows = road === undefined ? r.data.situations : r.data.situations.filter((s) => (s.road ?? "").replace(/\s/g, "").toUpperCase() === road.replace(/\s/g, "").toUpperCase());
-    body = situationsBody({ ...r.data, situations: rows }, language, limit);
+    const rows = asked === undefined ? r.data.situations : r.data.situations.filter((s) => (s.road ?? "").replace(/\s/g, "").toUpperCase() === asked);
+    body = roadStatusBody({ ...r.data, situations: rows }, language, limit, asked === undefined ? aroundText(pos.label, pos.at) : L(language, `${asked} bei ${aroundText(pos.label, pos.at)}`, `${asked} near ${aroundText(pos.label, pos.at)}`));
   }
   if (vehicle === "lorry" || vehicle === "long_lorry") {
     const rules = await ctx.api.get<T.LorryRule[]>("listLorryRules", { vehicle, road, at });
     metas.push(rules.meta);
     if (rules.data.length > 0) body += `\n\n${L(language, "Lkw-Regeln:", "Lorry rules:")}\n${rules.data.slice(0, 10).map((x) => `- ${[x.road, x.street, x.municipality].filter(Boolean).join(", ")}: ${x.publishedText ?? x.kind ?? x.layer}`).join("\n")}`;
   }
-  return toolResult(body, metas, language);
+  return toolResult(body, roadWeatherCredits(metas, null), language);
 };
 
 /** The catalogue names a Land as today's server does (its slug); the API's path is the Land's two-digit AGS code. */

@@ -1,5 +1,4 @@
 The data make no claim to be complete or correct. They have no legal or official meaning either. The data are not suitable for navigation or similar purposes (our translation of the publisher's notice).
-traffic light yellow: DWD warning.
 - A101: GeneralObstruction
 - A101: GeneralObstruction
 

@@ -42,7 +42,17 @@ describe("tools answer from the API contract's examples", () => {
           expect(meta.attribution).toBe(WATCH_CREDIT.text);
           for (const a of credited) expect(textOf(r)).not.toContain(a.text);
         } else {
-          for (const a of credited) {
+          // A road answer credits a weather family only for a weather reason in the lamp it shows, in the
+          // summary form (today's ampel); check_road_status shows no lamp, so never.
+          const data = body.data as { lampReasons?: { reason: string }[] };
+          const weatherShown = c.tool === "check_autobahn_traffic" && (data.lampReasons ?? []).some((x) => x.reason === "weather_warning" || x.reason === "slippery");
+          const road = c.tool === "check_autobahn_traffic" || c.tool === "check_road_status";
+          for (const a of credited as { text: string; domain?: string }[]) {
+            if (road && a.domain === "weather") {
+              expect(meta.attribution).not.toContain(a.text);
+              if (weatherShown) expect(meta.attribution).toContain("Datenbasis: Deutscher Wetterdienst, zusammengefasst");
+              continue;
+            }
             expect(meta.attribution).toContain(a.text);
             expect(textOf(r)).toContain(a.text);
           }

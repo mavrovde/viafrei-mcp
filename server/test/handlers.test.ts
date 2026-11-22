@@ -143,13 +143,13 @@ describe("check_road_status", () => {
     serve("listRoadConditions", roads(rich, "narrowing"));
     const r = await call("check_road_status", { ...at, road: "b27", horizon_days: 2, language: "en" });
     expect(query("listRoadConditions")).toEqual([{ at: "52.52,13.405", horizon_days: "2", lang: "en" }]);
-    expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- B 27: Baustelle");
+    expect(body(r)).toBe("- B 27: Baustelle");
   });
 
   it("no road at a position keeps every situation", async () => {
     serve("listRoadConditions", roads(rich, "narrowing"));
     const r = await call("check_road_status", { ...at, language: "en" });
-    expect(body(r).split("\n")).toHaveLength(4);
+    expect(body(r).split("\n")).toHaveLength(3);
   });
 
   for (const language of LANGS) {
@@ -171,8 +171,8 @@ describe("check_road_status", () => {
     serve("listLorryRules", []);
     const r = await call("check_road_status", { ...at, vehicle: "long_lorry", language: "en" });
     expect(query("listLorryRules")).toEqual([{ vehicle: "long_lorry", at: "52.52,13.405", lang: "en" }]);
-    expect(body(r)).toBe(`${String(meta(r)["conditionNote"])}\ntraffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m`);
-    expect(meta(r)["sources"]).toEqual(["dwd_eta", "roads_alpha", "lorry_bast_langlkw"]);
+    expect(body(r)).toBe(`${String(meta(r)["conditionNote"])}\n- A103: MaintenanceWorks · 500 m`);
+    expect(meta(r)["sources"]).toEqual(["roads_alpha", "lorry_bast_langlkw"]);
   });
 
   it("no vehicle asks no lorry rules", async () => {
@@ -181,9 +181,67 @@ describe("check_road_status", () => {
   });
 
   it("no road and no position: asks for a place", async () => {
-    const r = await call("check_road_status", { road: "B27", language: "en" });
+    const r = await call("check_road_status", { language: "en" });
     expect(r.isError).toBe(true);
     expect(calls).toHaveLength(0);
+  });
+
+  for (const road of ["b 27", "L1025", "S296"]) {
+    it(`a ${road} by its number alone asks the road's own conditions`, async () => {
+      serve("getMotorwayConditions", roads(rich.slice(2)));
+      const r = await call("check_road_status", { road, horizon_days: 2, language: "de" });
+      expect(paths("getMotorwayConditions")).toEqual([`/v1/motorways/${road.replace(" ", "").toUpperCase()}/conditions`]);
+      expect(query("getMotorwayConditions")).toEqual([{ horizon_days: "2", lang: "de" }]);
+      expect(body(r)).toBe("- B 27: Baustelle");
+    });
+  }
+
+  for (const language of LANGS) {
+    it(`nothing listed is never a clear road (${language}); a road at a place is named with the place`, async () => {
+      serve("getMotorwayConditions", roads([]));
+      expect(body(await call("check_road_status", { road: "b 27", language }))).toBe(language === "de"
+        ? "B27: Es liegt keine Meldung vor — das heißt ausdrücklich nicht, dass die Straße frei ist."
+        : "B27: there is no report — which explicitly does not mean the road is clear.");
+      serve("listRoadConditions", roads([]));
+      expect(body(await call("check_road_status", { ...at, road: "s 177", language }))).toBe(language === "de"
+        ? "S177 bei 52.520, 13.405: Es liegt keine Meldung vor — das heißt ausdrücklich nicht, dass die Straße frei ist."
+        : "S177 near 52.520, 13.405: there is no report — which explicitly does not mean the road is clear.");
+    });
+  }
+
+  it("shows no lamp, so it credits no weather family", async () => {
+    serve("getMotorwayConditions", { ...roads(rich), lampReason: "weather_warning", lampReasons: [{ reason: "weather_warning", lamp: "red", count: 1 }] }, { attribution: [WX, ROADS, LORRY] });
+    const r = await call("check_road_status", { road: "A1", language: "de" });
+    expect((r._meta as { attribution: string }).attribution).toBe(`${ROADS.text} · ${LORRY.text}`);
+  });
+});
+
+const WX = { family: "dwd_warnings", domain: "weather", text: "Quelle: Deutscher Wetterdienst", licence: "CC BY 4.0" };
+const WX_ROAD = { family: "dwd_road_forecast", domain: "weather", text: "Quelle: Deutscher Wetterdienst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder", licence: "CC BY 4.0" };
+const LORRY = { family: "lorry_bast_langlkw", domain: "rules", text: "Lang-Lkw-Netz: BASt", licence: "dl-de/by-2-0" };
+const ROADS = { family: "autobahn", domain: "roads", text: "Verkehrsdaten: Autobahn GmbH des Bundes", licence: "open data" };
+
+describe("check_autobahn_traffic's lamp, as today's ampel says it", () => {
+  for (const language of LANGS) {
+    it(`names the first reason and counts every other (${language})`, async () => {
+      serve("getMotorwayConditions", { ...roads([]), lamp: "red", lampReason: "road_closed", lampReasons: [{ reason: "road_closed", lamp: "red", count: 5 }, { reason: "jam", lamp: "amber", count: 3 }, { reason: "narrowing", lamp: "amber", count: 4 }] });
+      expect(body(await call("check_autobahn_traffic", { roads: ["A9"], language }))).toBe(language === "de" ? "A9 — Ampel Rot: Vollsperrung (und 11 weitere Gründe)." : "A9 — traffic light red: full closure (and 11 more reasons).");
+      serve("getMotorwayConditions", { ...roads([]), lamp: "amber", lampReason: "narrowing", lampReasons: [{ reason: "narrowing", lamp: "amber", count: 2 }] });
+      expect(body(await call("check_autobahn_traffic", { roads: ["A3"], language }))).toBe(language === "de" ? "A3 — Ampel Gelb: Baustelle, Fahrbahn eingeengt (und 1 weiterer Grund)." : "A3 — traffic light yellow: roadworks narrowing the carriageway (and 1 more reason).");
+      serve("getMotorwayConditions", { ...roads([]), lamp: "amber", lampReason: "narrowing", lampReasons: [{ reason: "narrowing", lamp: "amber", count: 1 }] });
+      expect(body(await call("check_autobahn_traffic", { roads: ["A3"], language }))).toBe(language === "de" ? "A3 — Ampel Gelb: Baustelle, Fahrbahn eingeengt." : "A3 — traffic light yellow: roadworks narrowing the carriageway.");
+    });
+  }
+
+  it("credits the weather families only for a weather reason, in the summary form", async () => {
+    const credit = async (reasons: { reason: string; lamp: string; count: number }[]) => {
+      serve("getMotorwayConditions", { ...roads([]), lamp: "red", lampReason: reasons[0]?.reason ?? null, lampReasons: reasons }, { attribution: [ROADS, WX, WX_ROAD] });
+      return ((await call("check_autobahn_traffic", { roads: ["A9"], language: "de" }))._meta as { attribution: string }).attribution;
+    };
+    expect(await credit([{ reason: "road_closed", lamp: "red", count: 1 }])).toBe(ROADS.text);
+    const summary = `${ROADS.text} · Datenbasis: Deutscher Wetterdienst, zusammengefasst · Datenbasis: Deutscher Wetterdienst, zusammengefasst. Datenquelle: BMVBS und Straßenbauverwaltungen der Länder`;
+    expect(await credit([{ reason: "road_closed", lamp: "red", count: 1 }, { reason: "weather_warning", lamp: "red", count: 1 }])).toBe(summary);
+    expect(await credit([{ reason: "slippery", lamp: "amber", count: 1 }])).toBe(summary);
   });
 });
 

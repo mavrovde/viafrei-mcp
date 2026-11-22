@@ -50,7 +50,10 @@ export type RoadSituation = {
   id: string; kind: string; severity: string; road: string | null; direction: string | null; directionText: string | null;
   validity: { from: string | null; until: string | null }; headline: string; description: string | null; delayMin: number | null; lengthM: number | null; distanceM?: number;
 };
-export type RoadConditionsData = { lamp: string; lampReason: string | null; situations: RoadSituation[] };
+export type LampReason = { reason: string; lamp: string; count: number };
+export type FamilyCount = { sourceFamily: string; situations: number };
+export type RoadCoverage = { registered: boolean; roadType: string; families: string[] };
+export type RoadConditionsData = { lamp: string; lampReason: string | null; lampReasons?: LampReason[]; counts?: FamilyCount[]; coverage?: RoadCoverage | null; situations: RoadSituation[] };
 /** LorryRule */
 export type LorryRule = { layer: string; kind: string | null; road: string | null; street: string | null; municipality: string | null; publishedText: string | null; value: number | null; unit: string | null };
 /** DrivingRulesData */
