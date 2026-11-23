@@ -26,13 +26,13 @@ import ts from "typescript";
 
 export const FLOOR = 70;
 /**
- * The shards of the release run (mutation.yml's matrix). 18: the pieces are dealt by the seconds they took
- * (scripts/mutation-weights.json, fitted to runs 45133880847 and 45137207791, on forks). Stryker now runs
- * vitest on worker threads (vitest.stryker.config.ts), about 1.7x cheaper per mutant, so every weight is an
- * over-estimate by the same factor and the deal is unchanged. 18 shards beside the npm run's Snyk and
- * end-to-end jobs stay within GitHub's 20 concurrent jobs; a pull request's CI running at the same
- * time still holds runners, and the proof run 45157220742 had shards wait up to 6.5 minutes and
- * took 19 minutes in all (slowest shard 14.0).
+ * The shards of the release run (mutation.yml's matrix). 18: the pieces are dealt by the seconds they cost
+ * (scripts/mutation-weights.json, fitted to runs 45157220742 and 45160742243 on worker threads by tests
+ * run, timeouts and mutants), ~146 minutes in all. The two heaviest pieces (src/tools/place-words.ts:17-168,
+ * ~9.7 minutes, and src/tools/facilities.ts:61-71, a static table whose mutants time out, ~9) get a shard
+ * each; the other 16 get ~8. 18 shards beside the npm run's Snyk and end-to-end jobs stay within GitHub's
+ * 20 concurrent jobs; a pull request's CI running at the same time still holds runners (shards waited up
+ * to 6.5 minutes in run 45157220742).
  */
 export const SHARDS = 18;
 /** A piece holds consecutive top-level statements up to this weight; one heavier statement is a piece alone. */

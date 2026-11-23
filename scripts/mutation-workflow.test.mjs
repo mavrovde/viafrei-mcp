@@ -303,6 +303,14 @@ console.log('each planted fault in the workflows is reported');
     const slowestPiece = Math.max(...ids.map((id) => WEIGHTS[id] ?? 0));
     const slowest = Math.max(...plan.map((x) => x.seconds));
     check('no shard is measured slower than 10 minutes, or than its slowest piece alone', slowest <= Math.max(600, slowestPiece), `${slowest} s; piece ${slowestPiece} s`);
+    // The weights are fitted to two measured runs within ~43 %, so a shard dealt 10 minutes lands near 14 at worst,
+    // inside the shards' 20-minute limit; 2.7.2's proof had shard 8 at 19.4 when its timed-out static table
+    // (src/tools/facilities.ts:61-71, 63 timeouts) was weighed as 46 s.
+    check('no shard is dealt more than 10 minutes', slowest <= 600, `${slowest} s`);
+    const mean = plan.reduce((sum, x) => sum + x.seconds, 0) / plan.length;
+    const crowded = plan.filter((x) => x.ids.length > 1 && x.ids.some((id) => (WEIGHTS[id] ?? 0) > mean));
+    check('a piece heavier than the mean shard has a shard of its own', crowded.length === 0, crowded.map((x) => x.ids.join(' ')).join(' | '));
+    check('the static table whose mutants time out weighs what it cost (≥ 8 minutes)', (WEIGHTS['src/tools/facilities.ts:61-71'] ?? 0) >= 480, String(WEIGHTS['src/tools/facilities.ts:61-71']));
     const stale = Object.keys(WEIGHTS).filter((id) => !ids.includes(id));
     check('the weights name no piece the scope does not have', stale.length === 0, stale.slice(0, 5).join(' '));
 }
