@@ -10,11 +10,12 @@
 #
 # Every job ends within 15 minutes (owner 2026-11-22), and no shard may hold a
 # whole large file (src/tools/handlers.ts is a third of all mutants), so the full
-# run (~10,700 mutants; in 2.7.1 eight shards needed 14 to 36 minutes each in forks)
-# is cut into 32 parallel shards of PIECES, ~330 mutants and ~5 to 9 minutes each: a piece is
+# run (~10,700 mutants, ~168 minutes of Stryker time) is cut into 18 parallel shards of
+# PIECES, dealt by each piece's measured seconds (server/scripts/mutation-weights.json), ~9 to 11
+# minutes each; 18 beside Snyk and the end-to-end job stay within 20 concurrent jobs: a piece is
 # a run of one file's top-level statements, as a Stryker line range, so a large
 # file is spread over several shards; the pieces are dealt heaviest first to the
-# lightest shard (mutation.mjs shard k/32; disjoint, together every piece and none
+# lightest shard (mutation.mjs shard k/18; disjoint, together every piece and none
 # empty, scripts/mutation-workflow.test.mjs; no mutant lost or counted twice,
 # server/scripts/mutation-pieces.test.mjs). The Mutation testing job gathers their
 # reports into one gate, which refuses a piece with no report or two and a mutant
@@ -39,7 +40,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # The 32 shards of the scope, printed once; exit 2 (red) on an empty shard.
+  # The 18 shards of the scope, printed once; exit 2 (red) on an empty shard.
   plan:
     name: Mutation plan
     runs-on: ubuntu-24.04
@@ -58,7 +59,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: The shards of the full run
         working-directory: server
-        run: node scripts/mutation.mjs plan 32
+        run: node scripts/mutation.mjs plan 18
 
   # One shard of the full run each, with no floor of its own; fail-fast is off,
   # so one run reports every failing shard. Exit 2 (red) on an empty shard or a
@@ -71,7 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -88,7 +89,7 @@ jobs:
         working-directory: server
         env:
           SHARD: ${{ matrix.shard }}
-        run: node scripts/mutation.mjs shard "$SHARD/32" "$GITHUB_WORKSPACE/mutation-shard"
+        run: node scripts/mutation.mjs shard "$SHARD/18" "$GITHUB_WORKSPACE/mutation-shard"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mutation-shard-${{ matrix.shard }}

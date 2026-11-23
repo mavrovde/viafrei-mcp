@@ -53,11 +53,11 @@ and reports every mutant they do not kill. The scope is every `.ts` file under
 | full | once per release: `publish.yml` calls `mutation.yml` on the tagged commit, and the publish job needs it next to Snyk, so a red run stops the publish; or a manual run of `mutation.yml` | below 70 % |
 
 No pull request and no push runs it. Every GitHub job ends within 15 minutes
-(`npm run check:timeouts` in CI), so the full run is cut into 32 parallel
+(`npm run check:timeouts` in CI), so the full run is cut into 18 parallel
 shards of pieces: a piece is a run of one file's top-level statements, given to
 Stryker as a line range, so a large file is spread over several shards; the
-pieces are dealt heaviest first to the lightest shard. The **Mutation testing**
-job gathers the 32 reports into one score. It fails when a shard did not finish
+pieces are dealt by their measured seconds (`server/scripts/mutation-weights.json`), slowest first to the fastest shard. The **Mutation testing**
+job gathers the 18 reports into one score. It fails when a shard did not finish
 green, when a piece has no report or two, when a mutant lies outside its
 shard's pieces, and below 70 %. The job summary holds the score per file and
 every mutant not detected; the reports are the run's artefacts.

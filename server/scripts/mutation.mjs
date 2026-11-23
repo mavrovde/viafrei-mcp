@@ -26,15 +26,18 @@ import ts from "typescript";
 
 export const FLOOR = 70;
 /**
- * The shards of the release run (mutation.yml's matrix). 32, measured: in 2.7.1 the 8 shards of the
- * ~10,700 mutants needed 13.8 to 35.9 minutes each (elapsed over Stryker's progress), ~170 shard-minutes
- * with the slowest at 1.7 times the mean, so 32 shards put the slowest near 9 minutes, setup aside,
- * inside the 15-minute job limit with a margin.
+ * The shards of the release run (mutation.yml's matrix). 18, measured: the pieces are dealt by the seconds
+ * they took (scripts/mutation-weights.json, run 45133880847: ~168 minutes in all). createMcpApp alone takes
+ * ~10.6 minutes and is one statement no line range can cut, so it fills a shard; the other 17 get ~9 minutes
+ * each. 18 shards beside the npm run's Snyk and end-to-end jobs stay within GitHub's 20 concurrent jobs, so
+ * none queues and the whole run ends inside 15 minutes.
  */
-export const SHARDS = 32;
+export const SHARDS = 18;
 /** A piece holds consecutive top-level statements up to this weight; one heavier statement is a piece alone. */
 export const PIECE_WEIGHT = 200;
 const SERVER = resolve(fileURLToPath(new URL("..", import.meta.url)));
+/** The measured seconds of every piece (scripts/mutation-weights.mjs); the shards are dealt by them. */
+export const WEIGHTS = JSON.parse(readFileSync(join(SERVER, "scripts", "mutation-weights.json"), "utf8")).seconds;
 /** Generated files: pinned by their generator's --check, not mutated. */
 export const GENERATED = ["src/api/operations.ts"];
 
@@ -95,19 +98,33 @@ export function parsePiece(id) {
   return { file: m[1], start: Number(m[2]), end: Number(m[3]) };
 }
 
-/** The n shards of the scope: piece ids, the heaviest piece first to the lightest shard (the lower k on a tie). */
-export function planOf(scope, n, root = SERVER) {
+/**
+ * The measured seconds of a piece. A piece with no measured weight (a boundary moved, a file added) is
+ * refused, not guessed: re-measure with scripts/mutation-weights.mjs.
+ */
+export function secondsOf(id, weights = WEIGHTS) {
+  const s = weights[id];
+  if (typeof s !== "number") throw new Refusal(`piece ${id} has no measured weight in scripts/mutation-weights.json; re-measure (scripts/mutation-weights.mjs)`);
+  return s;
+}
+
+/**
+ * The n shards of the scope: piece ids, the slowest piece first to the fastest shard (the lower k on a tie),
+ * by the pieces' measured seconds. `weight` is a shard's syntax weight (0: nothing to mutate), `seconds` its time.
+ */
+export function planOf(scope, n, root = SERVER, weights = WEIGHTS) {
   if (!Number.isInteger(n) || n < 1) throw new Error(`bad shard count ${n}`);
-  const all = piecesOfScope(scope, root);
-  const order = all.map((p, i) => ({ p, i })).sort((a, b) => b.p.weight - a.p.weight || a.i - b.i);
-  const shards = Array.from({ length: n }, () => ({ weight: 0, ids: [] }));
+  const all = piecesOfScope(scope, root).map((p) => ({ ...p, seconds: secondsOf(p.id, weights) }));
+  const order = all.map((p, i) => ({ p, i })).sort((a, b) => b.p.seconds - a.p.seconds || b.p.weight - a.p.weight || a.i - b.i);
+  const shards = Array.from({ length: n }, () => ({ weight: 0, seconds: 0, ids: [] }));
   for (const { p } of order) {
     let best = 0;
-    for (let k = 1; k < n; k++) if (shards[k].weight < shards[best].weight) best = k;
+    for (let k = 1; k < n; k++) if (shards[k].seconds < shards[best].seconds || (shards[k].seconds === shards[best].seconds && shards[k].weight < shards[best].weight)) best = k;
     shards[best].weight += p.weight;
+    shards[best].seconds += p.seconds;
     shards[best].ids.push(p.id);
   }
-  return shards.map((s) => ({ weight: s.weight, ids: s.ids.sort() }));
+  return shards.map((s) => ({ weight: s.weight, seconds: Math.round(s.seconds), ids: s.ids.sort() }));
 }
 
 /** Shard k of n (1-based): its piece ids, sorted. */

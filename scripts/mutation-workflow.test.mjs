@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Mutation testing's wiring (owner 2026-11-18): the full StrykerJS run of the
- * server once per release, cut into 32 shards of pieces (owner 2026-11-22: every job
+ * server once per release, cut into 18 shards of pieces (owner 2026-11-22: every job
  * ends within 15 minutes) and gathered into one 70 % gate,
  * called by the npm workflow on the commit about to be published, and never on
  * a pull request or a push. Read off the workflow files and run:
@@ -13,7 +13,7 @@
  *     the job summary, the report artefact);
  *   - publish.yml: the mutation job calls mutation.yml on the tagged commit, and
  *     publish needs it next to Snyk;
- *   - the 32 shards of the real scope are disjoint, together every piece of every
+ *   - the 18 shards of the real scope are disjoint, together every piece of every
  *     in-scope file, none empty, and leave out the generated operation table
  *     (that no MUTANT is lost or counted twice is server/scripts/mutation-pieces.test.mjs,
  *     which needs Stryker's instrumenter);
@@ -31,7 +31,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createChecker } from './check-harness.mjs';
 import { resolveTool, runTool } from './tools.mjs';
-import { FLOOR, GENERATED, PIECE_WEIGHT, SHARDS, gather, inScope, parsePiece, piecesOf, piecesOfScope, planOf, shardOf } from '../server/scripts/mutation.mjs';
+import { FLOOR, GENERATED, PIECE_WEIGHT, SHARDS, WEIGHTS, gather, inScope, parsePiece, piecesOf, piecesOfScope, planOf, shardOf } from '../server/scripts/mutation.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -270,6 +270,24 @@ console.log('each planted fault in the workflows is reported');
     const execArgv = /execArgv:\s*\[([^\]]*)\]/u.exec(vitestConfig)?.[1] ?? '';
     check('the vitest config this check reads still passes --expose-gc (precondition)', execArgv.includes('--expose-gc'), execArgv);
     check('Stryker runs vitest in forks, where execArgv may carry a V8 flag', stryker.vitest?.pool === 'forks', String(stryker.vitest?.pool));
+}
+
+// The shards are dealt by measured seconds (server/scripts/mutation-weights.json): every piece of the scope
+// has one, and a piece without one is refused by name rather than dealt by a guess.
+{
+    const ids = piecesOfScope(inScope()).map((p) => p.id);
+    const unweighted = ids.filter((id) => typeof WEIGHTS[id] !== 'number');
+    check('every piece of the scope has a measured weight', unweighted.length === 0, unweighted.slice(0, 5).join(' '));
+    const { [ids[0]]: _, ...without } = WEIGHTS;
+    let refused = '';
+    try { planOf(inScope(), SHARDS, undefined, without); } catch (e) { refused = String(e.message); }
+    check('a piece with no weight is refused by name', refused.includes(ids[0]) && refused.includes('no measured weight'), refused);
+    const plan = planOf(inScope(), SHARDS);
+    const slowestPiece = Math.max(...ids.map((id) => WEIGHTS[id] ?? 0));
+    const slowest = Math.max(...plan.map((x) => x.seconds));
+    check('no shard is measured slower than 10 minutes, or than its slowest piece alone', slowest <= Math.max(600, slowestPiece), `${slowest} s; piece ${slowestPiece} s`);
+    const stale = Object.keys(WEIGHTS).filter((id) => !ids.includes(id));
+    check('the weights name no piece the scope does not have', stale.length === 0, stale.slice(0, 5).join(' '));
 }
 
 console.log(`\nmutation-workflow self-test: ${passed()} passed, ${failures.length} failed`);
