@@ -122,7 +122,7 @@ function collect(): void {
   // A precondition, not a fallback: without a real collection
   // the garbage-collection case proves nothing, so it fails loudly.
   if (typeof gc !== "function") {
-    throw new Error("--expose-gc is missing; vitest.config.ts sets it in execArgv");
+    throw new Error("--expose-gc is missing; vitest.config.ts sets it in execArgv (only vitest.stryker.config.ts declares it off)");
   }
   gc();
 }
@@ -172,7 +172,9 @@ describe("the global session cap", () => {
     expect(b.warned.filter((w) => w.includes("session cap"))).toHaveLength(1);
   });
 
-  it("a held stream survives a garbage collection before the next open: the 503 does not hang on GC timing", async () => {
+  // Declared off, never silently: only vitest.stryker.config.ts sets MUTATION_NO_GC
+  // (Stryker's worker threads refuse --expose-gc); anywhere else a missing gc fails.
+  it.skipIf(process.env.MUTATION_NO_GC === "1")("a held stream survives a garbage collection before the next open: the 503 does not hang on GC timing", async () => {
     const b = await boot({ maxSessions: 2 });
     const s1 = await open(b); const s2 = await open(b);
     await holdStream(b, s1.sid); await holdStream(b, s2.sid);

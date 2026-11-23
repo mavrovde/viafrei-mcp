@@ -49,7 +49,11 @@ check("no mutant is in two shards", twice.length === 0, twice.slice(0, 3).map(([
 check("no shard mutates what the whole run does not", extra.length === 0, extra.slice(0, 3).join(" | "));
 const counts = plan.map((_, i) => [...seen.values()].filter((ks) => ks[0] === i + 1).length);
 const mean = whole.length / SHARDS;
-check(`no shard holds more than twice its share (${Math.round(mean)} of ${whole.length})`, Math.max(...counts) <= 2 * mean, counts.join(","));
+// A shard over twice its share is one piece alone: a single top-level statement (createMcpApp) cannot be cut
+// by line range without losing the mutants that span it, so it is dealt a shard of its own.
+const heavy = counts.map((c, i) => [c, i]).filter(([c]) => c > 2 * mean);
+check(`no shard holds more than twice its share (${Math.round(mean)} of ${whole.length}) unless it is one piece alone`,
+  heavy.every(([, i]) => plan[i].ids.length === 1), `${counts.join(",")}; over: ${heavy.map(([c, i]) => `${i + 1} (${c}, ${plan[i].ids.length} pieces)`).join(" ")}`);
 console.log(`mutants per shard: ${counts.join(" ")}`);
 console.log(`\nmutation-pieces self-test: ${failed === 0 ? "pass" : `${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

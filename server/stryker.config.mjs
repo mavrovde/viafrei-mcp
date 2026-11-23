@@ -15,10 +15,10 @@ const floor = env.MUTATION_BREAK === "none" ? null : FLOOR;
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
   testRunner: "vitest",
-  // Forks, not Stryker's default threads: vitest.config.ts gives the workers
-  // --expose-gc (the session-cap gc case), a V8 flag a worker thread refuses
-  // (ERR_WORKER_INVALID_EXEC_ARGV), which failed every shard's dry run in 2.7.0.
-  vitest: { configFile: "vitest.config.ts", pool: "forks" },
+  // Worker threads (Stryker's default) on vitest.stryker.config.ts: the suite
+  // without --expose-gc, which a worker thread refuses (it failed every dry run
+  // in 2.7.0); forks took that flag but cost each mutant more (2.7.1).
+  vitest: { configFile: "vitest.stryker.config.ts" },
   // A shard's files (newline-separated), else the whole scope: every source
   // file of the server; tests live under test/, and the generated operation
   // table (scripts/gen-operations.mjs) is pinned by check:operations, not by tests.

@@ -4,8 +4,8 @@
 // request. The scope is every .ts file under src/ except the generated operation
 // table. A shard is a set of PIECES, not of files: a piece is a run of a file's
 // top-level statements, given as Stryker's `file:start-end` line range, so one
-// large file is spread over several shards and every shard ends inside the
-// 15-minute job limit. A boundary falls only between two top-level statements, so
+// large file is spread over several shards and every shard ends inside its
+// 20-minute job limit. A boundary falls only between two top-level statements, so
 // every mutant lies inside exactly one piece. The pieces are dealt heaviest first,
 // each to the lightest shard (weight: the statement's syntax nodes, types left
 // out), so the N shards are disjoint, together the whole scope, and none is empty
@@ -25,11 +25,21 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 export const FLOOR = 70;
-/** The shards of the release run (mutation.yml's matrix). */
-export const SHARDS = 8;
+/**
+ * The shards of the release run (mutation.yml's matrix). 18: the pieces are dealt by the seconds they cost
+ * (scripts/mutation-weights.json, fitted to runs 45157220742 and 45160742243 on worker threads by tests
+ * run, timeouts and mutants), ~146 minutes in all. The two heaviest pieces (src/tools/place-words.ts:17-168,
+ * ~9.7 minutes, and src/tools/facilities.ts:61-71, a static table whose mutants time out, ~9) get a shard
+ * each; the other 16 get ~8. 18 shards beside the npm run's Snyk and end-to-end jobs stay within GitHub's
+ * 20 concurrent jobs; a pull request's CI running at the same time still holds runners (shards waited up
+ * to 6.5 minutes in run 45157220742).
+ */
+export const SHARDS = 18;
 /** A piece holds consecutive top-level statements up to this weight; one heavier statement is a piece alone. */
 export const PIECE_WEIGHT = 200;
 const SERVER = resolve(fileURLToPath(new URL("..", import.meta.url)));
+/** The measured seconds of every piece (scripts/mutation-weights.mjs); the shards are dealt by them. */
+export const WEIGHTS = JSON.parse(readFileSync(join(SERVER, "scripts", "mutation-weights.json"), "utf8")).seconds;
 /** Generated files: pinned by their generator's --check, not mutated. */
 export const GENERATED = ["src/api/operations.ts"];
 
@@ -90,19 +100,33 @@ export function parsePiece(id) {
   return { file: m[1], start: Number(m[2]), end: Number(m[3]) };
 }
 
-/** The n shards of the scope: piece ids, the heaviest piece first to the lightest shard (the lower k on a tie). */
-export function planOf(scope, n, root = SERVER) {
+/**
+ * The measured seconds of a piece. A piece with no measured weight (a boundary moved, a file added) is
+ * refused, not guessed: re-measure with scripts/mutation-weights.mjs.
+ */
+export function secondsOf(id, weights = WEIGHTS) {
+  const s = weights[id];
+  if (typeof s !== "number") throw new Refusal(`piece ${id} has no measured weight in scripts/mutation-weights.json; re-measure (scripts/mutation-weights.mjs)`);
+  return s;
+}
+
+/**
+ * The n shards of the scope: piece ids, the slowest piece first to the fastest shard (the lower k on a tie),
+ * by the pieces' measured seconds. `weight` is a shard's syntax weight (0: nothing to mutate), `seconds` its time.
+ */
+export function planOf(scope, n, root = SERVER, weights = WEIGHTS) {
   if (!Number.isInteger(n) || n < 1) throw new Error(`bad shard count ${n}`);
-  const all = piecesOfScope(scope, root);
-  const order = all.map((p, i) => ({ p, i })).sort((a, b) => b.p.weight - a.p.weight || a.i - b.i);
-  const shards = Array.from({ length: n }, () => ({ weight: 0, ids: [] }));
+  const all = piecesOfScope(scope, root).map((p) => ({ ...p, seconds: secondsOf(p.id, weights) }));
+  const order = all.map((p, i) => ({ p, i })).sort((a, b) => b.p.seconds - a.p.seconds || b.p.weight - a.p.weight || a.i - b.i);
+  const shards = Array.from({ length: n }, () => ({ weight: 0, seconds: 0, ids: [] }));
   for (const { p } of order) {
     let best = 0;
-    for (let k = 1; k < n; k++) if (shards[k].weight < shards[best].weight) best = k;
+    for (let k = 1; k < n; k++) if (shards[k].seconds < shards[best].seconds || (shards[k].seconds === shards[best].seconds && shards[k].weight < shards[best].weight)) best = k;
     shards[best].weight += p.weight;
+    shards[best].seconds += p.seconds;
     shards[best].ids.push(p.id);
   }
-  return shards.map((s) => ({ weight: s.weight, ids: s.ids.sort() }));
+  return shards.map((s) => ({ weight: s.weight, seconds: Math.round(s.seconds), ids: s.ids.sort() }));
 }
 
 /** Shard k of n (1-based): its piece ids, sorted. */

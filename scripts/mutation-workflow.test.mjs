@@ -1,19 +1,20 @@
 #!/usr/bin/env node
 /**
  * Mutation testing's wiring (owner 2026-11-18): the full StrykerJS run of the
- * server once per release, cut into 8 shards of pieces (owner 2026-11-22: every job
- * ends within 15 minutes) and gathered into one 70 % gate,
+ * server once per release, cut into 18 shards of pieces (every job ends within 15
+ * minutes, owner 2026-11-22, except the shards at 20: owner 2026-11-23, a viafrei-mcp
+ * pipeline ends within 30) and gathered into one 70 % gate,
  * called by the npm workflow on the commit about to be published, and never on
  * a pull request or a push. Read off the workflow files and run:
  *
  *   - mutation.yml: triggers (the release call with a ref, a dispatch, nothing
- *     else), the plan, the 8-shard matrix (fail-fast off, 15 min each, each
+ *     else), the plan, the 18-shard matrix (fail-fast off, 20 min each, each
  *     uploading its report), the gate job "Mutation testing" (needs the shards,
  *     runs unless cancelled, its shard-result guard RUN under bash, the gather,
  *     the job summary, the report artefact);
  *   - publish.yml: the mutation job calls mutation.yml on the tagged commit, and
  *     publish needs it next to Snyk;
- *   - the 8 shards of the real scope are disjoint, together every piece of every
+ *   - the 18 shards of the real scope are disjoint, together every piece of every
  *     in-scope file, none empty, and leave out the generated operation table
  *     (that no MUTANT is lost or counted twice is server/scripts/mutation-pieces.test.mjs,
  *     which needs Stryker's instrumenter);
@@ -31,7 +32,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createChecker } from './check-harness.mjs';
 import { resolveTool, runTool } from './tools.mjs';
-import { FLOOR, GENERATED, PIECE_WEIGHT, SHARDS, gather, inScope, parsePiece, piecesOf, piecesOfScope, planOf, shardOf } from '../server/scripts/mutation.mjs';
+import { FLOOR, GENERATED, PIECE_WEIGHT, SHARDS, WEIGHTS, gather, inScope, parsePiece, piecesOf, piecesOfScope, planOf, shardOf } from '../server/scripts/mutation.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -42,7 +43,7 @@ const { check, failures, passed } = createChecker();
 const REF = '${{ inputs.ref || github.sha }}';
 const TRIGGERS = '\non:\n  workflow_call:\n    inputs:\n      ref:\n        description: The commit to mutate (the release\'s tagged commit)\n        required: true\n        type: string\n  workflow_dispatch:\n\n';
 const KS = Array.from({ length: SHARDS }, (_, i) => i + 1);
-const MATRIX = `\n    timeout-minutes: 15\n    strategy:\n      fail-fast: false\n      matrix:\n        shard: [${KS.join(', ')}]\n`;
+const MATRIX = `\n    timeout-minutes: 20\n    strategy:\n      fail-fast: false\n      matrix:\n        shard: [${KS.join(', ')}]\n`;
 const SHARD_RUN = `run: node scripts/mutation.mjs shard "$SHARD/${SHARDS}" "$GITHUB_WORKSPACE/mutation-shard"\n`;
 const SHARD_UPLOAD = '\n        with:\n          name: mutation-shard-${{ matrix.shard }}\n          path: mutation-shard/\n          if-no-files-found: error\n';
 const GATE_HEAD = '\n  mutation:\n    name: Mutation testing\n    needs: [plan, shards]\n    if: ${{ !cancelled() }}\n';
@@ -88,7 +89,7 @@ function faults(files) {
     if (!job(mu, 'plan').includes(`run: node scripts/mutation.mjs plan ${SHARDS}\n`)) out.push(`mutation.yml's plan does not check the ${SHARDS} shards`);
     const shards = job(mu, 'shards');
     if (!/^ {4}needs: plan\n/mu.test(shards)) out.push("mutation.yml's shards do not need the plan");
-    if (!shards.includes(MATRIX)) out.push(`mutation.yml's shards are not the ${SHARDS}-shard matrix with fail-fast off and 15 minutes each`);
+    if (!shards.includes(MATRIX)) out.push(`mutation.yml's shards are not the ${SHARDS}-shard matrix with fail-fast off and 20 minutes each`);
     if (!shards.includes(SHARD_RUN)) out.push(`mutation.yml's shard does not run its 1/${SHARDS} of the scope`);
     if (!shards.includes(SHARD_UPLOAD)) out.push("mutation.yml's shard does not upload its report, failing when there is none");
     const gate = job(mu, 'mutation');
@@ -236,7 +237,7 @@ console.log('each planted fault in the workflows is reported');
         ['the ref not required', 'with a required ref', plant('mutation.yml', '        required: true\n', '        required: false\n')],
         ['a shard short', `the ${SHARDS}-shard matrix`, plant('mutation.yml', `, ${SHARDS}]`, ']')],
         ['fail-fast on', `the ${SHARDS}-shard matrix`, plant('mutation.yml', 'fail-fast: false', 'fail-fast: true')],
-        ['a longer shard timeout', `the ${SHARDS}-shard matrix`, plant('mutation.yml', '    timeout-minutes: 15\n    strategy:', '    timeout-minutes: 30\n    strategy:')],
+        ['a longer shard timeout', `the ${SHARDS}-shard matrix`, plant('mutation.yml', '    timeout-minutes: 20\n    strategy:', '    timeout-minutes: 30\n    strategy:')],
         ['a shard of another count', `its 1/${SHARDS} of the scope`, plant('mutation.yml', `"$SHARD/${SHARDS}"`, '"$SHARD/4"')],
         ['a shard upload that may be empty', 'failing when there is none', plant('mutation.yml', 'if-no-files-found: error', 'if-no-files-found: ignore')],
         ['the gate renamed', "is not 'Mutation testing'", plant('mutation.yml', 'name: Mutation testing\n', 'name: Mutation\n')],
@@ -244,7 +245,7 @@ console.log('each planted fault in the workflows is reported');
         ['the gate if: always()', "is not 'Mutation testing'", plant('mutation.yml', '    if: ${{ !cancelled() }}\n', '    if: always()\n')],
         ['the guard accepting a failure', "exits 0 for shards 'failure'", plant('mutation.yml', '[[ $SHARDS == success ]] ||', '[[ $SHARDS != cancelled ]] ||')],
         ['the guard removed', 'no shard-result guard', plant('mutation.yml', '- name: Every shard finished with its reports', '- name: Shards')],
-        ['continue-on-error on a shard', 'carries continue-on-error', plant('mutation.yml', '    timeout-minutes: 15\n    strategy:', '    timeout-minutes: 15\n    continue-on-error: true\n    strategy:')],
+        ['continue-on-error on a shard', 'carries continue-on-error', plant('mutation.yml', '    timeout-minutes: 20\n    strategy:', '    timeout-minutes: 20\n    continue-on-error: true\n    strategy:')],
         ['no gather', 'gather the shards', plant('mutation.yml', 'scripts/mutation.mjs gather', 'scripts/mutation.mjs full')],
         ['no summary', 'job summary', plant('mutation.yml', '>> "$GITHUB_STEP_SUMMARY"', '> /dev/null')],
         ['no report artefact', 'upload the report', plant('mutation.yml', 'name: mutation-report\n', 'name: report\n')],
@@ -262,14 +263,56 @@ console.log('each planted fault in the workflows is reported');
     }
 }
 
-// Stryker's vitest runner starts worker THREADS unless told otherwise, and a worker thread refuses the
-// V8 flags vitest.config.ts passes in execArgv (--expose-gc): every shard's dry run failed so in 2.7.0.
+// Stryker runs vitest on worker THREADS (cheaper per mutant than forks, 2.7.2) with its own vitest config:
+// a worker thread refuses the V8 flags vitest.config.ts passes in execArgv (--expose-gc), which failed every
+// shard's dry run in 2.7.0. The one case that needs a real collection is declared off there by name, and
+// anywhere else a missing gc still fails it.
 {
     const stryker = (await import('../server/stryker.config.mjs')).default;
-    const vitestConfig = readFileSync(join(ROOT, 'server', 'vitest.config.ts'), 'utf8');
-    const execArgv = /execArgv:\s*\[([^\]]*)\]/u.exec(vitestConfig)?.[1] ?? '';
-    check('the vitest config this check reads still passes --expose-gc (precondition)', execArgv.includes('--expose-gc'), execArgv);
-    check('Stryker runs vitest in forks, where execArgv may carry a V8 flag', stryker.vitest?.pool === 'forks', String(stryker.vitest?.pool));
+    const read = (f) => readFileSync(join(ROOT, 'server', f), 'utf8');
+    const argvOf = (text) => /execArgv:\s*\[([^\]]*)\]/u.exec(text)?.[1];
+    const main = read('vitest.config.ts');
+    check('the main suite keeps --expose-gc (precondition)', (argvOf(main) ?? '').includes('--expose-gc'), argvOf(main));
+    check('the main suite does not declare the gc case off', !main.includes('MUTATION_NO_GC'), '');
+    const file = stryker.vitest?.configFile ?? '';
+    check('Stryker runs vitest on its own config', file !== '' && file !== 'vitest.config.ts', file);
+    check('Stryker runs vitest on threads, not forks', stryker.vitest?.pool === undefined || stryker.vitest.pool === 'threads', String(stryker.vitest?.pool));
+    const own = file === '' ? '' : read(file);
+    check('Stryker\'s vitest config passes no V8 flag a thread refuses', argvOf(own) !== undefined && argvOf(own).trim() === '' && !own.includes('mergeConfig('), String(argvOf(own)));
+    check('Stryker\'s vitest config declares the gc case off', /MUTATION_NO_GC:\s*"1"/u.test(own), '');
+    // A mutant that leaves a request unanswered fails its test here, inside Stryker's timeout, rather than
+    // timing out: a timeout costs the shard Stryker's whole wait and a restarted worker (2.7.2's first proof).
+    const testMs = Number(/testTimeout:\s*([\d_]+)/u.exec(own)?.[1]?.replaceAll('_', '') ?? NaN);
+    check('Stryker\'s vitest fails a hanging test before Stryker\'s own timeout', testMs > 0 && testMs < stryker.timeoutMS && /hookTimeout:\s*[\d_]+/u.test(own), String(testMs));
+    const cap = read('test/transport/session-cap.test.ts');
+    check('the gc case is skipped only where MUTATION_NO_GC is declared', /it\.skipIf\(process\.env\.MUTATION_NO_GC === "1"\)\("a held stream survives a garbage collection/u.test(cap), '');
+    check('a missing gc elsewhere still fails the case', /typeof gc !== "function"\) \{\s*throw new Error/u.test(cap), '');
+}
+
+// The shards are dealt by measured seconds (server/scripts/mutation-weights.json): every piece of the scope
+// has one, and a piece without one is refused by name rather than dealt by a guess.
+{
+    const ids = piecesOfScope(inScope()).map((p) => p.id);
+    const unweighted = ids.filter((id) => typeof WEIGHTS[id] !== 'number');
+    check('every piece of the scope has a measured weight', unweighted.length === 0, unweighted.slice(0, 5).join(' '));
+    const { [ids[0]]: _, ...without } = WEIGHTS;
+    let refused = '';
+    try { planOf(inScope(), SHARDS, undefined, without); } catch (e) { refused = String(e.message); }
+    check('a piece with no weight is refused by name', refused.includes(ids[0]) && refused.includes('no measured weight'), refused);
+    const plan = planOf(inScope(), SHARDS);
+    const slowestPiece = Math.max(...ids.map((id) => WEIGHTS[id] ?? 0));
+    const slowest = Math.max(...plan.map((x) => x.seconds));
+    check('no shard is measured slower than 10 minutes, or than its slowest piece alone', slowest <= Math.max(600, slowestPiece), `${slowest} s; piece ${slowestPiece} s`);
+    // The weights are fitted to two measured runs within ~43 %, so a shard dealt 10 minutes lands near 14 at worst,
+    // inside the shards' 20-minute limit; 2.7.2's proof had shard 8 at 19.4 when its timed-out static table
+    // (src/tools/facilities.ts:61-71, 63 timeouts) was weighed as 46 s.
+    check('no shard is dealt more than 10 minutes', slowest <= 600, `${slowest} s`);
+    const mean = plan.reduce((sum, x) => sum + x.seconds, 0) / plan.length;
+    const crowded = plan.filter((x) => x.ids.length > 1 && x.ids.some((id) => (WEIGHTS[id] ?? 0) > mean));
+    check('a piece heavier than the mean shard has a shard of its own', crowded.length === 0, crowded.map((x) => x.ids.join(' ')).join(' | '));
+    check('the static table whose mutants time out weighs what it cost (≥ 8 minutes)', (WEIGHTS['src/tools/facilities.ts:61-71'] ?? 0) >= 480, String(WEIGHTS['src/tools/facilities.ts:61-71']));
+    const stale = Object.keys(WEIGHTS).filter((id) => !ids.includes(id));
+    check('the weights name no piece the scope does not have', stale.length === 0, stale.slice(0, 5).join(' '));
 }
 
 console.log(`\nmutation-workflow self-test: ${passed()} passed, ${failures.length} failed`);

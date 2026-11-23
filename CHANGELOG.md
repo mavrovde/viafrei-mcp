@@ -5,6 +5,13 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.2] - 2026-11-23
+
+**2.7.1 was tagged and its image built, but its npm publish was stopped again: 7 of the 8 mutation shards ran past the 15-minute job limit. 2.7.2 carries the fix and everything 2.7.1 holds.** The server's tools, prompts and resources and what they answer are those of 2.7.1.
+
+### Fixed
+- **The mutation run ends inside the 30 minutes a ViaFrei MCP pipeline may take.** Each mutant costs less: Stryker runs the tests on worker threads again, with its own test configuration without the garbage-collection flag a thread refuses (`server/vitest.stryker.config.ts`). 2.7.1 had moved it to separate processes to carry that flag, which made every mutant about 1.7 times as slow. The one test that needs a real collection is declared off there by name and runs in the main suite. There a test also fails after 5 seconds instead of 20, so a mutant that leaves a request unanswered is killed at once instead of timing out the worker. The ~10,700 mutants are also cut into 18 parallel shards instead of 8, dealt by the seconds each piece costs (`server/scripts/mutation-weights.json`, fitted to two measured runs by the tests each piece's mutants run, their timeouts and their count). A static table whose mutants time out (`src/tools/facilities.ts:61-71`) had been weighed far too light and pushed one shard to 19.4 minutes; it now has a shard of its own, and no shard is dealt more than 10 minutes. A measured run took 19 minutes, its slowest shard 14; each shard may take up to 20, the one job allowed more than 15. 18 shards beside the release's other jobs fit GitHub's 20 concurrent jobs, but a pull request's CI running at the same time can hold runners: in the measured run some shards waited up to 6.5 minutes to start. The 70 % floor is unchanged.
+
 ## [2.7.1] - 2026-11-23
 
 **2.7.0 was tagged and its image built, but its npm publish was stopped by two release gates; 2.7.1 carries their fixes and everything 2.7.0 holds.** The server's tools, prompts and resources and what they answer are those of 2.7.0.
@@ -4562,6 +4569,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.2]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.2
 [2.7.1]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.1
 [2.7.0]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.0
 [2.6.40]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.40
