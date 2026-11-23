@@ -9,7 +9,10 @@
  * Checks: initialize, tools/list byte-equal to catalogue.json (under the capture's documented
  * normalisation), and one tools/call per tool that answers without an error and with its attribution.
  * Against a real API the motorway a road case asks is one that API lists (the fixture world's own roads,
- * not a real-world name): the one with the most situations, read through listMotorways.
+ * not a real-world name): the one with the most situations, read through listMotorways. So are the station
+ * a station or stop case asks (a "… Bf" stop of listStations, a DB station first) and the region of
+ * check_transit_disruption (that station's district code): the fixture world holds no "Köln Hbf", and a
+ * name the API does not know is refused, as today's server refuses it.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -28,6 +31,17 @@ function withRoad(args: Record<string, unknown>, road: string): Record<string, u
   if (Array.isArray(out["roads"])) out["roads"] = [road];
   if (typeof out["road"] === "string") out["road"] = road;
   if (out["kind"] === "road" && typeof out["key"] === "string") out["key"] = road;
+  return out;
+}
+
+/** The fixture world's own names for a real-API run. */
+type Fixture = { road: string; station: string; region: string };
+
+/** A case's arguments with every real-world name replaced by the fixture world's (the road, the station, the region). */
+function withFixture(args: Record<string, unknown>, f: Fixture): Record<string, unknown> {
+  const out = withRoad(args, f.road);
+  for (const key of ["station", "stop"]) if (typeof out[key] === "string") out[key] = f.station;
+  if (typeof out["region"] === "string") out["region"] = f.region;
   return out;
 }
 
@@ -72,7 +86,7 @@ function start(cmd: string, args: string[], env: Record<string, string>): ChildP
 }
 
 let mcpUrl = "";
-let fixtureRoad: string | undefined;
+let fixture: Fixture | undefined;
 let session = "";
 let id = 0;
 
@@ -102,8 +116,13 @@ beforeAll(async () => {
   } else {
     const api = new ApiClient(apiConfigFromEnv({ VIAFREI_API_URL: apiUrl, VIAFREI_API_KEY: process.env["E2E_API_KEY"] }));
     const roads = (await api.get<MotorwayItem[]>("listMotorways", { limit: 100 })).data;
-    fixtureRoad = [...roads].sort((a, b) => b.situations - a.situations)[0]?.road;
-    if (fixtureRoad === undefined) throw new Error("the API lists no motorway: the fixture world was not seeded");
+    const road = [...roads].sort((a, b) => b.situations - a.situations)[0]?.road;
+    if (road === undefined) throw new Error("the API lists no motorway: the fixture world was not seeded");
+    const stops = (await api.get<Station[]>("listStations", { q: "Bf", limit: 60 })).data;
+    const withDistrict = stops.filter((s): s is Station & { districtCode: string } => typeof s.districtCode === "string");
+    const stop = withDistrict.find((s) => s.eva !== null) ?? withDistrict[0];
+    if (stop === undefined) throw new Error("the API lists no \"… Bf\" stop with a district: the fixture world was not seeded");
+    fixture = { road, station: stop.name, region: stop.districtCode };
   }
   const port = await freePort();
   start(process.execPath, ["dist/http.js"], {
@@ -137,7 +156,7 @@ describe("MCP over Streamable HTTP against the API", () => {
 
   for (const c of TOOL_CASES) {
     it(`tools/call ${c.tool}`, async () => {
-      const r = await rpc("tools/call", { name: c.tool, arguments: fixtureRoad === undefined ? c.args : withRoad(c.args, fixtureRoad) });
+      const r = await rpc("tools/call", { name: c.tool, arguments: fixture === undefined ? c.args : withFixture(c.args, fixture) });
       const result = r.body.result as { isError?: boolean; content: { text: string }[]; _meta?: { attribution?: string } };
       expect(result.isError, result.content[0]?.text).not.toBe(true);
       expect(typeof result._meta?.attribution).toBe("string");
@@ -156,10 +175,12 @@ describe("MCP over Streamable HTTP against the API", () => {
     const place = await rpc("tools/call", { name: "find_place", arguments: { query: "Köln", language: "en" } });
     const placeText = (place.body.result as { content: { text: string }[] }).content[0]?.text ?? "";
     if (places.data[0] !== undefined) expect(placeText).toContain(places.data[0].name);
-    const stations = await api.get<Station[]>("listStations", { q: "Köln Hbf", limit: 1 });
-    const dep = await rpc("tools/call", { name: "get_departures", arguments: { stop: "Köln Hbf", language: "en" } });
+    const stop = fixture?.station ?? "Köln Hbf";
+    const stations = await api.get<Station[]>("listStations", { q: stop, limit: 1 });
+    const dep = await rpc("tools/call", { name: "get_departures", arguments: { stop, language: "en" } });
     const depText = (dep.body.result as { content: { text: string }[] }).content[0]?.text ?? "";
-    if (stations.data[0] !== undefined) expect(depText).toContain(stations.data[0].name);
+    expect(stations.data[0]?.name, `the API finds no station called "${stop}"`).toBeDefined();
+    expect(depText).toContain(stations.data[0]!.name);
     expect((places.meta.attribution ?? []).length + (stations.meta.attribution ?? []).length).toBeGreaterThan(0);
   });
 });
