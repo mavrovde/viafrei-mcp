@@ -262,5 +262,15 @@ console.log('each planted fault in the workflows is reported');
     }
 }
 
+// Stryker's vitest runner starts worker THREADS unless told otherwise, and a worker thread refuses the
+// V8 flags vitest.config.ts passes in execArgv (--expose-gc): every shard's dry run failed so in 2.7.0.
+{
+    const stryker = (await import('../server/stryker.config.mjs')).default;
+    const vitestConfig = readFileSync(join(ROOT, 'server', 'vitest.config.ts'), 'utf8');
+    const execArgv = /execArgv:\s*\[([^\]]*)\]/u.exec(vitestConfig)?.[1] ?? '';
+    check('the vitest config this check reads still passes --expose-gc (precondition)', execArgv.includes('--expose-gc'), execArgv);
+    check('Stryker runs vitest in forks, where execArgv may carry a V8 flag', stryker.vitest?.pool === 'forks', String(stryker.vitest?.pool));
+}
+
 console.log(`\nmutation-workflow self-test: ${passed()} passed, ${failures.length} failed`);
 process.exit(failures.length === 0 ? 0 : 1);
