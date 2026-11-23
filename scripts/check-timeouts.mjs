@@ -7,6 +7,10 @@
  * value above 15. A job that calls a reusable workflow (`uses:` on the job) cannot carry
  * a timeout; the jobs of the workflow it calls are read in their own file.
  *
+ * One exception, exact: the `shards` job of mutation.yml may take up to 25 minutes
+ * (owner 2026-11-23: a viafrei-mcp pipeline ends within 30 minutes, this repository
+ * only). Every other job, in mutation.yml too, keeps the 15.
+ *
  *   node scripts/check-timeouts.mjs            exit 0 when every job is bounded, 1 otherwise
  */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -14,6 +18,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const MAX_MINUTES = 15;
+/** The one job allowed more, file → job → its ceiling (owner 2026-11-23, the 30-minute mcp pipeline). */
+export const EXCEPTIONS = { 'mutation.yml': { shards: 25 } };
 const WF = join(dirname(fileURLToPath(import.meta.url)), '..', '.github', 'workflows');
 
 /** The jobs of one workflow text: id → the job's lines, its header line left out. */
@@ -43,7 +49,8 @@ export function faultsOf(name, text) {
         if (set.length === 0) { out.push(`${name}: job ${id} has no timeout-minutes`); continue; }
         const raw = set[0][1];
         if (!/^\d+$/u.test(raw)) { out.push(`${name}: job ${id} has timeout-minutes '${raw}', not a plain number`); continue; }
-        if (Number(raw) > MAX_MINUTES || Number(raw) < 1) out.push(`${name}: job ${id} has timeout-minutes ${raw}, not 1-${MAX_MINUTES}`);
+        const max = Object.hasOwn(EXCEPTIONS, name) && Object.hasOwn(EXCEPTIONS[name], id) ? EXCEPTIONS[name][id] : MAX_MINUTES;
+        if (Number(raw) > max || Number(raw) < 1) out.push(`${name}: job ${id} has timeout-minutes ${raw}, not 1-${max}`);
     }
     return out;
 }

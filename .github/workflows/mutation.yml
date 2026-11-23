@@ -8,7 +8,8 @@
 # ref. It is the full run over every in-scope file, failing below 70 %; the
 # report lists the counts per file and every mutant not detected.
 #
-# Every job ends within 15 minutes (owner 2026-11-22), and no shard may hold a
+# Every job ends within 15 minutes (owner 2026-11-22) except the shards, 25 (owner
+# 2026-11-23: a viafrei-mcp pipeline ends within 30 minutes), and no shard may hold a
 # whole large file (src/tools/handlers.ts is a third of all mutants), so the full
 # run (~10,700 mutants, ~168 minutes of Stryker time) is cut into 18 parallel shards of
 # PIECES, dealt by each piece's measured seconds (server/scripts/mutation-weights.json), ~9 to 11
@@ -68,7 +69,9 @@ jobs:
     name: Mutation shard
     needs: plan
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # 25, the one job above 15 (owner 2026-11-23: a viafrei-mcp pipeline ends within
+    # 30 minutes, this repository only; scripts/check-timeouts.mjs holds the exception).
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
