@@ -5,6 +5,14 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.1] - 2026-11-23
+
+**2.7.0 was tagged and its image built, but its npm publish was stopped by two release gates; 2.7.1 carries their fixes and everything 2.7.0 holds.** The server's tools, prompts and resources and what they answer are those of 2.7.0.
+
+### Fixed
+- **The mutation run starts.** Every shard's initial test run failed before a mutant was tried: Stryker's vitest runner started worker threads, which refuse the `--expose-gc` flag the server's test config gives its workers. It now runs vitest in forked processes.
+- **The pre-release end-to-end run asks the API's fixture world for names it holds.** Five cases asked for "Köln Hbf" and the region "VBB", which the API's synthetic test world does not contain, and the server refuses a name it cannot find, as the hosted server does. Against a real API they now ask a stop the API lists and that stop's district, as the road cases already ask its motorway.
+
 ## [2.7.0] - 2026-11-23
 
 **The server is in this repository.** From 2.7.0 the ViaFrei MCP server is built, tested and released here, as the container image `ghcr.io/mavrovde/viafrei-mcp:2.7.0`, and it reads the ViaFrei API, never a database. The npm package and the image carry one version, and the catalogue they ship is the server's own. Its tools, prompts and resources are those of 2.6.40, and they answer in 2.6.40's words, except where the database does not yet hold what an answer needs (accepted gaps).
@@ -4554,6 +4562,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.1]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.1
 [2.7.0]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.0
 [2.6.40]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.40
 [2.6.37]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.37
