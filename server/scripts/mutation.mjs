@@ -27,9 +27,8 @@ import ts from "typescript";
 export const FLOOR = 70;
 /**
  * The shards of the release run (mutation.yml's matrix). 18: the pieces are dealt by the seconds they took
- * (scripts/mutation-weights.json, fitted to runs 45133880847 and 45137207791, on forks). Stryker now runs
- * vitest on worker threads (vitest.stryker.config.ts), about 1.7x cheaper per mutant, so every weight is an
- * over-estimate by the same factor and the deal is unchanged. 18 shards beside the npm run's Snyk and
+ * in run 45148353112 (scripts/mutation-weights.json), the first with Stryker's vitest on worker threads
+ * (vitest.stryker.config.ts): ~138 minutes in all, ~7.7 per shard. 18 shards beside the npm run's Snyk and
  * end-to-end jobs stay within GitHub's 20 concurrent jobs, so none queues.
  */
 export const SHARDS = 18;
