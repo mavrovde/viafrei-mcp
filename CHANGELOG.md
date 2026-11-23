@@ -5,6 +5,13 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.2] - 2026-11-23
+
+**2.7.1 was tagged and its image built, but its npm publish was stopped again: 7 of the 8 mutation shards ran past the 15-minute job limit. 2.7.2 carries the fix and everything 2.7.1 holds.** The server's tools, prompts and resources and what they answer are those of 2.7.1.
+
+### Fixed
+- **The mutation run ends inside the job limit.** Its ~10,700 mutants are now cut into 32 parallel shards instead of 8. In 2.7.1 the 8 shards needed 14 to 36 minutes each; 32 put each near 9 minutes or less. The 15-minute limit and the 70 % floor are unchanged.
+
 ## [2.7.1] - 2026-11-23
 
 **2.7.0 was tagged and its image built, but its npm publish was stopped by two release gates; 2.7.1 carries their fixes and everything 2.7.0 holds.** The server's tools, prompts and resources and what they answer are those of 2.7.0.
@@ -4562,6 +4569,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.2]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.2
 [2.7.1]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.1
 [2.7.0]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.0
 [2.6.40]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.40

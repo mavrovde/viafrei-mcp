@@ -1,6 +1,6 @@
 {
   "name": "@viafrei/mcp-server",
-  "version": "2.7.1",
+  "version": "2.7.2",
   "description": "The ViaFrei MCP server (Streamable HTTP, legacy SSE, stdio): every answer from the ViaFrei API, live train boards through its refresher.",
   "private": true,
   "type": "module",
