@@ -5,6 +5,10 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-11-23
+
+**The server is in this repository.** From 2.7.0 the ViaFrei MCP server is built, tested and released here, as the container image `ghcr.io/mavrovde/viafrei-mcp:2.7.0`, and it reads the ViaFrei API, never a database. The npm package and the image carry one version, and the catalogue they ship is the server's own. Its tools, prompts and resources are those of 2.6.40, and they answer in 2.6.40's words, except where the database does not yet hold what an answer needs (accepted gaps).
+
 ### Added
 - **The server's container image**, `ghcr.io/mavrovde/viafrei-mcp:<version>` (`image.yml`, `server/Dockerfile`). It is released only from an annotated `vX.Y.Z` tag on main that equals both `package.json` versions, with CI green on that commit and the server's tests passed in the same run. Trivy must find nothing HIGH or CRITICAL before anything is pushed. The image is pushed by digest, signed keyless and attested (SLSA provenance, SPDX SBOM). It is tagged only after cosign verify passes with the identity pinned to this workflow, and after the digest has run as uid 10001 with a read-only root file system and answered `/healthz`. Every action is pinned by full SHA, and every job ends within 15 minutes (`npm run test:image`).
 - **The HTTP hardening the hosted server runs**: the `Host` and `Origin` allow-list (403) and CORS; the session caps; the per-address limits behind a trusted proxy; the body bound; the idle session lifetime and its sweep; and the usage counters, one structured log line per bucket. Each is set by the `MCP_*` keys in the README. The SSE keep-alive and idle connection timeouts outlast the edge's limits. SIGTERM writes the last usage bucket, then exits 143.
