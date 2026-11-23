@@ -1,7 +1,7 @@
 /**
  * The HTTP app through real requests, in process: health and readiness, Streamable HTTP on /mcp (a session
  * from initialize to DELETE, the refusals before one exists, the idle sweep), the legacy HTTP+SSE pair, and
- * the error handler. The API behind it is the contract mock; requests to the app itself go through undici's own
+ * the body parser's JSON-RPC answers. The API behind it is the contract mock; requests to the app itself go through undici's own
  * fetch, which the mock does not intercept, so a streamed answer streams.
  */
 import type { AddressInfo } from "node:net";
@@ -16,7 +16,11 @@ import { API_BASE, calls, handlerFor, mockServer } from "./api-mock.js";
 import { TEST_KEY, textOf } from "./harness.js";
 import { ApiClient } from "../src/api/client.js";
 import { loadCatalogue } from "../src/catalogue.js";
-import { createApp, SESSION_IDLE_MS } from "../src/app.js";
+import { createMcpApp, SESSION_NOT_FOUND } from "../src/app.js";
+import { apiReadiness } from "../src/http-server.js";
+
+/** The idle lifetime the server runs with by default (MCP_SESSION_TTL_S, 1 800 s). */
+const SESSION_IDLE_MS = 30 * 60 * 1000;
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "bypass" }));
 afterEach(() => {
@@ -32,7 +36,9 @@ const appFetch = undiciFetch as unknown as typeof fetch;
 const deps = () => ({ api: new ApiClient({ baseUrl: API_BASE, key: TEST_KEY }), catalogue: loadCatalogue() });
 
 async function serve(): Promise<{ base: string; stop: () => Promise<void> }> {
-  const server: Server = createApp(deps()).listen(0, "127.0.0.1");
+  const d = deps();
+  const { app } = createMcpApp({ deps: d, allowedOrigins: [], allowedHosts: [], maxBodyKb: 64, sessionTtlMs: SESSION_IDLE_MS, sessionSweepMs: 60_000, health: () => ({ ok: true }), ready: apiReadiness(API_BASE) });
+  const server: Server = app.listen(0, "127.0.0.1");
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
   const { port } = server.address() as AddressInfo;
   return {
@@ -62,18 +68,18 @@ describe("health and readiness", () => {
     }
   });
 
-  it("/readyz is the API's own readiness: ready, not ready, unreachable", async () => {
+  it("/readyz is the API's own readiness: ok, and degraded when the API is not ready or unreachable", async () => {
     const { base, stop } = await serve();
     try {
       let r = await appFetch(`${base}/readyz`);
-      expect([r.status, await r.json()]).toEqual([200, { status: "ready" }]);
+      expect([r.status, await r.json()]).toEqual([200, { status: "ok" }]);
       expect(calls.map((c) => c.url.href)).toEqual([`${API_BASE}/readyz`]);
       mockServer.use(handlerFor("getReadiness", () => HttpResponse.json({ status: "starting" }, { status: 503 })));
       r = await appFetch(`${base}/readyz`);
-      expect([r.status, await r.json()]).toEqual([503, { status: "api-not-ready" }]);
+      expect([r.status, await r.json()]).toEqual([503, { status: "degraded" }]);
       mockServer.use(handlerFor("getReadiness", () => HttpResponse.error()));
       r = await appFetch(`${base}/readyz`);
-      expect([r.status, await r.json()]).toEqual([503, { status: "api-unreachable" }]);
+      expect([r.status, await r.json()]).toEqual([503, { status: "degraded" }]);
     } finally {
       await stop();
     }
@@ -106,30 +112,35 @@ describe("Streamable HTTP on /mcp", () => {
     }
   });
 
-  it("refuses a request before initialize, and an unknown session", async () => {
+  it("refuses a request before initialize, and an unknown session; an initialize naming a dead session opens one", async () => {
     const { base, stop } = await serve();
     try {
-      let r = await post(base, LIST);
+      let r = await post(base, { ...LIST, method: "resources/list" });
       expect(r.status).toBe(400);
-      expect(await r.json()).toEqual({ jsonrpc: "2.0", error: { code: -32000, message: "No session: send initialize first" }, id: null });
-      r = await post(base, INIT, { "mcp-session-id": "nope" });
+      expect(await r.json()).toEqual({ jsonrpc: "2.0", error: { code: -32000, message: "No valid session; send initialize first" }, id: null });
+      r = await post(base, LIST, { "mcp-session-id": "nope" });
       expect(r.status).toBe(404);
-      expect(await r.json()).toEqual({ jsonrpc: "2.0", error: { code: -32000, message: "Session not found" }, id: null });
+      expect(await r.json()).toEqual(SESSION_NOT_FOUND);
+      r = await post(base, INIT, { "mcp-session-id": "nope" });
+      expect(r.status).toBe(200);
+      await r.text();
       for (const method of ["GET", "DELETE"]) {
-        expect((await appFetch(`${base}/mcp`, { method, headers: { "mcp-session-id": "nope" } })).status).toBe(404);
-        expect((await appFetch(`${base}/mcp`, { method })).status).toBe(404);
+        const named = await appFetch(`${base}/mcp`, { method, headers: { "mcp-session-id": "nope" } });
+        expect([method, named.status, await named.json()]).toEqual([method, 404, SESSION_NOT_FOUND]);
       }
+      expect((await appFetch(`${base}/mcp`, { method: "GET" })).status).toBe(405);
+      expect((await appFetch(`${base}/mcp`, { method: "DELETE" })).status).toBe(400);
     } finally {
       await stop();
     }
   });
 
-  it("a body that is no JSON is a JSON-RPC internal error, not a stack trace", async () => {
+  it("a body that is no JSON is 400 with a -32700 Parse error, not a stack trace", async () => {
     const { base, stop } = await serve();
     try {
       const r = await post(base, "{not json");
-      expect(r.status).toBe(500);
-      expect(await r.json()).toEqual({ jsonrpc: "2.0", error: { code: -32603, message: "Internal error" }, id: null });
+      expect(r.status).toBe(400);
+      expect(await r.json()).toEqual({ jsonrpc: "2.0", error: { code: -32700, message: "Parse error: the request body is not valid JSON." }, id: null });
     } finally {
       await stop();
     }
@@ -173,7 +184,7 @@ describe("Streamable HTTP on /mcp", () => {
 });
 
 describe("the legacy HTTP+SSE pair", () => {
-  it("/sse opens a session whose /messages answer tools/list; an unknown session is 404", async () => {
+  it("/sse opens a session whose /messages answer tools/list and a tool call; an unknown or missing session is 400", async () => {
     const { base, stop } = await serve();
     try {
       const client = new Client({ name: "t", version: "0" });
@@ -184,7 +195,7 @@ describe("the legacy HTTP+SSE pair", () => {
       await client.close();
       for (const q of ["?sessionId=nope", ""]) {
         const m = await appFetch(`${base}/messages${q}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(LIST) });
-        expect(m.status).toBe(404);
+        expect([m.status, await m.text()]).toEqual([400, "Missing or unknown sessionId"]);
       }
     } finally {
       await stop();

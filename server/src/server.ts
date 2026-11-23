@@ -16,15 +16,17 @@ import {
   type ReadResourceResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { ApiClient } from "./api/client.js";
-import { ApiError } from "./api/client.js";
+import { ApiError, type ApiFailure } from "./api/client.js";
+import { toolErrorCodeOf, type ToolErrorCode } from "./usage-names.js";
 import type * as T from "./api/types.js";
 import type { Catalogue } from "./catalogue.js";
 import { log } from "./log.js";
-import { apiFailure, languageOf, toolError } from "./presentation.js";
+import { apiFailure, languageOf, toolError, withPlaceCredits } from "./presentation.js";
 import { readPromptArgumentsFirst, registerPrompts } from "./prompts/index.js";
 import { ElicitResultSchema, SID_CONSENT_TIMEOUT_MS, SidConsent } from "./sid-consent.js";
 import { SessionWatches, type ToolContext } from "./tools/context.js";
 import { HANDLERS } from "./tools/handlers.js";
+import { inputCheck } from "./validate.js";
 import { REFRESH_WAIT, type RefreshWait } from "./tools/trains.js";
 
 export type ServerDeps = { readonly api: ApiClient; readonly catalogue: Catalogue; readonly refreshWait?: RefreshWait };
@@ -34,6 +36,25 @@ const RULES_TOPICS: Readonly<Record<string, readonly string[]>> = {
   "viafrei://rules/low-emission-zones": ["lez"],
   "viafrei://emergency": ["emergency"],
   "viafrei://rules/electric-driving": ["ev"],
+};
+
+/**
+ * The reason code a tool error carries in `_meta.errorCode`, as the server this one replaces sets it: the usage
+ * counters and the request log count an error by it, never by its text. A code the handler set is kept.
+ */
+export function withErrorCode(result: CallToolResult, code: ToolErrorCode): CallToolResult {
+  if (result.isError !== true || toolErrorCodeOf(result) !== null) return result;
+  return { ...result, _meta: { ...result._meta, errorCode: code } };
+}
+
+/** Each API failure's reason code. */
+export const API_FAILURE_CODE: Readonly<Record<ApiFailure, ToolErrorCode>> = {
+  not_found: "not_found",
+  invalid: "invalid_input",
+  rate_limited: "limit_reached",
+  not_configured: "unavailable",
+  refused: "unavailable",
+  unavailable: "unavailable",
 };
 
 export function createServer(deps: ServerDeps): McpServer {
@@ -48,6 +69,7 @@ export function createServer(deps: ServerDeps): McpServer {
   const watches = new SessionWatches();
   const consent = new SidConsent(() => server.server.getClientCapabilities());
   const toolNames = new Set(catalogue.tools.map((t) => t.name));
+  const checkInput = inputCheck(catalogue.tools);
 
   server.server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: catalogue.tools }));
   server.server.setRequestHandler(CallToolRequestSchema, async (request, extra): Promise<CallToolResult> => {
@@ -55,8 +77,11 @@ export function createServer(deps: ServerDeps): McpServer {
     const args = (request.params.arguments ?? {}) as Record<string, unknown>;
     const language = languageOf(args["language"]);
     const handler = HANDLERS[name];
-    if (!toolNames.has(name) || handler === undefined) return toolError(language === "de" ? `Unbekanntes Werkzeug: ${name}` : `Unknown tool: ${name}`);
+    if (!toolNames.has(name) || handler === undefined) return withErrorCode(toolError(language === "de" ? `Unbekanntes Werkzeug: ${name}` : `Unknown tool: ${name}`), "not_found");
+    const refused = checkInput(name, args);
+    if (refused !== null) return withErrorCode(refused, "invalid_input");
     const ctx: ToolContext = {
+      tool: name,
       api: deps.api.withLanguage(language),
       refreshWait: deps.refreshWait ?? REFRESH_WAIT,
       language,
@@ -66,13 +91,13 @@ export function createServer(deps: ServerDeps): McpServer {
     };
     const started = Date.now();
     try {
-      const result = await handler(args, ctx);
+      const result = await withPlaceCredits(() => handler(args, ctx));
       log.info({ tool: name, ms: Date.now() - started, isError: result.isError === true }, "tool call");
       return result;
     } catch (err) {
       log.warn({ tool: name, ms: Date.now() - started, error: err instanceof Error ? err.name : "error", kind: err instanceof ApiError ? err.kind : null }, "tool call failed");
-      if (err instanceof ApiError) return apiFailure(err, language);
-      return toolError(language === "de" ? "Bei dieser Anfrage ist ein Fehler aufgetreten." : "Something went wrong with this request.");
+      if (err instanceof ApiError) return withErrorCode(apiFailure(err, language), API_FAILURE_CODE[err.kind]);
+      return withErrorCode(toolError(language === "de" ? "Bei dieser Anfrage ist ein Fehler aufgetreten." : "Something went wrong with this request."), "internal");
     }
   });
 

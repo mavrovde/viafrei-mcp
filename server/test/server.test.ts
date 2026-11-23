@@ -127,11 +127,13 @@ describe("tool calls that go wrong", () => {
     expect(calls).toHaveLength(0);
   });
 
-  it("no arguments at all: German, and the handler's own question", async () => {
+  it("no arguments at all: the schema's refusal, as today's server words it (parity run)", async () => {
     const { client, close } = await connect();
     try {
       const r = (await client.callTool({ name: "describe_location" })) as CallToolResult;
-      expect(textOf(r)).toBe("Bitte lat und lon angeben.");
+      expect(textOf(r)).toBe(
+        "MCP error -32602: Input validation error: Invalid arguments for tool describe_location: Invalid input: expected number, received undefined at lat\nInvalid input: expected number, received undefined at lon",
+      );
     } finally {
       await close();
     }
@@ -139,7 +141,7 @@ describe("tool calls that go wrong", () => {
 
   it("an API failure is worded for the person", async () => {
     mockServer.use(handlerFor("listAddresses", () => problem(400, "invalid-parameter", "q is too short")));
-    const r = await call("find_address", { query: "x", language: "en" });
+    const r = await call("find_address", { query: "xyz", language: "en" });
     expect(r.isError).toBe(true);
     expect(textOf(r)).toBe("The request does not fit: q is too short");
   });
@@ -147,9 +149,51 @@ describe("tool calls that go wrong", () => {
   it("anything else is one plain sentence, in each language", async () => {
     mockServer.use(handlerFor("listAddresses", () => HttpResponse.json({ data: { addresses: null }, meta: {} })));
     for (const [language, text] of [["de", "Bei dieser Anfrage ist ein Fehler aufgetreten."], ["en", "Something went wrong with this request."]]) {
-      const r = await call("find_address", { query: "x", language });
+      const r = await call("find_address", { query: "xyz", language });
       expect(r.isError).toBe(true);
       expect(textOf(r)).toBe(text);
+    }
+  });
+});
+
+describe("arguments the tool's schema refuses (as the SDK answers them, before any API read)", () => {
+  const refuse = async (name: string, args: Record<string, unknown>): Promise<CallToolResult> => {
+    const { client, close } = await connect();
+    try {
+      return (await client.callTool({ name, arguments: args })) as CallToolResult;
+    } finally {
+      await close();
+    }
+  };
+
+  it("a missing required argument: -32602, its issue and path, and no API call", async () => {
+    expect(await refuse("find_place", { kind: "junction", language: "de" })).toEqual({
+      content: [{ type: "text", text: "MCP error -32602: Input validation error: Invalid arguments for tool find_place: Invalid input: expected string, received undefined at query" }],
+      isError: true,
+      _meta: { errorCode: "invalid_input" },
+    });
+    expect(calls).toHaveLength(0);
+  });
+
+  it("every issue on its own line, a nested path dotted", async () => {
+    const r = await refuse("watch_situation", { kind: "road", key: "A2", hours: "two", condition: { events: [7] }, language: "en" });
+    expect(r.isError).toBe(true);
+    expect(textOf(r).split("\n")[0]).toMatch(/^MCP error -32602: Input validation error: Invalid arguments for tool watch_situation: .+ at /u);
+    expect(textOf(r).split("\n").length).toBeGreaterThan(1);
+    expect(calls).toHaveLength(0);
+  });
+});
+
+describe("a date-time argument the schema refuses", () => {
+  it("one issue, the format's, as today's server words it", async () => {
+    const { client, close } = await connect();
+    try {
+      const r = (await client.callTool({ name: "get_train_departures", arguments: { language: "de", when: "soon", eva_no: "8001001" } })) as CallToolResult;
+      expect(r).toEqual({ content: [{ type: "text", text: "MCP error -32602: Input validation error: Invalid arguments for tool get_train_departures: Invalid ISO datetime at when" }], isError: true, _meta: { errorCode: "invalid_input" } });
+      const ok = (await client.callTool({ name: "get_train_departures", arguments: { language: "de", when: "2026-03-30T05:00:00+02:00", eva_no: "8001001" } })) as CallToolResult;
+      expect(textOf(ok)).not.toMatch(/^MCP error -32602/u);
+    } finally {
+      await close();
     }
   });
 });

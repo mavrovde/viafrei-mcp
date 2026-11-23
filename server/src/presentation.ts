@@ -4,6 +4,7 @@
  * `purposeNote` / `conditionNote` the API states in `meta.notes`. The notes are shown verbatim: they
  * are legal conditions of the data, not captions.
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Attribution, DataMeta } from "./api/client.js";
 import { ApiError } from "./api/client.js";
@@ -30,10 +31,57 @@ export function berlinDateTime(iso: string | null | undefined, language: Languag
   return new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-GB", { timeZone: BERLIN, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
 }
 
+const berlinDay = (d: Date): string => new Intl.DateTimeFormat("en-CA", { timeZone: BERLIN, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+
+/**
+ * When the data stood, as today's server says it (presentation/format.ts): "08:05" on the same Berlin
+ * day as `now`, else "18.09. 08:05" in German and "2026-09-18 08:05" in English.
+ */
+export function standTime(iso: string, language: Language, now: Date = new Date()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "–";
+  const time = berlinTime(iso);
+  const day = berlinDay(d);
+  if (day === berlinDay(now)) return time;
+  return language === "de" ? `${day.slice(8, 10)}.${day.slice(5, 7)}. ${time}` : `${day} ${time}`;
+}
+
+/** A row that opens with a label supplies its own (the DWD's prescribed "Quelle: Deutscher Wetterdienst"). */
+const OWN_LABELS = ["Quelle: ", "Source: "];
+/** The DWD's changed-data lead: its row goes last, and alone it carries no "Quelle:". */
+const CHANGED_DATA_LEAD = "Datenbasis: ";
+
+/**
+ * The credit line, in today's server's one shape (creditFooter, #906): "Quelle: <rows> · Stand <time>".
+ * A row that opens with a label goes first and is the line's label; a changed-data row goes last;
+ * no rows, no "Quelle:" — the Stand alone.
+ */
+export function creditFooter(language: Language, rows: readonly string[], stand: string): string {
+  if (rows.length === 0) return stand;
+  const labelled = (r: string): boolean => OWN_LABELS.some((l) => r.startsWith(l));
+  const own = rows.filter(labelled);
+  const basis = rows.filter((r) => !labelled(r) && r.startsWith(CHANGED_DATA_LEAD));
+  const rest = rows.filter((r) => !labelled(r) && !r.startsWith(CHANGED_DATA_LEAD));
+  const lead = own.length > 0 || rest.length === 0 ? "" : `${SOURCE_LABEL[language]}: `;
+  return `${lead}${[...own, ...rest, ...basis].join(" · ")} · ${stand}`;
+}
+
 export const km = (m: number | null | undefined, language: Language): string =>
   m === null || m === undefined ? "" : m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1).replace(".", language === "de" ? "," : ".")} km`;
 
 export const eur = (v: number, language: Language): string => `${v.toFixed(3).replace(".", language === "de" ? "," : ".")} €`;
+
+/**
+ * The credits of the place search a tool call resolved its place through: today's server credits the
+ * gazetteer row it read the place from ("Ortsdaten: © GeoNames …") after the answer's own sources. One
+ * store per tool call, filled by `position()` and read by `toolResult`, so no handler can forget it.
+ * Credit only: the place's read never moves the answer's data time.
+ */
+const placeCredits = new AsyncLocalStorage<Attribution[]>();
+export const withPlaceCredits = <R>(fn: () => Promise<R>): Promise<R> => placeCredits.run([], fn);
+export function creditPlace(list: readonly Attribution[] | undefined): void {
+  placeCredits.getStore()?.push(...(list ?? []));
+}
 
 export type ToolMeta = {
   attribution: string;
@@ -64,14 +112,22 @@ function uniqueAttributions(list: readonly Attribution[]): Attribution[] {
  * reads). When the handler gives `structured`, `structuredContent` carries those fields plus the same asOf,
  * attribution, licence and notes, as the server before the move sent them.
  */
-export function toolResult(body: string, metas: readonly DataMeta[], language: Language, extra: { conditionNote?: string; nextCursor?: string | null; structured?: Record<string, unknown> } = {}): CallToolResult {
-  const attributions = uniqueAttributions(metas.flatMap((m) => m.attribution ?? []));
+export function toolResult(body: string, metas: readonly DataMeta[], language: Language, extra: {
+  conditionNote?: string; nextCursor?: string | null; structured?: Record<string, unknown>;
+  /** The data time when it is not the reads' (the driving rules: the review date). */
+  asOf?: string;
+  /** The Stand when it is not a clock time (the driving rules: "Stand 19.09.2026"). */
+  asOfLabel?: string;
+  /** A sentence AFTER the credit line, the last thing read aloud (the rules' disclaimer). */
+  note?: string;
+} = {}): CallToolResult {
+  const attributions = uniqueAttributions([...metas.flatMap((m) => m.attribution ?? []), ...(placeCredits.getStore() ?? [])]);
   const purpose = [...new Set(metas.flatMap((m) => m.notes?.purpose ?? []))];
   const condition = [...new Set([...metas.flatMap((m) => m.notes?.condition ?? []), ...(extra.conditionNote ? [extra.conditionNote] : [])])];
   const asOfs = metas.map((m) => m.asOf).filter((x): x is string => typeof x === "string").sort();
-  const asOf = asOfs[0] ?? metas[0]?.generatedAt ?? new Date().toISOString();
+  const asOf = extra.asOf ?? asOfs[0] ?? metas[0]?.generatedAt ?? new Date().toISOString();
   const attributionText = attributions.map((a) => a.text).join(" · ");
-  const footer = `${attributions.length > 0 ? `${SOURCE_LABEL[language]}: ${attributionText} · ` : ""}${AS_OF_LABEL[language]}: ${berlinDateTime(asOf, language)}`;
+  const footer = creditFooter(language, attributions.map((a) => a.text), extra.asOfLabel ?? `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`) + (extra.note === undefined ? "" : `\n${extra.note}`);
   const lines = [...purpose, ...condition];
   const room = TOOL_RESULT_CHARS - footer.length - lines.join("\n").length - 4;
   const text = [...lines, body.length > room ? `${body.slice(0, Math.max(0, room - 1))}…` : body, "", footer].join("\n");

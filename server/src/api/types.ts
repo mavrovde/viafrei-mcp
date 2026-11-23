@@ -26,14 +26,14 @@ export type ParkingSite = {
   occupancy: { free: number | null; total: number | null; state: string; observedAt: string | null } | null; termsRequired: boolean;
 };
 /** SpeedData */
-export type SpeedCamera = { id: string; kind: string; street: string | null; municipality: string | null; limitKmh: number | null; locationLabel: string | null; firstDay: string | null; lastDay: string | null };
+export type SpeedCamera = { id: string; kind: string; enforces: string | null; street: string | null; locationLabel: string | null; municipality: string | null; direction: string | null; limitKmh: number | null; lorryLimitKmh: number | null; firstDay: string | null; lastDay: string | null; dataAsOf: string | null; staleYear: number | null; location: LatLon | null; sourceFamily: string };
 export type SpeedData = { official: SpeedCamera[]; officialTotal: number; osm: SpeedCamera[]; osmTotal: number };
 /** Poi, PoiPage */
 export type Poi = { name: string | null; category: string; kind: string | null; street: string | null; number: string | null; postcode: string | null; place: string | null; distanceM: number | null };
 /** NearbyData */
 export type NeedPlace = { name: string; kind: string; street: string | null; houseNo: string | null; distanceM: number };
 export type NearbyFuelStation = { name: string | null; brand: string | null; distanceM: number; prices: FuelPrice[] };
-export type NearbyJunction = { name: string; road: string | null; number: string | null; distanceM: number };
+export type NearbyJunction = { name: string; road: string | null; number: string | null; distanceM: number; location: LatLon };
 /** NearbyPartStatus (NearbyMeta.parts) */
 export type NearbyPart = "fuel" | "charging" | "parking" | "station" | "junction" | "needs";
 export type NearbyPartStatus = { part: NearbyPart; status: "ok" | "timeout" | "not_permitted" | "unavailable" | "not_requested"; problemType?: string };
@@ -50,16 +50,24 @@ export type RoadSituation = {
   id: string; kind: string; severity: string; road: string | null; direction: string | null; directionText: string | null;
   validity: { from: string | null; until: string | null }; headline: string; description: string | null; delayMin: number | null; lengthM: number | null; distanceM?: number;
 };
-export type RoadConditionsData = { lamp: string; lampReason: string; situations: RoadSituation[] };
+export type LampReason = { reason: string; lamp: string; count: number };
+export type FamilyCount = { sourceFamily: string; situations: number };
+export type RoadCoverage = { registered: boolean; roadType: string; families: string[] };
+export type RoadConditionsData = { lamp: string; lampReason: string | null; lampReasons?: LampReason[]; counts?: FamilyCount[]; coverage?: RoadCoverage | null; situations: RoadSituation[] };
 /** LorryRule */
 export type LorryRule = { layer: string; kind: string | null; road: string | null; street: string | null; municipality: string | null; publishedText: string | null; value: number | null; unit: string | null };
 /** DrivingRulesData */
-export type DrivingRulesData = { topic: string; title: string; rules: { text: string; legalBasis: string | null }[]; reviewedOn: string; disclaimer: string };
+export type DrivingRule = { id: string; text: string; legalBasis: string | null; sourceUrl: string | null; reviewedOn: string; unconfirmed: string | null };
+/** With topic lez and a city: the curated list's entry, or the asked city uncovered (zone null). */
+export type ZoneCity = { name: string; zone: string | null; plakette: string | null; covered: boolean };
+/** With topic lez and a position: the platform's verdict. */
+export type ZoneVerdict = { kind: "inside" | "transfer" | "outside" | "unknown"; distanceM: number | null };
+export type DrivingRulesData = { topic: string; title: string; rules: DrivingRule[]; reviewedOn: string; disclaimer: string; zoneCity?: ZoneCity; zoneVerdict?: ZoneVerdict };
 /** DisruptionData */
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
 export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; punctuality: { name: string | null; level: string; late: number; observed: number } | null; windowMin: number };
 /** WeatherRiskData */
-export type WeatherWarning = { headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null } };
+export type WeatherWarning = { headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null }; inForce?: boolean };
 export type WeatherRiskData = { warnings: WeatherWarning[] };
 /** LocationData */
 export type Named = { name?: string | null; code?: string | null } | null;
@@ -86,7 +94,7 @@ export type RefreshData = { id: string; source: string; state: RefreshState; set
 /** StationFacilitiesData */
 export type StationFacilitiesData = { station: { name: string }; counts: { active: number; inactive: number; unknown: number }; facilities: { id: string; kind: string; position: string | null; state: string }[] };
 /** WatchData */
-export type WatchData = { watchId: string; uri: string; kind: string; key: string; from: string; until: string; ended: boolean; note: string | null; situations: RoadSituation[] };
+export type WatchData = { watchId: string; uri: string; kind: string; key: string; condition?: Record<string, unknown>; from: string; until: string; ended: boolean; note: string | null; situations: RoadSituation[] };
 /** SourceRow */
 export type SourceRow = { family: string; domain: string; publisher: string; attribution: string; licence: string; licenceUrl: string; status: string };
 /** PlacesCoverageData */

@@ -49,11 +49,13 @@ export type TermsOffer = {
   readonly providerTerms: string;
   readonly texts: readonly TermsBody[];
 };
+export type FreshnessEntry = { readonly family: string; readonly dataAsOf: string | null; readonly ageS?: number | null; readonly stale?: boolean };
 export type DataMeta = {
   readonly requestId: string;
   readonly generatedAt: string;
   readonly language: string;
   readonly asOf?: string | null;
+  readonly freshness?: readonly FreshnessEntry[];
   readonly attribution?: readonly Attribution[];
   readonly notes?: Notes;
   readonly warnings?: readonly DataWarning[];

@@ -7,7 +7,7 @@ dist/
 *.tgz
 
 # Dependencies
-node_modules/
+node_modules
 
 # Never commit any of these. The bridge holds no credentials of its own, and
 # this list is here so that stays true by default rather than by memory.
