@@ -262,14 +262,26 @@ console.log('each planted fault in the workflows is reported');
     }
 }
 
-// Stryker's vitest runner starts worker THREADS unless told otherwise, and a worker thread refuses the
-// V8 flags vitest.config.ts passes in execArgv (--expose-gc): every shard's dry run failed so in 2.7.0.
+// Stryker runs vitest on worker THREADS (cheaper per mutant than forks, 2.7.2) with its own vitest config:
+// a worker thread refuses the V8 flags vitest.config.ts passes in execArgv (--expose-gc), which failed every
+// shard's dry run in 2.7.0. The one case that needs a real collection is declared off there by name, and
+// anywhere else a missing gc still fails it.
 {
     const stryker = (await import('../server/stryker.config.mjs')).default;
-    const vitestConfig = readFileSync(join(ROOT, 'server', 'vitest.config.ts'), 'utf8');
-    const execArgv = /execArgv:\s*\[([^\]]*)\]/u.exec(vitestConfig)?.[1] ?? '';
-    check('the vitest config this check reads still passes --expose-gc (precondition)', execArgv.includes('--expose-gc'), execArgv);
-    check('Stryker runs vitest in forks, where execArgv may carry a V8 flag', stryker.vitest?.pool === 'forks', String(stryker.vitest?.pool));
+    const read = (f) => readFileSync(join(ROOT, 'server', f), 'utf8');
+    const argvOf = (text) => /execArgv:\s*\[([^\]]*)\]/u.exec(text)?.[1];
+    const main = read('vitest.config.ts');
+    check('the main suite keeps --expose-gc (precondition)', (argvOf(main) ?? '').includes('--expose-gc'), argvOf(main));
+    check('the main suite does not declare the gc case off', !main.includes('MUTATION_NO_GC'), '');
+    const file = stryker.vitest?.configFile ?? '';
+    check('Stryker runs vitest on its own config', file !== '' && file !== 'vitest.config.ts', file);
+    check('Stryker runs vitest on threads, not forks', stryker.vitest?.pool === undefined || stryker.vitest.pool === 'threads', String(stryker.vitest?.pool));
+    const own = file === '' ? '' : read(file);
+    check('Stryker\'s vitest config passes no V8 flag a thread refuses', argvOf(own) !== undefined && argvOf(own).trim() === '' && !own.includes('mergeConfig('), String(argvOf(own)));
+    check('Stryker\'s vitest config declares the gc case off', /MUTATION_NO_GC:\s*"1"/u.test(own), '');
+    const cap = read('test/transport/session-cap.test.ts');
+    check('the gc case is skipped only where MUTATION_NO_GC is declared', /it\.skipIf\(process\.env\.MUTATION_NO_GC === "1"\)\("a held stream survives a garbage collection/u.test(cap), '');
+    check('a missing gc elsewhere still fails the case', /typeof gc !== "function"\) \{\s*throw new Error/u.test(cap), '');
 }
 
 // The shards are dealt by measured seconds (server/scripts/mutation-weights.json): every piece of the scope

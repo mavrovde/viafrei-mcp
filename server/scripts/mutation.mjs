@@ -26,11 +26,11 @@ import ts from "typescript";
 
 export const FLOOR = 70;
 /**
- * The shards of the release run (mutation.yml's matrix). 18, measured: the pieces are dealt by the seconds
- * they took (scripts/mutation-weights.json, fitted to runs 45133880847 and 45137207791: ~153 minutes in all). createMcpApp alone takes
- * ~10.8 minutes and is one statement no line range can cut, so it fills a shard; the other 17 get ~8.3 minutes
- * each. 18 shards beside the npm run's Snyk and end-to-end jobs stay within GitHub's 20 concurrent jobs, so
- * none queues and the whole run ends inside 15 minutes.
+ * The shards of the release run (mutation.yml's matrix). 18: the pieces are dealt by the seconds they took
+ * (scripts/mutation-weights.json, fitted to runs 45133880847 and 45137207791, on forks). Stryker now runs
+ * vitest on worker threads (vitest.stryker.config.ts), about 1.7x cheaper per mutant, so every weight is an
+ * over-estimate by the same factor and the deal is unchanged. 18 shards beside the npm run's Snyk and
+ * end-to-end jobs stay within GitHub's 20 concurrent jobs, so none queues.
  */
 export const SHARDS = 18;
 /** A piece holds consecutive top-level statements up to this weight; one heavier statement is a piece alone. */
