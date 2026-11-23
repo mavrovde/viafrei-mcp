@@ -47,6 +47,12 @@ for (const t of real.tools) ok(`tool ${t.name} appears exactly once`, section.sp
 for (const p of real.prompts) ok(`prompt ${p.name} appears`, section.includes(`\`${p.name}\``));
 for (const r of real.resources) ok(`resource ${r.uri} appears`, section.includes(`\`${r.uri}\``));
 ok('the section opens and closes with the markers', section.startsWith(BEGIN) && section.endsWith(END));
+{
+  const { versionSetByHand: _, ...captured } = real;
+  ok('a hand-set version is said in the lead line, with the captured one',
+    renderSection({ ...captured, versionSetByHand: '9.8.7' }).includes(`The version ${real.serverInfo.version} was set by hand; the capture is of 9.8.7 and is taken again after the ${real.serverInfo.version} deploy.`));
+  ok('a captured version carries no hand-set sentence', !renderSection(captured).includes('set by hand'));
+}
 ok('the counts in the lead line are the snapshot\'s', section.includes(`**${real.tools.length} tools, ${real.prompts.length} prompts`));
 
 // 2. every anchor points at a heading API.md really has

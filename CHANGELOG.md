@@ -4554,6 +4554,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.0]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.0
 [2.6.40]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.40
 [2.6.37]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.37
 [2.6.23]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.6.23
