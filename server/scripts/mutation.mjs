@@ -25,8 +25,13 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 export const FLOOR = 70;
-/** The shards of the release run (mutation.yml's matrix). */
-export const SHARDS = 8;
+/**
+ * The shards of the release run (mutation.yml's matrix). 32, measured: in 2.7.1 the 8 shards of the
+ * ~10,700 mutants needed 13.8 to 35.9 minutes each (elapsed over Stryker's progress), ~170 shard-minutes
+ * with the slowest at 1.7 times the mean, so 32 shards put the slowest near 9 minutes, setup aside,
+ * inside the 15-minute job limit with a margin.
+ */
+export const SHARDS = 32;
 /** A piece holds consecutive top-level statements up to this weight; one heavier statement is a piece alone. */
 export const PIECE_WEIGHT = 200;
 const SERVER = resolve(fileURLToPath(new URL("..", import.meta.url)));

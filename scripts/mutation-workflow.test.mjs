@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Mutation testing's wiring (owner 2026-11-18): the full StrykerJS run of the
- * server once per release, cut into 8 shards of pieces (owner 2026-11-22: every job
+ * server once per release, cut into 32 shards of pieces (owner 2026-11-22: every job
  * ends within 15 minutes) and gathered into one 70 % gate,
  * called by the npm workflow on the commit about to be published, and never on
  * a pull request or a push. Read off the workflow files and run:
@@ -13,7 +13,7 @@
  *     the job summary, the report artefact);
  *   - publish.yml: the mutation job calls mutation.yml on the tagged commit, and
  *     publish needs it next to Snyk;
- *   - the 8 shards of the real scope are disjoint, together every piece of every
+ *   - the 32 shards of the real scope are disjoint, together every piece of every
  *     in-scope file, none empty, and leave out the generated operation table
  *     (that no MUTANT is lost or counted twice is server/scripts/mutation-pieces.test.mjs,
  *     which needs Stryker's instrumenter);
