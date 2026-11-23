@@ -46,8 +46,8 @@ console.log('each planted fault is reported');
     const ok = wf(`  a:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 15 # a comment\n${steps}  call:\n    uses: ./.github/workflows/snyk.yml\n`);
     const mut = (jobs) => wf(jobs);
     const ex = [
-        ['the mutation shards at 25 pass', 'mutation.yml', mut(`  shards:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 25\n${steps}`), ''],
-        ['the mutation shards at 26', 'mutation.yml', mut(`  shards:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 26\n${steps}`), 'job shards has timeout-minutes 26, not 1-25'],
+        ['the mutation shards at 20 pass', 'mutation.yml', mut(`  shards:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n${steps}`), ''],
+        ['the mutation shards at 21', 'mutation.yml', mut(`  shards:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 21\n${steps}`), 'job shards has timeout-minutes 21, not 1-20'],
         ['another mutation.yml job at 16', 'mutation.yml', mut(`  gather:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 16\n${steps}`), 'job gather has timeout-minutes 16, not 1-15'],
         ['a shards job in another workflow at 16', 'ci.yml', mut(`  shards:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 16\n${steps}`), 'job shards has timeout-minutes 16, not 1-15'],
     ];
@@ -55,7 +55,7 @@ console.log('each planted fault is reported');
         const got = faultsOf(file, text).join('; ');
         check(want === '' ? label : `${label} is reported`, want === '' ? got === '' : got.includes(want), got);
     }
-    check('the one exception is mutation.yml\'s shards at 25, nothing wider', JSON.stringify(EXCEPTIONS) === JSON.stringify({ 'mutation.yml': { shards: 25 } }), JSON.stringify(EXCEPTIONS));
+    check('the one exception is mutation.yml\'s shards at 20, nothing wider', JSON.stringify(EXCEPTIONS) === JSON.stringify({ 'mutation.yml': { shards: 20 } }), JSON.stringify(EXCEPTIONS));
     // The committed workflows: every job but mutation.yml's shards at 15 or less.
     {
         const files = workflows();

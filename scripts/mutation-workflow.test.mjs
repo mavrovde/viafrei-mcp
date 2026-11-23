@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
  * Mutation testing's wiring (owner 2026-11-18): the full StrykerJS run of the
- * server once per release, cut into 18 shards of pieces (owner 2026-11-22: every job
- * ends within 15 minutes) and gathered into one 70 % gate,
+ * server once per release, cut into 18 shards of pieces (every job ends within 15
+ * minutes, owner 2026-11-22, except the shards at 20: owner 2026-11-23, a viafrei-mcp
+ * pipeline ends within 30) and gathered into one 70 % gate,
  * called by the npm workflow on the commit about to be published, and never on
  * a pull request or a push. Read off the workflow files and run:
  *
  *   - mutation.yml: triggers (the release call with a ref, a dispatch, nothing
- *     else), the plan, the 8-shard matrix (fail-fast off, 15 min each, each
+ *     else), the plan, the 18-shard matrix (fail-fast off, 20 min each, each
  *     uploading its report), the gate job "Mutation testing" (needs the shards,
  *     runs unless cancelled, its shard-result guard RUN under bash, the gather,
  *     the job summary, the report artefact);
@@ -42,7 +43,7 @@ const { check, failures, passed } = createChecker();
 const REF = '${{ inputs.ref || github.sha }}';
 const TRIGGERS = '\non:\n  workflow_call:\n    inputs:\n      ref:\n        description: The commit to mutate (the release\'s tagged commit)\n        required: true\n        type: string\n  workflow_dispatch:\n\n';
 const KS = Array.from({ length: SHARDS }, (_, i) => i + 1);
-const MATRIX = `\n    timeout-minutes: 25\n    strategy:\n      fail-fast: false\n      matrix:\n        shard: [${KS.join(', ')}]\n`;
+const MATRIX = `\n    timeout-minutes: 20\n    strategy:\n      fail-fast: false\n      matrix:\n        shard: [${KS.join(', ')}]\n`;
 const SHARD_RUN = `run: node scripts/mutation.mjs shard "$SHARD/${SHARDS}" "$GITHUB_WORKSPACE/mutation-shard"\n`;
 const SHARD_UPLOAD = '\n        with:\n          name: mutation-shard-${{ matrix.shard }}\n          path: mutation-shard/\n          if-no-files-found: error\n';
 const GATE_HEAD = '\n  mutation:\n    name: Mutation testing\n    needs: [plan, shards]\n    if: ${{ !cancelled() }}\n';
@@ -88,7 +89,7 @@ function faults(files) {
     if (!job(mu, 'plan').includes(`run: node scripts/mutation.mjs plan ${SHARDS}\n`)) out.push(`mutation.yml's plan does not check the ${SHARDS} shards`);
     const shards = job(mu, 'shards');
     if (!/^ {4}needs: plan\n/mu.test(shards)) out.push("mutation.yml's shards do not need the plan");
-    if (!shards.includes(MATRIX)) out.push(`mutation.yml's shards are not the ${SHARDS}-shard matrix with fail-fast off and 25 minutes each`);
+    if (!shards.includes(MATRIX)) out.push(`mutation.yml's shards are not the ${SHARDS}-shard matrix with fail-fast off and 20 minutes each`);
     if (!shards.includes(SHARD_RUN)) out.push(`mutation.yml's shard does not run its 1/${SHARDS} of the scope`);
     if (!shards.includes(SHARD_UPLOAD)) out.push("mutation.yml's shard does not upload its report, failing when there is none");
     const gate = job(mu, 'mutation');
@@ -236,7 +237,7 @@ console.log('each planted fault in the workflows is reported');
         ['the ref not required', 'with a required ref', plant('mutation.yml', '        required: true\n', '        required: false\n')],
         ['a shard short', `the ${SHARDS}-shard matrix`, plant('mutation.yml', `, ${SHARDS}]`, ']')],
         ['fail-fast on', `the ${SHARDS}-shard matrix`, plant('mutation.yml', 'fail-fast: false', 'fail-fast: true')],
-        ['a longer shard timeout', `the ${SHARDS}-shard matrix`, plant('mutation.yml', '    timeout-minutes: 25\n    strategy:', '    timeout-minutes: 30\n    strategy:')],
+        ['a longer shard timeout', `the ${SHARDS}-shard matrix`, plant('mutation.yml', '    timeout-minutes: 20\n    strategy:', '    timeout-minutes: 30\n    strategy:')],
         ['a shard of another count', `its 1/${SHARDS} of the scope`, plant('mutation.yml', `"$SHARD/${SHARDS}"`, '"$SHARD/4"')],
         ['a shard upload that may be empty', 'failing when there is none', plant('mutation.yml', 'if-no-files-found: error', 'if-no-files-found: ignore')],
         ['the gate renamed', "is not 'Mutation testing'", plant('mutation.yml', 'name: Mutation testing\n', 'name: Mutation\n')],
@@ -244,7 +245,7 @@ console.log('each planted fault in the workflows is reported');
         ['the gate if: always()', "is not 'Mutation testing'", plant('mutation.yml', '    if: ${{ !cancelled() }}\n', '    if: always()\n')],
         ['the guard accepting a failure', "exits 0 for shards 'failure'", plant('mutation.yml', '[[ $SHARDS == success ]] ||', '[[ $SHARDS != cancelled ]] ||')],
         ['the guard removed', 'no shard-result guard', plant('mutation.yml', '- name: Every shard finished with its reports', '- name: Shards')],
-        ['continue-on-error on a shard', 'carries continue-on-error', plant('mutation.yml', '    timeout-minutes: 25\n    strategy:', '    timeout-minutes: 25\n    continue-on-error: true\n    strategy:')],
+        ['continue-on-error on a shard', 'carries continue-on-error', plant('mutation.yml', '    timeout-minutes: 20\n    strategy:', '    timeout-minutes: 20\n    continue-on-error: true\n    strategy:')],
         ['no gather', 'gather the shards', plant('mutation.yml', 'scripts/mutation.mjs gather', 'scripts/mutation.mjs full')],
         ['no summary', 'job summary', plant('mutation.yml', '>> "$GITHUB_STEP_SUMMARY"', '> /dev/null')],
         ['no report artefact', 'upload the report', plant('mutation.yml', 'name: mutation-report\n', 'name: report\n')],

@@ -7,7 +7,7 @@
  * value above 15. A job that calls a reusable workflow (`uses:` on the job) cannot carry
  * a timeout; the jobs of the workflow it calls are read in their own file.
  *
- * One exception, exact: the `shards` job of mutation.yml may take up to 25 minutes
+ * One exception, exact: the `shards` job of mutation.yml may take up to 20 minutes
  * (owner 2026-11-23: a viafrei-mcp pipeline ends within 30 minutes, this repository
  * only). Every other job, in mutation.yml too, keeps the 15.
  *
@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 export const MAX_MINUTES = 15;
 /** The one job allowed more, file → job → its ceiling (owner 2026-11-23, the 30-minute mcp pipeline). */
-export const EXCEPTIONS = { 'mutation.yml': { shards: 25 } };
+export const EXCEPTIONS = { 'mutation.yml': { shards: 20 } };
 const WF = join(dirname(fileURLToPath(import.meta.url)), '..', '.github', 'workflows');
 
 /** The jobs of one workflow text: id → the job's lines, its header line left out. */

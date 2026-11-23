@@ -4,8 +4,8 @@
 // request. The scope is every .ts file under src/ except the generated operation
 // table. A shard is a set of PIECES, not of files: a piece is a run of a file's
 // top-level statements, given as Stryker's `file:start-end` line range, so one
-// large file is spread over several shards and every shard ends inside the
-// 15-minute job limit. A boundary falls only between two top-level statements, so
+// large file is spread over several shards and every shard ends inside its
+// 20-minute job limit. A boundary falls only between two top-level statements, so
 // every mutant lies inside exactly one piece. The pieces are dealt heaviest first,
 // each to the lightest shard (weight: the statement's syntax nodes, types left
 // out), so the N shards are disjoint, together the whole scope, and none is empty
@@ -30,7 +30,9 @@ export const FLOOR = 70;
  * (scripts/mutation-weights.json, fitted to runs 45133880847 and 45137207791, on forks). Stryker now runs
  * vitest on worker threads (vitest.stryker.config.ts), about 1.7x cheaper per mutant, so every weight is an
  * over-estimate by the same factor and the deal is unchanged. 18 shards beside the npm run's Snyk and
- * end-to-end jobs stay within GitHub's 20 concurrent jobs, so none queues.
+ * end-to-end jobs stay within GitHub's 20 concurrent jobs; a pull request's CI running at the same
+ * time still holds runners, and the proof run 45157220742 had shards wait up to 6.5 minutes and
+ * took 19 minutes in all (slowest shard 14.0).
  */
 export const SHARDS = 18;
 /** A piece holds consecutive top-level statements up to this weight; one heavier statement is a piece alone. */
