@@ -14,6 +14,8 @@ export const WATCH_CREDIT = {
   family: "viafrei_watch",
   text: "Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben / Watch: ViaFrei, our own service — every report names the source of the data behind it",
   licence: "ViaFrei service metadata (no provider data)",
+  // today's register row (own-content viafrei_watch) gives the service's own address, printed after the line
+  termsUrl: "https://viafrei.de",
 } as const;
 
 export const watchUri = (id: number): string => `viafrei://watch/${id}`;

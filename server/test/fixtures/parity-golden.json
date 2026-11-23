@@ -1,0 +1,766 @@
+{
+  "_about": "Today's server's answers, copied from the parity run's old side (scripts/parity-mcp.mjs) by a script, never typed: the text (its Stand time masked as HH:MM), structuredContent (asOf left out) and _meta attribution and license.",
+  "cases": [
+    {
+      "tool": "find_address",
+      "args": {
+        "query": "Domplatz 1, Magdeburg",
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Für diese Installation sind keine OpenStreetMap-Adressdaten geladen — ich kann nach Orten und Haltestellen suchen, aber nicht nach Hausnummern.\n\nStand HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "found": 0,
+        "license": "",
+        "query": "Domplatz 1, Magdeburg"
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "find_address",
+      "args": {
+        "query": "Domplatz 1, Magdeburg",
+        "language": "en"
+      },
+      "isError": false,
+      "text": "This installation holds no OpenStreetMap address data — I can look up towns and stations, but not house numbers.\n\nAs of HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "found": 0,
+        "license": "",
+        "query": "Domplatz 1, Magdeburg"
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Bayern",
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Bayern: in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Bayern: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Hamburg",
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Hamburg: in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Hamburg: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Brandenburg",
+        "window_min": 30,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Brandenburg: in den letzten 30 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Brandenburg: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Frankfurt am Main",
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Frankfurt am Main: in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Frankfurt am Main: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Hessen",
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Hessen: in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Hessen: Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Leipzig",
+        "window_min": 120,
+        "language": "en"
+      },
+      "isError": true,
+      "text": "I do not know \"Leipzig\" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example \"Bayern\", \"Köln\", \"Landkreis Fulda\").",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "find_roadworks_ahead",
+      "args": {
+        "road": "A7",
+        "language": "de"
+      },
+      "isError": true,
+      "text": "A7 ist keine Bundesautobahn, die ich kenne — weder die Autobahn GmbH noch unser Archiv führen diese Nummer, deshalb kann ich über sie nichts sagen. Nächstliegende Nummern: A3, A9. Bitte prüfen Sie die Nummer.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "find_roadworks_ahead",
+      "args": {
+        "road": "A45",
+        "language": "en"
+      },
+      "isError": true,
+      "text": "A45 is not a German motorway (Bundesautobahn) I know — neither Autobahn GmbH nor our archive carries that number, so I cannot say anything about it. Nearest real numbers: A3, A9. Please check the number.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "find_roadworks_ahead",
+      "args": {
+        "road": "A2",
+        "from": "2026-11-02",
+        "to": "2026-11-15",
+        "language": "de"
+      },
+      "isError": true,
+      "text": "A2 ist keine Bundesautobahn, die ich kenne — weder die Autobahn GmbH noch unser Archiv führen diese Nummer, deshalb kann ich über sie nichts sagen. Nächstliegende Nummern: A3, A9. Bitte prüfen Sie die Nummer.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Bayern",
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Bavaria: no public-transport realtime reports from this region in the last 60 minutes.\nThe source reports changes only: these figures cover the trips whose delay moved during the window, not every trip. Few reports therefore does not by itself mean \"everything on time\".\nIndividual lines, trips or stops cannot be judged from these delay figures — the realtime data arrives with no line reference, and its licence permits region-wide totals only.\n\nService alerts for Bavaria: the alert feeds are not current right now, so I cannot say whether any diversions or closures are published.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "region": "Niedersachsen",
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Lower Saxony: no public-transport realtime reports from this region in the last 60 minutes.\nThe source reports changes only: these figures cover the trips whose delay moved during the window, not every trip. Few reports therefore does not by itself mean \"everything on time\".\nIndividual lines, trips or stops cannot be judged from these delay figures — the realtime data arrives with no line reference, and its licence permits region-wide totals only.\n\nService alerts for Lower Saxony: the alert feeds are not current right now, so I cannot say whether any diversions or closures are published.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "find_sharing",
+      "args": {
+        "lat": 54.3233,
+        "lon": 10.1228,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Leihräder nahe 54.323, 10.123 (Umkreis 1 km):\n- Förde Sparkasse Lorentzendamm (Schleswig Smile Nord) — 14 Räder frei, davon 1 E-Rad · 0,8 km\nFreie Plätze: keine Angabe — das ist eine virtuelle Station ohne Docks (eine Abstellzone), dort gibt es keine Dock-Zählung.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "find_sharing",
+      "args": {
+        "lat": 54.3233,
+        "lon": 10.1228,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Shared bikes near 54.323, 10.123 (within 1 km):\n- Förde Sparkasse Lorentzendamm (Schleswig Smile Nord) — 14 bikes available, 1 of them e-bikes · 0.8 km\nFree docks: no count — it is a virtual station without docks (a parking zone), so there is no dock count to give.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "find_sharing",
+      "args": {
+        "lat": 54.315,
+        "lon": 10.132,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Leihräder nahe 54.315, 10.132 (Umkreis 1 km):\n- Rondeel (Schleswig Smile Nord) — 5 Räder frei, davon 1 E-Rad · 0,9 km\nFreie Plätze: keine Angabe — das ist eine virtuelle Station ohne Docks (eine Abstellzone), dort gibt es keine Dock-Zählung.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "find_sharing",
+      "args": {
+        "lat": 54.315,
+        "lon": 10.132,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Shared bikes near 54.315, 10.132 (within 1 km):\n- Rondeel (Schleswig Smile Nord) — 5 bikes available, 1 of them e-bikes · 0.9 km\nFree docks: no count — it is a virtual station without docks (a parking zone), so there is no dock count to give.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 50.5546,
+        "lon": 9.6773,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 50.5546, 9.6773:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Ort: Gersfeld (20,4 km)\n- Kreis: Marburg-Biedenkopf (51,4 km)\n- Bundesland: Hessen\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 50.5546,
+        "lon": 9.6773,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 50.5546, 9.6773:\n- This installation holds no OpenStreetMap address data.\n- Settlement: Gersfeld (20.4 km)\n- District: Marburg-Biedenkopf (51.4 km)\n- State (Land): Hesse\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 49.4521,
+        "lon": 11.0767,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 49.4521, 11.0767:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Kreis: Coburg (97,6 km)\n- Bundesland: Bayern\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 49.4521,
+        "lon": 11.0767,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 49.4521, 11.0767:\n- This installation holds no OpenStreetMap address data.\n- District: Coburg (97.6 km)\n- State (Land): Bavaria\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 51.3397,
+        "lon": 12.3731,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 51.3397, 12.3731:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Ort: Leipzig (0 m)\n- Kreis: Burgenlandkreis (32,1 km)\n- Bundesland: Sachsen-Anhalt\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 51.3397,
+        "lon": 12.3731,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 51.3397, 12.3731:\n- This installation holds no OpenStreetMap address data.\n- Settlement: Leipzig (0 m)\n- District: Burgenlandkreis (32.1 km)\n- State (Land): Saxony-Anhalt\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 48.7758,
+        "lon": 9.1829,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 48.7758, 9.1829:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Kreis: Hohenlohekreis (52,5 km)\n- Bundesland: Baden-Württemberg\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 48.7758,
+        "lon": 9.1829,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 48.7758, 9.1829:\n- This installation holds no OpenStreetMap address data.\n- District: Hohenlohekreis (52.5 km)\n- State (Land): Baden-Württemberg\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 52.3906,
+        "lon": 13.0645,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 52.3906, 13.0645:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Ort: Potsdam (0 m)\n- Kreis: Berlin (27,2 km)\n- Bundesland: Berlin\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 52.3906,
+        "lon": 13.0645,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 52.3906, 13.0645:\n- This installation holds no OpenStreetMap address data.\n- Settlement: Potsdam (0 m)\n- District: Berlin (27.2 km)\n- State (Land): Berlin\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 51.9607,
+        "lon": 14.7198,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Beschreibung für 51.9607, 14.7198:\n- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.\n- Ort: Cottbus (35,0 km)\n- Kreis: Frankfurt (Oder) (44,5 km)\n- Bundesland: Brandenburg\n- Umweltzone: In der Nähe liegt uns keine Umweltzonen-Grenze vor — das heißt nicht, dass es dort keine Zone gibt; maßgeblich ist die Beschilderung (Zeichen 270.1).",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "describe_location",
+      "args": {
+        "lat": 51.9607,
+        "lon": 14.7198,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Description of 51.9607, 14.7198:\n- This installation holds no OpenStreetMap address data.\n- Settlement: Cottbus (35.0 km)\n- District: Frankfurt (Oder) (44.5 km)\n- State (Land): Brandenburg\n- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "road": "A7",
+        "facilities": [
+          "shower"
+        ],
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Ich kenne an der A7 keine Parkmöglichkeiten. Die Abdeckung ist bundesweit, aber nicht lückenlos.\n\nStand HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "facilities": [],
+        "facilitiesAnyKind": 0,
+        "facilitiesFilter": [
+          "shower"
+        ],
+        "facilitiesFilterScope": {
+          "sitesOfKind": 0,
+          "sitesStatingFacilities": 0
+        },
+        "facilitiesInScope": 0,
+        "kind": "any",
+        "license": "",
+        "onlyWithFreeSpaces": false,
+        "place": null,
+        "radiusKm": null,
+        "road": "A7",
+        "withoutOccupancy": 0
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "road": "A7",
+        "facilities": [
+          "shower"
+        ],
+        "language": "en"
+      },
+      "isError": false,
+      "text": "I know of no parking along the A7. Coverage is nationwide but not complete.\n\nAs of HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "facilities": [],
+        "facilitiesAnyKind": 0,
+        "facilitiesFilter": [
+          "shower"
+        ],
+        "facilitiesFilterScope": {
+          "sitesOfKind": 0,
+          "sitesStatingFacilities": 0
+        },
+        "facilitiesInScope": 0,
+        "kind": "any",
+        "license": "",
+        "onlyWithFreeSpaces": false,
+        "place": null,
+        "radiusKm": null,
+        "road": "A7",
+        "withoutOccupancy": 0
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "road": "A2",
+        "facilities": [
+          "toilet",
+          "restaurant"
+        ],
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Ich kenne an der A2 keine Parkmöglichkeiten. Die Abdeckung ist bundesweit, aber nicht lückenlos.\n\nStand HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "facilities": [],
+        "facilitiesAnyKind": 0,
+        "facilitiesFilter": [
+          "toilet",
+          "restaurant"
+        ],
+        "facilitiesFilterScope": {
+          "sitesOfKind": 0,
+          "sitesStatingFacilities": 0
+        },
+        "facilitiesInScope": 0,
+        "kind": "any",
+        "license": "",
+        "onlyWithFreeSpaces": false,
+        "place": null,
+        "radiusKm": null,
+        "road": "A2",
+        "withoutOccupancy": 0
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "road": "A2",
+        "facilities": [
+          "toilet",
+          "restaurant"
+        ],
+        "language": "en"
+      },
+      "isError": false,
+      "text": "I know of no parking along the A2. Coverage is nationwide but not complete.\n\nAs of HH:MM",
+      "structuredContent": {
+        "attribution": "",
+        "facilities": [],
+        "facilitiesAnyKind": 0,
+        "facilitiesFilter": [
+          "toilet",
+          "restaurant"
+        ],
+        "facilitiesFilterScope": {
+          "sitesOfKind": 0,
+          "sitesStatingFacilities": 0
+        },
+        "facilitiesInScope": 0,
+        "kind": "any",
+        "license": "",
+        "onlyWithFreeSpaces": false,
+        "place": null,
+        "radiusKm": null,
+        "road": "A2",
+        "withoutOccupancy": 0
+      },
+      "meta": {
+        "attribution": "",
+        "license": ""
+      }
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "kind": "disabled_badge",
+        "language": "de"
+      },
+      "isError": true,
+      "text": "Bitte place (Freitext), lat+lon oder road (z. B. \"A3\") angeben. Hat die Person nichts davon genannt, bitte fragen, wo: eine Stadt, eine Postleitzahl, ihren Standort oder die Autobahn. Zum Beispiel {\"place\": \"Fulda\"} oder {\"road\": \"A3\"}.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "kind": "disabled_badge",
+        "language": "en"
+      },
+      "isError": true,
+      "text": "Give a place (free text), or lat+lon, or a road like \"A3\". If the person named none, ask where: a town, a postcode, their position or the motorway. For example {\"place\": \"Fulda\"} or {\"road\": \"A3\"}.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "watch_situation",
+      "args": {
+        "kind": "station",
+        "key": "Berlin Alexanderplatz",
+        "language": "de"
+      },
+      "isError": true,
+      "text": "In Berlin finde ich keine Haltestelle \"Berlin Alexanderplatz\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht. Es wurde keine Beobachtung geöffnet.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "watch_situation",
+      "args": {
+        "kind": "station",
+        "key": "Berlin Alexanderplatz",
+        "language": "en"
+      },
+      "isError": true,
+      "text": "I do not know a stop called \"Berlin Alexanderplatz\" in Berlin. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town. No watch was opened.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "check_road_status",
+      "args": {
+        "place": "Bremen-Gröpelingen",
+        "vehicle": "lorry",
+        "language": "de"
+      },
+      "isError": true,
+      "text": "Ort \"Bremen-Gröpelingen\" nicht gefunden. Bitte genauer angeben, z. B. mit Postleitzahl.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "check_road_status",
+      "args": {
+        "place": "Bremen-Gröpelingen",
+        "vehicle": "lorry",
+        "language": "en"
+      },
+      "isError": true,
+      "text": "Place \"Bremen-Gröpelingen\" not found. Please be more specific, e.g. with a postcode.",
+      "structuredContent": null,
+      "meta": {}
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "lat": 53.551,
+        "lon": 9.993,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Hamburg (nächstgelegene Region zum Punkt, Mittelpunkt 48 m entfernt): in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.\nDie Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch \"alles pünktlich\".\nEinzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.\n\nStörungsmeldungen für Hamburg (nächstgelegene Region zum Punkt, Mittelpunkt 48 m entfernt): Die Meldungsquellen sind gerade nicht aktuell, daher kann ich nicht sagen, ob Umleitungen oder Sperrungen gemeldet sind.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "check_transit_disruption",
+      "args": {
+        "lat": 53.551,
+        "lon": 9.993,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "Hamburg (nearest region to the point, centre 48 m away): no public-transport realtime reports from this region in the last 60 minutes.\nThe source reports changes only: these figures cover the trips whose delay moved during the window, not every trip. Few reports therefore does not by itself mean \"everything on time\".\nIndividual lines, trips or stops cannot be judged from these delay figures — the realtime data arrives with no line reference, and its licence permits region-wide totals only.\n\nService alerts for Hamburg (nearest region to the point, centre 48 m away): the alert feeds are not current right now, so I cannot say whether any diversions or closures are published.",
+      "structuredContent": null,
+      "meta": {},
+      "pending": [
+        "structuredContent",
+        "credit"
+      ]
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "place": "Dortmund",
+        "kind": "disabled_badge",
+        "only_with_free_spaces": true,
+        "language": "de"
+      },
+      "isError": false,
+      "text": "Im Umkreis von 10 km um Dortmund meldet gerade kein Sensor einen freien Behindertenparkplatz am Straßenrand.\n\nQuelle: Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/) · Stand HH:MM",
+      "structuredContent": {
+        "attribution": "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)",
+        "bayCounts": {
+          "free": 0,
+          "occupied": 0,
+          "sensors": 0,
+          "staticSites": 0,
+          "staticSpaces": 0,
+          "total": 0,
+          "unknown": 0
+        },
+        "bays": [],
+        "kind": "disabled_badge",
+        "license": "CC BY 4.0",
+        "place": "Dortmund",
+        "radiusKm": 10
+      },
+      "meta": {
+        "attribution": "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)",
+        "license": "CC BY 4.0"
+      }
+    },
+    {
+      "tool": "find_parking",
+      "args": {
+        "place": "Dortmund",
+        "kind": "disabled_badge",
+        "only_with_free_spaces": true,
+        "language": "en"
+      },
+      "isError": false,
+      "text": "No sensor reports a free disabled-badge bay on the street within 10 km of Dortmund right now.\n\nSource: Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/) · As of HH:MM",
+      "structuredContent": {
+        "attribution": "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)",
+        "bayCounts": {
+          "free": 0,
+          "occupied": 0,
+          "sensors": 0,
+          "staticSites": 0,
+          "staticSpaces": 0,
+          "total": 0,
+          "unknown": 0
+        },
+        "bays": [],
+        "kind": "disabled_badge",
+        "license": "CC BY 4.0",
+        "place": "Dortmund",
+        "radiusKm": 10
+      },
+      "meta": {
+        "attribution": "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)",
+        "license": "CC BY 4.0"
+      }
+    }
+  ]
+}

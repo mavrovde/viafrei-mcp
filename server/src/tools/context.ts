@@ -1,7 +1,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { ApiClient, LatLon } from "../api/client.js";
 import { atParam } from "../api/client.js";
-import type { PlaceItem } from "../api/types.js";
+import type { PlaceItem, PlacesCoverageData } from "../api/types.js";
 import { creditPlace, toolError, type Language } from "../presentation.js";
 import type { ConsentOutcome } from "../sid-consent.js";
 import { PLACE_WORDS } from "./place-words.js";
@@ -85,18 +85,65 @@ function placeUnknown(ctx: ToolContext, q: string): CallToolResult {
   return { ...toolError(unknown[ctx.language](q)), _meta: { errorCode: "not_found" } };
 }
 
+/** Verbatim from today's server (geo/place.ts HOUSE_NUMBER_COPY). */
+const HOUSE_NUMBER_COPY = {
+  de: "Ich finde Orte, Haltestellen und Autobahnen — keine Hausnummern. Bitte den Ort oder die Haltestelle nennen.",
+  en: "I can find places, stations and motorways, not house numbers. Please name the place or the station.",
+} as const;
+
+/** "Hauptstraße 12, Fulda", "Marienplatz 8": a word, then a number of up to four digits; never a motorway ("A 7"). */
+export function looksLikeHouseNumber(query: string): boolean {
+  return /[a-zäöüß.]\s*\d{1,4}\s*[a-z]?\s*(,|$)/iu.test(query.trim()) && !/^\s*[ab]\s*\d{1,3}\s*$/iu.test(query.trim());
+}
+
 /** The position a tool asks about: lat/lon as given, else the place name resolved through the API's place search. */
-export async function position(args: Args, ctx: ToolContext, placeKey = "place"): Promise<Position | CallToolResult> {
+export async function position(args: Args, ctx: ToolContext, placeKey = "place", unknown?: (q: string) => CallToolResult): Promise<Position | CallToolResult> {
   const lat = num(args["lat"]);
   const lon = num(args["lon"]);
   if (lat !== undefined && lon !== undefined) return { at: { lat, lon }, label: null };
   const q = ctx.tool !== undefined && PLACE_WORDS[ctx.tool]?.ignorePlace === true ? undefined : str(args[placeKey]);
   if (q === undefined) return placeMissing(ctx);
+  // Today's resolver (geo/place.ts looksLikeHouseNumber) refuses a street and house number in one sentence where
+  // no address data is held, rather than calling the place unknown; where addresses are loaded, the search goes on.
+  if (looksLikeHouseNumber(q) && (await ctx.api.get<PlacesCoverageData>("getPlacesCoverage", {})).data.addresses.length === 0) {
+    return toolError(HOUSE_NUMBER_COPY[ctx.language]);
+  }
   const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: 1 });
   const first = found.data[0];
-  if (first === undefined) return placeUnknown(ctx, q);
+  if (first === undefined) return (await townCentre(q, ctx)) ?? (unknown === undefined ? placeUnknown(ctx, q) : unknown(q));
   creditPlace(found.meta.attribution);
   return { at: first.location, label: first.name };
+}
+
+/** Verbatim from today's server (place.ts CENTRE_NOTE): what was measured from, and what was not found. */
+export const CENTRE_NOTE: Record<Language, (thing: string) => string> = {
+  de: (thing) => ` (gemessen ab der Ortsmitte — „${thing}“ finde ich dort nicht)`,
+  en: (thing) => ` (measured from the town centre — I found no "${thing}" there)`,
+};
+
+/** Words that name a town's centre itself (today's CENTRE_WORDS): the centre is then the answer, nothing missed. */
+const CENTRE_WORDS = /^(city|centre|center|city\s+centre|city\s+center|downtown|zentrum|innenstadt|stadtmitte|stadtzentrum|ortsmitte|ortskern|stadtkern)$/iu;
+
+/**
+ * "<town> <thing>" that the place search does not hold as a whole ("Köln Hbf" where no such stop is loaded):
+ * the town's own point, the longest leading words first, its label saying it is the centre and what was not
+ * found — as today's server answers it (#674). Undefined when no leading part is a place either.
+ */
+const TOWN_READINGS = 3;
+
+async function townCentre(q: string, ctx: ToolContext): Promise<Position | undefined> {
+  const words = q.split(/\s+/u);
+  // At most TOWN_READINGS searches: a town is its first few words, never a long sentence's.
+  for (let n = Math.min(words.length - 1, TOWN_READINGS); n >= 1; n--) {
+    const town = words.slice(0, n).join(" ");
+    const thing = words.slice(n).join(" ");
+    const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q: town, limit: 1 });
+    const first = found.data[0];
+    if (first === undefined) continue;
+    creditPlace(found.meta.attribution);
+    return { at: first.location, label: CENTRE_WORDS.test(thing) ? first.name : `${first.name}${CENTRE_NOTE[ctx.language](thing)}` };
+  }
+  return undefined;
 }
 
 export const isResult = (v: unknown): v is CallToolResult => typeof v === "object" && v !== null && "content" in v;

@@ -213,6 +213,10 @@ jobs:
       - name: Image release self-test
         run: npm run test:image
 
+      # The parity attribution: a row gets a gap only if masking that gap makes it identical.
+      - name: Parity attribution self-test
+        run: npm run test:parity-attribute
+
       # The public endpoint may be *asserted about* - one test checks that the
       # default really is it - but it may never be handed to something that
       # connects. Any occurrence outside an assertion fails the build.

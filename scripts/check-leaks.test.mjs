@@ -87,7 +87,7 @@ const STRAY = '9'.repeat(5);
 // `main` does not reach carrying that finding.
 function buildRepo(root) {
     mkdirSync(join(root, 'scripts'));
-    for (const file of ['check-leaks.mjs', 'rules.mjs', 'tools.mjs']) {
+    for (const file of ['check-leaks.mjs', 'person-names.mjs', 'rules.mjs', 'tools.mjs']) {
         copyFileSync(join(here, file), join(root, 'scripts', file));
     }
     // The list above is written out by hand, so it can fall behind an import - and
@@ -182,6 +182,24 @@ try {
             }
         } finally {
             writeFileSync(join(repo, 'kept.txt'), 'nothing of interest here\n');
+        }
+    });
+
+    // The person-name rule is wired into the sweep, both legs: a name-shaped literal in a
+    // test file is a finding, and the line printed holds the length, never the name.
+    check('a person name in a test literal is a finding, and is not printed', () => {
+        mkdirSync(join(repo, 'test'), { recursive: true });
+        const name = ['Klaus', 'Beispielmann'].join(' ');
+        writeFileSync(join(repo, 'test', 'names.test.mjs'), `export const who = "${name}";\n`);
+        runTool(resolveTool('git'), ['add', 'test/names.test.mjs'], { cwd: repo, stdio: 'ignore' });
+        try {
+            const { code, out } = sweep(repo, []);
+            assert.equal(code, 1, `expected a finding, got ${code}:\n${out}`);
+            assert.match(out, /test\/names\.test\.mjs:1 person name in a test literal/u, out);
+            assert.ok(!out.includes('Beispielmann'), 'the finding printed the name');
+        } finally {
+            runTool(resolveTool('git'), ['rm', '-q', '--cached', 'test/names.test.mjs'], { cwd: repo, stdio: 'ignore' });
+            rmSync(join(repo, 'test'), { recursive: true, force: true });
         }
     });
 

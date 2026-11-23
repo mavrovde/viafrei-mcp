@@ -59,10 +59,10 @@ describe("the board's lines", () => {
         dep({ plannedAt: "2026-03-30T00:40:00Z", category: null, number: null }),
       ] } }));
       const r = await ask({ eva_no: "8001001", language });
-      const head = "Schömpingbach Hbf:";
+      // Today's words (main get_train_departures.ts departureLine); a time on another day than today carries its date.
       expect(body(r)).toBe(language === "de"
-        ? `${head}\n- 02:12 S → ?\n- 02:20 RE 1 → Hamburg-Altona · fällt aus · Gl. 4\n- 02:30 ICE 578 → Hamburg-Altona · +5 · Gl. 7!\n- 02:40 ? → Hamburg-Altona · Gl. 4`
-        : `${head}\n- 02:12 S → ?\n- 02:20 RE 1 → Hamburg-Altona · cancelled · pl. 4\n- 02:30 ICE 578 → Hamburg-Altona · +5 · pl. 7!\n- 02:40 ? → Hamburg-Altona · pl. 4`);
+        ? "Abfahrten ab Schömpingbach Hbf (30.03. 02:00 bis 03:00):\n30.03. 02:12 S → Ziel nicht angegeben, pünktlich\n30.03. 02:20 RE 1 → Hamburg-Altona, Gleis 4, fällt aus\n30.03. 02:30 ICE 578 → Hamburg-Altona, Gleis 7 (statt 4), +5 min (ca. 30.03. 02:35)\n30.03. 02:40 ? → Hamburg-Altona, Gleis 4, pünktlich"
+        : "Departures from Schömpingbach Hbf (2026-03-30 02:00 to 03:00):\n2026-03-30 02:12 S → destination not given, on time\n2026-03-30 02:20 RE 1 → Hamburg-Altona, platform 4, cancelled\n2026-03-30 02:30 ICE 578 → Hamburg-Altona, platform 7 (instead of 4), +5 min (expected 2026-03-30 02:35)\n2026-03-30 02:40 ? → Hamburg-Altona, platform 4, on time");
       expect(textOf(r).endsWith(language === "de" ? "Stand 30.03. 02:00" : "As of 2026-03-30 02:00")).toBe(true);
     });
   }
@@ -74,24 +74,38 @@ describe("the board's lines", () => {
       dep({ plannedAt: "2026-03-30T00:30:00Z", expectedAt: "2026-03-30T00:30:00Z", number: "3" }),
       dep({ plannedAt: "2026-03-30T00:29:00Z", expectedAt: "2026-03-30T00:30:01Z", number: "4" }),
     ] } }));
-    expect(body(await ask({ eva_no: "8001001", duration_min: 30 }))).toBe("Schömpingbach Hbf:\n- 01:58 ICE 1 → Hamburg-Altona · pl. 4\n- 02:30 ICE 3 → Hamburg-Altona · pl. 4");
-    expect(body(await ask({ eva_no: "8001001", duration_min: 30, limit: 1 }))).toBe("Schömpingbach Hbf:\n- 01:58 ICE 1 → Hamburg-Altona · pl. 4");
+    const head = "Departures from Schömpingbach Hbf (2026-03-30 02:00 to 02:30):";
+    expect(body(await ask({ eva_no: "8001001", duration_min: 30 }))).toBe(`${head}\n2026-03-30 01:58 ICE 1 → Hamburg-Altona, platform 4, on time\n2026-03-30 02:30 ICE 3 → Hamburg-Altona, platform 4, on time`);
+    expect(body(await ask({ eva_no: "8001001", duration_min: 30, limit: 1 }))).toBe(
+      `${head}\n2026-03-30 01:58 ICE 1 → Hamburg-Altona, platform 4, on time\n… and at least 1 more until 2026-03-30 02:30 — the board shows the first 1; raise limit up to 15 for more, or set when to a later time.`,
+    );
   });
 
   it("without duration_min the window is an hour, without a limit ten trains", async () => {
     const many = Array.from({ length: 12 }, (_, i) => dep({ number: String(100 + i), plannedAt: `2026-03-30T00:${String(10 + i).padStart(2, "0")}:00Z`, expectedAt: `2026-03-30T00:${String(10 + i).padStart(2, "0")}:00Z` }));
     mockServer.use(settled(), boards({ "8001001": { departures: [...many, dep({ number: "999", plannedAt: "2026-03-30T01:00:01Z", expectedAt: "2026-03-30T01:00:01Z" })] } }));
     const lines = body(await ask({ eva_no: "8001001" })).split("\n").slice(1);
-    expect(lines).toHaveLength(10);
+    expect(lines).toHaveLength(11);
     expect(lines[9]).toContain("ICE 109");
+    expect(lines[10]).toBe("… and at least 2 more until 2026-03-30 03:00 — the board shows the first 10; raise limit up to 15 for more, or set when to a later time.");
     mockServer.use(boards({ "8001001": { departures: [dep({ number: "60", plannedAt: "2026-03-30T01:00:00Z", expectedAt: "2026-03-30T01:00:00Z" }), dep({ number: "61", plannedAt: "2026-03-30T01:00:01Z", expectedAt: "2026-03-30T01:00:01Z" })] } }));
-    expect(body(await ask({ eva_no: "8001001" }))).toBe("Schömpingbach Hbf:\n- 03:00 ICE 60 → Hamburg-Altona · pl. 4");
+    expect(body(await ask({ eva_no: "8001001" }))).toBe("Departures from Schömpingbach Hbf (2026-03-30 02:00 to 03:00):\n2026-03-30 03:00 ICE 60 → Hamburg-Altona, platform 4, on time");
   });
 
   it("a category filter drops a train without a category", async () => {
     mockServer.use(settled(), boards({ "8001001": { departures: [dep({ category: null, line: "X" }), dep({ category: "RE", number: "5" })] } }));
-    expect(body(await ask({ eva_no: "8001001", categories: ["RE", "ICE"] }))).toBe("Schömpingbach Hbf:\n- 02:12 RE 5 → Hamburg-Altona · pl. 4");
+    expect(body(await ask({ eva_no: "8001001", categories: ["RE", "ICE"] }))).toBe("Departures from Schömpingbach Hbf (2026-03-30 02:00 to 03:00, RE/ICE only):\n2026-03-30 02:12 RE 5 → Hamburg-Altona, platform 4, on time");
   });
+
+  for (const language of LANGS) {
+    it(`a filtered board that lists trains names the types, IC with the classes it stands for (${language})`, async () => {
+      mockServer.use(settled(), boards({ "8001001": { departures: [dep({ category: "RE", number: "5" }), dep({ category: "IC", number: "142", plannedAt: "2026-03-30T00:20:00Z", expectedAt: "2026-03-30T00:20:00Z" })] } }));
+      // Today's words (main get_train_departures.ts typesOf and headOfType): the RE is filtered out, the IC listed.
+      expect(body(await ask({ eva_no: "8001001", categories: ["ICE", "IC"], language }))).toBe(language === "de"
+        ? "Abfahrten ab Schömpingbach Hbf (30.03. 02:00 bis 03:00, nur ICE, IC (IC mit EC, RJ, NJ, EN, TGV)):\n30.03. 02:20 IC 142 → Hamburg-Altona, Gleis 4, pünktlich"
+        : "Departures from Schömpingbach Hbf (2026-03-30 02:00 to 03:00, ICE/IC (IC including EC, RJ, NJ, EN, TGV) only):\n2026-03-30 02:20 IC 142 → Hamburg-Altona, platform 4, on time");
+    });
+  }
 
   it("an invalid `when` is refused before anything is asked of the board", async () => {
     for (const language of LANGS) {
@@ -132,9 +146,11 @@ describe("a station of several parts", () => {
     const r = await ask({ station: "Schömpingbach Hbf" });
     expect(calls.filter((c) => c.operationId === "getTrainBoard").map((c) => c.url.pathname.split("/").at(-1)).sort()).toEqual(["1", "2", "3", "4"]);
     expect(body(r)).toBe(
-      "Schömpingbach Hbf:\n- 02:10 ICE 10 → Hamburg-Altona · pl. 4\n- 02:20 ICE 20 → Hamburg-Altona · pl. 4\n- 02:20 ICE 20 → Kiel · pl. 4\n" +
-        "There is no current DB departure board for Schömpingbach Hbf (4) right now; the newest held was fetched at 30/03/2026, 01:00 (60 min ago).",
+      "Departures from Schömpingbach Hbf (2026-03-30 02:00 to 03:00):\n2026-03-30 02:10 ICE 10 → Hamburg-Altona, platform 4, on time\n" +
+        "2026-03-30 02:20 ICE 20 → Hamburg-Altona, platform 4, on time\n2026-03-30 02:20 ICE 20 → Kiel, platform 4, on time",
     );
+    // Part 4's board is an hour old, so the board is incomplete: today's note, after the credit line.
+    expect(textOf(r).endsWith("\nThe railway data is not fully reachable right now.")).toBe(true);
     expect((r._meta as { asOf: string }).asOf).toBe("2026-03-30T00:00:00Z");
   });
 
@@ -200,7 +216,7 @@ describe("the refresh", () => {
   it("a refresher that does not answer: the board as the API holds it", async () => {
     mockServer.use(http.post(`${API_BASE}/v1/refreshes`, () => HttpResponse.error()));
     const r = await ask({ eva_no: "8001001" });
-    expect(body(r)).toBe("Schömpingbach Hbf:\n- 02:12 ICE 578 → Hamburg-Altona · pl. 4");
+    expect(body(r)).toBe("Departures from Schömpingbach Hbf (2026-03-30 02:00 to 03:00):\n2026-03-30 02:12 ICE 578 → Hamburg-Altona, platform 4, on time");
   });
 
   it("a number the refresher refuses, in German", async () => {
@@ -215,7 +231,9 @@ describe("which station", () => {
     it(`neither a station nor a number (${language}): asks for one, asks nothing`, async () => {
       const r = await ask({ language });
       expect(r.isError).toBe(true);
-      expect(textOf(r)).toBe(language === "de" ? "Bitte einen Bahnhof (station) oder eine EVA-Nummer angeben." : "Please give a station or an EVA number.");
+      expect(textOf(r)).toBe(language === "de"
+        ? 'Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {"station": "Hannover Hbf"}.'
+        : 'Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {"station": "Hannover Hbf"}.');
       expect(calls).toHaveLength(0);
     });
     it(`an unknown station name (${language}): an error naming it and how to say it, as before the move`, async () => {
@@ -234,7 +252,7 @@ describe("which station", () => {
     const r = await ask({ eva_no: "8000105" });
     expect(calls[0]!.url.searchParams.get("code")).toBe("8000105");
     expect(calls[0]!.url.searchParams.get("q")).toBeNull();
-    expect(body(r).split("\n")[0]).toBe("8000105:");
+    expect(body(r).split("\n")[0]).toBe("Departures from 8000105 (2026-03-30 02:00 to 03:00):");
   });
 
   it("a station with one EVA number but no list of parts", async () => {

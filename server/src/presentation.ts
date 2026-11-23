@@ -102,6 +102,22 @@ export const TOOL_RESULT_CHARS = 8_000;
 const SOURCE_LABEL: Record<Language, string> = { de: "Quelle", en: "Source" };
 const AS_OF_LABEL: Record<Language, string> = { de: "Stand", en: "As of" };
 
+/**
+ * One credit row as today's server prints it (creditWithLinks): the line, then "(<terms url>; Lizenz:
+ * <licence>, <licence url>)". A part the line already carries is left out (a prescribed string that spells
+ * its own address), and so is a part the API does not give; no part left, no bracket.
+ */
+export function creditWithLinks(a: Attribution): string {
+  const line = a.text;
+  const bare = a.licenceUrl?.replace(/^https?:\/\//u, "").replace(/\/$/u, "");
+  // A licence with no text of its own (the API points it at the publisher's terms page, as the Autobahn GmbH's
+  // open data) gets no reference: today's register links no licence text for it.
+  const ownText = a.licenceUrl !== a.termsUrl;
+  const ref = ownText && a.licence !== undefined && a.licenceUrl !== undefined && bare !== undefined && !line.includes(bare) ? `Lizenz: ${a.licence}, ${a.licenceUrl}` : null;
+  const links = [...(typeof a.termsUrl === "string" && a.termsUrl !== "" && !line.includes(a.termsUrl) ? [a.termsUrl] : []), ...(ref === null ? [] : [ref])];
+  return links.length === 0 ? line : `${line} (${links.join("; ")})`;
+}
+
 function uniqueAttributions(list: readonly Attribution[]): Attribution[] {
   const seen = new Set<string>();
   return list.filter((a) => (seen.has(a.family) ? false : (seen.add(a.family), true)));
@@ -126,8 +142,11 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
   const condition = [...new Set([...metas.flatMap((m) => m.notes?.condition ?? []), ...(extra.conditionNote ? [extra.conditionNote] : [])])];
   const asOfs = metas.map((m) => m.asOf).filter((x): x is string => typeof x === "string").sort();
   const asOf = extra.asOf ?? asOfs[0] ?? metas[0]?.generatedAt ?? new Date().toISOString();
-  const attributionText = attributions.map((a) => a.text).join(" · ");
-  const footer = creditFooter(language, attributions.map((a) => a.text), extra.asOfLabel ?? `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`) + (extra.note === undefined ? "" : `\n${extra.note}`);
+  const credits = attributions.map(creditWithLinks);
+  const attributionText = credits.join(" · ");
+  const shareAlike = shareAlikeNote(attributions, language);
+  const footer = creditFooter(language, credits, extra.asOfLabel ?? `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`)
+    + (shareAlike === undefined ? "" : `\n${shareAlike}`) + (extra.note === undefined ? "" : `\n${extra.note}`);
   const lines = [...purpose, ...condition];
   const room = TOOL_RESULT_CHARS - footer.length - lines.join("\n").length - 4;
   const text = [...lines, body.length > room ? `${body.slice(0, Math.max(0, room - 1))}…` : body, "", footer].join("\n");
@@ -158,6 +177,30 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
     };
   }
   return result;
+}
+
+/** The licence we release our adaptation of share-alike rows under (CC BY-SA 4.0 § 3(b)(2)). */
+const SHARE_ALIKE_ADAPTER = { name: "CC BY-SA 4.0", url: "https://creativecommons.org/licenses/by-sa/4.0/" } as const;
+
+/**
+ * The share-alike sentence after the credit, verbatim from today's server (shareAlikeNoteFor): the licence
+ * the rows carry, read from their credits, and ours beside it when the two differ. Undefined when no credit
+ * of the answer is share-alike.
+ */
+export function shareAlikeNote(attributions: readonly Attribution[], language: Language): string | undefined {
+  // The Creative Commons share-alike terms only: an ODbL database's share-alike is its own clause, not this sentence.
+  const licences = [...new Set(attributions.filter((a) => a.shareAlike === true && /^CC BY-SA\b/u.test(a.licence ?? "")).map((a) => a.licence!))];
+  if (licences.length === 0) return undefined;
+  const named = licences.join(" / ");
+  const ours = `${SHARE_ALIKE_ADAPTER.name} (${SHARE_ALIKE_ADAPTER.url})`;
+  const same = licences.length === 1 && licences[0] === SHARE_ALIKE_ADAPTER.name;
+  return language === "de"
+    ? same
+      ? `Diese Angaben stehen unter ${ours} (Share-alike): wer sie weitergibt oder daraus etwas Neues ableitet, muss das Ergebnis unter derselben Lizenz und mit dieser Quellenangabe weitergeben.`
+      : `Diese Angaben stehen unter ${named} (Share-alike), so lizenziert sie die Quelle; unsere Bearbeitung geben wir unter ${ours} weiter: wer sie weitergibt oder daraus etwas Neues ableitet, muss das Ergebnis unter derselben Lizenz und mit dieser Quellenangabe weitergeben.`
+    : same
+      ? `These figures are licensed ${ours} (share-alike): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution.`
+      : `These figures are licensed ${named} (share-alike) by their source; we release our adaptation under ${ours}: anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution.`;
 }
 
 /** A tool error the assistant can act on. */
