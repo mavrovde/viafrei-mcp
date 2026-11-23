@@ -41,5 +41,78 @@
       "licence": "CC BY-SA",
       "today": "These figures are licensed CC BY-SA (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution."
     }
-  ]
+  ],
+  "shareAlikeRows": {
+    "_about": "Recorded from today's server: shareAlikeNoteFor(sources, language) with the register rows named in `sources`; their licences are `licences`, in that order.",
+    "cases": [
+      {
+        "language": "de",
+        "licences": [
+          "CC BY-SA 4.0"
+        ],
+        "sources": [
+          "delfi_rt_sa"
+        ],
+        "today": "Diese Angaben stehen unter CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/) (Share-alike): wer sie weitergibt oder daraus etwas Neues ableitet, muss das Ergebnis unter derselben Lizenz und mit dieser Quellenangabe weitergeben."
+      },
+      {
+        "language": "de",
+        "licences": [
+          "CC BY-SA 4.0",
+          "CC BY-SA"
+        ],
+        "sources": [
+          "delfi_rt_sa",
+          "delfi_rt_tu"
+        ],
+        "today": "Diese Angaben stehen unter CC BY-SA 4.0 / CC BY-SA (Share-alike), so lizenziert sie die Quelle; unsere Bearbeitung geben wir unter CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/) weiter: wer sie weitergibt oder daraus etwas Neues ableitet, muss das Ergebnis unter derselben Lizenz und mit dieser Quellenangabe weitergeben."
+      },
+      {
+        "language": "de",
+        "licences": [
+          "CC BY-SA",
+          "CC BY-SA 4.0"
+        ],
+        "sources": [
+          "delfi_rt_tu",
+          "delfi_rt_sa"
+        ],
+        "today": "Diese Angaben stehen unter CC BY-SA / CC BY-SA 4.0 (Share-alike), so lizenziert sie die Quelle; unsere Bearbeitung geben wir unter CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/) weiter: wer sie weitergibt oder daraus etwas Neues ableitet, muss das Ergebnis unter derselben Lizenz und mit dieser Quellenangabe weitergeben."
+      },
+      {
+        "language": "en",
+        "licences": [
+          "CC BY-SA 4.0"
+        ],
+        "sources": [
+          "delfi_rt_sa"
+        ],
+        "today": "These figures are licensed CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/) (share-alike): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution."
+      },
+      {
+        "language": "en",
+        "licences": [
+          "CC BY-SA 4.0",
+          "CC BY-SA"
+        ],
+        "sources": [
+          "delfi_rt_sa",
+          "delfi_rt_tu"
+        ],
+        "today": "These figures are licensed CC BY-SA 4.0 / CC BY-SA (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution."
+      },
+      {
+        "language": "en",
+        "licences": [
+          "CC BY-SA",
+          "CC BY-SA 4.0"
+        ],
+        "sources": [
+          "delfi_rt_tu",
+          "delfi_rt_sa"
+        ],
+        "today": "These figures are licensed CC BY-SA / CC BY-SA 4.0 (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution."
+      }
+    ]
+  }
 }

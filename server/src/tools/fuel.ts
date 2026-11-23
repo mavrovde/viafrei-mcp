@@ -129,7 +129,12 @@ function stationLabel(s: T.FuelStation, a: T.FuelAddress | null): string {
   return where === "" ? who : `${who}, ${where}`;
 }
 
-/** The listed stations' addresses: the list carries none, each station's own read does. */
+/**
+ * The listed stations' addresses. The contract's list item (FuelStation, listFuelOptions) carries no
+ * address; only getFuelStation's FuelStationData does, and today's server names each station by its street
+ * and place. So every listed station costs one more read, as many as the list's limit, in parallel; an API
+ * error reads as "no address". The reads go when the list item carries the address (an API-side change).
+ */
 async function addressesOf(ctx: ToolContext, rows: readonly T.FuelStation[]): Promise<(T.FuelAddress | null)[]> {
   return Promise.all(rows.map(async (s) => {
     try {

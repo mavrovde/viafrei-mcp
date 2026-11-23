@@ -97,6 +97,16 @@ describe("the board's lines", () => {
     expect(body(await ask({ eva_no: "8001001", categories: ["RE", "ICE"] }))).toBe("Departures from Schömpingbach Hbf (2026-03-30 02:00 to 03:00, RE/ICE only):\n2026-03-30 02:12 RE 5 → Hamburg-Altona, platform 4, on time");
   });
 
+  for (const language of LANGS) {
+    it(`a filtered board that lists trains names the types, IC with the classes it stands for (${language})`, async () => {
+      mockServer.use(settled(), boards({ "8001001": { departures: [dep({ category: "RE", number: "5" }), dep({ category: "IC", number: "142", plannedAt: "2026-03-30T00:20:00Z", expectedAt: "2026-03-30T00:20:00Z" })] } }));
+      // Today's words (main get_train_departures.ts typesOf and headOfType): the RE is filtered out, the IC listed.
+      expect(body(await ask({ eva_no: "8001001", categories: ["ICE", "IC"], language }))).toBe(language === "de"
+        ? "Abfahrten ab Schömpingbach Hbf (30.03. 02:00 bis 03:00, nur ICE, IC (IC mit EC, RJ, NJ, EN, TGV)):\n30.03. 02:20 IC 142 → Hamburg-Altona, Gleis 4, pünktlich"
+        : "Departures from Schömpingbach Hbf (2026-03-30 02:00 to 03:00, ICE/IC (IC including EC, RJ, NJ, EN, TGV) only):\n2026-03-30 02:20 IC 142 → Hamburg-Altona, platform 4, on time");
+    });
+  }
+
   it("an invalid `when` is refused before anything is asked of the board", async () => {
     for (const language of LANGS) {
       const r = await ask({ eva_no: "8001001", when: "soon", language });
