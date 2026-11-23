@@ -4,11 +4,12 @@
  * in `_meta`, and the model-actionable errors. Every answer starts from the API contract's v0.3.0 example
  * (test/fixtures/api-openapi.json), changed only in the fields a case is about.
  */
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
 import { pinned } from "./pinned.js";
+import { haversineM } from "../src/tools/location.js";
 import { connect, textOf } from "./harness.js";
 import { GAPS, lampText, nearestMotorways } from "../src/tools/handlers.js";
 import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
@@ -131,6 +132,42 @@ describe("check_autobahn_traffic", () => {
 });
 
 describe("check_road_status", () => {
+  it("a Land as the place: the Land's situations by its key, the road kept", async () => {
+    serve("listStateRoadConditions", roads([]));
+    const r = await call("check_road_status", { road: "L1025", place: "niedersachsen", language: "de" });
+    expect(paths("listStateRoadConditions")).toEqual(["/v1/states/03/road-conditions"]);
+    expect(ops()).not.toContain("listPlaces");
+    expect(body(r)).toBe("L1025 in Niedersachsen: Es liegt keine Meldung vor — das heißt ausdrücklich nicht, dass die Straße frei ist.");
+  });
+  it("a lorry question about a city that is also a Land keeps the place's point", async () => {
+    serve("listRoadConditions", roads([]));
+    serve("listLorryRules", []);
+    await call("check_road_status", { place: "Bremen", vehicle: "lorry", language: "de" });
+    expect(ops()).not.toContain("listStateRoadConditions");
+    expect(query("listLorryRules")[0]?.["at"]).toMatch(/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/u);
+  });
+  for (const language of LANGS) {
+    it(`a lorry question about a place not found: the lorry answer's own sentence; without a vehicle, the tool's (${language})`, async () => {
+      serve("listPlaces", []);
+      const lorry = await call("check_road_status", { place: "Bremen-Gröpelingen", vehicle: "lorry", language });
+      expect(lorry.isError).toBe(true);
+      expect(textOf(lorry)).toBe(language === "de"
+        ? 'Ort "Bremen-Gröpelingen" nicht gefunden. Bitte genauer angeben, z. B. mit Postleitzahl.'
+        : 'Place "Bremen-Gröpelingen" not found. Please be more specific, e.g. with a postcode.');
+      const plain = await call("check_road_status", { place: "Bremen-Gröpelingen", language });
+      expect(textOf(plain)).not.toContain("Postleitzahl");
+      expect(textOf(plain)).not.toContain("postcode");
+    });
+  }
+  it("a Land by its English name, named in the answer's language", async () => {
+    serve("listStateRoadConditions", roads([]));
+    const de = await call("check_road_status", { road: "L1025", place: "Lower Saxony", language: "de" });
+    expect(body(de)).toBe("L1025 in Niedersachsen: Es liegt keine Meldung vor — das heißt ausdrücklich nicht, dass die Straße frei ist.");
+    const en = await call("check_road_status", { road: "L1025", place: "Lower Saxony", language: "en" });
+    expect(body(en)).toBe("L1025 in Lower Saxony: there is no report — which explicitly does not mean the road is clear.");
+    expect(paths("listStateRoadConditions")).toEqual(["/v1/states/03/road-conditions", "/v1/states/03/road-conditions"]);
+  });
+
   it("a motorway number in any spelling asks its conditions with the horizon", async () => {
     serve("getMotorwayConditions", roads(rich));
     const r = await call("check_road_status", { road: "a 1", horizon_days: 3, limit: 5, language: "en" });
@@ -279,11 +316,15 @@ describe("fuel", () => {
     station({ name: "Freie Tankstelle", brand: null, distanceM: 640.4, openingState: "closed", prices: [] }),
   ];
 
+  const address = { street: "Marktweg", number: "1", postcode: "10001", place: "Kansilkamp" };
+  const withAddress = () => serve("getFuelStation", { ...ex<Record<string, unknown>>("getFuelStation"), address });
+
   for (const language of LANGS) {
     it(`find_cheapest_fuel (${language}): e10 by price unless asked otherwise, only the asked fuel's price`, async () => {
       serve("listFuelOptions", stations);
+      withAddress();
       const r = await call("find_cheapest_fuel", { ...at, language });
-      expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", fuel: "e10", sort: "price", lang: language }]);
+      expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", radius_m: "5000", fuel: "e10", sort: "price", limit: "5", lang: language }]);
       await pinned("handlers", body(r));
       expect(meta(r)["purposeNote"]).toBe("For consumer information only (synthetic).");
       expect(textOf(r).startsWith("For consumer information only (synthetic).\n")).toBe(true);
@@ -291,22 +332,31 @@ describe("fuel", () => {
   }
 
   it("find_fuel_station: by distance, every fuel's price; each filter passed on", async () => {
-    serve("listFuelOptions", stations);
+    serve("listFuelOptions", stations, { query: { at: { lat: 52.52, lon: 13.405 }, radiusM: 3000, sort: "price", matched: 2, droppedClosed: 0, droppedUnknown: 0, droppedNotWholeDay: 0, openAt: "2026-03-30T06:00:00Z" } });
+    withAddress();
     const r = await call("find_fuel_station", { ...at, radius_km: 3, brand: "Aral", name: "Mitte", open_now: true, open_at: "2026-03-30T08:00", whole_day: false, sort: "price", limit: 2, language: "en" });
     expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", radius_m: "3000", brand: "Aral", name: "Mitte", open_now: "true", open_at: "2026-03-30T08:00", whole_day: "false", sort: "price", limit: "2", lang: "en" }]);
-    expect(body(r).split("\n").slice(1)).toEqual(["- Aral Mitte (Aral) · 1.2 km · E10 1.699 €, DIESEL 1.589 €", "- Freie Tankstelle · 640 m · – · closed"]);
+    expect(body(r).split("\n").slice(1)).toEqual([
+      'Filling stations around 52.520, 13.405 (within 3 km) — brand Aral, name contains "Mitte", open now, open at 2026-03-30T08:00+02:00:',
+      "1. Aral, Marktweg 1, 10001 Kansilkamp — diesel 1.589 €/l, Super E10 1.699 €/l, 1.2 km, open",
+      "2. Freie Tankstelle, Marktweg 1, 10001 Kansilkamp — no price yet, 0.6 km, closed",
+    ]);
   });
 
-  it("find_fuel_station without a sort sorts by distance", async () => {
+  it("find_fuel_station without a sort sorts by distance and sends today's 5 km default", async () => {
     await call("find_fuel_station", { ...at, fuel: "diesel", language: "en" });
-    expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", fuel: "diesel", sort: "distance", lang: "en" }]);
+    expect(query("listFuelOptions")).toEqual([{ at: "52.52,13.405", radius_m: "5000", fuel: "diesel", sort: "distance", lang: "en" }]);
   });
 
   for (const language of LANGS) {
-    it(`no station (${language}) says so`, async () => {
-      serve("listFuelOptions", []);
+    it(`no station held and none priced in reach (${language}): today's sentence, and the refresher is asked`, async () => {
+      serve("listFuelOptions", [], { query: { at: { lat: 52.52, lon: 13.405 }, radiusM: 5000, sort: "price", matched: 0, droppedClosed: 0, droppedUnknown: 0, droppedNotWholeDay: 0, openAt: null } });
+      serve("createRefresh", { id: "7", source: "fuel-prices-de", state: "refused", createdAt: "2026-03-30T00:00:00Z", settledAt: "2026-03-30T00:00:00Z", reason: "spacing", reused: false, queue: null });
       const r = await call("find_cheapest_fuel", { ...at, language });
-      expect(body(r).split("\n").at(-1)).toBe(language === "de" ? "Keine Tankstellen gefunden." : "No filling stations found.");
+      expect(body(r).split("\n").at(-1)).toBe(language === "de"
+        ? "Für 52.520, 13.405 liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Diese Gegend beobachten wir noch nicht, und gerade können wir sie nicht beim Anbieter abfragen — neue Gegenden fragen wir nacheinander ab, höchstens eine Anfrage je Minute, und eine schon abgefragte so bald nicht noch einmal. Bitte später noch einmal fragen."
+        : "No fuel prices are held within 5 km of 52.520, 13.405. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. We do not watch this area yet, and we cannot ask the provider about it right now — new areas are asked about one at a time, at most one request a minute, and one already asked about not again for a while. Please ask again later.");
+      expect(ops()).toContain("createRefresh");
     });
   }
 });
@@ -332,16 +382,25 @@ describe("find_charging_station", () => {
       expect(query("listChargingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "10000", lang: language }]);
     });
     it(`a filter in a circle with no site at all (${language}): today's sentence, the filter notwithstanding`, async () => {
-      serve("listChargingOptions", [], { inRadius: 0 });
+      serve("listChargingOptions", []);
       expect(body(await call("find_charging_station", { ...at, min_power_kw: 150, language }))).toBe(language === "de"
         ? "Im Umkreis von 10 km um 52.520, 13.405 kenne ich keine Ladestandorte. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis 25 km) hilft oft."
         : "I hold no charging sites within 10 km of 52.520, 13.405. Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
-      serve("listChargingOptions", [], { inRadius: 3 });
-      expect(body(await call("find_charging_station", { ...at, min_power_kw: 150, language }))).toBe(language === "de" ? "Keine Ladestationen gefunden." : "No charging stations found.");
+      // The circle is read a second time without the filter, to count what it holds.
+      expect(query("listChargingOptions")).toEqual([
+        { at: "52.52,13.405", radius_m: "10000", min_kw: "150", lang: language },
+        { at: "52.52,13.405", radius_m: "10000", limit: "100", lang: language },
+      ]);
     });
-    it(`none matching a filter (${language}) keeps the short answer until the API counts what it dropped`, async () => {
-      serve("listChargingOptions", []);
-      expect(body(await call("find_charging_station", { place: "Leipzig", radius_km: 5, connector: "ccs2", language }))).toBe(language === "de" ? "Keine Ladestationen gefunden." : "No charging stations found.");
+    it(`none matching a filter (${language}): the sites the circle holds without it, and the filter named`, async () => {
+      const sites = ex<Record<string, unknown>[]>("listChargingOptions");
+      mockServer.use(handlerFor("listChargingOptions", (url) => {
+        const e = exampleOf<Body>("listChargingOptions");
+        return HttpResponse.json({ ...e, data: url.searchParams.get("connector") === null ? [...sites, ...sites] : [], meta: { ...e.meta, page: { limit: 100, hasMore: false } } });
+      }));
+      expect(body(await call("find_charging_station", { ...at, radius_km: 5, connector: "ccs2", min_power_kw: 50, language }))).toBe(language === "de"
+        ? "Im Umkreis von 5 km um 52.520, 13.405 kenne ich 4 Ladestandorte, aber keinen (CCS2, ≥ 50 kW). Ohne Filter oder mit größerem Radius finden Sie mehr."
+        : "Within 5 km of 52.520, 13.405 I know 4 charging sites, but none (CCS2, ≥ 50 kW). Widen the radius or drop the filter.");
       expect(query("listChargingOptions")[0]).toMatchObject({ radius_m: "5000" });
     });
   }
@@ -349,20 +408,44 @@ describe("find_charging_station", () => {
 
 describe("find_hydrogen_station", () => {
   const h2 = (o: Record<string, unknown>) => ({ ...ex<{ stations: Record<string, unknown>[] }>("listHydrogenOptions").stations[0], ...o });
-  it("lists the stations in the radius, named by name, operator, brand or H2", async () => {
-    serve("listHydrogenOptions", { stations: [h2({}), h2({ name: null, operator: "H2 Mobility" }), h2({ name: null, operator: null, brand: "Shell" }), h2({ name: null, operator: null, brand: null, distanceM: 950 })], nearest: null });
+  it("lists the stations in the radius: name or brand, address, pumps, operator, hours, the record's age", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-22T17:00:00Z"));
+    serve("listHydrogenOptions", { stations: [
+      h2({ address: { street: "Hafenweg", house_number: "3", postcode: "10001", city: "Kansilkamp" }, refill: [{ solution: "gaseousHydrogen700barCar" }, { solution: "gaseousHydrogen700barCar" }, { solution: "gaseousHydrogen350barTruck" }],
+        opening: [...["monday", "tuesday", "wednesday", "thursday", "friday"].map((day) => ({ day, from: "06:00", to: "22:00" })), { day: "sunday", from: "08:00", to: "20:00" }], providerUpdatedAt: "2026-10-13T08:00:00Z" }),
+      h2({ name: null, operator: null, brand: "Shell", refill: [{ solution: "liquidHydrogen" }], providerUpdatedAt: "2026-11-21T08:00:00Z" }),
+      h2({ name: null, operator: null, brand: null, distanceM: 950 }),
+    ], nearest: null });
     const r = await call("find_hydrogen_station", { ...at, radius_km: 100, vehicle: "car", limit: 4, language: "de" });
+    vi.useRealTimers();
     expect(query("listHydrogenOptions")).toEqual([{ at: "52.52,13.405", radius_m: "100000", vehicle: "car", limit: "4", lang: "de" }]);
-    expect(body(r)).toBe("- H2 Schömpingbach · 62,4 km\n- H2 Mobility · 62,4 km\n- Shell · 62,4 km\n- H2 · 950 m");
+    expect(body(r)).toBe([
+      "Wasserstofftankstellen für Pkw nahe 52.520, 13.405 (Umkreis 100 km), nächste zuerst:",
+      "1. H2 Schömpingbach — 62,4 km · Hafenweg 3, 10001 Kansilkamp · 2× 700 bar Pkw, 350 bar Lkw/Bus · Betreiber: H2 Synthetic · Öffnungszeiten: Mo–Fr 06:00–22:00, So 08:00–20:00 · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)",
+      "2. Shell — 62,4 km · Wasserstoff (liquidHydrogen) · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 21.11.2026 (gestern)",
+      "3. Wasserstofftankstelle — 1,0 km · 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Änderungsdatum des Eintrags unbekannt",
+      "Verfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist.",
+    ].join("\n"));
   });
-  it("none in the radius: the nearest one", async () => {
+  it("none in the radius: the nearest one beyond it, and the wider radius when it reaches", async () => {
     serve("listHydrogenOptions", { stations: [], nearest: h2({ name: "H2 Fern", distanceM: 120_000 }) });
-    expect(body(await call("find_hydrogen_station", { ...at, language: "en" }))).toBe("- H2 Fern · 120.0 km");
+    expect(body(await call("find_hydrogen_station", { ...at, language: "en" }))).toBe([
+      "No hydrogen station within 50 km of 52.520, 13.405.",
+      "The nearest one is outside the radius: H2 Fern — 120.0 km · 700 bar car · operator: H2 Synthetic · opening hours: not published (unknown) · record date unknown",
+      "Radius up to 150 km possible.",
+      "No live availability, price or operating status is published — check that the station is working before you drive.",
+    ].join("\n"));
+    expect(query("listHydrogenOptions")).toEqual([{ at: "52.52,13.405", radius_m: "50000", limit: "5", lang: "en" }]);
+    serve("listHydrogenOptions", { stations: [], nearest: h2({ name: "H2 Fern", distanceM: 160_000 }) });
+    expect(body(await call("find_hydrogen_station", { ...at, language: "en" }))).not.toContain("Radius up to");
   });
   for (const language of LANGS) {
     it(`none at all (${language})`, async () => {
       serve("listHydrogenOptions", { stations: [], nearest: null });
-      expect(body(await call("find_hydrogen_station", { ...at, language }))).toBe(language === "de" ? "Keine Wasserstofftankstellen gefunden." : "No hydrogen stations found.");
+      expect(body(await call("find_hydrogen_station", { ...at, vehicle: "truck", language }))).toBe(language === "de"
+        ? "Keine Wasserstofftankstelle für Lkw/Bus im Umkreis von 50 km um 52.520, 13.405.\nIn unseren Daten gibt es keine Wasserstofftankstelle mit Lkw/Bus-Zapfpunkt."
+        : "No hydrogen station for trucks/buses within 50 km of 52.520, 13.405.\nOur data holds no hydrogen station with a truck/bus pump.");
     });
   }
 });
@@ -393,17 +476,109 @@ describe("find_parking", () => {
   });
 
   for (const language of LANGS) {
-    it(`a disabled-badge space is not available (${language}) and nothing is asked`, async () => {
+    it(`disabled-badge bays: today's list from listParkingBays, nearest first, with the radius counts (${language})`, async () => {
       const r = await call("find_parking", { ...at, kind: "disabled_badge", language });
-      expect(textOf(r)).toBe(language === "de" ? "Diese Auskunft ist über die ViaFrei-API derzeit nicht verfügbar. (kind=disabled_badge)" : "This answer is not available through the ViaFrei API yet. (kind=disabled_badge)");
-      expect(r.isError).toBe(true);
-      expect(calls).toHaveLength(0);
+      expect(query("listParkingBays")).toEqual([{ at: "52.52,13.405", kind: "disabled", radius_m: "10000", limit: "5", lang: language }]);
+      expect(body(r)).toBe(language === "de" ? [
+        "Behindertenparkplätze am Straßenrand um 52.520, 13.405 (Umkreis 10 km), nächste zuerst:",
+        "1. Hauptstraße 1, 10000 Schömpingbach — 23 m, frei (Sensor, 01:40)",
+        "2. Hauptstraße 7, 10000 Schömpingbach — 0,1 km, keine aktuelle Sensormeldung (zuletzt 29.03. 21:00)",
+        "3. Bahnhofstraße, 10000 Schömpingbach — 0,2 km, reservierte Plätze: 2, reserviert: Mo-Fr 8-18 Uhr (kein Sensor, keine Belegung veröffentlicht)",
+        "Im Umkreis: 2 Behindertenparkplätze mit Sensor, davon 1 frei und 0 belegt gemeldet; die übrigen ohne aktuelle Meldung.",
+        "Ohne Sensor im Umkreis: 1 Standort mit 2 reservierten Plätzen — ob ein Platz frei ist, wird nicht veröffentlicht.",
+        'Nur mit gültigem Parkausweis für Menschen mit Behinderung. "Keine aktuelle Sensormeldung" heißt unbekannt, nicht frei.',
+      ].join("\n") : [
+        "Disabled-badge bays on the street around 52.520, 13.405 (within 10 km), nearest first:",
+        "1. Hauptstraße 1, 10000 Schömpingbach — 23 m, free (sensor, 01:40)",
+        "2. Hauptstraße 7, 10000 Schömpingbach — 0.1 km, no current sensor reading (last 2026-03-29 21:00)",
+        '3. Bahnhofstraße, 10000 Schömpingbach — 0.2 km, reserved spaces: 2, reserved: Provider text (German): "Mo-Fr 8-18 Uhr" (no sensor, no occupancy published)',
+        "Within the radius: 2 disabled-badge bays with a sensor, 1 reported free and 0 occupied; the rest have no current reading.",
+        "Without a sensor within the radius: 1 site with 2 reserved spaces — whether a space is free is not published.",
+        'For holders of a disabled parking permit only. "No current sensor reading" means unknown, not free.',
+      ].join("\n"));
+      expect(footer(r)).toContain("Behindertenparkplätze: Stadt Frankfurt am Main");
+      const sc = r.structuredContent as { bayCounts: unknown; bays: Record<string, unknown>[]; onlyWithFreeSpaces: boolean };
+      expect(sc.bayCounts).toEqual({ total: 3, sensors: 2, free: 1, occupied: 0, unknown: 1, staticSites: 1, staticSpaces: 2 });
+      expect(sc.onlyWithFreeSpaces).toBe(false);
+      expect(sc.bays.map((b) => [b["bayId"], b["state"], b["distanceKm"], b["source"]])).toEqual([
+        ["dortmund:011", "free", 0.02, "dortmund_parksensoren_bays"], ["dortmund:012", "unknown", 0.09, "dortmund_parksensoren_bays"], ["frankfurt:014", "no_sensor", 0.24, "frankfurt_behindertenparkplaetze"]]);
     });
-    it(`a filter whose empty sentence needs counts the API does not carry keeps the short answer (${language})`, async () => {
-      serve("listParkingOptions", []);
+    it(`disabled-badge bays, free only and sensor-less sites: no counts, the plural, the time words (${language})`, async () => {
+      const base = ex<{ bays: Record<string, unknown>[]; counts: Record<string, number> }>("listParkingBays");
+      const bay = (o: Record<string, unknown>) => ({ ...base.bays[2], ...o });
+      serve("listParkingBays", { kind: "disabled", counts: { ...base.counts, sensors: 0, staticSites: 2, staticSpaces: 4 }, bays: [
+        bay({ street: "Marktplatz 3", houseNumber: "3", reservedWhen: " Werktags" }), bay({ street: null, houseNumber: null, postcode: null, city: null, id: "x:9", spaces: null, reservedWhen: null }),
+        { ...base.bays[0], state: "occupied", messageAt: null }, { ...base.bays[1], messageAt: null }] });
+      const text = body(await call("find_parking", { ...at, kind: "disabled_badge", radius_km: 2.5, limit: 4, language }));
+      expect(text.split("\n").slice(1, 5)).toEqual(language === "de" ? [
+        "1. Marktplatz 3, 10000 Schömpingbach — 0,2 km, reservierte Plätze: 2, reserviert:  Werktags (kein Sensor, keine Belegung veröffentlicht)",
+        "2. x:9 — 0,2 km, reservierte Plätze: 1 (kein Sensor, keine Belegung veröffentlicht)",
+        "3. Hauptstraße 1, 10000 Schömpingbach — 23 m, belegt (Sensor, ?)",
+        "4. Hauptstraße 7, 10000 Schömpingbach — 0,1 km, keine Sensormeldung",
+      ] : [
+        "1. Marktplatz 3, 10000 Schömpingbach — 0.2 km, reserved spaces: 2, reserved: on working days (no sensor, no occupancy published)",
+        "2. x:9 — 0.2 km, reserved spaces: 1 (no sensor, no occupancy published)",
+        "3. Hauptstraße 1, 10000 Schömpingbach — 23 m, occupied (sensor, ?)",
+        "4. Hauptstraße 7, 10000 Schömpingbach — 0.1 km, no sensor reading",
+      ]);
+      expect(text.split("\n").slice(5)).toEqual(language === "de"
+        ? ["Ohne Sensor im Umkreis: 2 Standorte mit zusammen 4 reservierten Plätzen — ob ein Platz frei ist, wird nicht veröffentlicht.", "Nur mit gültigem Parkausweis für Menschen mit Behinderung."]
+        : ["Without a sensor within the radius: 2 sites with 4 reserved spaces between them — whether a space is free is not published.", "For holders of a disabled parking permit only."]);
+      expect(query("listParkingBays")[0]).toMatchObject({ radius_m: "2500", limit: "4" });
+      serve("listParkingBays");
+      const free = body(await call("find_parking", { ...at, kind: "disabled_badge", only_with_free_spaces: true, language }));
+      expect(query("listParkingBays")[1]).toMatchObject({ only_free: "true" });
+      expect(free.split("\n")[0]).toBe(language === "de"
+        ? "Behindertenparkplätze am Straßenrand um 52.520, 13.405 (Umkreis 10 km, nur freie), nächste zuerst:"
+        : "Disabled-badge bays on the street around 52.520, 13.405 (within 10 km, free only), nearest first:");
+      expect(free).not.toMatch(/Im Umkreis:|Within the radius:|Ohne Sensor|Without a sensor/u);
+    });
+    it(`disabled-badge bays, none: today's two sentences, only the place credited (${language})`, async () => {
+      serve("listParkingBays", { kind: "disabled", counts: { total: 0, sensors: 0, free: 0, occupied: 0, unknown: 0, staticSites: 0, staticSpaces: 0 }, bays: [] });
+      const none = await call("find_parking", { ...at, kind: "disabled_badge", language });
+      expect(body(none)).toBe(language === "de"
+        ? "Im Umkreis von 10 km um 52.520, 13.405 kenne ich keine Behindertenparkplätze am Straßenrand. Ich halte sie nur, wo eine Kommune sie als offene Daten veröffentlicht; Parkhäuser mit Behindertenplätzen nennt find_parking ohne kind."
+        : "I hold no disabled-badge bays on the street within 10 km of 52.520, 13.405. I hold them only where a municipality publishes them as open data; car parks with disabled spaces are listed by find_parking without a kind.");
+      expect(footer(none)).not.toContain("Frankfurt");
+      expect(none.structuredContent).toMatchObject({ kind: "disabled_badge", bays: [], bayCounts: { total: 0 } });
+      expect(body(await call("find_parking", { ...at, kind: "disabled_badge", only_with_free_spaces: true, language }))).toBe(language === "de"
+        ? "Im Umkreis von 10 km um 52.520, 13.405 meldet gerade kein Sensor einen freien Behindertenparkplatz am Straßenrand."
+        : "No sensor reports a free disabled-badge bay on the street within 10 km of 52.520, 13.405 right now.");
+    });
+    it(`a filter that emptied the answer where sites are held keeps the short answer: its sentence counts them (${language})`, async () => {
+      mockServer.use(handlerFor("listParkingOptions", (url) => Response.json({ ...exampleOf("listParkingOptions"), data: url.searchParams.get("limit") === "1" ? exampleOf<{ data: unknown[] }>("listParkingOptions").data : [] })));
       expect(body(await call("find_parking", { ...at, facilities: ["shower"], language }))).toBe(language === "de" ? "Keine Parkplätze gefunden." : "No car parks found.");
-      serve("listParkingOptions", []);
+      expect(query("listParkingOptions")[1]).toEqual({ at: "52.52,13.405", radius_m: "10000", limit: "1", lang: language });
       expect(body(await call("find_parking", { ...at, only_with_free_spaces: true, language }))).toBe(language === "de" ? "Keine Parkplätze gefunden." : "No car parks found.");
+    });
+    it(`a filter that emptied the answer where nothing is held at all: today's sentences (${language})`, async () => {
+      serve("listParkingOptions", []);
+      const shower = await call("find_parking", { ...at, kind: "truck", facilities: ["shower"], language });
+      expect(body(shower)).toBe(language === "de"
+        ? "Ich kenne um 52.520, 13.405 (Umkreis 10 km) keinen Lkw-Parkplatz. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis 25 km) hilft oft."
+        : "I know of no lorry parking (Lkw-Parkplatz) around 52.520, 13.405 (within 10 km). Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
+      expect(body(await call("find_parking", { ...at, only_with_free_spaces: true, language }))).toBe(language === "de"
+        ? "Um 52.520, 13.405 (Umkreis 10 km) meldet keine Anlage, die ich führe, eine Belegung — ob gerade Plätze frei sind, kann ich nicht sagen. Ohne die Einschränkung auf freie Plätze nenne ich, was es dort gibt."
+        : "No site I hold around 52.520, 13.405 (within 10 km) publishes its occupancy, so I cannot say whether spaces are free right now. Asked without the free-spaces filter, I list what is there.");
+      serve("listMotorwayParking", []);
+      expect(body(await call("find_parking", { road: "A7", facilities: ["toilet"], only_with_free_spaces: true, language }))).toBe(language === "de"
+        ? "Ich kenne an der A7 keine Parkmöglichkeiten. Die Abdeckung ist bundesweit, aber nicht lückenlos."
+        : "I know of no parking along the A7. Coverage is nationwide but not complete.");
+    });
+    it(`disabled-badge parking without a place asks for the place first (${language})`, async () => {
+      const r = await call("find_parking", { kind: "disabled_badge", language });
+      expect(textOf(r)).toBe(language === "de"
+        ? "Bitte place (Freitext), lat+lon oder road (z. B. \"A3\") angeben. Hat die Person nichts davon genannt, bitte fragen, wo: eine Stadt, eine Postleitzahl, ihren Standort oder die Autobahn. Zum Beispiel {\"place\": \"Fulda\"} oder {\"road\": \"A3\"}."
+        : "Give a place (free text), or lat+lon, or a road like \"A3\". If the person named none, ask where: a town, a postcode, their position or the motorway. For example {\"place\": \"Fulda\"} or {\"road\": \"A3\"}.");
+      expect(calls).toHaveLength(0);
+      const road = await call("find_parking", { kind: "disabled_badge", road: "A7", language });
+      expect(road).toEqual({
+        content: [{ type: "text", text: language === "de"
+          ? "Behindertenparkplätze am Straßenrand liegen in Orten, nicht an einer Autobahn: bitte place oder lat/lon statt road angeben."
+          : "Disabled-badge bays are on town streets, not along a motorway: pass place or lat/lon instead of road." }],
+        isError: true, _meta: { errorCode: "invalid_input", errorReason: "road_not_point" },
+      });
+      expect(calls).toHaveLength(0);
     });
   }
 
@@ -548,7 +723,7 @@ describe("find_place, find_poi, find_address", () => {
     serve("listPlaces", [{ ...ex<object[]>("listPlaces")[0], name: "Köln", kind: "municipality", location: { lat: 50.9375123, lon: 6.9602789 } }]);
     const r = await call("find_place", { query: "Köln", kind: "city", radius_km: 10, limit: 3, language: "en" });
     expect(query("listPlaces")).toEqual([{ q: "Köln", kind: "municipality", radius_m: "10000", limit: "3", lang: "en" }]);
-    expect(body(r)).toBe("- Köln (municipality) · 50.93751, 6.96028");
+    expect(body(r)).toBe('"Köln" — one match:\n1. Köln — town, Schleswig-Holstein, 50.93751, 6.96028');
   });
 
   for (const [kind, contract] of [["district", "district"], ["admin", "region"], ["station", "station_area"], ["stop", "station_area"]]) {
@@ -576,9 +751,16 @@ describe("find_place, find_poi, find_address", () => {
     it(`find_place and find_poi with nothing found (${language})`, async () => {
       serve("listPlaces", []);
       serve("listPois", []);
+      serve("getPlacesCoverage", { kinds: [{ kind: "municipality", count: 1 }], lands: [], addresses: [] });
       const want = language === "de" ? "Keine Orte gefunden." : "No places found.";
-      expect(body(await call("find_place", { query: "Xy", language }))).toBe(want);
+      expect(body(await call("find_place", { query: "Xy", language }))).toBe(language === "de" ? '"Xy" finde ich nicht im Ortsverzeichnis.' : 'I do not find "Xy" in the place index.');
       expect(body(await call("find_poi", { name: "Xy", language }))).toBe(want);
+    });
+
+    it(`find_place with no place index loaded says so (${language})`, async () => {
+      serve("listPlaces", []);
+      serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [] });
+      expect(body(await call("find_place", { query: "Xy", language }))).toBe(language === "de" ? "Für diese Installation ist kein Ortsverzeichnis geladen." : "This installation holds no place index.");
     });
   }
 
@@ -620,25 +802,45 @@ describe("find_place, find_poi, find_address", () => {
 });
 
 describe("describe_location", () => {
-  const loc = (o: Record<string, unknown>) => ({ ...ex<object>("describeLocation"), ...o });
-  const lez = { verdict: "outside", zone: "Köln", distanceM: 2000 };
+  const place = (name: string, lat: number, lon: number, code?: string) => ({ id: name, name, location: { lat, lon }, distanceM: null, sourceFamily: "x", ...(code === undefined ? {} : { code }) });
+  const loc = (o: Record<string, unknown>) => ({
+    address: null, municipality: place("Ort A", 52.53, 13.405), district: place("Kreis B", 52.6, 13.5, "12"), state: null, mayLieOutsideGermany: false,
+    lowEmissionZone: { verdict: "unknown", zone: null, distanceM: null, liftedOn: null }, ...o,
+  });
+  const lez = { verdict: "outside", zone: "Umweltzone Köln", distanceM: 2_345, liftedOn: null };
+  const noAddresses = () => serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [] });
   for (const language of LANGS) {
     for (const [name, zone] of [
       ["inside", { ...lez, verdict: "inside" }],
-      ["transfer", { ...lez, verdict: "transfer" }],
+      ["transfer", { ...lez, verdict: "transfer", zone: "Randbereich Nord" }],
       ["outside", lez],
-      ["outside, no distance", { ...lez, distanceM: null }],
+      ["outside, under a kilometre", { ...lez, distanceM: 4 }],
+      ["lifted", { ...lez, verdict: "inside", liftedOn: "01.01.2025" }],
+      ["unknown", { ...lez, verdict: "unknown", zone: null }],
     ] as const) {
-      it(`municipality, district, Land and the low-emission zone ${name} (${language})`, async () => {
-        serve("describeLocation", loc({ municipality: { name: "Köln" }, district: { name: "Köln, Stadt" }, lowEmissionZone: zone }));
+      it(`place, district, Land and the low-emission zone ${name} (${language})`, async () => {
+        noAddresses();
+        serve("describeLocation", loc({ lowEmissionZone: zone }));
         const r = await call("describe_location", { ...at, language });
         expect(query("describeLocation")).toEqual([{ at: "52.52,13.405", lang: language }]);
         await pinned("handlers", body(r));
       });
     }
-    it(`nothing known (${language})`, async () => {
-      serve("describeLocation", loc({ state: null, lowEmissionZone: { verdict: "unknown", zone: "X", distanceM: null } }));
-      expect(body(await call("describe_location", { ...at, language }))).toBe(language === "de" ? "Zu dieser Position ist nichts bekannt." : "Nothing is known about this position.");
+    it(`an address, the point maybe abroad (no zone said there), no place (${language})`, async () => {
+      serve("describeLocation", loc({
+        address: { street: "Hauptstraße", number: "5", postcode: null, place: "Berlin", land: "Berlin", distanceM: 30, dataAsOf: "2026-11-01", sourceFamily: "osm", location: at },
+        municipality: null, district: null, state: place("Brandenburg", 52.4, 13.0, "12"), mayLieOutsideGermany: true,
+      }));
+      const r = await call("describe_location", { ...at, language });
+      expect(ops()).toEqual(["describeLocation"]);
+      await pinned("handlers", body(r));
+    });
+    it(`addresses loaded but none near (${language})`, async () => {
+      serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [{ land: "Berlin", dataAsOf: "2026-11-01" }] });
+      serve("describeLocation", loc({ municipality: null, district: null, lowEmissionZone: null }));
+      expect(body(await call("describe_location", { ...at, language }))).toBe(language === "de"
+        ? "Beschreibung für 52.5200, 13.4050:\n- Keine Adresse in der Nähe bekannt."
+        : "Description of 52.5200, 13.4050:\n- No address known nearby.");
     });
     it(`without lon (${language}): the schema's refusal, as today's server words it`, async () => {
       const r = await call("describe_location", { lat: 52.5, language });
@@ -647,9 +849,16 @@ describe("describe_location", () => {
       expect(calls).toHaveLength(0);
     });
   }
-  it("a zone without a name and a named nothing are left out", async () => {
-    serve("describeLocation", loc({ municipality: { name: null }, district: null, lowEmissionZone: { verdict: "inside", zone: null, distanceM: null } }));
-    expect(body(await call("describe_location", { lon: 13.4, lat: 52.5, language: "en" }))).toBe("Matfienland");
+  it("the Land is named from the district's key in the answer's language, before the API's Land row", async () => {
+    noAddresses();
+    serve("describeLocation", loc({ state: place("Irgendwo", 0, 0, "09") }));
+    expect(body(await call("describe_location", { ...at, language: "en" }))).toContain("\n- State (Land): Brandenburg\n");
+  });
+  it("distances are today's: a sphere from the asked point to the place's point, not the API's rounded distance", async () => {
+    expect(Math.round(haversineM(50.5546, 9.6773, 50.4509, 9.9157))).toBe(20_427);
+    noAddresses();
+    serve("describeLocation", loc({ municipality: { ...place("Ort A", 52.53, 13.405), distanceM: 99_000 } }));
+    expect(body(await call("describe_location", { ...at, language: "de" }))).toContain("\n- Ort: Ort A (1,1 km)\n");
   });
 });
 
@@ -729,19 +938,69 @@ describe("find_nearby and find_sharing", () => {
     expect([kmText(49, "de"), kmText(50, "de"), kmText(1849, "en"), kmText(0, "en")]).toEqual(["49 m", "0,1 km", "1.8 km", "0 m"]);
   });
 
+  const bike = (over: Record<string, unknown> = {}) => ({
+    id: "st-1", name: "Station 1", systemLabel: "Nextbike", system: "nextbike_de", distanceM: 300, location: at, sourceFamily: "gbfs_nextbike",
+    bikes: 4, electricBikes: 1, freeDocks: 2, available: true, current: true, renting: true, virtual: false,
+    countedAt: "2026-03-30T08:00:00Z", reportedAt: "2026-03-30T08:00:00Z", ...over,
+  });
+  const fleet = (count = 0, over: Record<string, unknown> = {}) => ({ count, electric: 0, atLeast: false, nearest: count === 0 ? [] : [{ distanceM: 420, propulsion: "human", rangeLeftM: null, vehicleType: "bicycle", sourceFamily: "gbfs_donkey" }], ...over });
   for (const language of LANGS) {
-    it(`find_sharing (${language}): stations by name, system label or system, bikes, free vehicles`, async () => {
-      const s = { name: "Station 1", systemLabel: "Nextbike", system: "nextbike_de", distanceM: 300, bikes: 4, freeDocks: 2, available: true };
-      serve("listSharingOptions", { stations: [s, { ...s, name: null, bikes: null }, { ...s, name: null, systemLabel: null, distanceM: 1234 }], stationsInRadius: 3, vehicles: { count: 7, electric: 2, atLeast: false, nearest: [] } });
-      const r = await call("find_sharing", { ...at, radius_km: 1, limit: 3, only_available: false, language });
-      expect(query("listSharingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "1000", limit: "3", only_available: "false", lang: language }]);
+    it(`find_sharing (${language}): each station in today's words, its docks, the free-floating bikes`, async () => {
+      serve("listSharingOptions", {
+        stations: [
+          bike(), bike({ id: "st-2", name: null, systemLabel: null, bikes: null, current: false }), bike({ name: "Zone", virtual: true, freeDocks: 3, electricBikes: 0, distanceM: 1234 }),
+          bike({ name: "Alt", current: false, virtual: true, bikes: 1, countedAt: "2026-03-29T06:00:00Z" }), bike({ name: "Zu", renting: false }), bike({ name: "Ohne Zahl", freeDocks: null, bikes: 1, electricBikes: null }),
+        ],
+        stationsInRadius: 6, vehicles: fleet(201, { atLeast: true, electric: 3 }),
+      });
+      const r = await call("find_sharing", { ...at, radius_km: 1.5, limit: 6, only_available: false, language });
+      expect(query("listSharingOptions")).toEqual([{ at: "52.52,13.405", radius_m: String(1.5 * 1000), limit: "6", only_available: "false", lang: language }]);
+      await pinned("handlers", body(r));
+      expect(r.structuredContent).toMatchObject({
+        place: "52.520, 13.405", radiusKm: 1.5,
+        stations: [{ name: "Station 1", system: "Nextbike", distanceM: 300, lat: 52.52, lon: 13.405, vehiclesAvailable: 4, electricAvailable: 1, docksAvailable: 2, isVirtual: false, isRenting: true, countedAt: "2026-03-30T08:00:00.000Z", stale: false }, { stale: null }, { docksAvailable: null, isVirtual: true }, { stale: true }, {}, {}],
+        freeFloating: { count: 201, atLeast: true, electric: 3, nearest: [{ distanceM: 420, formFactor: "bicycle", propulsion: "human", rangeM: null }] },
+      });
+    });
+    it(`find_sharing (${language}): nothing in the radius, the nearest station within 5 km named`, async () => {
+      mockServer.use(handlerFor("listSharingOptions", (url) => Response.json({ ...exampleOf("listSharingOptions"), data: url.searchParams.get("radius_m") === "5000"
+        ? { stations: [bike({ distanceM: 3_400 })], stationsInRadius: 1, vehicles: fleet() }
+        : { stations: [], stationsInRadius: 0, vehicles: fleet() } })));
+      const r = await call("find_sharing", { ...at, language });
+      expect(query("listSharingOptions")).toEqual([{ at: "52.52,13.405", lang: language }, { at: "52.52,13.405", radius_m: "5000", limit: "1", only_available: "false", lang: language }]);
       await pinned("handlers", body(r));
     });
   }
-
-  it("find_sharing without the availability filter does not send it", async () => {
-    await call("find_sharing", { ...at, language: "en" });
-    expect(query("listSharingOptions")).toEqual([{ at: "52.52,13.405", lang: "en" }]);
+  it("find_sharing: stations in the radius but none to rent, and no wider read; nothing within 5 km says nothing more", async () => {
+    serve("listSharingOptions", { stations: [], stationsInRadius: 2, vehicles: fleet() });
+    const two = body(await call("find_sharing", { ...at, language: "de" }));
+    expect(two).toContain("2 Stationen im Umkreis, aber keine mit einem ausleihbaren Rad laut aktueller Zählung; ohne die Einschränkung auf ausleihbare Räder gefragt, nenne ich sie alle.");
+    expect(ops()).toEqual(["listSharingOptions"]);
+    serve("listSharingOptions", { stations: [], stationsInRadius: 0, vehicles: fleet() });
+    const none = body(await call("find_sharing", { ...at, radius_km: 5, only_available: false, language: "en" }));
+    expect(none).toBe("No shared bikes found within 5 km of 52.520, 13.405 — neither at a station nor free-floating. Radius up to 5 km possible. Covered are nextbike and Donkey Republic; e-scooters and operators without an open licence are not.");
+    expect(ops()).toEqual(["listSharingOptions", "listSharingOptions"]);
+  });
+  it("find_sharing: nothing listed credits nothing; the nearest station past the radius credits its own publisher alone", async () => {
+    const ex = exampleOf<{ meta: { attribution: Record<string, unknown>[] } }>("listSharingOptions");
+    const nextbike = ex.meta.attribution[0]!;
+    const donkey = { ...nextbike, family: "gbfs_donkey", publisher: "Donkey Republic", text: "Bikesharing: Donkey Republic (GBFS), CC0 1.0" };
+    const wideMeta = { ...ex.meta, attribution: [nextbike, donkey], generatedAt: "2026-03-30T08:00:00Z" };
+    mockServer.use(handlerFor("listSharingOptions", (url) => Response.json({ meta: wideMeta, data: url.searchParams.get("radius_m") === "5000"
+      ? { stations: [bike({ distanceM: 3_400, sourceFamily: "gbfs_donkey" })], stationsInRadius: 1, vehicles: fleet() }
+      : { stations: [], stationsInRadius: 0, vehicles: fleet() } })));
+    const near = await call("find_sharing", { ...at, language: "de" });
+    expect(footer(near)).toContain("Donkey Republic");
+    expect(footer(near)).not.toContain(String(nextbike["text"]));
+    expect(meta(near)["attribution"]).not.toContain(String(nextbike["text"]));
+    serve("listSharingOptions", { stations: [], stationsInRadius: 0, vehicles: fleet() }, { generatedAt: "2026-03-30T08:00:00Z" });
+    const none = await call("find_sharing", { ...at, radius_km: 5, language: "en" });
+    expect(footer(none)).toBe("As of 2026-03-30 10:00");
+    expect(meta(none)["attribution"] ?? "").toBe("");
+  });
+  it("find_sharing: only free-floating bikes still head the answer", async () => {
+    serve("listSharingOptions", { stations: [], stationsInRadius: 0, vehicles: fleet(1) });
+    expect(body(await call("find_sharing", { ...at, language: "de" }))).toBe("Leihräder nahe 52.520, 13.405 (Umkreis 1 km):\nOhne Station: 1 frei abgestelltes Rad im Umkreis, das nächste 0,4 km entfernt.");
   });
 });
 
@@ -909,7 +1168,7 @@ describe("check_transit_disruption", () => {
       serve("listPlaces", []);
       const r = await call("check_transit_disruption", { region: "Atlantis", language });
       expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? '"Atlantis" kenne ich als Region nicht. Die Daten sind auf Kreisebene gemeldet — bitte ein Bundesland, eine kreisfreie Stadt oder den Kreis nennen (z. B. "Bayern", "Köln", "Landkreis Fulda").' : 'I do not know "Atlantis" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").' }], isError: true });
-      expect(ops()).toEqual(["listPlaces"]);
+      expect(ops()).toEqual(["listPlaces", "listPlaces"]);
     });
   }
   it("a punctuality without a name", async () => {
@@ -918,7 +1177,7 @@ describe("check_transit_disruption", () => {
   });
   it("a region name: its district code through the place search", async () => {
     await call("check_transit_disruption", { region: "VBB", language: "en" });
-    expect(query("listPlaces")).toEqual([{ q: "VBB", limit: "1", lang: "en" }]);
+    expect(query("listPlaces")).toEqual([{ q: "VBB", kind: "district", limit: "1", lang: "en" }, { q: "VBB", limit: "1", lang: "en" }, { q: ex<{ name: string }[]>("listPlaces")[0]!.name, kind: "district", limit: "5", lang: "en" }]);
     expect(query("listTransitDisruptions")).toEqual([{ area: "01", lang: "en" }]);
   });
   it("a region name the place search has no code for, with a line: the line alone", async () => {
@@ -927,7 +1186,7 @@ describe("check_transit_disruption", () => {
     expect(query("listTransitDisruptions")).toEqual([{ line: "S1", lang: "en" }]);
   });
   it("a position: the district's code, else the Land's", async () => {
-    serve("describeLocation", { ...ex<object>("describeLocation"), district: { name: "Köln", code: "05315" } });
+    serve("describeLocation", { ...ex<object>("describeLocation"), district: { name: "Köln", code: "05315", location: { lat: 50.94, lon: 6.96 } } });
     await call("check_transit_disruption", { ...at, language: "en" });
     expect(query("describeLocation")).toEqual([{ at: "52.52,13.405", lang: "en" }]);
     expect(query("listTransitDisruptions")).toEqual([{ area: "05315", lang: "en" }]);
@@ -937,11 +1196,23 @@ describe("check_transit_disruption", () => {
     expect(query("listTransitDisruptions")).toEqual([{ area: "01", lang: "en" }]);
   });
   it("a position with no code at all and no line: the region is unknown, its read credited", async () => {
-    serve("describeLocation", { ...ex<object>("describeLocation"), state: { name: "X", code: null } });
+    serve("describeLocation", { ...ex<object>("describeLocation"), state: { name: "X", code: null, location: { lat: 52.5, lon: 13.4 } } });
     const r = await call("check_transit_disruption", { ...at, language: "en" });
     expect(body(r)).toBe("I do not know this region.");
     expect(meta(r)["sources"]).toEqual(["geonames", "osm"]);
   });
+  for (const language of LANGS) {
+    it(`a position with nothing in the window: today's words, the region with its centre's distance (${language})`, async () => {
+      serve("describeLocation", { ...ex<object>("describeLocation"), district: { name: "Hamburg", code: String(2_000).padStart(5, "0"), location: { lat: 53.5511, lon: 9.9937 } } });
+      serve("listTransitDisruptions", { alerts: [], alertsTotal: 0, alertsChecked: false, duplicatesOmitted: 0, punctuality: null, windowMin: 60 });
+      const r = await call("check_transit_disruption", { lat: 53.551, lon: 9.993, language });
+      expect(body(r).split("\n")[0]).toBe(language === "de"
+        ? "Hamburg (nächstgelegene Region zum Punkt, Mittelpunkt 48 m entfernt): in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region."
+        : "Hamburg (nearest region to the point, centre 48 m away): no public-transport realtime reports from this region in the last 60 minutes.");
+      serve("describeLocation", { ...ex<object>("describeLocation"), district: { name: "Hamburg", code: String(2_000).padStart(5, "0"), location: { lat: 53.6, lon: 9.9937 } } });
+      expect(body(await call("check_transit_disruption", { lat: 53.551, lon: 9.993, language }))).toContain(language === "de" ? "Mittelpunkt 5,4 km entfernt" : "centre 5.4 km away");
+    });
+  }
   it("only a latitude: no position, no region, so no place in today's words", async () => {
     const r = await call("check_transit_disruption", { lat: 52.5, language: "en" });
     expect(r).toEqual({
@@ -950,6 +1221,38 @@ describe("check_transit_disruption", () => {
       _meta: { errorCode: "invalid_input", errorReason: "place_missing" },
     });
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("a town and a thing the place search does not hold", () => {
+  const placesOnly = (known: string) => mockServer.use(handlerFor("listPlaces", (url) => {
+    const e = ex<Record<string, unknown>[]>("listPlaces");
+    return HttpResponse.json({ ...exampleOf<object>("listPlaces"), data: url.searchParams.get("q") === known ? [{ ...e[0], name: known }] : [] });
+  }));
+  for (const language of LANGS) {
+    it(`the town's centre, saying what was not found (${language})`, async () => {
+      placesOnly("Köln");
+      serve("getWeatherRisk", { warnings: [] });
+      const r = await call("check_weather_warnings", { place: "Köln Hbf", language });
+      expect(query("listPlaces").map((q) => q["q"])).toEqual(["Köln Hbf", "Köln"]);
+      expect(body(r)).toContain(language === "de" ? "Köln (gemessen ab der Ortsmitte — „Hbf“ finde ich dort nicht)" : 'Köln (measured from the town centre — I found no "Hbf" there)');
+    });
+  }
+  it("a centre word: the centre is the answer, no note", async () => {
+    placesOnly("Kiel");
+    serve("getWeatherRisk", { warnings: [] });
+    const r = await call("check_weather_warnings", { place: "Kiel Zentrum", language: "de" });
+    expect(body(r)).toContain("Kiel");
+    expect(body(r)).not.toContain("Ortsmitte");
+  });
+  it("the longest leading words first, at most three", async () => {
+    placesOnly("Frankfurt am Main");
+    serve("getWeatherRisk", { warnings: [] });
+    await call("check_weather_warnings", { place: "Frankfurt am Main Hbf", language: "de" });
+    expect(query("listPlaces").map((q) => q["q"])).toEqual(["Frankfurt am Main Hbf", "Frankfurt am Main"]);
+    calls.length = 0;
+    await call("check_weather_warnings", { place: "a b c d e", language: "de" });
+    expect(query("listPlaces").map((q) => q["q"])).toEqual(["a b c d e", "a b c", "a b", "a"]);
   });
 });
 
@@ -1118,13 +1421,64 @@ describe("stations", () => {
 
   it("check_station_facilities with any facility asks every kind", async () => {
     await call("check_station_facilities", { station: "Schömpingbach Hbf", facility: "any", language: "en" });
-    expect(query("listStationFacilities")).toEqual([{ lang: "en" }]);
+    expect(query("listStationFacilities")).toEqual([{ limit: "20", lang: "en" }]);
+  });
+
+  describe("check_station_facilities in today's words", () => {
+    const unit = (id: string, kind: string, position: string | null, state: string) => ({ id, kind, position, state, sourceFamily: "fasta" });
+    const facilities = (list: ReturnType<typeof unit>[]) => ({ station: { name: "Schömpingbach Hbf" }, facilities: list,
+      counts: { active: list.filter((f) => f.state === "active").length, inactive: list.filter((f) => f.state === "inactive").length, unknown: list.filter((f) => f.state !== "active" && f.state !== "inactive").length } });
+    const text = async (args: Record<string, unknown>) => body(await call("check_station_facilities", { station: "Schömpingbach Hbf", ...args }));
+    it("every unit in service, one name twice told apart by its number, and a list cut at the limit", async () => {
+      serve("listStationFacilities", facilities([unit("10", "elevator", "zu Gleis 1", "active"), unit("11", "elevator", "zu Gleis 1", "active"), unit("12", "escalator", "Westseite", "active")]));
+      expect(await text({ limit: 2, language: "de" })).toBe([
+        "In Schömpingbach Hbf sind alle 3 gemeldeten Anlagen in Betrieb. Gezählt sind die Anlagen, die die Bahn für diesen Bahnhof meldet. Aufzüge an Haltestellen städtischer Verkehrsbetriebe (Straßenbahn, Stadtbahn, U-Bahn) sind darin nicht enthalten — dazu liegen mir für diesen Bahnhof keine Live-Daten vor.",
+        "Fahrtreppe Westseite: in Betrieb", "Aufzug zu Gleis 1 (Anlage 10): in Betrieb", "… und 1 weitere.",
+      ].join("\n"));
+    });
+    it("none with a known status: not that they are out of service; DB's German names in English, or quoted", async () => {
+      serve("listStationFacilities", facilities([unit("10", "elevator", "zu Gleis 3/4 - Südsteg", "unknown"), unit("11", "escalator", "neben dem Kiosk", "unknown")]));
+      expect(await text({ language: "en" })).toBe([
+        "I cannot say whether the 2 reported facilities at Schömpingbach Hbf are in service — that does not mean they are out of service. DB reports no status for 2 facilities. Counted are the facilities DB reports for this station. Lifts at stops of the city's transport operator (tram, light rail, underground) are not included — I hold no live data on them for this station.",
+        'Escalator Provider text (German): "neben dem Kiosk": status unknown', "Lift to platform 3/4 - south footbridge: status unknown",
+      ].join("\n"));
+    });
+    it("some in service and the rest unknown: of the known ones", async () => {
+      serve("listStationFacilities", facilities([unit("10", "elevator", null, "active"), unit("11", "elevator", null, "unknown")]));
+      expect((await text({ language: "de" })).split("\n")[0]).toMatch(/^In Schömpingbach Hbf ist 1 von 1 gemeldeten Anlagen mit bekanntem Status in Betrieb\. Bei 1 Anlage meldet die Bahn keinen Status\. /u);
+    });
+    for (const language of LANGS) {
+      it(`DB lists none (${language}): what the data lists, never what the station has; a kind asked names the others`, async () => {
+        serve("listStationFacilities", facilities([]));
+        expect(await text({ language })).toBe(language === "de"
+          ? "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Schömpingbach Hbf weder ein Aufzug noch eine Fahrtreppe verzeichnet. Ob es dort Anlagen gibt, die die Bahn nicht führt, kann ich daraus nicht sagen."
+          : "DB's lift and escalator data lists neither a lift nor an escalator for Schömpingbach Hbf. Whether the station has equipment DB does not list, I cannot tell from this.");
+        mockServer.use(handlerFor("listStationFacilities", (u) => HttpResponse.json({ ...exampleOf<Body>("listStationFacilities"),
+          data: facilities(u.searchParams.get("kind") === null ? [unit("1", "escalator", null, "active"), unit("2", "escalator", null, "active")] : []) })));
+        expect(await text({ facility: "elevator", language })).toBe(language === "de"
+          ? "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Schömpingbach Hbf kein Aufzug verzeichnet, nur 2 Fahrtreppen. Ob es dort einen Aufzug gibt, den die Bahn nicht führt, kann ich daraus nicht sagen."
+          : "DB's lift and escalator data lists no lift for Schömpingbach Hbf, only 2 escalators. Whether the station has a lift DB does not list, I cannot tell from this.");
+        expect(query("listStationFacilities").slice(-2)).toEqual([{ kind: "elevator", limit: "20", lang: language }, { limit: "50", lang: language }]);
+      });
+    }
+  });
+
+  it("describe_station lists the lifts out of service first, then by kind and track, a unit without a place said so", async () => {
+    const f = (id: string, kind: string, position: string | null, state: string) => ({ id, kind, position, state, sourceFamily: "fasta" });
+    serve("listStationFacilities", { station: { name: "Schömpingbach Hbf" }, counts: { active: 2, inactive: 1, unknown: 1 },
+      facilities: [f("1", "elevator", "zu Gleis 2", "active"), f("2", "escalator", "Westseite", "unknown"), f("3", "elevator", "zu Gleis 1", "active"), f("4", "escalator", "zu Gleis 9", "inactive")] });
+    const text = body(await call("describe_station", { station: "Schömpingbach Hbf", departures: 0, language: "en" })).split("\n");
+    expect(text.slice(4, 8)).toEqual(["- Escalator (Platform 9): out of service", "- Escalator (no location given): state unknown", "- Lift (Platform 1): in service", "- Lift (Platform 2): in service"]);
   });
 
   it("describe_station with no departures asked reads no board", async () => {
     const r = await call("describe_station", { station: "Schömpingbach Hbf", departures: 0, language: "en" });
     expect(ops().sort()).toEqual(["listStationFacilities", "listStations"]);
-    expect(body(r)).toBe("Schömpingbach Hbf · 48.38815, 7.51821\nLifts/escalators: 0 working, 0 out of service.");
+    expect(body(r)).toBe([
+      "Schömpingbach Hbf", "Schleswig-Holstein · EVA 8001001", "",
+      "Lifts and escalators (As of 2026-03-29 14:00):", "- Escalator (Platform 1): state unknown", "- Escalator (Platform 2): state unknown", "",
+      "Parking and charging:", "- Car parks and charging points nearby: find_parking or find_charging_station with lat 48.38815, lon 7.51821.",
+    ].join("\n"));
     calls.length = 0;
     await call("describe_station", { station: "Schömpingbach Hbf", departures: 2, language: "en" });
     expect(query("listStationDepartures")).toEqual([{ limit: "2", lang: "en" }]);
@@ -1206,9 +1560,9 @@ describe("watch_situation and stop_watch", () => {
 describe("the credit footer and _meta of a tool answer", () => {
   it("names the sources, the licence and the data time in Berlin", async () => {
     const r = await call("find_cheapest_fuel", { ...at, language: "de" });
-    expect(footer(r)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. · Stand 30.03. 01:57");
+    expect(footer(r)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 01:57");
     expect(meta(r)).toEqual({
-      attribution: "Synthetic data from family gamma, licence CC BY 4.0.",
+      attribution: "Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0)",
       license: "CC BY 4.0",
       licenses: { tankerkoenig_gamma: "CC BY 4.0" },
       asOf: "2026-03-29T23:57:30Z",
@@ -1222,14 +1576,14 @@ describe("the credit footer and _meta of a tool answer", () => {
     const place = { family: "gazetteer_x", text: "Ortsdaten: Gazetteer X", licence: "CC BY 4.0", shareAlike: false };
     serve("listPlaces", ex<unknown[]>("listPlaces"), { attribution: [place], asOf: "2020-01-01T00:00:00Z" });
     const named = await call("find_cheapest_fuel", { place: "Köln", language: "de" });
-    expect(footer(named)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. · Ortsdaten: Gazetteer X · Stand 30.03. 01:57");
+    expect(footer(named)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Ortsdaten: Gazetteer X · Stand 30.03. 01:57");
     expect(meta(named)["sources"]).toEqual(["tankerkoenig_gamma", "gazetteer_x"]);
     expect(meta(named)["asOf"]).toBe("2026-03-29T23:57:30Z");
-    expect(footer(await call("find_cheapest_fuel", { ...at, language: "de" }))).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. · Stand 30.03. 01:57");
+    expect(footer(await call("find_cheapest_fuel", { ...at, language: "de" }))).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 01:57");
   });
 
   it("the gap list names a tool, a case and the operation it needs, for each gap", () => {
-    expect(GAPS.map((g) => g.tool)).toEqual(["*", "find_parking", "find_roadworks_ahead", "watch_situation"]);
+    expect(GAPS.map((g) => g.tool)).toEqual(["*", "find_roadworks_ahead", "watch_situation"]);
     for (const g of GAPS) expect(g.case.length * g.needs.length).toBeGreaterThan(0);
   });
 });
@@ -1298,7 +1652,7 @@ describe("stop_watch in today's words: by number, uri or subject, among this ses
       await open(client, "place", "Fulda", "48.24375,7.01625");
       const none = await stop(client, { kind: "road", key: "A9", language: "de" });
       expect(first(none)).toBe("Dazu läuft in dieser Sitzung keine Beobachtung. Offen sind: watch_id 1 (viafrei://watch/1) für die Straße A7; watch_id 2 (viafrei://watch/2) für den Ort 48.24375,7.01625. Zum Beenden einer davon: stop_watch mit ihrer watch_id.");
-      expect(textOf(none)).toMatch(/\n\nQuelle: Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben \/ Watch: ViaFrei, our own service — every report names the source of the data behind it · Stand /u);
+      expect(textOf(none)).toMatch(/\n\nQuelle: Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben \/ Watch: ViaFrei, our own service — every report names the source of the data behind it \(https:\/\/viafrei\.de\) · Stand /u);
       expect(none.structuredContent).toMatchObject({ stopped: false, matched: 0, candidates: [{ watchId: 1, kind: "road", key: "A7" }, { watchId: 2, kind: "place" }], license: "ViaFrei service metadata (no provider data)" });
       const road = await stop(client, { key: "a 07", language: "de" });
       expect(first(road)).toBe("Beobachtung für die Straße A7 beendet (viafrei://watch/1). Ich melde mich dazu nicht mehr.");
@@ -1426,7 +1780,7 @@ describe("watch_situation: the target is the platform's key, resolved from the p
     expect(await target("station", "Leipzig Hbf")).toBe("1:de:01002:9001");
     expect(query("listStations")).toEqual([{ q: "Leipzig Hbf", limit: "1", lang: "de" }]);
     expect(await target("station", "8010205")).toBe("8010205");
-    expect(await target("region", "Sachsen")).toBe("01");
+    expect(await target("region", "Sachsen")).toBe("14");
     expect(await target("region", "14")).toBe("14");
     expect(await target("charger", "site-7")).toBe("site-7");
   });
@@ -1434,7 +1788,16 @@ describe("watch_situation: the target is the platform's key, resolved from the p
     serve("listStations", []);
     calls.length = 0;
     const r = await call("watch_situation", { kind: "station", key: "Nirgendwo", language: "de" });
-    expect(r).toMatchObject({ isError: true, content: [{ type: "text", text: "Die Haltestelle „Nirgendwo“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet." }] });
+    expect(r).toMatchObject({ isError: true, content: [{ type: "text", text: 'Die Haltestelle "Nirgendwo" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz"). Es wurde keine Beobachtung geöffnet.' }] });
+    expect(query("getWatch")).toEqual([]);
+    // A name that carries a town (get_departures' rule): no such stop in that town.
+    mockServer.use(handlerFor("listPlaces", (url) => Response.json({ ...exampleOf("listPlaces"), data: url.searchParams.get("q") === "Berlin" ? [{ ...exampleOf<{ data: object[] }>("listPlaces").data[0], name: "Berlin" }] : [] })));
+    calls.length = 0;
+    const town = await call("watch_situation", { kind: "station", key: "Berlin Alexanderplatz", language: "en" });
+    expect(textOf(town)).toBe('I do not know a stop called "Berlin Alexanderplatz" in Berlin. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town. No watch was opened.');
+    expect(town.isError).toBe(true);
+    const de = await call("watch_situation", { kind: "station", key: "Berlin Alexanderplatz", language: "de" });
+    expect(textOf(de)).toBe('In Berlin finde ich keine Haltestelle "Berlin Alexanderplatz". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht. Es wurde keine Beobachtung geöffnet.');
     expect(query("getWatch")).toEqual([]);
     serve("listPlaces", []);
     const g = await call("watch_situation", { kind: "region", key: "Atlantis", language: "en" });
@@ -1453,6 +1816,26 @@ describe("watch_situation: at most ten open watches a session", () => {
     await close();
     expect(eleventh).toEqual({ content: [{ type: "text", text: "This session already has 10 open watches — the limit is 10. End one with stop_watch (viafrei://watches lists them) and try again." }], isError: true });
     expect(calls).toHaveLength(before);
+  });
+});
+
+describe("a weather watch where the DWD holds no warn cell", () => {
+  for (const language of LANGS) {
+    it(`today's answer, no watch opened, not an error (${language})`, async () => {
+      mockServer.use(handlerFor("getWatch", () => problem(404, "not-found")));
+      const name = ex<{ name: string }[]>("listPlaces")[0]!.name;
+      const r = await call("watch_situation", { kind: "weather", key: "Hamburg", language });
+      expect(r.isError).toBeUndefined();
+      expect(body(r)).toBe(language === "de"
+        ? `Für ${name} kenne ich noch keine Warnzelle des DWD — dort wurde bisher keine Warnung geführt —, deshalb öffne ich keine Wetter-Beobachtung, die womöglich nie auslöst. Bitte einen größeren Ort in der Nähe nennen.`
+        : `I know no DWD warn cell for ${name} yet — no warning has been held there so far — so I am not opening a weather watch that might never fire. Name a larger town nearby.`);
+      expect(r.structuredContent).toMatchObject({ watchOpened: false, reason: "no_warn_cell" });
+    });
+  }
+  it("a road the platform does not know stays the API's refusal", async () => {
+    mockServer.use(handlerFor("getWatch", () => problem(404, "not-found")));
+    const r = await call("watch_situation", { kind: "road", key: "A999", language: "en" });
+    expect(r.isError).toBe(true);
   });
 });
 
@@ -1507,4 +1890,23 @@ describe("motorway numbers no register knows, and the lamp in words", () => {
     expect(lampText({ lamp: "green", lampReason: null }, "en")).toEqual("traffic light green: nothing reported by the Autobahn GmbH, the police/Länder or the DWD — no guarantee the road is clear");
     expect(lampText({ lamp: "red", lampReason: "road_closed" }, "de")).toEqual("Ampel Rot: Vollsperrung");
   });
+});
+
+describe("a place given as a street and house number", () => {
+  for (const language of LANGS) {
+    it(`is refused in one sentence where no address is held, and searched where addresses are loaded (${language})`, async () => {
+      serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [] });
+      const refused = await call("find_parking", { place: "Hauptstraße 12, Fulda", language });
+      expect(refused.isError).toBe(true);
+      expect(textOf(refused)).toBe(language === "de"
+        ? "Ich finde Orte, Haltestellen und Autobahnen — keine Hausnummern. Bitte den Ort oder die Haltestelle nennen."
+        : "I can find places, stations and motorways, not house numbers. Please name the place or the station.");
+      expect(ops()).toEqual(["getPlacesCoverage"]);
+      calls.length = 0;
+      serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [{ land: "Hessen", dataAsOf: "2026-11-01" }] });
+      serve("listPlaces", []);
+      await call("find_parking", { place: "Hauptstraße 12, Fulda", language });
+      expect(ops().slice(0, 2)).toEqual(["getPlacesCoverage", "listPlaces"]);
+    });
+  }
 });

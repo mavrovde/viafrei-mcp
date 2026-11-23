@@ -1,0 +1,6 @@
+Description of 52.5200, 13.4050:
+- This installation holds no OpenStreetMap address data.
+- Settlement: Ort A (1.1 km)
+- District: Kreis B (11.0 km)
+- State (Land): Brandenburg
+- Low-emission zone: The point: the Umweltzone Köln was lifted on 01.01.2025 according to the Umweltbundesamt; no plaque is needed there any more — the signs on the spot still decide.

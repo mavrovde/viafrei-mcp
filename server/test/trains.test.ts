@@ -60,8 +60,8 @@ describe("get_train_departures with an EVA number: refresh, then the API's board
     expect(posted).toEqual([{ source: "train-board-de", subject: { eva: "8001001" } }]);
     expect(ops()).toEqual(["listStations", "createRefresh", "getTrainBoard"]);
     expect(calls.at(-1)!.url.pathname).toBe("/v1/train-boards/8001001");
-    expect(textOf(r)).toContain("Schömpingbach Hbf:");
-    expect(textOf(r)).toContain("02:12 ICE 578 → Hamburg-Altona · pl. 4");
+    expect(textOf(r)).toContain("Departures from Schömpingbach Hbf (2026-03-30 02:00 to 03:00):");
+    expect(textOf(r)).toContain("02:12 ICE 578 → Hamburg-Altona, platform 4, on time");
     expect(textOf(r)).toContain("Fahrplandaten: Deutsche Bahn AG, DB API Marketplace, CC BY 4.0, bearbeitet");
     expect((r._meta as { asOf: string }).asOf).toBe("2026-03-30T00:00:00Z");
   });
@@ -138,8 +138,8 @@ describe("get_train_departures with an EVA number: refresh, then the API's board
 
   it("the window and the categories hold: a departure outside either is not listed", async () => {
     mockServer.use(createRefresh(() => HttpResponse.json(refreshExample("201", "train-board"), { status: 201 })));
-    expect(textOf(await ask({ eva_no: "8001001", categories: ["RE"] }))).toContain("no departures in the window.");
-    expect(textOf(await ask({ eva_no: "8001001", when: "2026-03-30T00:20:00Z" }))).toContain("no departures in the window.");
+    expect(textOf(await ask({ eva_no: "8001001", categories: ["RE"] }))).toContain("No RE train leaves Schömpingbach Hbf between 2026-03-30 02:00 and 03:00.\nStation asked: Schömpingbach Hbf (station number 8001001).");
+    expect(textOf(await ask({ eva_no: "8001001", when: "2026-03-30T00:20:00Z" }))).toContain("No train leaves Schömpingbach Hbf between 2026-03-30 02:20 and 03:20.");
     expect(textOf(await ask({ eva_no: "8001001", categories: ["ICE"], duration_min: 15 }))).toContain("ICE 578");
   });
 });

@@ -1,3 +1,4 @@
-- Laden Mitte · 3,0 km · 3 Ladepunkte, max 150 kW, 1 frei
-- Strom AG · 3,0 km · 2 Ladepunkte
-- cs-9 · 3,0 km · 1 Ladepunkte, max 22 kW, 0 frei
+Laden um 52.520, 13.405 (Umkreis 1 km, CCS2, ≥ 50 kW, ≤ 350 kW, Betreiber Strom AG, kostenlos, rund um die Uhr), nächste zuerst, Standorte ganz außer Betrieb zuletzt:
+1. Laden Mitte (Löckbrau Strom) — 3,0 km, bis 150 kW, 1 von 2 frei
+2. Strom AG — 3,0 km, 1 von 2 frei
+3. cs-9 — 3,0 km, bis 22 kW, 1 von 2 frei

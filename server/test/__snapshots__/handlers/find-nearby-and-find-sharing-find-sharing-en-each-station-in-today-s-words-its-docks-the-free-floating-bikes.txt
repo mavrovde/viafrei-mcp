@@ -1,0 +1,10 @@
+Shared bikes near 52.520, 13.405 (within 1.5 km):
+- Station 1 (Nextbike) — 4 bikes available, 1 of them e-bikes · 2 free docks · 0.3 km
+- st-2 — no current count · 0.3 km
+- Zone (Nextbike) — 4 bikes available · 1.2 km
+- Alt (Nextbike) — last reported 1 bike (as of 2026-03-29 08:00) · 0.3 km
+- Zu (Nextbike) — not renting right now · 2 free docks · 0.3 km
+- Ohne Zahl (Nextbike) — 1 bike available · 0.3 km
+Free docks: no count for 1 of 3 stations — it is a virtual station without docks (a parking zone), so there is no dock count to give.
+Free docks: the operator publishes no count for 1 station.
+Free-floating: at least 201 bikes parked within the radius, the nearest 0.4 km away (3 of them e-bikes).

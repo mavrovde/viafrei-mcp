@@ -7,6 +7,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type * as T from "../api/types.js";
 import { toolResult, type Language } from "../presentation.js";
 import { atParam, isResult, num, position, strs, type Handler } from "./context.js";
+import { fuelAreaText, fuelCoverage, readOnlyAreaWording } from "./fuel.js";
 
 export const DEFAULT_RADIUS_KM = 5;
 const HOUR_MS = 60 * 60 * 1000;
@@ -58,7 +59,7 @@ export function kmText(m: number, language: Language): string {
 const priceText = (eur: number, language: Language): string => `${language === "de" ? eur.toFixed(3).replace(".", ",") : eur.toFixed(3)} €/l`;
 
 /** "08:05" today, "18.09. 08:05" (en "2026-09-18 08:05") another day, Berlin time. */
-function clock(iso: string, language: Language, now: Date): string {
+export function clock(iso: string, language: Language, now: Date): string {
   const day = (d: Date): string => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
   const d = new Date(iso);
   const time = new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
@@ -95,7 +96,12 @@ export const findNearby: Handler = async (args, ctx): Promise<CallToolResult> =>
     const label = LABEL[cat]?.[language] ?? cat;
     if (cat === "fuel") {
       const rows = d.fuel ?? [];
-      if (rows.length === 0) { lines.push(`- ${label}: ${c.noPrice}`); continue; }
+      if (rows.length === 0) {
+        // The area's state, in the sentence find_cheapest_fuel uses (#517, fuel-area.ts), for the E5 line.
+        const area = readOnlyAreaWording(await fuelCoverage(ctx, pos.at, Math.round(radiusKm * 1000), "e5"), radiusKm);
+        lines.push(`- ${label}: ${area === undefined ? c.noPrice : `${c.noPrice} — ${fuelAreaText(language, area)}`}`);
+        continue;
+      }
       lines.push(`- ${label}, Super E5: ${list(rows, (s) => {
         const p = s.prices[0];
         const age = p === undefined || now.getTime() - new Date(p.reportedAt).getTime() <= HOUR_MS ? "" : c.priceFrom(clock(p.reportedAt, language, now), p.current);

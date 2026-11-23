@@ -1,0 +1,6 @@
+Beschreibung für 52.5200, 13.4050:
+- Für diese Installation sind keine OpenStreetMap-Adressdaten geladen.
+- Ort: Ort A (1,1 km)
+- Kreis: Kreis B (11,0 km)
+- Bundesland: Brandenburg
+- Umweltzone: Der Punkt liegt außerhalb der Umweltzone Köln; ihre Grenze ist 2,3 km entfernt.

@@ -1,0 +1,6 @@
+Description of 52.5200, 13.4050:
+- This installation holds no OpenStreetMap address data.
+- Settlement: Ort A (1.1 km)
+- District: Kreis B (11.0 km)
+- State (Land): Brandenburg
+- Low-emission zone: We hold no low-emission-zone boundary nearby — that does not mean there is no zone; the signs (sign 270.1) decide.

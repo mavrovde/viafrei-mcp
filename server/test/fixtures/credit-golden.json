@@ -1,0 +1,45 @@
+{
+  "_about": "Today's server's credit rows, copied verbatim from the parity run's old answers (scripts/parity-mcp.mjs); never typed by hand.",
+  "cases": [
+    {
+      "attribution": {
+        "family": "geonames",
+        "text": "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet",
+        "termsUrl": "https://download.geonames.org/export/dump/",
+        "licence": "CC BY 4.0",
+        "licenceUrl": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "today": "Ortsdaten: © GeoNames (CC BY 4.0), bearbeitet (https://download.geonames.org/export/dump/; Lizenz: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)"
+    },
+    {
+      "attribution": {
+        "family": "autobahn",
+        "text": "Verkehrsdaten: Autobahn GmbH des Bundes",
+        "termsUrl": "https://verkehr.autobahn.de",
+        "licence": "open data (Autobahn GmbH)",
+        "licenceUrl": "https://verkehr.autobahn.de"
+      },
+      "today": "Verkehrsdaten: Autobahn GmbH des Bundes (https://verkehr.autobahn.de)"
+    },
+    {
+      "attribution": {
+        "family": "viafrei_watch",
+        "text": "Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben / Watch: ViaFrei, our own service — every report names the source of the data behind it",
+        "termsUrl": "https://viafrei.de"
+      },
+      "today": "Beobachtung: ViaFrei, eigener Dienst — jede Meldung nennt die Quelle der Daten, die sie ausgelöst haben / Watch: ViaFrei, our own service — every report names the source of the data behind it (https://viafrei.de)"
+    }
+  ],
+  "shareAlike": [
+    {
+      "language": "de",
+      "licence": "CC BY-SA",
+      "today": "Diese Angaben stehen unter CC BY-SA (Share-alike), so lizenziert sie die Quelle; unsere Bearbeitung geben wir unter CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/) weiter: wer sie weitergibt oder daraus etwas Neues ableitet, muss das Ergebnis unter derselben Lizenz und mit dieser Quellenangabe weitergeben."
+    },
+    {
+      "language": "en",
+      "licence": "CC BY-SA",
+      "today": "These figures are licensed CC BY-SA (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution."
+    }
+  ]
+}

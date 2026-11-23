@@ -872,7 +872,7 @@ function writeRuleset(root, mutate) {
 function buildGateRoot(workspace) {
     const root = join(workspace, 'ruleset-gate');
     mkdirSync(join(root, 'scripts'), { recursive: true });
-    for (const file of ['rules.mjs', 'tools.mjs', 'check-tarball.mjs', 'check-leaks.mjs', 'npm-pack-json.mjs', 'rules.json']) {
+    for (const file of ['rules.mjs', 'tools.mjs', 'check-tarball.mjs', 'check-leaks.mjs', 'person-names.mjs', 'npm-pack-json.mjs', 'rules.json']) {
         cpSync(join(ROOT, 'scripts', file), join(root, 'scripts', file));
     }
     // The list above is written out by hand, so it can fall behind an import.

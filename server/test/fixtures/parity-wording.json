@@ -1,0 +1,1891 @@
+{
+  "_about": "Today's server's answers, copied from the parity run's old side (scripts/parity-mcp.mjs) by a script, never typed: isError and the text's body, the part before the credit line (creditFooter's, tested on its own); a per-station Stand time masked as HH:MM, a five-digit number (a postcode) as NNNNN, a bare four-digit one (a train number) as NNNN.",
+  "cases": [
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Fulda",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Fulda\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Fulda",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Fulda\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bad Homburg vor der Höhe",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Bad Homburg vor der Höhe\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bad Homburg vor der Höhe",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Bad Homburg vor der Höhe\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Neuburg",
+        "near": "Ingolstadt",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Neuburg\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Neuburg",
+        "near": "Ingolstadt",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Neuburg\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Essen",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Essen\" — 2 Treffer:\n1. Essen — Stadt/Gemeinde, Nordrhein-Westfalen, 586.608 Einw., 51.NNNNN, 7.NNNNN\n2. Essen Hbf — Bahnhof, Nordrhein-Westfalen, 51.NNNNN, 6.NNNNN"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Essen",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "\"Essen\" — 2 matches:\n1. Essen — town, North Rhine-Westphalia, pop. 586,608, 51.NNNNN, 7.NNNNN\n2. Essen Hbf — station, North Rhine-Westphalia, 51.NNNNN, 6.NNNNN"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Hannover",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Hannover\" — ein Treffer:\n1. Hannover — Stadt/Gemeinde, 548.186 Einw., 52.NNNNN, 9.NNNNN"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Hannover",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "\"Hannover\" — one match:\n1. Hannover — town, pop. 548,186, 52.NNNNN, 9.NNNNN"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Neustadt",
+        "near": "Hamburg",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Neustadt\" — 3 Treffer:\n1. Neustadt (Hessen) — Stadt/Gemeinde, Hessen, Kreis Marburg-Biedenkopf, 9.455 Einw., 306 km, 50.NNNNN, 9.NNNNN\n2. Neustadt b.Coburg — Stadt/Gemeinde, Bayern, Kreis Coburg, 15.892 Einw., 366 km, 50.NNNNN, 11.NNNNN\n3. Neustadt an der Weinstraße — Stadt/Gemeinde, Rheinland-Pfalz, kreisfreie Stadt, 53.353 Einw., 484 km, 49.NNNNN, 8.NNNNN"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Neustadt",
+        "near": "Hamburg",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "\"Neustadt\" — 3 matches:\n1. Neustadt (Hessen) — town, Hesse, district Marburg-Biedenkopf, pop. 9,455, 306 km, 50.NNNNN, 9.NNNNN\n2. Neustadt b.Coburg — town, Bavaria, district Coburg, pop. 15,892, 366 km, 50.NNNNN, 11.NNNNN\n3. Neustadt an der Weinstraße — town, Rhineland-Palatinate, independent city, pop. 53,353, 484 km, 49.NNNNN, 8.NNNNN"
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "A9",
+        "kind": "motorway",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"A9\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "A9",
+        "kind": "motorway",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"A9\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bergheim",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Bergheim\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bergheim",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Bergheim\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bad Schandau",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Bad Schandau\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Bad Schandau",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Bad Schandau\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Eisenach",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Eisenach\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Eisenach",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Eisenach\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Halle",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Halle\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Halle",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Halle\" in the place index."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Quedlinburg",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "\"Quedlinburg\" finde ich nicht im Ortsverzeichnis."
+    },
+    {
+      "tool": "find_place",
+      "args": {
+        "query": "Quedlinburg",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "I do not find \"Quedlinburg\" in the place index."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 48.137,
+        "lon": 11.576,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür 48.137, 11.576 liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 48.137,
+        "lon": 11.576,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of 48.137, 11.576. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Dresden",
+        "radius_km": 10,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Dresden liegen im Umkreis von 10 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Dresden",
+        "radius_km": 10,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 10 km of Dresden. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Leipzig",
+        "fuel": "e5",
+        "limit": 5,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Leipzig liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E5-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Leipzig",
+        "fuel": "e10",
+        "limit": 5,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Leipzig liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Die Preise für diese Gegend sind beim Anbieter angefordert, für eine Frage wie diese und nicht im Hintergrund; die Anfrage wartet in der Warteschlange, bis sie an der Reihe ist. Bitte danach noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Leipzig",
+        "fuel": "e5",
+        "limit": 5,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Leipzig. Within the largest radius the provider allows (25 km) we watch no station there with a Super E5 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Leipzig",
+        "fuel": "e10",
+        "limit": 5,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Leipzig. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Kassel",
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nDiesel um Kassel (Umkreis 5 km), günstigste zuerst:\n1. TotalEnergies, Chausseestr. 61-62, NNNNN Berlin — 2,449 €/l, 1,9 km, zuletzt offen (Stand HH:MM)\n2. ESSO, LESSINGSTR. 4, NNNNN BERLIN — 2,459 €/l, 1,2 km, zuletzt offen (Stand HH:MM)\n3. AGIP ENI, Westhafenstrasse 1, NNNNN Berlin — 2,459 €/l, 1,2 km, zuletzt offen (Stand HH:MM)\n4. ARAL, Levetzowstraße 9, NNNNN Berlin — 2,459 €/l, 1,5 km, zuletzt offen (Stand HH:MM)\n5. ARAL, Beusselstraße 55, NNNNN Berlin — 2,459 €/l, 1,7 km, zuletzt offen (Stand HH:MM)"
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Kassel",
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\ndiesel around Kassel (within 5 km), cheapest first:\n1. TotalEnergies, Chausseestr. 61-62, NNNNN Berlin — 2.449 €/l, 1.9 km, open when last seen (as of HH:MM)\n2. ESSO, LESSINGSTR. 4, NNNNN BERLIN — 2.459 €/l, 1.2 km, open when last seen (as of HH:MM)\n3. AGIP ENI, Westhafenstrasse 1, NNNNN Berlin — 2.459 €/l, 1.2 km, open when last seen (as of HH:MM)\n4. ARAL, Levetzowstraße 9, NNNNN Berlin — 2.459 €/l, 1.5 km, open when last seen (as of HH:MM)\n5. ARAL, Beusselstraße 55, NNNNN Berlin — 2.459 €/l, 1.7 km, open when last seen (as of HH:MM)"
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Hamburg Hbf",
+        "fuel": "diesel",
+        "sort": "distance",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Hamburg Hbf im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (Diesel). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Hamburg Hbf",
+        "fuel": "diesel",
+        "sort": "distance",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Hamburg Hbf matching that (diesel). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Leipzig",
+        "whole_day": true,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Leipzig im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (durchgehend geöffnet). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Leipzig",
+        "whole_day": true,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Leipzig matching that (open 24 h). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Bad Hersfeld",
+        "name": "Autohof",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Bad Hersfeld im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (Name enthält \"Autohof\"). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Bad Hersfeld",
+        "name": "Autohof",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Bad Hersfeld matching that (name contains \"Autohof\"). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Regensburg",
+        "open_at": "02:00",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Regensburg im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (geöffnet am 2026-11-23T02:00+01:00). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Regensburg",
+        "open_at": "02:00",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Regensburg matching that (open at 2026-11-23T02:00+01:00). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Magdeburg",
+        "brand": "TotalEnergies",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Magdeburg im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (Marke TotalEnergies). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Magdeburg",
+        "brand": "TotalEnergies",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Magdeburg matching that (brand TotalEnergies). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Passau",
+        "open_at": "06:00",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Passau im Umkreis von 5 km keine Tankstelle, auf die das zutrifft (geöffnet am 2026-11-23T06:00+01:00). In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Passau",
+        "open_at": "06:00",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Passau matching that (open at 2026-11-23T06:00+01:00). Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Trier",
+        "sort": "name",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIch finde um Trier im Umkreis von 5 km keine Tankstelle. In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Trier",
+        "sort": "name",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nI find no filling station within 5 km of Trier. Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Kassel",
+        "brand": "ARAL",
+        "open_at": "23:30",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIm Umkreis von 5 km um Kassel kenne ich 12 Tankstellen, aber keine, auf die das zutrifft (Marke ARAL, geöffnet am 2026-11-22T23:30+01:00).\n5 Tankstellen in der Nähe habe ich weggelassen, weil ihre Öffnungszeiten hier nicht bekannt sind — sie können trotzdem offen sein."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Kassel",
+        "brand": "ARAL",
+        "open_at": "23:30",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nWithin 5 km of Kassel I know 12 filling stations, but none matching that (brand ARAL, open at 2026-11-22T23:30+01:00).\n5 stations nearby were left out because their opening hours are not known here — they may well be open."
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Ingolstadt",
+        "brand": "Shell",
+        "radius_km": 10,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nTankstellen um Ingolstadt (Umkreis 10 km) — Marke Shell:\n1. Shell, Paulstr. 20, NNNNN Berlin — Diesel 2,509 €/l, Super E10 2,349 €/l, Super E5 2,409 €/l, 1,0 km, Öffnung unbekannt (Öffnungszeiten nie abgerufen)\n2. Shell, Kaiserin-Auguste-Allee 9-9 A, NNNNN Berlin — Diesel 2,459 €/l, Super E10 2,309 €/l, Super E5 2,369 €/l, 2,1 km, Öffnung unbekannt (Öffnungszeiten nie abgerufen)"
+    },
+    {
+      "tool": "find_fuel_station",
+      "args": {
+        "place": "Ingolstadt",
+        "brand": "Shell",
+        "radius_km": 10,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFilling stations around Ingolstadt (within 10 km) — brand Shell:\n1. Shell, Paulstr. 20, NNNNN Berlin — diesel 2.509 €/l, Super E10 2.349 €/l, Super E5 2.409 €/l, 1.0 km, opening state unknown (opening hours never fetched)\n2. Shell, Kaiserin-Auguste-Allee 9-9 A, NNNNN Berlin — diesel 2.459 €/l, Super E10 2.309 €/l, Super E5 2.369 €/l, 2.1 km, opening state unknown (opening hours never fetched)"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "place": "Leipzig",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In der Nähe von Leipzig (Umkreis 5 km):\n- Tankstellen: keine Preise im Umkreis — In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute.\n- Ladepunkte: nichts im Umkreis\n- Parkplätze: nichts im Umkreis\n- Bahnhöfe: Leipzig Hbf (0,9 km)\n- Autobahnanschlüsse: nichts im Umkreis"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "place": "Leipzig",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Near Leipzig (within 5 km):\n- fuel stations: no prices nearby — Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute.\n- charging: nothing nearby\n- parking: nothing nearby\n- stations: Leipzig Hbf (0.9 km)\n- motorway junctions: nothing nearby"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "place": "Kassel",
+        "radius_km": 5,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nIn der Nähe von Kassel (Umkreis 5 km):\n- Tankstellen, Super E5: TotalEnergies, 2,369 €/l (1,9 km); Shell, 2,369 €/l (2,0 km); ARAL, 2,369 €/l (3,2 km)\n- Ladepunkte: nichts im Umkreis\n- Parkplätze: nichts im Umkreis\n- Bahnhöfe: Kassel-Wilhelmshöhe (2,3 km)\n- Autobahnanschlüsse: nichts im Umkreis"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "place": "Kassel",
+        "radius_km": 5,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNear Kassel (within 5 km):\n- fuel stations, Super E5: TotalEnergies, 2.369 €/l (1.9 km); Shell, 2.369 €/l (2.0 km); ARAL, 2.369 €/l (3.2 km)\n- charging: nothing nearby\n- parking: nothing nearby\n- stations: Kassel-Wilhelmshöhe (2.3 km)\n- motorway junctions: nothing nearby"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "lat": 53.5511,
+        "lon": 9.9937,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In der Nähe von 53.551, 9.994 (Umkreis 5 km):\n- Tankstellen: keine Preise im Umkreis — In unseren Preisdaten ist für diese Gegend noch keine Tankstelle. find_cheapest_fuel kann den Anbieter fragen, welche es hier gibt — neue Gegenden nur nacheinander, höchstens eine Anfrage je Minute; seine Antwort bringt ihre Preise mit, in etwa einer Minute.\n- Ladepunkte: HEnW-Mobil, Hoheluftchaussee 52 (3,6 km)\n  Stand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit.\n- Parkplätze: nichts im Umkreis\n- Bahnhöfe: Hamburg Hbf (0,9 km)\n- Autobahnanschlüsse: nichts im Umkreis"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "lat": 53.5511,
+        "lon": 9.9937,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Near 53.551, 9.994 (within 5 km):\n- fuel stations: no prices nearby — Our price data holds no filling station in this area yet. find_cheapest_fuel can ask the provider which ones are here — new areas one at a time, at most one request a minute; its answer carries their prices, within about a minute.\n- charging: HEnW-Mobil, Hoheluftchaussee 52 (3.6 km)\n  Charging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness.\n- parking: nothing nearby\n- stations: Hamburg Hbf (0.9 km)\n- motorway junctions: nothing nearby"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "lat": 52.52,
+        "lon": 13.405,
+        "categories": [
+          "station",
+          "junction"
+        ],
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In der Nähe von 52.520, 13.405 (Umkreis 5 km):\n- Bahnhöfe: Berlin Hbf (2,5 km)\n- Autobahnanschlüsse: nichts im Umkreis"
+    },
+    {
+      "tool": "find_nearby",
+      "args": {
+        "lat": 52.52,
+        "lon": 13.405,
+        "categories": [
+          "station",
+          "junction"
+        ],
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Near 52.520, 13.405 (within 5 km):\n- stations: Berlin Hbf (2.5 km)\n- motorway junctions: nothing nearby"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Kassel-Wilhelmshöhe",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Kassel-Wilhelmshöhe (nächste 60 Minuten):\n18:18 ICE NNNN → Köln Hbf, Gleis 4, pünktlich\n18:22 RE8 → Leinefelde, Gleis 1, pünktlich\n18:23 RE98 → Frankfurt (Main) Hbf, Gleis 7, pünktlich\n18:28 RB5 → Fulda, Gleis 7, pünktlich\n18:29 ICE 76 → Hamburg Hbf, Gleis 3, pünktlich\n18:35 RE5 → Kassel Hbf, Gleis 9, pünktlich\n18:39 ICE 583 → Nürnberg Hbf, Gleis 2, pünktlich\n18:39 RT5 → Melsungen, Gleis 7, pünktlich\n18:44 RE30 → Kassel Hbf, Gleis 9, pünktlich\n18:51 RT5 → Auestadion, Kassel, Gleis 9, pünktlich\n… und mindestens 2 weitere bis 19:17 — die Tafel zeigt die ersten 10; mit limit bis 15 mehr, oder mit when ab einer späteren Zeit."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Kassel-Wilhelmshöhe",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Kassel-Wilhelmshöhe (next 60 minutes):\n18:22 RE8 → Leinefelde, platform 1, on time\n18:23 RE98 → Frankfurt (Main) Hbf, platform 7, on time\n18:28 RB5 → Fulda, platform 7, on time\n18:29 ICE 76 → Hamburg Hbf, platform 3, on time\n18:35 RE5 → Kassel Hbf, platform 9, on time\n18:39 ICE 583 → Nürnberg Hbf, platform 2, on time\n18:39 RT5 → Melsungen, platform 7, on time\n18:44 RE30 → Kassel Hbf, platform 9, on time\n18:51 RT5 → Auestadion, Kassel, platform 9, on time\n18:52 ICE 886 → Hamburg Hbf, platform 3, on time\n… and at least 1 more until 19:19 — the board shows the first 10; raise limit up to 15 for more, or set when to a later time."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Leipzig Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Leipzig Hbf (nächste 60 Minuten):\n18:28 ICE 606 → Hamburg-Altona, Gleis 11, +13 min (ca. 18:41)\n19:01 ICE NNNN → München Hbf, Gleis 13, pünktlich"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Leipzig Hbf",
+        "limit": 5,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Leipzig Hbf (nächste 60 Minuten):\n18:28 ICE 606 → Hamburg-Altona, Gleis 11, +13 min (ca. 18:41)\n19:01 ICE NNNN → München Hbf, Gleis 13, pünktlich"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Leipzig Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Leipzig Hbf (next 60 minutes):\n18:28 ICE 606 → Hamburg-Altona, platform 11, +13 min (expected 18:41)\n19:01 ICE NNNN → München Hbf, platform 13, on time"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Leipzig Hbf",
+        "limit": 5,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Leipzig Hbf (next 60 minutes):\n18:28 ICE 606 → Hamburg-Altona, platform 11, +13 min (expected 18:41)\n19:01 ICE NNNN → München Hbf, platform 13, on time"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "eva_no": "8002549",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Hamburg Hbf (nächste 60 Minuten):\n18:58 ICE 594 → Berlin Hbf, Gleis 7, pünktlich\n19:06 RE 4 → Lübeck Hbf, Gleis 8, pünktlich\n19:11 S 1 → Wedel (Holstein), Gleis 3, pünktlich"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "eva_no": "8002549",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Hamburg Hbf (next 60 minutes):\n18:58 ICE 594 → Berlin Hbf, platform 7, on time\n19:06 RE 4 → Lübeck Hbf, platform 8, on time\n19:11 S 1 → Wedel (Holstein), platform 3, on time"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Hbf",
+        "duration_min": 120,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Berlin Hbf (nächste 120 Minuten):\n18:38 RE FEX → Flughafen BER, Gleis 4 (statt 1), pünktlich\n18:41 RE8 → Wismar, Gleis 7, pünktlich"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Hbf",
+        "duration_min": 120,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Berlin Hbf (next 120 minutes):\n18:38 RE FEX → Flughafen BER, platform 4 (instead of 1), on time\n18:41 RE8 → Wismar, platform 7, on time"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hannover Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Hannover Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Nürnberg Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Nürnberg Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {\"station\": \"Hannover Hbf\"}."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Köln Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Köln Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Munich Central",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Munich Central\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "limit": 5,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Ab Frankfurt (Main) Hbf fährt in den nächsten 60 Minuten kein Zug ab.\nAbgefragt habe ich den Bahnhof Frankfurt (Main) Hbf (Bahnhofsnummer 8000105)."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Stuttgart Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Stuttgart Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Dresden Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Dresden Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Fulda",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Fulda\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Abfahrten ab Hamburg Hbf (nächste 60 Minuten):\n18:58 ICE 594 → Berlin Hbf, Gleis 7, pünktlich\n19:06 RE 4 → Lübeck Hbf, Gleis 8, pünktlich\n19:11 S 1 → Wedel (Holstein), Gleis 3, pünktlich"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Alexanderplatz",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Berlin Alexanderplatz\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "München Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"München Hbf\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Friedrichstraße",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Den Bahnhof \"Berlin Friedrichstraße\" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hannover Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Hannover Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Nürnberg Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Nürnberg Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "language": "en"
+      },
+      "isError": true,
+      "body": "Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {\"station\": \"Hannover Hbf\"}."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Köln Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Köln Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Munich Central",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Munich Central\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "limit": 5,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "No train leaves Frankfurt (Main) Hbf in the next 60 minutes.\nStation asked: Frankfurt (Main) Hbf (station number 8000105)."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Stuttgart Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Stuttgart Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Dresden Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Dresden Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Fulda",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Fulda\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Departures from Hamburg Hbf (next 60 minutes):\n18:58 ICE 594 → Berlin Hbf, platform 7, on time\n19:06 RE 4 → Lübeck Hbf, platform 8, on time\n19:11 S 1 → Wedel (Holstein), platform 3, on time"
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Alexanderplatz",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Berlin Alexanderplatz\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "München Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"München Hbf\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Berlin Friedrichstraße",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a station called \"Berlin Friedrichstraße\". Please give the name as it appears at the station (e.g. \"Hamburg Hbf\", \"Köln Hbf\")."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "duration_min": 30,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Ab Hamburg Hbf fährt in den nächsten 30 Minuten kein Zug ab.\nAbgefragt habe ich den Bahnhof Hamburg Hbf (Bahnhofsnummer 8002549)."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "categories": [
+          "S"
+        ],
+        "duration_min": 30,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Ab Hamburg Hbf fährt in den nächsten 30 Minuten kein Zug der Art S ab.\nAbgefragt habe ich den Bahnhof Hamburg Hbf (Bahnhofsnummer 8002549)."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "duration_min": 30,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "No train leaves Hamburg Hbf in the next 30 minutes.\nStation asked: Hamburg Hbf (station number 8002549)."
+    },
+    {
+      "tool": "get_train_departures",
+      "args": {
+        "station": "Hamburg Hbf",
+        "categories": [
+          "S"
+        ],
+        "duration_min": 30,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "No S train leaves Hamburg Hbf in the next 30 minutes.\nStation asked: Hamburg Hbf (station number 8002549)."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "München, Marienplatz",
+        "modes": [
+          "tram"
+        ],
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In München finde ich keine Haltestelle \"München, Marienplatz\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "München, Marienplatz",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In München finde ich keine Haltestelle \"München, Marienplatz\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "München, Marienplatz",
+        "modes": [
+          "tram"
+        ],
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"München, Marienplatz\" in München. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "München, Marienplatz",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"München, Marienplatz\" in München. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Köln Nippes",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In Köln finde ich keine Haltestelle \"Köln Nippes\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Köln Nippes",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"Köln Nippes\" in Köln. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hamburg, Rathausmarkt",
+        "duration_min": 60,
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In Hamburg finde ich keine Haltestelle \"Hamburg, Rathausmarkt\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hamburg, Rathausmarkt",
+        "duration_min": 60,
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"Hamburg, Rathausmarkt\" in Hamburg. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hauptbahnhof München",
+        "modes": [
+          "subway"
+        ],
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In München finde ich keine Haltestelle \"Hauptbahnhof München\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hauptbahnhof München",
+        "modes": [
+          "subway"
+        ],
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"Hauptbahnhof München\" in München. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Köln Hbf",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In Köln finde ich keine Haltestelle \"Köln Hbf\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Köln Hbf",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"Köln Hbf\" in Köln. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hamburg Landungsbrücken",
+        "modes": [
+          "ferry"
+        ],
+        "language": "de"
+      },
+      "isError": true,
+      "body": "In Hamburg finde ich keine Haltestelle \"Hamburg Landungsbrücken\". Bitte den Namen so nennen, wie er am Schild steht — eine gleichnamige Haltestelle in einem anderen Ort nenne ich nicht."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "stop": "Hamburg Landungsbrücken",
+        "modes": [
+          "ferry"
+        ],
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I do not know a stop called \"Hamburg Landungsbrücken\" in Hamburg. Please give the name as it appears on the sign — I will not answer with a stop of that name in another town."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "place": "Bahnhofstraße 12, Fulda",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Ich finde Orte, Haltestellen und Autobahnen — keine Hausnummern. Bitte den Ort oder die Haltestelle nennen."
+    },
+    {
+      "tool": "get_departures",
+      "args": {
+        "place": "Bahnhofstraße 12, Fulda",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I can find places, stations and motorways, not house numbers. Please name the place or the station."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Marienplatz 8, München",
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": true,
+      "body": "Ich finde Orte, Haltestellen und Autobahnen — keine Hausnummern. Bitte den Ort oder die Haltestelle nennen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Marienplatz 8, München",
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": true,
+      "body": "I can find places, stations and motorways, not house numbers. Please name the place or the station."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ingolstadt",
+        "connector": "ccs2",
+        "min_power_kw": 50,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Im Umkreis von 10 km um Ingolstadt kenne ich 1 Ladestandorte, aber keinen (CCS2, ≥ 50 kW). Ohne Filter oder mit größerem Radius finden Sie mehr."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ingolstadt",
+        "connector": "ccs2",
+        "min_power_kw": 50,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Within 10 km of Ingolstadt I know 1 charging sites, but none (CCS2, ≥ 50 kW). Widen the radius or drop the filter."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Augsburg",
+        "min_power_kw": 150,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Im Umkreis von 10 km um Augsburg kenne ich 1 Ladestandorte, aber keinen (≥ 150 kW). Ohne Filter oder mit größerem Radius finden Sie mehr."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Augsburg",
+        "min_power_kw": 150,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Within 10 km of Augsburg I know 1 charging sites, but none (≥ 150 kW). Widen the radius or drop the filter."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Hamburg",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Hamburg (Umkreis 10 km), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. Hoheluftchaussee 52, NNNNN Hamburg (HEnW-Mobil) — 3,6 km, Typ 2, bis 22 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Hamburg",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Hamburg (within 10 km), nearest first, sites wholly out of order last:\n1. Hoheluftchaussee 52, NNNNN Hamburg (HEnW-Mobil) — 3.6 km, Type 2, up to 22 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Hannover",
+        "connector": "ccs2",
+        "radius_km": 20,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Hannover (Umkreis 20 km, CCS2), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. mblty Lehrte, Straßburger Str. 4, NNNNN Lehrte (Tank & Rast Entwicklungsgesellschaft mbH) — 15,1 km, CCS2, bis 300 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Hannover",
+        "connector": "ccs2",
+        "radius_km": 20,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Hannover (within 20 km, CCS2), nearest first, sites wholly out of order last:\n1. mblty Lehrte, Straßburger Str. 4, NNNNN Lehrte (Tank & Rast Entwicklungsgesellschaft mbH) — 15.1 km, CCS2, up to 300 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ulm",
+        "limit": 3,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Ulm (Umkreis 10 km), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. Flurstück 313, NNNNN Langenau/Seligweiler (EnBW mobility+ AG und Co.KG) — 6,9 km, CCS2/CHAdeMO/Typ 2, bis 300 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ulm",
+        "limit": 3,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Ulm (within 10 km), nearest first, sites wholly out of order last:\n1. Flurstück 313, NNNNN Langenau/Seligweiler (EnBW mobility+ AG und Co.KG) — 6.9 km, CCS2/CHAdeMO/Type 2, up to 300 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ulm",
+        "min_power_kw": 150,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Ulm (Umkreis 10 km, ≥ 150 kW), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. Flurstück 313, NNNNN Langenau/Seligweiler (EnBW mobility+ AG und Co.KG) — 6,9 km, CCS2/CHAdeMO, bis 300 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Ulm",
+        "min_power_kw": 150,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Ulm (within 10 km, ≥ 150 kW), nearest first, sites wholly out of order last:\n1. Flurstück 313, NNNNN Langenau/Seligweiler (EnBW mobility+ AG und Co.KG) — 6.9 km, CCS2/CHAdeMO, up to 300 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Regensburg",
+        "connector": "ccs2",
+        "min_power_kw": 50,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Regensburg (Umkreis 10 km, CCS2, ≥ 50 kW), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. Frauenhof Str. 3, NNNNN Barbing (Circle K Deutschland) — 9,9 km, CCS2/CHAdeMO, bis 175 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Regensburg",
+        "connector": "ccs2",
+        "min_power_kw": 50,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Regensburg (within 10 km, CCS2, ≥ 50 kW), nearest first, sites wholly out of order last:\n1. Frauenhof Str. 3, NNNNN Barbing (Circle K Deutschland) — 9.9 km, CCS2/CHAdeMO, up to 175 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Darmstadt",
+        "limit": 8,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Laden um Darmstadt (Umkreis 10 km), nächste zuerst, Standorte ganz außer Betrieb zuletzt:\n1. Hornbach Darmstadt (ENC22285X00925), Otto-Röhm-Str. 76, NNNNN Darmstadt (Pfalzwerke AG) — 2,0 km, CCS2, bis 320 kW, keine Statusdaten, laut Ladesäulenregister\nNur wenige Betreiber veröffentlichen Live-Belegung; \"keine Statusdaten\" heißt unbekannt, nicht frei.\nPreis pro kWh: für keinen dieser Standorte veröffentlicht (in den Daten, die wir halten).\nStand des Ladesäulenregisters: 01.09.2026 — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit."
+    },
+    {
+      "tool": "find_charging_station",
+      "args": {
+        "place": "Darmstadt",
+        "limit": 8,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Charging around Darmstadt (within 10 km), nearest first, sites wholly out of order last:\n1. Hornbach Darmstadt (ENC22285X00925), Otto-Röhm-Str. 76, NNNNN Darmstadt (Pfalzwerke AG) — 2.0 km, CCS2, up to 320 kW, no status data, per charging point register\nOnly a few operators publish live occupancy; \"no status data\" means unknown, not free.\nPrice per kWh: not published for any of these sites (in the data we hold).\nCharging point register as of 2026-09-01 — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "lat": 50.1109,
+        "lon": 8.6821,
+        "vehicle": "car",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Pkw nahe 50.111, 8.682 (Umkreis 50 km), nächste zuerst:\n1. Frankfurt - Hanauer Landstr. — 4,5 km · Hanauer Landstr. 334, NNNNN Frankfurt am Main · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n2. Frankfurt - Industriepark Höchst — 10,4 km · Otto-Horn-Straße, NNNNN Frankfurt am Main · 700 bar Pkw, 350 bar Lkw/Bus · Betreiber: Infraserv GmbH & Co. Höchst KG · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 09.10.2026 (vor 44 Tagen)\n3. Bad Homburg — 11,3 km · Ober-Eschbacher-Str. 142, NNNNN Bad Homburg · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n4. Weiterstadt — 24,3 km · Robert-Koch-Str. 1, NNNNN Weiterstadt · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n5. Stadtwerke Aschaffenburg — 37,2 km · Hefner-Alteneck-Straße 28, NNNNN Aschaffenburg · 350 bar Lkw/Bus, 700 bar Pkw · Betreiber: Stadtwerke Aschaffenburg · Öffnungszeiten: Mo–Sa 07:00–19:00, So 12:00–19:00, Feiertage 12:00–19:00 · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "lat": 51.3397,
+        "lon": 12.3731,
+        "radius_km": 150,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen nahe 51.340, 12.373 (Umkreis 150 km), nächste zuerst:\n1. TotalEnergies H2 Leipzig — 9,4 km · Poststraße 3, NNNNN Leipzig · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 06.08.2026 (vor 3 Monaten)\n2. Dresden — 101,9 km · Wiener Strasse 39, NNNNN Dresden · 700 bar Pkw, 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n3. Magdeburg - 350 bar — 108,4 km · Glindenberger Weg 3, NNNNN Magdeburg · 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n4. Magdeburg — 108,4 km · Glindenberger Weg 3, NNNNN Magdeburg · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n5. Berg bei Hof — 115,2 km · Sieggrubenstraße 5, NNNNN Berg bei Hof · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Berlin Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen nahe Berlin Hbf (Umkreis 50 km), nächste zuerst:\n1. Berlin - Tempelhofer Weg — 9,4 km · Tempelhofer Weg 102, NNNNN Berlin · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n2. Berlin - Rummelsburger Landstr. — 10,3 km · Rummelsburger Landstr. 16, NNNNN Berlin · 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n3. TotalEnergies H2 Schönefeld - Berlin — 20,4 km · Elly-Beinhorn-Ring 2, NNNNN Berlin Schönefeld · 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Hamburg",
+        "vehicle": "truck",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Lkw/Bus nahe Hamburg (Umkreis 50 km), nächste zuerst:\n1. Hamburg - Schnackenburgallee — 5,5 km · Schnackenburgallee 12, NNNNN Hamburg · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n2. Hamburg - Flughafen — 7,9 km · Weg beim Jäger 193, NNNNN Hamburg · 700 bar Pkw, 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n3. Hamburg - Großmoorbogen — 10,1 km · Großmoorbogen 1, NNNNN Hamburg · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Hannover",
+        "vehicle": "truck",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Lkw/Bus nahe Hannover (Umkreis 50 km), nächste zuerst:\n1. Langenhagen — 9,1 km · Münchner Straße 14, NNNNN Langenhagen · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 17.09.2026 (vor 2 Monaten)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Ingolstadt",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Keine Wasserstofftankstelle im Umkreis von 50 km um Ingolstadt.\nDie nächste liegt außerhalb des Umkreises: Landshut — 56,0 km · Ludwig-Erhard-Str. 14, NNNNN Landshut · 700 bar Pkw · Öffnungszeiten: Mo–So 07:00–24:00, Feiertage 07:00–24:00 · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nRadius bis 150 km möglich.\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Kassel",
+        "radius_km": 100,
+        "vehicle": "car",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Pkw nahe Kassel (Umkreis 100 km), nächste zuerst:\n1. CE Station GmbH - Gießen — 99,3 km · Schiffenberger Weg 123, NNNNN Gießen · 700 bar Pkw, 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Köln",
+        "vehicle": "truck",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Lkw/Bus nahe Köln (Umkreis 50 km), nächste zuerst:\n1. Frechen - Kölner Straße — 9,0 km · Kölner Straße 209, NNNNN Frechen · 700 bar Pkw, 350 bar Pkw, 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n2. Köln/Bonn Flughafen — 12,5 km · Nordallee 1, NNNNN Köln · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n3. Wesseling — 14,2 km · Ahrstraße 99, NNNNN Wesseling · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: Mo–So 06:00–22:00, Feiertage 06:00–22:00 · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n4. Düsseldorf - Oerschbachstraße — 29,0 km · Oerschbachstraße 142 (71), NNNNN Düsseldorf · 700 bar Pkw, 350 bar Pkw, 350 bar Lkw/Bus · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\n5. Düsseldorf - Höherweg — 33,1 km · Höherweg 202a, NNNNN Düsseldorf · 350 bar Lkw/Bus, 700 bar Pkw · Öffnungszeiten: nicht veröffentlicht (unbekannt) · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "München",
+        "vehicle": "car",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Wasserstofftankstellen für Pkw nahe München (Umkreis 50 km), nächste zuerst:\n1. München - Wilhelm-Hale-Str. — 4,3 km · Wilhelm-Hale-Str. 55, NNNNN München · 700 bar Pkw · Öffnungszeiten: Mo–So 06:00–22:00, Feiertage 06:00–22:00 · Eintrag zuletzt geändert 13.10.2026 (vor 40 Tagen)\nVerfügbarkeit, Preis und Betriebsstatus veröffentlicht der Betreiber nicht — vor der Fahrt prüfen, ob die Station in Betrieb ist."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "lat": 50.1109,
+        "lon": 8.6821,
+        "vehicle": "car",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for cars near 50.111, 8.682 (within 50 km), nearest first:\n1. Frankfurt - Hanauer Landstr. — 4.5 km · Hanauer Landstr. 334, NNNNN Frankfurt am Main · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n2. Frankfurt - Industriepark Höchst — 10.4 km · Otto-Horn-Straße, NNNNN Frankfurt am Main · 700 bar car, 350 bar truck/bus · operator: Infraserv GmbH & Co. Höchst KG · opening hours: not published (unknown) · record last changed 2026-10-09 (44 days ago)\n3. Bad Homburg — 11.3 km · Ober-Eschbacher-Str. 142, NNNNN Bad Homburg · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n4. Weiterstadt — 24.3 km · Robert-Koch-Str. 1, NNNNN Weiterstadt · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n5. Stadtwerke Aschaffenburg — 37.2 km · Hefner-Alteneck-Straße 28, NNNNN Aschaffenburg · 350 bar truck/bus, 700 bar car · operator: Stadtwerke Aschaffenburg · opening hours: Mon–Sat 07:00–19:00, Sun 12:00–19:00, public holidays 12:00–19:00 · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "lat": 51.3397,
+        "lon": 12.3731,
+        "radius_km": 150,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations near 51.340, 12.373 (within 150 km), nearest first:\n1. TotalEnergies H2 Leipzig — 9.4 km · Poststraße 3, NNNNN Leipzig · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-08-06 (3 months ago)\n2. Dresden — 101.9 km · Wiener Strasse 39, NNNNN Dresden · 700 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n3. Magdeburg - 350 bar — 108.4 km · Glindenberger Weg 3, NNNNN Magdeburg · 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n4. Magdeburg — 108.4 km · Glindenberger Weg 3, NNNNN Magdeburg · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n5. Berg bei Hof — 115.2 km · Sieggrubenstraße 5, NNNNN Berg bei Hof · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Berlin Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations near Berlin Hbf (within 50 km), nearest first:\n1. Berlin - Tempelhofer Weg — 9.4 km · Tempelhofer Weg 102, NNNNN Berlin · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n2. Berlin - Rummelsburger Landstr. — 10.3 km · Rummelsburger Landstr. 16, NNNNN Berlin · 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n3. TotalEnergies H2 Schönefeld - Berlin — 20.4 km · Elly-Beinhorn-Ring 2, NNNNN Berlin Schönefeld · 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Hamburg",
+        "vehicle": "truck",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for trucks/buses near Hamburg (within 50 km), nearest first:\n1. Hamburg - Schnackenburgallee — 5.5 km · Schnackenburgallee 12, NNNNN Hamburg · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n2. Hamburg - Flughafen — 7.9 km · Weg beim Jäger 193, NNNNN Hamburg · 700 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n3. Hamburg - Großmoorbogen — 10.1 km · Großmoorbogen 1, NNNNN Hamburg · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Hannover",
+        "vehicle": "truck",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for trucks/buses near Hannover (within 50 km), nearest first:\n1. Langenhagen — 9.1 km · Münchner Straße 14, NNNNN Langenhagen · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-09-17 (2 months ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Ingolstadt",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "No hydrogen station within 50 km of Ingolstadt.\nThe nearest one is outside the radius: Landshut — 56.0 km · Ludwig-Erhard-Str. 14, NNNNN Landshut · 700 bar car · opening hours: Mon–Sun 07:00–24:00, public holidays 07:00–24:00 · record last changed 2026-10-13 (40 days ago)\nRadius up to 150 km possible.\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Kassel",
+        "radius_km": 100,
+        "vehicle": "car",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for cars near Kassel (within 100 km), nearest first:\n1. CE Station GmbH - Gießen — 99.3 km · Schiffenberger Weg 123, NNNNN Gießen · 700 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "Köln",
+        "vehicle": "truck",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for trucks/buses near Köln (within 50 km), nearest first:\n1. Frechen - Kölner Straße — 9.0 km · Kölner Straße 209, NNNNN Frechen · 700 bar car, 350 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n2. Köln/Bonn Flughafen — 12.5 km · Nordallee 1, NNNNN Köln · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n3. Wesseling — 14.2 km · Ahrstraße 99, NNNNN Wesseling · 350 bar truck/bus, 700 bar car · opening hours: Mon–Sun 06:00–22:00, public holidays 06:00–22:00 · record last changed 2026-10-13 (40 days ago)\n4. Düsseldorf - Oerschbachstraße — 29.0 km · Oerschbachstraße 142 (71), NNNNN Düsseldorf · 700 bar car, 350 bar car, 350 bar truck/bus · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\n5. Düsseldorf - Höherweg — 33.1 km · Höherweg 202a, NNNNN Düsseldorf · 350 bar truck/bus, 700 bar car · opening hours: not published (unknown) · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "find_hydrogen_station",
+      "args": {
+        "place": "München",
+        "vehicle": "car",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hydrogen stations for cars near München (within 50 km), nearest first:\n1. München - Wilhelm-Hale-Str. — 4.3 km · Wilhelm-Hale-Str. 55, NNNNN München · 700 bar car · opening hours: Mon–Sun 06:00–22:00, public holidays 06:00–22:00 · record last changed 2026-10-13 (40 days ago)\nNo live availability, price or operating status is published — check that the station is working before you drive."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In Hamburg Hbf ist 1 von 3 gemeldeten Anlagen mit bekanntem Status außer Betrieb. Bei 1 Anlage meldet die Bahn keinen Status. Gezählt sind die Anlagen, die die Bahn für diesen Bahnhof meldet. Aufzüge an Haltestellen städtischer Verkehrsbetriebe (Straßenbahn, Stadtbahn, U-Bahn) sind darin nicht enthalten — dazu liegen mir für diesen Bahnhof keine Live-Daten vor.\nAufzug zu Gleis 7/8: außer Betrieb — Meldung der Bahn: „Reparaturarbeiten“\nFahrtreppe zu Gleis 11/12: Status unbekannt — Meldung der Bahn: „no data available“\nAufzug zu Gleis 5/6: in Betrieb\nFahrtreppe Zugang Wandelhalle: in Betrieb"
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Frankfurt (Main) Hbf weder ein Aufzug noch eine Fahrtreppe verzeichnet. Ob es dort Anlagen gibt, die die Bahn nicht führt, kann ich daraus nicht sagen."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Frankfurt(Main)Hbf",
+        "facility": "elevator",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Frankfurt (Main) Hbf kein Aufzug verzeichnet. Ob es dort einen Aufzug gibt, den die Bahn nicht führt, kann ich daraus nicht sagen."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Leipzig Hbf",
+        "facility": "elevator",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Leipzig Hbf kein Aufzug verzeichnet. Ob es dort einen Aufzug gibt, den die Bahn nicht führt, kann ich daraus nicht sagen."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Leipzig Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Leipzig Hbf weder ein Aufzug noch eine Fahrtreppe verzeichnet. Ob es dort Anlagen gibt, die die Bahn nicht führt, kann ich daraus nicht sagen."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Berlin Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "In den Aufzugs- und Fahrtreppendaten der Bahn ist für Berlin Hbf weder ein Aufzug noch eine Fahrtreppe verzeichnet. Ob es dort Anlagen gibt, die die Bahn nicht führt, kann ich daraus nicht sagen."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "DB's lift and escalator data lists neither a lift nor an escalator for Frankfurt (Main) Hbf. Whether the station has equipment DB does not list, I cannot tell from this."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "1 of 3 reported facilities with a known status at Hamburg Hbf is out of service. DB reports no status for 1 facility. Counted are the facilities DB reports for this station. Lifts at stops of the city's transport operator (tram, light rail, underground) are not included — I hold no live data on them for this station.\nLift to platform 7/8: out of service — DB's report: \"Reparaturarbeiten\"\nEscalator to platform 11/12: status unknown — DB's report: \"no data available\"\nLift to platform 5/6: in service\nEscalator Zugang Wandelhalle: in service"
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Leipzig Hbf",
+        "facility": "elevator",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "DB's lift and escalator data lists no lift for Leipzig Hbf. Whether the station has a lift DB does not list, I cannot tell from this."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Berlin Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "DB's lift and escalator data lists neither a lift nor an escalator for Berlin Hbf. Whether the station has equipment DB does not list, I cannot tell from this."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Frankfurt(Main)Hbf",
+        "facility": "elevator",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "DB's lift and escalator data lists no lift for Frankfurt (Main) Hbf. Whether the station has a lift DB does not list, I cannot tell from this."
+    },
+    {
+      "tool": "check_station_facilities",
+      "args": {
+        "station": "Leipzig Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "DB's lift and escalator data lists neither a lift nor an escalator for Leipzig Hbf. Whether the station has equipment DB does not list, I cannot tell from this."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Essen Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Essen Hbf — Bahnhofsseite: https://viafrei.de/de/station/essen-hbf\nAm Hauptbahnhof 5, NNNNN Essen · Nordrhein-Westfalen · Bahnhofskategorie 1 · EVA 8000098\n\nBahn-Ampel: Gelb — Sicht eingeschränkt: Echtzeitdaten möglicherweise veraltet (Stand HH:MM)\n\nAufzüge und Fahrtreppen (Stand HH:MM):\n- Fahrtreppe zu Gleis 1/2: Zustand unbekannt\n- Fahrtreppe zu Gleis 3/4 (S-Bahn): Zustand unbekannt\n\nParken und Laden:\n- Parkhäuser und Ladesäulen in der Nähe: find_parking bzw. find_charging_station mit lat 51.NNNNN, lon 6.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hamburg Hbf — Bahnhofsseite: https://viafrei.de/de/station/hamburg-hbf\nHachmannplatz 16, NNNNN Hamburg · Hamburg · Bahnhofskategorie 1 · EVA 8002549\n\nBahn-Ampel: Gelb — Sicht eingeschränkt: Echtzeitdaten möglicherweise veraltet (Stand HH:MM)\n\nAufzüge und Fahrtreppen (Stand HH:MM):\n- Aufzug zu Gleis 5/6: Zustand unbekannt\n- Aufzug zu Gleis 7/8: Zustand unbekannt\n- Fahrtreppe zu Gleis 11/12: Zustand unbekannt\n- Fahrtreppe Zugang Wandelhalle: Zustand unbekannt\n\nParken und Laden:\n- Parkhäuser und Ladesäulen in der Nähe: find_parking bzw. find_charging_station mit lat 53.NNNNN, lon 10.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "departures": 0,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Frankfurt (Main) Hbf — Bahnhofsseite: https://viafrei.de/de/station/frankfurt-main-hbf\nAm Hauptbahnhof 1, NNNNN Frankfurt am Main · Hessen · Bahnhofskategorie 1 · EVA 8000105\n\nBahn-Ampel: Gelb — Sicht eingeschränkt: Echtzeitdaten möglicherweise veraltet (Stand HH:MM)\n\nParken und Laden:\n- Parkhäuser und Ladesäulen in der Nähe: find_parking bzw. find_charging_station mit lat 50.NNNNN, lon 8.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Berlin Hbf",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Berlin Hbf — Bahnhofsseite: https://viafrei.de/de/station/berlin-hbf\nEuropaplatz 1, NNNNN Berlin · Berlin · Bahnhofskategorie 1 · EVA 8011160\n\nBahn-Ampel: Gelb — Sicht eingeschränkt: Echtzeitdaten möglicherweise veraltet (Stand HH:MM)\n\nParken und Laden:\n- Parkhäuser und Ladesäulen in der Nähe: find_parking bzw. find_charging_station mit lat 52.NNNNN, lon 13.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Essen Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Essen Hbf — Station page: https://viafrei.de/en/station/essen-hbf\nAm Hauptbahnhof 5, NNNNN Essen · North Rhine-Westphalia · station category 1 (Bahnhofskategorie) · EVA 8000098\n\nRail lamp: Amber — Limited view: real-time data may be out of date (As of HH:MM)\n\nLifts and escalators (As of HH:MM):\n- Escalator (Platform 1/2): state unknown\n- Escalator (Platform 3/4): state unknown\n\nParking and charging:\n- Car parks and charging points nearby: find_parking or find_charging_station with lat 51.NNNNN, lon 6.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Frankfurt (Main) Hbf",
+        "departures": 0,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Frankfurt (Main) Hbf — Station page: https://viafrei.de/en/station/frankfurt-main-hbf\nAm Hauptbahnhof 1, NNNNN Frankfurt am Main · Hesse · station category 1 (Bahnhofskategorie) · EVA 8000105\n\nRail lamp: Amber — Limited view: real-time data may be out of date (As of HH:MM)\n\nParking and charging:\n- Car parks and charging points nearby: find_parking or find_charging_station with lat 50.NNNNN, lon 8.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Hamburg Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hamburg Hbf — Station page: https://viafrei.de/en/station/hamburg-hbf\nHachmannplatz 16, NNNNN Hamburg · Hamburg · station category 1 (Bahnhofskategorie) · EVA 8002549\n\nRail lamp: Amber — Limited view: real-time data may be out of date (As of HH:MM)\n\nLifts and escalators (As of HH:MM):\n- Lift (Platform 5/6): state unknown\n- Lift (Platform 7/8): state unknown\n- Escalator (Platform 11/12): state unknown\n- Escalator (no location given): state unknown\n\nParking and charging:\n- Car parks and charging points nearby: find_parking or find_charging_station with lat 53.NNNNN, lon 10.NNNNN."
+    },
+    {
+      "tool": "describe_station",
+      "args": {
+        "station": "Berlin Hbf",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Berlin Hbf — Station page: https://viafrei.de/en/station/berlin-hbf\nEuropaplatz 1, NNNNN Berlin · Berlin · station category 1 (Bahnhofskategorie) · EVA 8011160\n\nRail lamp: Amber — Limited view: real-time data may be out of date (As of HH:MM)\n\nParking and charging:\n- Car parks and charging points nearby: find_parking or find_charging_station with lat 52.NNNNN, lon 13.NNNNN."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Hamburg",
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Hamburg liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Bremen",
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Bremen liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Köln",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Köln liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Würzburg",
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Würzburg liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Dortmund",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Dortmund liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 48.7758,
+        "lon": 9.1829,
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür 48.776, 9.183 liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 50.553,
+        "lon": 9.675,
+        "fuel": "diesel",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür 50.553, 9.675 liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Wuppertal",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Wuppertal liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Osnabrück",
+        "fuel": "diesel",
+        "radius_km": 15,
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Osnabrück liegen im Umkreis von 15 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Diesel-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Wir haben den Anbieter gerade gefragt, welche Tankstellen es hier gibt; seine Antwort bringt ihre Preise mit, sie liegen in etwa einer Minute vor. Bitte dann noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Hamburg",
+        "language": "de"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nFür Hamburg liegen im Umkreis von 5 km keine Tankstellenpreise vor. Auch im größtmöglichen Umkreis von 25 km beobachten wir dort keine Tankstelle mit Super E10-Preis — ein größerer Radius hilft hier also nicht. Wir beobachten nur einen Teil der Tankstellen in Deutschland. Die Preise für diese Gegend sind beim Anbieter angefordert, für eine Frage wie diese und nicht im Hintergrund; die Anfrage wartet in der Warteschlange, bis sie an der Reihe ist. Bitte danach noch einmal fragen."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Hamburg",
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Hamburg. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Bremen",
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Bremen. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Köln",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Köln. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 48.7758,
+        "lon": 9.1829,
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of 48.776, 9.183. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Würzburg",
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Würzburg. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "lat": 50.553,
+        "lon": 9.675,
+        "fuel": "diesel",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of 50.553, 9.675. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Dortmund",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Dortmund. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Wuppertal",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Wuppertal. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Osnabrück",
+        "fuel": "diesel",
+        "radius_km": 15,
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 15 km of Osnabrück. Within the largest radius the provider allows (25 km) we watch no station there with a diesel price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    },
+    {
+      "tool": "find_cheapest_fuel",
+      "args": {
+        "place": "Hamburg",
+        "language": "en"
+      },
+      "isError": false,
+      "body": "Hinweis zu den Kraftstoffpreisdaten (MTS-K): Diese Daten dürfen ausschließlich zum Zweck der Verbraucherinformation verwendet werden; daher ist insbesondere eine Verwendung der Daten zur Information der Mineralölwirtschaft und/oder ihrer IT-Dienstleister nicht erlaubt.\nNo fuel prices are held within 5 km of Hamburg. Within the largest radius the provider allows (25 km) we watch no station there with a Super E10 price either, so a larger radius will not help. We watch only part of Germany's filling stations. Prices for this area have been requested from the provider, for a question like this one and not in the background; the request waits in the queue until its turn comes. Please ask again after that."
+    }
+  ]
+}

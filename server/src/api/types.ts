@@ -12,13 +12,22 @@ export type AddressData = { addresses: Address[] };
 /** FuelStation */
 export type FuelPrice = { fuel: string; priceEur: number; reportedAt: string; current: boolean };
 export type FuelStation = { id: string; name: string; brand: string | null; location: LatLon; distanceM?: number; openingState: string; prices: FuelPrice[] };
+/** FuelStationData (getFuelStation): one station with its postal address. */
+export type FuelAddress = { street: string | null; number: string | null; postcode: string | null; place: string | null };
+export type FuelStationData = { id: string; name: string | null; brand: string | null; location: LatLon; address: FuelAddress | null; aroundTheClock: boolean; openingState: string; prices: FuelPrice[] };
 /** ChargingSite */
 export type ChargingSite = {
   id: string; name: string | null; operator: string | null; location: LatLon; distanceM?: number; access: string;
   summary: { chargePoints: number; availableNow: number | null; maxPowerKw: number | null };
+  /** Each point and its last report (null: none published, or one that says nothing). */
+  chargePoints?: { id: string; current: string | null; maxPowerKw: number | null; availability: { state: string; observedAt: string } | null }[];
 };
 /** HydrogenData */
-export type HydrogenStation = { name: string | null; operator: string | null; brand: string | null; distanceM: number; location: LatLon };
+export type HydrogenStation = {
+  name: string | null; operator: string | null; brand: string | null; distanceM: number; location: LatLon;
+  /** The publisher's address, refill solutions and opening periods, verbatim; null when not published. */
+  address?: unknown; refill?: unknown; opening?: unknown; providerUpdatedAt: string | null;
+};
 export type HydrogenData = { stations: HydrogenStation[]; nearest: HydrogenStation | null };
 /** ParkingSite */
 export type ParkingSite = {
@@ -43,8 +52,13 @@ export type NearbyData = {
   needs?: { need: string; radiusM: number; widened: boolean; places: NeedPlace[] }[];
 };
 /** SharingData */
-export type SharingStation = { name: string | null; systemLabel: string | null; system: string; distanceM: number; bikes: number | null; freeDocks: number | null; available: boolean };
-export type SharingData = { stations: SharingStation[]; stationsInRadius: number; vehicles: { count: number; electric: number; atLeast: boolean } };
+export type SharingStation = {
+  id: string; name: string | null; systemLabel: string | null; system: string; distanceM: number; location: { lat: number; lon: number }; sourceFamily: string;
+  bikes: number | null; electricBikes: number | null; freeDocks: number | null; available: boolean; current: boolean;
+  renting: boolean | null; virtual: boolean | null; countedAt: string | null; reportedAt: string | null;
+};
+export type SharingVehicle = { distanceM: number; propulsion: string | null; rangeLeftM: number | null; vehicleType: string | null; sourceFamily: string };
+export type SharingData = { stations: SharingStation[]; stationsInRadius: number; vehicles: { count: number; electric: number; atLeast: boolean; nearest: SharingVehicle[] } };
 /** RoadSituation */
 export type RoadSituation = {
   id: string; kind: string; severity: string; road: string | null; direction: string | null; directionText: string | null;
@@ -65,17 +79,21 @@ export type ZoneVerdict = { kind: "inside" | "transfer" | "outside" | "unknown";
 export type DrivingRulesData = { topic: string; title: string; rules: DrivingRule[]; reviewedOn: string; disclaimer: string; zoneCity?: ZoneCity; zoneVerdict?: ZoneVerdict };
 /** DisruptionData */
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
-export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; punctuality: { name: string | null; level: string; late: number; observed: number } | null; windowMin: number };
+export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; alertsChecked?: boolean; punctuality: { name: string | null; level: string; late: number; observed: number; stopsReporting?: number; untimed?: number } | null; windowMin: number };
 /** WeatherRiskData */
 export type WeatherWarning = { headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null }; inForce?: boolean };
 export type WeatherRiskData = { warnings: WeatherWarning[] };
-/** LocationData */
-export type Named = { name?: string | null; code?: string | null } | null;
+/** LocationData's places: the nearest municipality, the nearest district, the district's Land. */
+export type LocationPlace = { id: string; name: string; code?: string | null; location: { lat: number; lon: number }; distanceM: number | null; sourceFamily: string };
 /** LocationData.lowEmissionZone: the verdict, and the zone it is in (inside, transfer) or the nearest (outside). */
-export type LowEmissionZone = { verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null };
-export type LocationData = { address: Record<string, unknown> | null; municipality: Named; district: Named; state: Named; lowEmissionZone: LowEmissionZone | null };
+export type LowEmissionZone = { verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null; liftedOn?: string | null };
+export type LocationAddress = { street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; distanceM: number; dataAsOf: string | null };
+export type LocationData = {
+  address: LocationAddress | null; municipality: LocationPlace | null; district: LocationPlace | null; state: LocationPlace | null;
+  lowEmissionZone: LowEmissionZone | null; mayLieOutsideGermany: boolean;
+};
 /** Station */
-export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; eva: string | null; evaNumbers: string[]; distanceM?: number | null };
+export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; eva: string | null; evaNumbers: string[]; distanceM?: number | null; districtCode?: string | null };
 /** Board */
 export type Departure = {
   line: string | null; category: string | null; destination: string | null; plannedAt: string; expectedAt: string | null; delayMin: number | null;
@@ -99,3 +117,10 @@ export type WatchData = { watchId: string; uri: string; kind: string; key: strin
 export type SourceRow = { family: string; domain: string; publisher: string; attribution: string; licence: string; licenceUrl: string; status: string };
 /** PlacesCoverageData */
 export type PlacesCoverageData = { kinds: { kind: string; count: number }[]; lands: { code: string; name: string }[]; addresses: { land: string | null; dataAsOf: string | null }[] };
+/** ParkingBaysData (listParkingBays) */
+export type ParkingBay = {
+  id: string; kind: string; publisherKind: string | null; street: string | null; houseNumber: string | null; postcode: string | null; city: string | null;
+  lat: number; lon: number; distanceM: number; sensor: boolean; state: string | null; messageAt: string | null; spaces: number | null; reservedWhen: string | null; sourceFamily: string;
+};
+export type ParkingBayCounts = { total: number; sensors: number; free: number; occupied: number; unknown: number; staticSites: number; staticSpaces: number };
+export type ParkingBaysData = { kind: string; counts: ParkingBayCounts; bays: ParkingBay[] };

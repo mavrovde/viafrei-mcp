@@ -64,6 +64,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { blindSpots, loadRules, opaque, safeMessage, safeString, scanFile, thresholds } from './rules.mjs';
 import { resolveTool, runTool } from './tools.mjs';
+import { personNameFindings } from './person-names.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -184,6 +185,11 @@ function scan(label, text, checkHosts, blob) {
             findings.push(`${finding.where} ${finding.detail}`);
         }
     });
+    // No person's name in a test literal (person-names.mjs); in the history leg the label is
+    // "<commit>:<path>", so the path is read after the commit.
+    for (const finding of personNameFindings(label.replace(/^[0-9a-f]{7,40}:/u, ''), text, safeString(label, RULES))) {
+        findings.push(finding);
+    }
     if (!checkHosts) {
         return;
     }

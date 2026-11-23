@@ -39,8 +39,12 @@ describe("tools answer from the API contract's examples", () => {
         // A newly opened watch shows no provider data, so it credits the watch service alone, as today's
         // server does (attribution names what answered); each report it later gives names its own source.
         if (c.tool === "watch_situation") {
-          expect(meta.attribution).toBe(WATCH_CREDIT.text);
+          expect(meta.attribution).toBe(`${WATCH_CREDIT.text} (${WATCH_CREDIT.termsUrl})`);
           for (const a of credited) expect(textOf(r)).not.toContain(a.text);
+        } else if (c.tool === "find_sharing") {
+          // The example lists no bike: nothing listed is nothing credited, as today's server does.
+          for (const a of credited) expect(textOf(r)).not.toContain(a.text);
+          expect(textOf(r)).toMatch(/\n\n(Stand|As of) [^\n]+$/u);
         } else {
           // A road answer credits a weather family only for a weather reason in the lamp it shows, in the
           // summary form (today's ampel); check_road_status shows no lamp, so never.
@@ -75,7 +79,7 @@ describe("special cases", () => {
     mockServer.use(handlerFor("listFuelOptions", () => HttpResponse.json({ ...body, data: [] })));
     const { client, close } = await connect();
     const r = await client.callTool({ name: "find_cheapest_fuel", arguments: { ...at, language: "en" } });
-    expect(textOf(r)).toContain("No filling stations found.");
+    expect(textOf(r)).toContain("Within 5 km of 52.520, 13.405 I know 1 filling station, but none with a Super E10 price.");
     expect((r._meta as { attribution: string }).attribution.length).toBeGreaterThan(0);
     await close();
   });
@@ -159,11 +163,11 @@ describe("special cases", () => {
     await close();
   });
 
-  it("unsupported cases answer not-available and ask nothing", async () => {
+  it("disabled-badge bays are read from listParkingBays, not the car-park search", async () => {
     const { client, close } = await connect();
     const r = await client.callTool({ name: "find_parking", arguments: { ...at, kind: "disabled_badge", language: "en" } });
-    expect(textOf(r)).toContain("not available through the ViaFrei API yet");
-    expect(calls).toHaveLength(0);
+    expect(textOf(r)).toMatch(/^Disabled-badge bays on the street around /u);
+    expect(calls.map((c) => c.operationId)).toEqual(["listParkingBays"]);
     await close();
   });
 });
