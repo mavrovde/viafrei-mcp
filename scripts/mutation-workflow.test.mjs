@@ -279,6 +279,10 @@ console.log('each planted fault in the workflows is reported');
     const own = file === '' ? '' : read(file);
     check('Stryker\'s vitest config passes no V8 flag a thread refuses', argvOf(own) !== undefined && argvOf(own).trim() === '' && !own.includes('mergeConfig('), String(argvOf(own)));
     check('Stryker\'s vitest config declares the gc case off', /MUTATION_NO_GC:\s*"1"/u.test(own), '');
+    // A mutant that leaves a request unanswered fails its test here, inside Stryker's timeout, rather than
+    // timing out: a timeout costs the shard Stryker's whole wait and a restarted worker (2.7.2's first proof).
+    const testMs = Number(/testTimeout:\s*([\d_]+)/u.exec(own)?.[1]?.replaceAll('_', '') ?? NaN);
+    check('Stryker\'s vitest fails a hanging test before Stryker\'s own timeout', testMs > 0 && testMs < stryker.timeoutMS && /hookTimeout:\s*[\d_]+/u.test(own), String(testMs));
     const cap = read('test/transport/session-cap.test.ts');
     check('the gc case is skipped only where MUTATION_NO_GC is declared', /it\.skipIf\(process\.env\.MUTATION_NO_GC === "1"\)\("a held stream survives a garbage collection/u.test(cap), '');
     check('a missing gc elsewhere still fails the case', /typeof gc !== "function"\) \{\s*throw new Error/u.test(cap), '');
