@@ -27,8 +27,8 @@ import ts from "typescript";
 export const FLOOR = 70;
 /**
  * The shards of the release run (mutation.yml's matrix). 18, measured: the pieces are dealt by the seconds
- * they took (scripts/mutation-weights.json, run 45133880847: ~168 minutes in all). createMcpApp alone takes
- * ~10.6 minutes and is one statement no line range can cut, so it fills a shard; the other 17 get ~9 minutes
+ * they took (scripts/mutation-weights.json, fitted to runs 45133880847 and 45137207791: ~153 minutes in all). createMcpApp alone takes
+ * ~10.8 minutes and is one statement no line range can cut, so it fills a shard; the other 17 get ~8.3 minutes
  * each. 18 shards beside the npm run's Snyk and end-to-end jobs stay within GitHub's 20 concurrent jobs, so
  * none queues and the whole run ends inside 15 minutes.
  */

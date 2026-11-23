@@ -11,7 +11,8 @@
 // mutation time. A shard's time is split over its pieces by their cost: per
 // mutant 1, plus the tests that cover it, plus 200 when it timed out (the cost
 // that fitted the measured shard times best). Re-measure after a change that
-// moves a piece boundary; the self-tests fail on a piece with no weight.
+// moves a piece boundary; the self-tests fail on a piece with no weight. The committed
+// file was then fitted to a second run as well (see its _about).
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
