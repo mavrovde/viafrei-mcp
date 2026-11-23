@@ -246,7 +246,9 @@ if (process.argv.includes('--write')) {
         instructions: init.result.instructions ?? stored.instructions,
         ...Object.fromEntries(LISTS.map(list => [list.key, live[list.key]]))
     };
-    if (Object.keys(next).join(',') !== Object.keys(stored).join(',')) {
+    // A capture states the live version, so a hand-set one (and its note) ends here.
+    delete next.versionSetByHand;
+    if (Object.keys(next).join(',') !== Object.keys(stored).filter(key => key !== 'versionSetByHand').join(',')) {
         refuse(`rewriting would change the snapshot's top-level shape, from ${Object.keys(stored)} to ${Object.keys(next)}`);
     }
     writeFileSync(SNAPSHOT, `${JSON.stringify(next, null, 2)}\n`);

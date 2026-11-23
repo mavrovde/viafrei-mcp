@@ -328,6 +328,29 @@ for (const [label, mutate, expectedStatus, expectedText] of [
     }
 }
 
+// --- Case 6a: a hand-set version is said in the table, a captured one is not --
+{
+    const root = freshRoot();
+    const current = JSON.parse(readFileSync(join(root, 'catalogue.json'), 'utf8'));
+    const { versionSetByHand: _, ...captured } = current;
+    const version = current.serverInfo.version;
+    const serverRow = () => readFileSync(join(root, 'API.md'), 'utf8').split('\n').find(line => line.startsWith('| Server |'));
+    writeFileSync(join(root, 'catalogue.json'), JSON.stringify({ ...captured, versionSetByHand: '9.8.7' }, null, 2));
+    const byHand = runIn(root, []);
+    check(
+        'a hand-set version is said in the Server row, with the captured one',
+        byHand.status === 0 && serverRow() === `| Server | \`viafrei\` ${version} (set by hand; the capture is of 9.8.7 and is taken again after the ${version} deploy) |`,
+        String(serverRow())
+    );
+    writeFileSync(join(root, 'catalogue.json'), JSON.stringify(captured, null, 2));
+    const asCaptured = runIn(root, []);
+    check(
+        'a captured version stands alone in the Server row',
+        asCaptured.status === 0 && serverRow() === `| Server | \`viafrei\` ${version} |`,
+        String(serverRow())
+    );
+}
+
 // --- Case 6b: a malformed `required` does not become a stack trace ----------
 {
     const root = freshRoot();

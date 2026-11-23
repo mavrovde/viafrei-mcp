@@ -90,6 +90,10 @@ export function renderSection(catalogue) {
   const day = String(catalogue.capturedAt ?? '').slice(0, 10);
   out.push(
     `**${tools.length} tools, ${prompts.length} prompts, ${resources.length} resources and ${templates.length} resource templates** — server ${version}, snapshot of ${day}. ` +
+      // A version set by hand before the deploy (catalogue.json `versionSetByHand`) is said, never passed off as captured.
+      (typeof catalogue.versionSetByHand === 'string'
+        ? `The version ${version} was set by hand; the capture is of ${catalogue.versionSetByHand} and is taken again after the ${version} deploy. `
+        : '') +
       'Each line is the server\'s own words; the full parameters are in [API.md](API.md).',
     '',
   );

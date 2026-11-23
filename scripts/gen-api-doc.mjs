@@ -335,7 +335,10 @@ function render(catalogue) {
         '',
         '| | |',
         '| --- | --- |',
-        `| Server | \`${serverInfo?.name ?? 'unknown'}\` ${serverInfo?.version ?? ''} |`,
+        // A version set by hand before the deploy (catalogue.json `versionSetByHand`) is said, never passed off as captured.
+        `| Server | \`${serverInfo?.name ?? 'unknown'}\` ${serverInfo?.version ?? ''}${typeof catalogue.versionSetByHand === 'string'
+            ? ` (set by hand; the capture is of ${catalogue.versionSetByHand} and is taken again after the ${serverInfo?.version ?? ''} deploy)`
+            : ''} |`,
         `| MCP protocol | \`${protocolVersion}\` |`,
         `| Streamable HTTP | ${HTTP_URL} |`,
         `| Legacy HTTP+SSE | ${SSE_URL} |`,

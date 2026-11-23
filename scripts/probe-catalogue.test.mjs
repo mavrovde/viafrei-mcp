@@ -275,12 +275,26 @@ await withStub(liveAnswers(), async root => {
         first.status === 1
         && /catalogue\.json rewritten/u.test(wrote)
         && second.status === 0
-        && Object.keys(after).join(',') === Object.keys(real).join(',')
+        && Object.keys(after).join(',') === Object.keys(real).filter(key => key !== 'versionSetByHand').join(',')
         && !JSON.stringify(after).includes('"$schema"'),
         `first ${first.status}, second ${second.status}, keys ${Object.keys(after).join(',')}`
     );
 }, snapshot => {
     snapshot.serverInfo = { ...snapshot.serverInfo, version: '0.0.1-older' };
+});
+
+// A version set by hand before a deploy (versionSetByHand) is dropped by the capture, which states the live one.
+await withStub(liveAnswers(), async root => {
+    const wrote = (await run(root, ['--write'])).out;
+    const after = JSON.parse(readFileSync(join(root, 'catalogue.json'), 'utf8'));
+    check(
+        '--write drops a hand-set version note and writes the live version',
+        /catalogue\.json rewritten/u.test(wrote) && !('versionSetByHand' in after) && after.serverInfo.version === real.serverInfo.version,
+        `keys ${Object.keys(after).join(',')}`
+    );
+}, snapshot => {
+    snapshot.serverInfo = { ...snapshot.serverInfo, version: '0.0.1-older' };
+    snapshot.versionSetByHand = '0.0.1-captured';
 });
 
 for (const root of roots) rmSync(root, { recursive: true, force: true });
