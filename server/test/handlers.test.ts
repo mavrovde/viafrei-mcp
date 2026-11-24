@@ -1346,18 +1346,48 @@ describe("parity of four answers with today's server", () => {
     expect(body(await call("check_road_status", { road: "A1", limit: 2, language: "en" })).split("\n").at(-1)).toBe("… 3 more, 1 of them closures — narrow it with a place (road and place together) or a shorter window.");
   });
 
-  it("check_weather_warnings: each warning with its level of 4, event, warn area and cell; since when only for one the API says is in force", async () => {
-    const w = ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!;
-    const frost = { ...w, headline: "Amtliche WARNUNG vor FROST", level: 1, levelName: "Minor", event: "FROST", inForce: true, area: { name: "Stadt Hannover", cellId: "803241001" }, validity: { from: "2026-11-24T15:00:00Z", until: "2026-11-25T11:00:00Z" } };
-    serve("getWeatherRisk", { warnings: [frost] });
-    for (const language of LANGS) {
-      expect(body(await call("check_weather_warnings", { ...at, language })).split("\n")[2]).toBe(language === "de"
-        ? "- Amtliche WARNUNG vor FROST (Minor) bis 25.11.2026, 12:00 — Stufe 1 von 4 · Ereignis FROST · Gebiet: Stadt Hannover (Warnzelle 803241001) · gilt seit 24.11.2026, 16:00"
-        : "- Amtliche WARNUNG vor FROST (Minor) until 25/11/2026, 12:00 — level 1 of 4 · event FROST · area: Stadt Hannover (warn cell 803241001) · in force since 24/11/2026, 16:00");
+  it("check_weather_warnings: each warning as today's block: level, hazard, area and cell, window, headline, the drive", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-24T21:13:00Z"));
+    try {
+      const w = ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!;
+      const frost = { ...w, headline: "Official WARNING of FROST", level: 1, levelName: "Minor", event: "FROST", inForce: true, area: { name: "Stadt Hannover", cellId: "803241001" }, validity: { from: "2026-11-24T15:00:00Z", until: "2026-11-25T11:00:00Z" } };
+      const fog = { ...frost, headline: "Official WARNING of FOG", event: "NEBEL", validity: { from: "2026-11-24T17:08:00Z", until: "2026-11-25T06:00:00Z" } };
+      serve("getWeatherRisk", { warnings: [frost, fog] });
+      expect(body(await call("check_weather_warnings", { ...at, language: "en" }))).toBe([
+        "2 official notices for 52.520, 13.405, highest level 1 of 4:",
+        "",
+        "1. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) — Frost (FROST)",
+        "   Area: Stadt Hannover (warn cell 803241001)",
+        "   Valid: until 2026-11-25 12:00 (since 16:00)",
+        "   „Official WARNING of FROST“",
+        "   For the drive: Follow the official advice and adapt your driving to the conditions.",
+        "",
+        "2. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) — Fog (NEBEL)",
+        "   Area: Stadt Hannover (warn cell 803241001)",
+        "   Valid: until 2026-11-25 07:00 (since 18:08)",
+        "   „Official WARNING of FOG“",
+        "   For the drive: With visibility below 50 m in fog, snow or rain the limit is 50 km/h (§ 3 (1) StVO); the rear fog light only in fog with visibility below 50 m (§ 17 (3) StVO).",
+      ].join("\n"));
+      serve("getWeatherRisk", { warnings: [{ ...frost, headline: "Amtliche WARNUNG vor FROST" }] });
+      expect(body(await call("check_weather_warnings", { ...at, language: "de" })).split("\n").slice(2)).toEqual([
+        "1. Stufe 1 von 4 — Wetterwarnung — FROST",
+        "   Gebiet: Stadt Hannover (Warnzelle 803241001)",
+        "   Gültig: bis 25.11. 12:00 (seit 16:00)",
+        "   „Amtliche WARNUNG vor FROST“",
+        "   Für die Fahrt: Auf die amtlichen Hinweise achten und die Fahrweise den Verhältnissen anpassen.",
+      ]);
+      const { inForce: _, ...unknown } = frost;
+      serve("getWeatherRisk", { warnings: [{ ...unknown, headline: " ", event: null, area: { name: null, cellId: null } }] });
+      expect(body(await call("check_weather_warnings", { ...at, language: "en" })).split("\n").slice(2)).toEqual([
+        "1. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning)",
+        "   Area: warn cell",
+        "   Valid: until 2026-11-25 12:00 (since 16:00)",
+        "   For the drive: Follow the official advice and adapt your driving to the conditions.",
+      ]);
+    } finally {
+      vi.useRealTimers();
     }
-    const { inForce: _, ...unknown } = frost;
-    serve("getWeatherRisk", { warnings: [unknown] });
-    expect(body(await call("check_weather_warnings", { ...at, language: "en" })).split("\n")[2]).toBe("- Amtliche WARNUNG vor FROST (Minor) until 25/11/2026, 12:00 — level 1 of 4 · event FROST · area: Stadt Hannover (warn cell 803241001)");
   });
 
   describe("get_departures around a place", () => {
@@ -1477,10 +1507,11 @@ describe("check_weather_warnings", () => {
       expect(query("getWeatherRisk")).toEqual([{ at: "52.52,13.405", lang: language }]);
       const lines = body(r).split("\n");
       expect(lines.slice(0, 3)).toEqual(language === "de"
-        ? ["2 amtliche Meldungen für 52.520, 13.405, höchste Stufe 3 von 4:", "", expect.stringMatching(/^- Sturm \(Stufe 3\) — Stufe 3 von 4/u)]
-        : ["2 official notices for 52.520, 13.405, highest level 3 of 4:", "", expect.stringMatching(/^- Sturm \(Stufe 3\) — level 3 of 4/u)]);
-      expect(lines[3]).toMatch(/^- Warnung vor uv \(Stufe 2\) \(Stufe 2\) (bis|until) /u);
-      expect(lines).toHaveLength(4);
+        ? ["2 amtliche Meldungen für 52.520, 13.405, höchste Stufe 3 von 4:", "", expect.stringMatching(/^1\. Stufe 3 von 4 — Unwetterwarnung/u)]
+        : ["2 official notices for 52.520, 13.405, highest level 3 of 4:", "", expect.stringMatching(/^1\. Level 3 of 4 — Unwetterwarnung/u)]);
+      expect(lines.filter((l) => /^\d\. /u.test(l))).toEqual([expect.stringMatching(/^1\. .*3 /u), expect.stringMatching(/^2\. .*2 /u)]);
+      expect(lines).toContain("   „Sturm“");
+      expect(lines).not.toContain("   „Frost“");
     });
     it(`none (${language}): no all-clear, the look-ahead said`, async () => {
       serve("getWeatherRisk", { warnings: [] });
@@ -1508,22 +1539,21 @@ describe("check_weather_warnings", () => {
   it("a warning that starts within the look-ahead says when it starts; one in force does not", async () => {
     for (const language of ["de", "en"] as const) {
       serve("getWeatherRisk", { warnings: [{ ...w(), inForce: false, validity: { from: "2026-11-22T21:16:00Z", until: "2026-11-23T05:16:00Z" } }, { ...w(), inForce: true, validity: { from: "2026-11-22T10:00:00Z", until: "2026-11-23T05:16:00Z" } }] });
-      const lines = body(await call("check_weather_warnings", { ...at, language })).split("\n");
-      expect(lines[2]).toMatch(language === "de" ? / von 22\.11\.2026, 22:16 bis 23\.11\.2026, 06:16 — /u : / from .*22:16 until .*06:16 — /u);
-      expect(lines[2]).not.toMatch(/gilt seit|in force since/u);
-      expect(lines[3]!.split(" — ")[0]).not.toMatch(/ von | from /u);
-      expect(lines[3]).toMatch(language === "de" ? / — Stufe \d von 4 .*· gilt seit 22\.11\.2026, 11:00$/u : / — level \d of 4 .*· in force since .*11:00$/u);
+      const valid = body(await call("check_weather_warnings", { ...at, language })).split("\n").filter((l) => /^ {3}(Gültig|Valid): /u.test(l));
+      expect(valid).toEqual(language === "de"
+        ? ["   Gültig: von 22.11. 22:16 bis 23.11. 06:16", "   Gültig: bis 23.11. 06:16 (seit 22.11. 11:00)"]
+        : ["   Valid: from 2026-11-22 22:16 until 2026-11-23 06:16", "   Valid: until 2026-11-23 06:16 (since 2026-11-22 11:00)"]);
     }
   });
   it("a level-0 advance notice (the API's minimum is 0) is listed at min_level 0 and hidden, and counted, from level 1", async () => {
     for (const language of LANGS) {
-      serve("getWeatherRisk", { warnings: [{ ...w(), level: 0, levelName: "Vorabinformation Unwetter", headline: "Vorabinformation UNWETTER vor STURM" }] });
+      serve("getWeatherRisk", { warnings: [{ ...w(), level: 0, levelName: "Vorabinformation Unwetter", headline: "Vorabinformation UNWETTER vor STURM", event: "STURM" }] });
       const r = await call("check_weather_warnings", { ...at, min_level: 0, language });
       expect(query("getWeatherRisk").at(-1)).toEqual({ at: "52.52,13.405", lang: language });
       expect(body(r).split("\n").slice(0, 3)).toEqual([
         language === "de" ? "Eine amtliche Meldung für 52.520, 13.405, nur eine Vorabinformation:" : "One official notice for 52.520, 13.405, an advance notice only:",
         "",
-        expect.stringMatching(/^- Vorabinformation UNWETTER vor STURM \(Vorabinformation Unwetter\)/u),
+        language === "de" ? "1. Vorabinformation Unwetter (noch keine Warnstufe) — STURM" : "1. Vorabinformation Unwetter — the DWD's own term for an advance notice; not yet a Warnstufe — Gale (STURM)",
       ]);
       expect(body(await call("check_weather_warnings", { ...at, min_level: 1, language }))).toBe(language === "de"
         ? "Für 52.520, 13.405 liegen keine amtlichen Warnungen ab Stufe 1 vor. Es gilt aber 1 Warnung unterhalb dieser Stufe — ab Stufe 0 gefragt, wird sie angezeigt."

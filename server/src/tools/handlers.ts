@@ -29,6 +29,7 @@ import { describeLocation } from "./location.js";
 import { findDisabledBays } from "./parking-bays.js";
 import { NOT_FULL_NOTE, parkingHead, parkingLine } from "./parking-words.js";
 import { poiCategoryWord } from "./osm-words.js";
+import { warningBlock } from "./weather-block.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -554,14 +555,6 @@ async function areaCode(args: Args, ctx: ToolContext): Promise<{ code: string | 
  * A warning's own detail the API carries, as today's answer gives it per warning: the level of 4, the DWD's
  * event word, the warn area and its cell, and since when a warning in force holds.
  */
-export function warningDetail(w: T.WeatherWarning, language: Language): string {
-  const parts = [L(language, `Stufe ${w.level} von 4`, `level ${w.level} of 4`)];
-  if (w.event) parts.push(L(language, `Ereignis ${w.event}`, `event ${w.event}`));
-  if (w.area?.name) parts.push(`${L(language, "Gebiet", "area")}: ${w.area.name}${w.area.cellId ? L(language, ` (Warnzelle ${w.area.cellId})`, ` (warn cell ${w.area.cellId})`) : ""}`);
-  if (w.inForce === true && w.validity.from !== null) parts.push(L(language, `gilt seit ${berlinDateTime(w.validity.from, language)}`, `in force since ${berlinDateTime(w.validity.from, language)}`));
-  return ` — ${parts.join(" · ")}`;
-}
-
 const checkWeatherWarnings: Handler = async (args, ctx) => {
   const { language } = ctx;
   const pos = await position(args, ctx);
@@ -573,10 +566,10 @@ const checkWeatherWarnings: Handler = async (args, ctx) => {
   const around = aroundText(pos.label, pos.at);
   const { shown, hidden } = byLevel(r.data.warnings, minLevel);
   if (shown.length === 0) return toolResult(noWarning(language, around, minLevel, hidden), asSummary([r.meta]), language);
-  // A warning that starts within the look-ahead says when it starts, so it is never read as in force now.
-  const starts = (w: T.WeatherWarning): string => (w.inForce === false && w.validity.from !== null ? L(language, ` von ${berlinDateTime(w.validity.from, language)}`, ` from ${berlinDateTime(w.validity.from, language)}`) : "");
-  const items = shown.map((w) => `- ${w.headline} (${w.levelName})${starts(w)}${w.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(w.validity.until, language)}`, ` until ${berlinDateTime(w.validity.until, language)}`)}${warningDetail(w, language)}`);
-  return toolResult([warningsHead(language, around, shown), "", ...items].join("\n"), asSummary([r.meta]), language);
+  // Each warning as today's block; one not yet in force says when it starts, so it is never read as in force now.
+  const now = new Date();
+  const items = shown.map((w, i) => warningBlock(language, w, i + 1, now));
+  return toolResult([warningsHead(language, around, shown), "", items.join("\n\n")].join("\n"), asSummary([r.meta]), language);
 };
 
 /** The station a station tool asks about: an EVA number or a name, through the API's station search. */
