@@ -772,10 +772,61 @@ describe("find_place, find_poi, find_address", () => {
     const poi = (o: Record<string, unknown>) => ({ ...ex<Record<string, unknown>[]>("listPois")[0], ...o });
     serve("listPois", [poi({}), poi({ name: null, number: null, postcode: null, distanceM: null }), poi({ name: null, kind: null, street: null, place: null, distanceM: 1800 })], { page: { limit: 3, hasMore: true, nextCursor: "poi-2" } });
     const r = await call("find_poi", { name: "Apotheke", in: "Köln", ...at, radius_km: 2, category: "amenity", limit: 3, cursor: "poi-1", language: "de" });
-    expect(query("listPois")).toEqual([{ name: "Apotheke", in: "Köln", at: "52.52,13.405", radius_m: "2000", category: "amenity", limit: "3", cursor: "poi-1", lang: "de" }]);
-    expect(body(r)).toBe("- Pharmacy Pößfül · Marktweg 1, 10001 Kansilkamp · 208 m\n- pharmacy · Marktweg, Kansilkamp\n- amenity · 1, 10001 · 1,8 km");
+    // A town given is the scope: the position is not sent with it, nor its radius, as today's in before near.
+    expect(query("listPois")).toEqual([{ name: "Apotheke", in: "Köln", category: "amenity", limit: "3", cursor: "poi-1", lang: "de" }]);
+    expect(body(r)).toBe([
+      '"Apotheke" in Köln:',
+      "1. Pharmacy Pößfül — Apotheke, Marktweg 1, 10001 Kansilkamp, 0,2 km von Köln, 47.60983, 7.89724",
+      "2. Apotheke — Marktweg, Kansilkamp, 47.60983, 7.89724",
+      "3. Einrichtung — 1, 10001, 1,8 km von Köln, 47.60983, 7.89724",
+      "",
+      "Stand der OpenStreetMap-Daten: 2026-02-26",
+    ].join("\n"));
     expect(meta(r)["nextCursor"]).toBe("poi-2");
   });
+
+  it("find_poi with in and near: near is never resolved, only the town asked", async () => {
+    serve("listPois", [{ ...ex<Record<string, unknown>[]>("listPois")[0] }]);
+    const r = await call("find_poi", { name: "Apotheke", in: "Köln", near: "Nirgendwo", radius_km: 2, language: "en" });
+    expect(r.isError).toBeUndefined();
+    expect(ops()).toEqual(["listPois"]);
+    expect(query("listPois")).toEqual([{ name: "Apotheke", in: "Köln", lang: "en" }]);
+    expect(body(r).split("\n")[0]).toBe('"Apotheke" in Köln:');
+  });
+
+  for (const language of LANGS) {
+    it(`find_poi: today's head around a place, the brand, the page count and the oldest extract day (${language})`, async () => {
+      const poi = (o: Record<string, unknown>) => ({ ...ex<Record<string, unknown>[]>("listPois")[0], ...o });
+      serve("listPois", [poi({ name: "Hauptbahnhof", category: "amenity", kind: "bus_station", brand: "BSAG", distanceM: 733, dataAsOf: "2026-10-27" }), poi({ name: "Hbf", brand: "Hbf", kind: "no_such_value", category: "shop", dataAsOf: "2026-10-20" })], { page: { limit: 2, nextCursor: "n2", total: 10 } });
+      const r = await call("find_poi", { name: "Hauptbahnhof", near: "Köln", limit: 2, language });
+      expect(body(r)).toBe(language === "de" ? [
+        '"Hauptbahnhof" im Umkreis von 10 km um Matfienland:',
+        "1. Hauptbahnhof (BSAG) — Busbahnhof, Marktweg 1, 10001 Kansilkamp, 0,7 km von Matfienland, 47.60983, 7.89724",
+        "2. Hbf — Geschäft, Marktweg 1, 10001 Kansilkamp, 0,2 km von Matfienland, 47.60983, 7.89724",
+        "",
+        "10 Treffer, hier 1–2 — die nächsten auf der nächsten Seite.",
+        "",
+        "Stand der OpenStreetMap-Daten: 2026-10-20",
+      ].join("\n") : [
+        '"Hauptbahnhof" within 10 km of Matfienland:',
+        "1. Hauptbahnhof (BSAG) — bus station, Marktweg 1, 10001 Kansilkamp, 0.7 km from Matfienland, 47.60983, 7.89724",
+        "2. Hbf — no such value, Marktweg 1, 10001 Kansilkamp, 0.2 km from Matfienland, 47.60983, 7.89724",
+        "",
+        "10 matches, 1–2 shown — the next on the next page.",
+        "",
+        "OpenStreetMap data as of 2026-10-20",
+      ].join("\n"));
+      serve("listPois", [poi({ dataAsOf: null })], { page: { limit: 2, nextCursor: null, total: 3 } });
+      const last = body(await call("find_poi", { name: "Apotheke", lat: 52.52, lon: 13.405, radius_km: 3, language }));
+      expect(last.split("\n")[0]).toBe(language === "de" ? '"Apotheke" im Umkreis von 3 km um 52.52000, 13.40500:' : '"Apotheke" within 3 km of 52.52000, 13.40500:');
+      expect(last).toContain(language === "de" ? "0,2 km von (52.52000, 13.40500)" : "0.2 km from (52.52000, 13.40500)");
+      expect(last.endsWith(language === "de" ? "\n\n3 Treffer, hier 1–1." : "\n\n3 matches, 1–1 shown.")).toBe(true);
+      serve("listPois", [poi({})], { page: { limit: 2, nextCursor: "x", total: 3 } });
+      expect(body(await call("find_poi", { name: "Apotheke", cursor: "c", language }))).not.toMatch(/Treffer|matches/u);
+      serve("listPois", [poi({})], { page: { limit: 2, nextCursor: null, total: 1 } });
+      expect(body(await call("find_poi", { name: "Apotheke", language }))).not.toMatch(/Treffer|matches/u);
+    });
+  }
 
   it("find_poi near a named place resolves it", async () => {
     await call("find_poi", { name: "Apotheke", near: "Köln", language: "en" });

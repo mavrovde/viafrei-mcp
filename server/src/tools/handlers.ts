@@ -28,6 +28,7 @@ import { findSharing } from "./sharing.js";
 import { describeLocation } from "./location.js";
 import { findDisabledBays } from "./parking-bays.js";
 import { NOT_FULL_NOTE, parkingHead, parkingLine } from "./parking-words.js";
+import { poiCategoryWord } from "./osm-words.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -450,18 +451,78 @@ const findParking: Handler = async (args, ctx) => {
   return toolResult(lines.join("\n"), [r.meta], language, { note: NOT_FULL_NOTE[language], ...(read.conditionNote === undefined ? {} : { conditionNote: read.conditionNote }) });
 };
 
+/** Today's find_poi words (main packages/mcp/src/tools/find_poi.ts COPY), verbatim. */
+const POI_WORDS = {
+  de: {
+    head: (name: string, where: string): string => `"${name}"${where}:`,
+    inTown: (t: string): string => ` in ${t}`,
+    around: (t: string, km: number): string => ` im Umkreis von ${km} km um ${t}`,
+    from: (km: string, t: string): string => `${km} von ${t}`,
+    page: (total: number, a: number, b: number): string => `${total} Treffer, hier ${a}–${b}.`,
+    pageNext: (total: number, a: number, b: number): string => `${total} Treffer, hier ${a}–${b} — die nächsten auf der nächsten Seite.`,
+    stand: (d: string): string => `Stand der OpenStreetMap-Daten: ${d}`,
+  },
+  en: {
+    head: (name: string, where: string): string => `"${name}"${where}:`,
+    inTown: (t: string): string => ` in ${t}`,
+    around: (t: string, km: number): string => ` within ${km} km of ${t}`,
+    from: (km: string, t: string): string => `${km} from ${t}`,
+    page: (total: number, a: number, b: number): string => `${total} matches, ${a}–${b} shown.`,
+    pageNext: (total: number, a: number, b: number): string => `${total} matches, ${a}–${b} shown — the next on the next page.`,
+    stand: (d: string): string => `OpenStreetMap data as of ${d}`,
+  },
+} as const;
+
+/**
+ * One object, as today's line says where it is: what it is (never the OSM tag), its address, its distance from the
+ * place it is measured from, and its point. The nearest address of an object without one and its Land are today's
+ * and not in the contract, so they are not said.
+ */
+export function poiLine(p: T.Poi, i: number, from: string | null, language: Language): string {
+  const what = poiCategoryWord(p.category, p.kind ?? "", language);
+  const address = [[p.street, p.number].filter((x) => x !== null && x !== "").join(" "), [p.postcode, p.place].filter((x) => x !== null && x !== "").join(" ")].filter((x) => x !== "").join(", ");
+  const kmShown = p.distanceM === null ? null : kmText(p.distanceM, language);
+  const distance = kmShown === null ? null : from === null ? kmShown : POI_WORDS[language].from(kmShown, from);
+  const brand = p.brand === null || p.brand === undefined || p.brand === p.name ? "" : ` (${p.brand})`;
+  const point = `${p.location.lat.toFixed(5)}, ${p.location.lon.toFixed(5)}`;
+  // A nameless object is headed by what it is, which is then not said twice.
+  return `${i + 1}. ${p.name ?? what}${brand} — ${[p.name === null ? null : what, address === "" ? null : address, distance, point].filter((x): x is string => x !== null).join(", ")}`;
+}
+
 const findPoi: Handler = async (args, ctx) => {
   const { language } = ctx;
+  const w = POI_WORDS[language];
   let at: string | undefined;
-  if (str(args["near"]) !== undefined || num(args["lat"]) !== undefined) {
+  let where = "";
+  let from: string | null = null;
+  const town = str(args["in"])?.trim();
+  // Today's order (find_poi.ts): a town given is the scope and `near` is not resolved at all; else the position.
+  if (town !== undefined && town !== "") {
+    where = w.inTown(town);
+    from = town;
+  } else if (str(args["near"]) !== undefined || num(args["lat"]) !== undefined) {
     const pos = await position(args, ctx, "near");
     if (isResult(pos)) return pos;
     at = atParam(pos.at);
+    const label = pos.label ?? `${pos.at.lat.toFixed(5)}, ${pos.at.lon.toFixed(5)}`;
+    where = w.around(label, num(args["radius_km"]) ?? 10);
+    from = pos.label ?? `(${label})`;
   }
-  const r = await ctx.api.get<T.Poi[]>("listPois", { name: str(args["name"]), in: str(args["in"]), at, radius_m: radiusM(args["radius_km"]), category: str(args["category"]), limit: num(args["limit"]), cursor: str(args["cursor"]) });
+  const inTown = town === "" ? undefined : town;
+  const r = await ctx.api.get<T.Poi[]>("listPois", { name: str(args["name"]), in: inTown, at, radius_m: at === undefined ? undefined : radiusM(args["radius_km"]), category: str(args["category"]), limit: num(args["limit"]), cursor: str(args["cursor"]) });
   if (r.data.length === 0) return none(language, [r.meta], L(language, "Orte", "places"));
-  const lines = r.data.map((p) => `- ${p.name ?? p.kind ?? p.category} · ${[[p.street, p.number].filter(Boolean).join(" "), [p.postcode, p.place].filter(Boolean).join(" ")].filter(Boolean).join(", ")}${p.distanceM === null ? "" : ` · ${km(p.distanceM, language)}`}`);
-  return toolResult(lines.join("\n"), [r.meta], language, { nextCursor: r.meta.page?.nextCursor ?? null });
+  const total = r.meta.page?.total;
+  const next = r.meta.page?.nextCursor ?? null;
+  // The page's first number is known on the first page only: a cursor's offset is the API's.
+  const pageLine = total === undefined || str(args["cursor"]) !== undefined || total <= r.data.length ? null : next === null ? w.page(total, 1, r.data.length) : w.pageNext(total, 1, r.data.length);
+  const days = r.data.map((p) => p.dataAsOf).filter((d): d is string => typeof d === "string").sort();
+  const lines = [
+    w.head(str(args["name"]) ?? "", where),
+    ...r.data.map((p, i) => poiLine(p, i, from, language)),
+    ...(pageLine === null ? [] : ["", pageLine]),
+    ...(days[0] === undefined ? [] : ["", w.stand(days[0])]),
+  ];
+  return toolResult(lines.join("\n"), [r.meta], language, { nextCursor: next });
 };
 
 /** Today's server's find_address sentences (main packages/mcp/src/tools/find_address.ts, COPY), verbatim. */
