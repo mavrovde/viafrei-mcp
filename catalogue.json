@@ -1513,7 +1513,7 @@
           },
           "limit": {
             "default": 10,
-            "description": "How many departures to return, earliest first (1–15, default 10). The result always says how many more were in the window.",
+            "description": "How many departures to return, earliest first (1–15, default 10). With only a place or a position this is per stop (default 4, for each of up to 8 nearest stops). The result always says how many more were in the window.",
             "type": "integer",
             "minimum": 1,
             "maximum": 15

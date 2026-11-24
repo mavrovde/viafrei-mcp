@@ -77,7 +77,7 @@ export function placeMissing(ctx: ToolContext): CallToolResult {
   return { ...toolError(words.missing[ctx.language]), _meta: { errorCode: "invalid_input", errorReason: "place_missing" } };
 }
 
-function placeUnknown(ctx: ToolContext, q: string): CallToolResult {
+export function placeUnknown(ctx: ToolContext, q: string): CallToolResult {
   const words = ctx.tool === undefined ? undefined : PLACE_WORDS[ctx.tool];
   const unknown = words?.unknown;
   if (unknown === undefined) return toolError(NO_PLACE[ctx.language](q));
@@ -131,7 +131,7 @@ const CENTRE_WORDS = /^(city|centre|center|city\s+centre|city\s+center|downtown|
  */
 const TOWN_READINGS = 3;
 
-async function townCentre(q: string, ctx: ToolContext): Promise<Position | undefined> {
+export async function townCentre(q: string, ctx: ToolContext): Promise<Position | undefined> {
   const words = q.split(/\s+/u);
   // At most TOWN_READINGS searches: a town is its first few words, never a long sentence's.
   for (let n = Math.min(words.length - 1, TOWN_READINGS); n >= 1; n--) {

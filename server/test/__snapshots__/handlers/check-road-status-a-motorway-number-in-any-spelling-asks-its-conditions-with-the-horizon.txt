@@ -1,3 +1,4 @@
 • Hazard (Gefahr) A1: Provider text (German): "Stau" — Richtung Köln (+12 min) (30/03/2026, 10:00–30/03/2026, 12:00) · 1.8 km
-• Hazard (Gefahr): Provider text (German): "Unfall" (28/03/2026, 19:09) · 400 m
-• Hazard (Gefahr) B 27: Provider text (German): "Baustelle" (28/03/2026, 19:09)
+• Hazard (Gefahr): Provider text (German): "Unfall" (from 28/03/2026, 19:09) · 400 m
+• Hazard (Gefahr) B 27: Provider text (German): "Baustelle" (from 28/03/2026, 19:09)
+… more entries beyond this read — narrow it with a place (road and place together) or a shorter window.

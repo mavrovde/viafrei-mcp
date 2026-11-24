@@ -8,7 +8,7 @@ import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/clie
 import type * as T from "../api/types.js";
 import { berlinDateTime, berlinTime, creditPlace, eur, km, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
-import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
+import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, placeUnknown, position, radiusM, str, strs, townCentre, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
 import { findPlace } from "./find-place.js";
@@ -147,7 +147,10 @@ export function nearestMotorways(road: string, registered: readonly string[], n 
 }
 
 /** check_road_status's list: today's answer shows no lamp; nothing listed is never "the road is clear". */
-function roadStatusBody(d: T.RoadConditionsData, language: Language, limit: number | undefined, what: string, detail = false): string {
+/** How many situations a motorway's answer reads, so the cut comes after the dedupe and the closures-first sort. */
+export const ROAD_READ = 100;
+
+function roadStatusBody(d: T.RoadConditionsData, language: Language, limit: number | undefined, what: string, detail = false, hasMore = false): string {
   const all = detail ? roadEvents(d.situations) : d.situations;
   const rows = all.slice(0, limit ?? 20);
   if (rows.length === 0) {
@@ -158,11 +161,18 @@ function roadStatusBody(d: T.RoadConditionsData, language: Language, limit: numb
   // The road's own reports by reason; a source's limited sight and the DWD's warnings are no road event.
   const counts = (d.lampReasons ?? []).filter((r) => r.count > 0 && r.reason !== "limited_sight" && !WEATHER_REASONS.has(r.reason));
   const head = counts.length === 0 ? null : L(language,
-    `${what}: ${counts.map((r) => `${r.count}× ${REASON.de[r.reason] ?? r.reason}`).join(", ")}.`,
-    `${what}: ${counts.map((r) => `${r.count}× ${REASON.en[r.reason] ?? r.reason}`).join(", ")}.`);
-  const reported = (d.counts ?? []).reduce((n, c) => n + c.situations, 0);
-  const more = Math.max(all.length, reported) - rows.length;
-  const tail = more > 0 ? L(language, `… ${more} weitere Meldungen — mit einem Ort (Straße und Ort zusammen) oder einem kürzeren Zeitfenster eingrenzen.`, `… ${more} more entries — narrow it with a place (road and place together) or a shorter window.`) : null;
+    `${what}: ${counts.map((r) => `${r.count}× ${COUNT_WORDS.de[r.reason] ?? r.reason}`).join(", ")}.`,
+    `${what}: ${counts.map((r) => `${r.count}× ${COUNT_WORDS.en[r.reason] ?? r.reason}`).join(", ")}.`);
+  // The rest is counted over the deduplicated entries read, the closures among them named.
+  const rest = all.slice(rows.length);
+  const closures = rest.filter(isClosure).length;
+  const beyond = hasMore ? L(language, ", und weitere über diese Lesung hinaus", ", and more beyond this read") : "";
+  const count = rest.length === 0
+    ? L(language, "weitere Meldungen über diese Lesung hinaus", "more entries beyond this read")
+    : L(language, `${rest.length} weitere Meldungen${closures > 0 ? `, davon ${closures} Sperrungen` : ""}${beyond}`, `${rest.length} more${closures > 0 ? `, ${closures} of them closures` : ""}${beyond}`);
+  const tail = rest.length === 0 && !hasMore ? null : L(language,
+    `… ${count} — mit einem Ort (Straße und Ort zusammen) oder einem kürzeren Zeitfenster eingrenzen.`,
+    `… ${count} — narrow it with a place (road and place together) or a shorter window.`);
   return [head, ...rows.map((s) => roadEventLine(s, language)), tail].filter((x): x is string => x !== null).join("\n");
 }
 
@@ -170,6 +180,14 @@ function roadStatusBody(d: T.RoadConditionsData, language: Language, limit: numb
 const KIND: Record<Language, Record<string, string>> = {
   de: { closure: "Sperrung", roadworks: "Baustelle", jam: "Stau", accident: "Unfall", hazard: "Gefahr", restriction: "Einschränkung", weather: "Wetter", other: "Meldung" },
   en: { closure: "Closure (Sperrung)", roadworks: "Roadworks (Baustelle)", jam: "Jam (Stau)", accident: "Accident (Unfall)", hazard: "Hazard (Gefahr)", restriction: "Restriction (Einschränkung)", weather: "Weather (Wetter)", other: "Report (Meldung)" },
+};
+
+const isClosure = (s: T.RoadSituation): boolean => s.kind === "closure" || s.severity === "road_closed";
+
+/** The lamp reasons as counted nouns ("13× junction ramp closed"): no article, unlike the lamp's sentence. */
+const COUNT_WORDS: Record<Language, Record<string, string>> = {
+  de: { road_closed: "Vollsperrung", ramp_closed: "Anschlussstelle gesperrt", safety: "Gefahr auf der Fahrbahn", bridge_closed: "Brücke gesperrt", long_jam: "langer Stau", jam: "Stau", warning: "Verkehrsmeldung", narrowing: "Baustelle, Fahrbahn eingeengt" },
+  en: { road_closed: "full closure", ramp_closed: "junction ramp closed", safety: "danger on the road", bridge_closed: "bridge closed", long_jam: "long jam", jam: "jam", warning: "traffic report", narrowing: "roadworks narrowing the carriageway" },
 };
 
 /** One entry per event: the same text from two records is read once; closures first, as today's list. */
@@ -181,7 +199,7 @@ export function roadEvents(situations: readonly T.RoadSituation[]): T.RoadSituat
     seen.add(key);
     return true;
   });
-  const closed = (s: T.RoadSituation): number => (s.kind === "closure" || s.severity === "road_closed" ? 0 : 1);
+  const closed = (s: T.RoadSituation): number => (isClosure(s) ? 0 : 1);
   return out.map((s, i) => ({ s, i })).sort((a, b) => closed(a.s) - closed(b.s) || a.i - b.i).map((x) => x.s);
 }
 
@@ -206,7 +224,9 @@ function roadEventLine(s: T.RoadSituation, language: Language): string {
   const dir = s.directionText === null ? "" : ` — ${s.directionText}`;
   const from = s.validity.from === null ? null : berlinDateTime(s.validity.from, language);
   const until = s.validity.until === null ? null : berlinDateTime(s.validity.until, language);
-  const when = from === null && until === null ? "" : ` (${from ?? ""}${until === null ? "" : `–${until}`})`;
+  const when = from !== null && until !== null ? ` (${from}–${until})`
+    : from !== null ? L(language, ` (ab ${from})`, ` (from ${from})`)
+    : until !== null ? L(language, ` (bis ${until})`, ` (until ${until})`) : "";
   const delay = s.delayMin === null ? "" : ` (+${s.delayMin} min)`;
   return `• ${kind}${s.road ? ` ${s.road}` : ""}:${quoted}${dir}${delay}${when}${s.distanceM === undefined ? "" : ` · ${km(s.distanceM, language)}`}`;
 }
@@ -259,14 +279,14 @@ const checkRoadStatus: Handler = async (args, ctx) => {
   const asked = road?.replace(/\s/g, "").toUpperCase();
   if (road !== undefined && /^A\s?\d+$/i.test(road)) {
     const code = asked!;
-    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: code, horizon_days: horizon, limit })
+    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: code, horizon_days: horizon, limit: ROAD_READ })
       .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; });
     if (r === null) {
       const registered = (await ctx.api.get<{ road: string }[]>("listMotorways", {})).data.map((m) => m.road);
       return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)));
     }
     metas.push(r.meta);
-    body = roadStatusBody(r.data, language, limit, code, true);
+    body = roadStatusBody(r.data, language, limit, code, true, r.meta.page?.hasMore === true);
   } else if (asked !== undefined && /^[BLS]\d{1,4}$/u.test(asked) && args["place"] === undefined && args["lat"] === undefined) {
     // A federal or Land road asked by its number alone: the API reads the situations naming it (a Kreisstraße is no reference).
     const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: asked, horizon_days: horizon, limit });
@@ -478,7 +498,7 @@ export function warningDetail(w: T.WeatherWarning, language: Language): string {
   const parts = [L(language, `Stufe ${w.level} von 4`, `level ${w.level} of 4`)];
   if (w.event) parts.push(L(language, `Ereignis ${w.event}`, `event ${w.event}`));
   if (w.area?.name) parts.push(`${L(language, "Gebiet", "area")}: ${w.area.name}${w.area.cellId ? L(language, ` (Warnzelle ${w.area.cellId})`, ` (warn cell ${w.area.cellId})`) : ""}`);
-  if (w.inForce !== false && w.validity.from !== null) parts.push(L(language, `gilt seit ${berlinDateTime(w.validity.from, language)}`, `in force since ${berlinDateTime(w.validity.from, language)}`));
+  if (w.inForce === true && w.validity.from !== null) parts.push(L(language, `gilt seit ${berlinDateTime(w.validity.from, language)}`, `in force since ${berlinDateTime(w.validity.from, language)}`));
   return ` — ${parts.join(" · ")}`;
 }
 
@@ -524,13 +544,17 @@ const STOP_IN_TOWN: Record<Language, (q: string, town: string) => string> = {
 };
 
 async function townIn(q: string, ctx: ToolContext): Promise<string | undefined> {
+  return (await townPlace(q, ctx))?.name;
+}
+
+async function townPlace(q: string, ctx: ToolContext): Promise<T.PlaceItem | undefined> {
   const comma = q.split(",").map((p) => p.trim()).filter((p) => p !== "");
   const words = q.split(/[\s,]+/u).filter((w) => w.length >= 3 && !/\d/u.test(w));
   // At most four reads, on the not-found path only.
   for (const candidate of [...new Set([...(comma.length > 1 ? comma : []), ...words])].slice(0, 4)) {
     const r = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: candidate, kind: "municipality", limit: 1 });
     const p = r.data[0];
-    if (p !== undefined && p.name.toLocaleLowerCase("de") === candidate.toLocaleLowerCase("de")) return p.name;
+    if (p !== undefined && p.name.toLocaleLowerCase("de") === candidate.toLocaleLowerCase("de")) return p;
   }
   return undefined;
 }
@@ -558,18 +582,35 @@ export function nearDepartureLine(d: T.Departure, language: Language): string {
 
 /** The point a place names: the place search first, else a stop of that name, else today's town-centre reading. */
 async function nearPoint(args: Args, ctx: ToolContext): Promise<{ at: LatLon; label: string; metas: DataMeta[] } | CallToolResult> {
+  const { language } = ctx;
   const place = num(args["lat"]) === undefined ? str(args["place"]) : undefined;
   // A street and house number keeps today's resolver and its refusal where no address data is held.
-  if (place !== undefined && !looksLikeHouseNumber(place)) {
-    const p = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: place, limit: 1 });
-    if (p.data[0] !== undefined) { creditPlace(p.meta.attribution); return { at: p.data[0].location, label: p.data[0].name, metas: [] }; }
-    const s = await ctx.api.get<T.Station[]>("listStations", { q: place, limit: 1 });
-    if (s.data[0] !== undefined) return { at: s.data[0].location, label: place, metas: [s.meta] };
+  if (place === undefined || looksLikeHouseNumber(place)) {
+    const pos = await position(args, ctx);
+    if (isResult(pos)) return pos;
+    return { at: pos.at, label: aroundText(pos.label, pos.at), metas: [] };
   }
-  const pos = await position(args, ctx);
-  if (isResult(pos)) return pos;
-  return { at: pos.at, label: aroundText(pos.label, pos.at), metas: [] };
+  const p = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: place, limit: 1 });
+  if (p.data[0] !== undefined) { creditPlace(p.meta.attribution); return { at: p.data[0].location, label: p.data[0].name, metas: [] }; }
+  const s = await ctx.api.get<T.Station[]>("listStations", { q: place, limit: 1 });
+  const stop = s.data[0];
+  if (stop !== undefined) {
+    // A place that names a town takes a stop of that name only in that town (today's get_departures rule);
+    // a place naming no town says that its point is a stop.
+    const town = await townPlace(place, ctx);
+    if (town === undefined) return { at: stop.location, label: L(language, `${place} (Haltestelle ${stop.name})`, `${place} (the stop ${stop.name})`), metas: [s.meta] };
+    if (inTown(stop, town)) return { at: stop.location, label: place, metas: [s.meta] };
+  }
+  // The place search already missed the whole place: its town centre, never a second read of the same words.
+  const centre = await townCentre(place, ctx);
+  if (centre === undefined) return placeUnknown(ctx, place);
+  return { at: centre.at, label: aroundText(centre.label, centre.at), metas: [] };
 }
+
+/** A stop lies in a town: the same Kreis key where both carry one, else the town's name in the stop's. */
+const inTown = (stop: T.Station, town: T.PlaceItem): boolean => (stop.districtCode && town.districtCode
+  ? stop.districtCode === town.districtCode
+  : stop.name.toLocaleLowerCase("de").includes(town.name.toLocaleLowerCase("de")));
 
 /** With a place or a position: the nearest stops (one per stop code) with their next departures, as today's answer. */
 async function departuresNear(args: Args, ctx: ToolContext): Promise<CallToolResult> {
@@ -580,22 +621,27 @@ async function departuresNear(args: Args, ctx: ToolContext): Promise<CallToolRes
   const seen = new Set<string>();
   const stops = near.data.filter((s) => { const k = s.stopCode ?? s.id; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, NEAR_STOPS);
   if (stops.length === 0) return none(language, [...pt.metas, near.meta], L(language, "Haltestellen", "stops"));
-  const boards = await Promise.all(stops.map((s) => ctx.api.get<T.Board>("listStationDepartures", {
+  // One stop's board that fails is said for that stop; the others still answer.
+  const boards = await Promise.allSettled(stops.map((s) => ctx.api.get<T.Board>("listStationDepartures", {
     stationId: s.id, from: str(args["when"]), duration_min: num(args["duration_min"]) ?? NEAR_WINDOW_MIN, modes: strs(args["modes"]), limit: num(args["limit"]) ?? NEAR_PER_STOP,
   })));
-  const blocks = stops.flatMap((s, i) => {
+  const blocks = stops.map((s, i) => {
     const b = boards[i]!;
-    if (b.data.departures.length === 0) return [];
     const dist = s.distanceM === null || s.distanceM === undefined ? "" : ` (${km(s.distanceM, language)})`;
-    return [[`${s.name}${dist} — stop_id ${s.stopCode ?? s.id}:`, ...b.data.departures.map((d) => nearDepartureLine(d, language))].join("\n")];
+    const head = `${s.name}${dist} — stop_id ${s.id}:`;
+    if (b.status === "rejected") return `${head} ${L(language, "Abfahrten nicht gelesen.", "departures not read.")}`;
+    if (b.value.data.departures.length === 0) return `${head} ${L(language, `keine Abfahrt bis ${berlinTime(b.value.data.window.until)}.`, `no departure until ${berlinTime(b.value.data.window.until)}.`)}`;
+    return [head, ...b.value.data.departures.map((d) => nearDepartureLine(d, language))].join("\n");
   });
   const radius = km(NEAR_RADIUS_M, language);
   const head = L(language, `Die nächsten Haltestellen um ${pt.label} (im Umkreis von ${radius}) mit ihren nächsten Abfahrten:`, `The nearest stops around ${pt.label} (within ${radius}) with their next departures:`);
-  const metas = [...pt.metas, near.meta, ...boards.map((b) => b.meta)];
-  if (blocks.length === 0) return toolResult(`${head} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}`, metas, language);
+  const metas = [...pt.metas, near.meta, ...boards.flatMap((b) => (b.status === "fulfilled" ? [b.value.meta] : []))];
   const more = L(language, "Mehr Abfahrten einer Haltestelle: get_departures mit ihrer stop_id.", "More departures of one stop: get_departures with its stop_id.");
   return toolResult([head, ...blocks, more].join("\n\n"), metas, language);
 }
+
+/** The API's own station id ("1:de:11000:900100003"), as the answer around a place prints it as stop_id. */
+export const STATION_ID = /^\d+:\S+$/u;
 
 const getDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
@@ -603,6 +649,12 @@ const getDepartures: Handler = async (args, ctx) => {
   if (!given("stop") && !given("stop_id") && !given("place") && (num(args["lat"]) === undefined || num(args["lon"]) === undefined)) return placeMissing(ctx);
   // A stop named or given by id is searched first; with only a place or a position the search has no
   // q or code to send (the API refuses that), so the stop nearest the position answers.
+  const id = str(args["stop_id"]);
+  if (id !== undefined && STATION_ID.test(id)) {
+    // A station id this tool printed goes straight to its board; no lookup by code.
+    const r = await ctx.api.get<T.Board>("listStationDepartures", { stationId: id, from: str(args["when"]), duration_min: num(args["duration_min"]), modes: strs(args["modes"]), limit: num(args["limit"]) });
+    return boardAnswer(r, [r.meta], language);
+  }
   let stations = given("stop") || given("stop_id") ? await stationOf(args, ctx) : null;
   if ((stations === null || stations.data.length === 0) && (str(args["place"]) !== undefined || num(args["lat"]) !== undefined)) {
     return departuresNear(args, ctx);
@@ -617,10 +669,14 @@ const getDepartures: Handler = async (args, ctx) => {
     return town === undefined ? NOT_KNOWN.stop(asked, language) : toolError(STOP_IN_TOWN[language](asked, town));
   }
   const r = await ctx.api.get<T.Board>("listStationDepartures", { stationId: station.id, from: str(args["when"]), duration_min: num(args["duration_min"]), modes: strs(args["modes"]), limit: num(args["limit"]) });
+  return boardAnswer(r, [stations.meta, r.meta], language);
+};
+
+function boardAnswer(r: Envelope<T.Board>, metas: DataMeta[], language: Language): CallToolResult {
   const head = `${r.data.station.name}:`;
   if (r.data.departures.length === 0) return toolResult(`${head} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}`, [r.meta], language);
-  return toolResult([head, ...r.data.departures.map((d) => departureLine(d, language))].join("\n"), [stations.meta, r.meta], language);
-};
+  return toolResult([head, ...r.data.departures.map((d) => departureLine(d, language))].join("\n"), metas, language);
+}
 
 /** Today's words when a station tool is called with no station at all: ask, never search for nothing. */
 const NEED_STATION = (language: Language): CallToolResult => toolError(L(language,
