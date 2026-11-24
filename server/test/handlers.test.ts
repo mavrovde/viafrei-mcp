@@ -1781,8 +1781,8 @@ describe("stations", () => {
     const facilities = (list: ReturnType<typeof unit>[]) => ({ station: { name: "Schömpingbach Hbf" }, facilities: list,
       counts: { active: list.filter((f) => f.state === "active").length, inactive: list.filter((f) => f.state === "inactive").length, unknown: list.filter((f) => f.state !== "active" && f.state !== "inactive").length } });
     const text = async (args: Record<string, unknown>) => body(await call("check_station_facilities", { station: "Schömpingbach Hbf", ...args }));
-    it("every unit in service, one name twice told apart by its number, and a list cut at the limit", async () => {
-      serve("listStationFacilities", facilities([unit("10", "elevator", "zu Gleis 1", "active"), unit("11", "elevator", "zu Gleis 1", "active"), unit("12", "escalator", "Westseite", "active")]));
+    it("every unit in service, one name twice told apart by its number (the equipment number, without the API's id prefix), and a list cut at the limit", async () => {
+      serve("listStationFacilities", facilities([unit("fasta:10", "elevator", "zu Gleis 1", "active"), unit("equipment:11", "elevator", "zu Gleis 1", "active"), unit("12", "escalator", "Westseite", "active")]));
       expect(await text({ limit: 2, language: "de" })).toBe([
         "In Schömpingbach Hbf sind alle 3 gemeldeten Anlagen in Betrieb. Gezählt sind die Anlagen, die die Bahn für diesen Bahnhof meldet. Aufzüge an Haltestellen städtischer Verkehrsbetriebe (Straßenbahn, Stadtbahn, U-Bahn) sind darin nicht enthalten — dazu liegen mir für diesen Bahnhof keine Live-Daten vor.",
         "Fahrtreppe Westseite: in Betrieb", "Aufzug zu Gleis 1 (Anlage 10): in Betrieb", "… und 1 weitere.",

@@ -90,10 +90,13 @@ function kindCounts(language: Language, facilities: readonly Facility[]): string
   return parts.length <= 1 ? (parts[0] ?? "") : `${parts.slice(0, -1).join(", ")}${c.and}${parts[parts.length - 1]!}`;
 }
 
+/** The unit's number as today prints it: the operator's equipment number, without the API's id prefix. */
+export const unitNumber = (id: string): string => id.replace(/^(?:fasta|equipment):/u, "");
+
 function facilityLine(language: Language, f: Facility, withUnit: boolean): string {
   const c = COPY[language];
   const kind = f.kind === "elevator" ? c.elevator : f.kind === "escalator" ? c.escalator : c.other;
-  const unit = withUnit ? ` (${c.unit(f.id)})` : "";
+  const unit = withUnit ? ` (${c.unit(unitNumber(f.id))})` : "";
   const where = f.position === null ? unit : ` ${facilityNameIn(language, f.position)}${unit}`;
   const state = f.state === "active" ? c.active : f.state === "inactive" ? c.inactive : c.unknownState;
   return `${kind}${where}: ${state}`;
