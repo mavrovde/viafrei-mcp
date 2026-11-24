@@ -60,12 +60,12 @@ describe("resources", () => {
     ["viafrei://rules/electric-driving", ["ev"]],
   ] as const) {
     it(`${uri}: the rules of ${topics.join(", ")} as markdown`, async () => {
-      const d = ex<{ rules: Record<string, unknown>[] }>("getDrivingRules");
+      const d = ex<{ rules: Record<string, unknown>[]; reviewedOn: string }>("getDrivingRules");
       mockServer.use(handlerFor("getDrivingRules", (url) => HttpResponse.json({ ...exampleOf<Body>("getDrivingRules"), data: { ...d, title: `T ${url.searchParams.get("topic")}`, rules: [d.rules[0], { ...d.rules[1], legalBasis: null }] } })));
       const r = await read(uri);
       expect(r.mimeType).toBe("text/markdown");
       expect(query("getDrivingRules").map((q) => q["topic"])).toEqual(topics);
-      const block = (t: string) => `## T ${t}\n- Synthetic statement 1 about winter_tyres, for tests only. (§ 0 synthetic)\n- Synthetic statement 2 about winter_tyres, for tests only.\n\n_Informational, not legal advice. (2026-11-17)_`;
+      const block = (t: string) => `## T ${t}\n- Synthetic statement 1 about winter_tyres, for tests only. (§ 0 synthetic)\n- Synthetic statement 2 about winter_tyres, for tests only.\n\n_Informational, not legal advice. (${d.reviewedOn})_`;
       expect(r.text).toBe(topics.map(block).join("\n\n"));
     });
   }

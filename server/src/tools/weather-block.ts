@@ -178,9 +178,9 @@ export const VERBATIM_BUDGET_CHARS = 6_500;
 
 const quoted = (x: string | null | undefined): string[] => (x === null || x === undefined || x === "" ? [] : [`   „${x}“`]);
 
-/** The DWD's own English text is used when it says anything. */
+/** The DWD's own English text is used when the API says it is the DWD's as published (english.unaltered) and it says anything. */
 export const hasEnglish = (w: T.WeatherWarning): boolean =>
-  w.english !== null && w.english !== undefined && [w.english.headline, w.english.description, w.english.instruction].some((x) => x !== null && x !== "");
+  w.english !== null && w.english !== undefined && w.english.unaltered === true && [w.english.headline, w.english.description, w.english.instruction].some((x) => x !== null && x !== "");
 
 /** The DWD's CAP fields, as published, under our label (today's capLine). */
 function capLine(language: Language, w: T.WeatherWarning): string | null {
@@ -234,6 +234,10 @@ export function summaryNotice(language: Language, reason: string): string {
 export function warningsList(language: Language, shown: readonly T.WeatherWarning[], now: Date, o: { budgetChars?: number; forecastSlippery?: boolean } = {}): { mode: WarningMode; text: string; notice: string | null } {
   const render = (mode: WarningMode): string => shown.map((w, i) => warningBlock(language, w, i + 1, now, mode, o.forecastSlippery ?? false)).join("\n\n");
   if (!carriesText(shown)) return { mode: "legacy", text: render("legacy"), notice: null };
+  // Today's gate: a warning is quoted only in the DWD's English (en, english.unaltered) or its German as published
+  // (unaltered); one that is neither makes the whole list a summary, said with today's reason.
+  const altered = shown.filter((w) => !(language === "en" && hasEnglish(w)) && w.unaltered !== true);
+  if (altered.length > 0) return { mode: "summary", text: render("summary"), notice: summaryNotice(language, "the stored wording no longer matches the text as published") };
   const text = render("verbatim");
   if (text.length <= (o.budgetChars ?? VERBATIM_BUDGET_CHARS)) return { mode: "verbatim", text, notice: null };
   return { mode: "summary", text: render("summary"), notice: summaryNotice(language, "the official wording does not fit in one answer") };

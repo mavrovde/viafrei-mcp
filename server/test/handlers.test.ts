@@ -25,6 +25,9 @@ afterAll(() => mockServer.close());
 
 type Body = { data: unknown; meta: Record<string, unknown> };
 const LANGS = ["de", "en"] as const;
+/** The contract's warning without the issuer-text keys (an API release before them): the legacy block. */
+const legacyWarning = (w: Record<string, unknown>): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(w).filter(([k]) => !["description", "instruction", "urgency", "certainty", "english", "unaltered"].includes(k)));
 const at = { lat: 52.52, lon: 13.405 };
 
 async function call(tool: string, args: Record<string, unknown>, o: Parameters<typeof connect>[0] = {}): Promise<CallToolResult> {
@@ -1357,7 +1360,7 @@ describe("parity of four answers with today's server", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-24T21:13:00Z"));
     try {
-      const w = ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!;
+      const w = legacyWarning(ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!);
       const frost = { ...w, headline: "Official WARNING of FROST", level: 1, levelName: "Minor", event: "FROST", inForce: true, area: { name: "Stadt Hannover", cellId: "803241001" }, validity: { from: "2026-11-24T15:00:00Z", until: "2026-11-25T11:00:00Z" } };
       const fog = { ...frost, headline: "Official WARNING of FOG", event: "NEBEL", validity: { from: "2026-11-24T17:08:00Z", until: "2026-11-25T06:00:00Z" } };
       serve("getWeatherRisk", { warnings: [frost, fog] });
@@ -1506,7 +1509,7 @@ describe("parity of four answers with today's server", () => {
 });
 
 describe("check_weather_warnings", () => {
-  const w = () => ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!;
+  const w = () => legacyWarning(ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!);
   for (const language of LANGS) {
     it(`warnings (${language}): today's head with the count and the highest level, highest first; the level applied here, not asked of the API`, async () => {
       serve("getWeatherRisk", { warnings: [w(), { ...w(), headline: "Sturm", level: 3, levelName: "Stufe 3", validity: { from: null, until: null } }, { ...w(), headline: "Frost", level: 1 }] });
@@ -1581,8 +1584,8 @@ describe("check_weather_warnings with the next API release's text, English and r
   const frost = {
     ...ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0], headline: "Amtliche WARNUNG vor FROST", level: 1, levelName: "Stufe 1", event: "FROST", inForce: true,
     area: { name: "Stadt Hannover", cellId: "803241001" }, validity: { from: "2026-11-24T15:00:00Z", until: "2026-11-25T11:00:00Z" }, sourceFamily: "dwd_warnings",
-    description: "Es tritt leichter Frost um -3 °C auf.", instruction: null, urgency: "Immediate", certainty: "Likely",
-    english: { headline: "Official WARNING of FROST", description: "There is a risk of frost (Level 1 of 4).", instruction: null, sourceFamily: "dwd_warnings_en" },
+    description: "Es tritt leichter Frost um -3 °C auf.", instruction: null, urgency: "Immediate", certainty: "Likely", unaltered: true,
+    english: { headline: "Official WARNING of FROST", description: "There is a risk of frost (Level 1 of 4).", instruction: null, sourceFamily: "dwd_warnings_en", unaltered: true },
   };
   const hour = (validAt: string, roadCondition: number | null, surfaceTempC: number | null, runAt = "2026-11-24T18:00:00Z") => ({ validAt, validAtLocal: validAt, runAt, roadCondition, surfaceTempC });
   const station = (o: Record<string, unknown> = {}) => ({
@@ -1641,6 +1644,20 @@ describe("check_weather_warnings with the next API release's text, English and r
     const r = await call("check_weather_warnings", { ...at, language: "en" });
     expect(body(r).split("\n").slice(6, 9)).toEqual(["   Official text of the DWD (German original, binding), reproduced unaltered:", "   „Amtliche WARNUNG vor FROST“", "   „Es tritt leichter Frost um -3 °C auf.“"]);
     expect(sources(r)).toEqual(["dwd_warnings", "dwd_road", "dwd_road_forecast"]);
+  });
+
+  it("quoted only as the API vouches for it: English not unaltered falls back to the German original; German not unaltered makes the list a summary with today's reason", async () => {
+    serve("getWeatherRisk", { lamp: "amber", warnings: [{ ...frost, english: { ...frost.english, unaltered: false } }], truncated: false, roadWeather: [], roadForecast: [] }, { attribution: credits });
+    expect(body(await call("check_weather_warnings", { ...at, language: "en" })).split("\n")[6]).toBe("   Official text of the DWD (German original, binding), reproduced unaltered:");
+    for (const language of LANGS) {
+      serve("getWeatherRisk", { lamp: "amber", warnings: [{ ...frost, unaltered: false, english: { ...frost.english, unaltered: false } }], truncated: false, roadWeather: [], roadForecast: [] }, { attribution: credits });
+      const t = body(await call("check_weather_warnings", { ...at, language }));
+      expect(t).not.toContain("„Amtliche WARNUNG vor FROST“");
+      expect(t).toContain(language === "de" ? "Der amtliche Wortlaut wird hier nicht wiedergegeben (the stored wording no longer matches the text as published)." : "The official wording is not reproduced here (the stored wording no longer matches the text as published).");
+    }
+    // The English, vouched for, is quoted even when the German is not.
+    serve("getWeatherRisk", { lamp: "amber", warnings: [{ ...frost, unaltered: false }], truncated: false, roadWeather: [], roadForecast: [] }, { attribution: credits });
+    expect(body(await call("check_weather_warnings", { ...at, language: "en" }))).toContain("„Official WARNING of FROST“");
   });
 
   it("a list whose official text does not fit is a summary: no quotation, today's notice, the summary credit", async () => {
@@ -1828,7 +1845,7 @@ describe("stations", () => {
     expect(ops().sort()).toEqual(["listStationFacilities", "listStations"]);
     expect(body(r)).toBe([
       "Schömpingbach Hbf", "Schleswig-Holstein · EVA 8001001", "",
-      "Lifts and escalators (As of 2026-03-29 14:00):", "- Escalator (Platform 1): state unknown", "- Escalator (Platform 2): state unknown", "",
+      "Lifts and escalators (As of 2026-03-29 14:00):", "- Escalator (Platform 1): in service", "- Escalator (Platform 2): in service", "",
       "Parking and charging:", "- Car parks and charging points nearby: find_parking or find_charging_station with lat 48.38815, lon 7.51821.",
     ].join("\n"));
     calls.length = 0;

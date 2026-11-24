@@ -2,8 +2,8 @@ Schömpingbach Hbf
 Schleswig-Holstein · EVA 8001001
 
 Lifts and escalators (As of 2026-03-29 14:00):
-- Escalator (Platform 1): state unknown
-- Escalator (Platform 2): state unknown
+- Escalator (Platform 1): in service
+- Escalator (Platform 2): in service
 
 Departures (As of 2026-03-29 14:00):
 - 08:05 S1 → Flughafen, Platform 3: timetable only

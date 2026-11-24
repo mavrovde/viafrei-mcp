@@ -388,6 +388,7 @@ export const OPERATIONS = {
       "from",
       "to",
       "road_class",
+      "cursor",
       "lang"
     ],
     "required": [
@@ -460,6 +461,7 @@ export const OPERATIONS = {
       "to",
       "road_class",
       "limit",
+      "cursor",
       "lang"
     ],
     "required": [
@@ -503,6 +505,8 @@ export const OPERATIONS = {
       "at",
       "radius_m",
       "limit",
+      "area",
+      "railway",
       "lang"
     ],
     "required": []

@@ -1,5 +1,5 @@
 In Pienköckheim Nord ist 1 von 4 gemeldeten Anlagen mit bekanntem Status außer Betrieb. Bei 1 Anlage meldet die Bahn keinen Status. Gezählt sind die Anlagen, die die Bahn für diesen Bahnhof meldet. Aufzüge an Haltestellen städtischer Verkehrsbetriebe (Straßenbahn, Stadtbahn, U-Bahn) sind darin nicht enthalten — dazu liegen mir für diesen Bahnhof keine Live-Daten vor.
 Aufzug zu Gleis 1: außer Betrieb
-Fahrtreppe: Status unbekannt
+Fahrtreppe: in Betrieb
 Fahrtreppe zu Gleis 1: in Betrieb
 … und 2 weitere.

@@ -83,12 +83,14 @@ export type DisruptionAlert = { header: string | null; lines: string[]; inForceF
 export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; alertsChecked?: boolean; punctuality: { name: string | null; level: string; late: number; observed: number; stopsReporting?: number; untimed?: number } | null; windowMin: number };
 /** WeatherRiskData */
 /** The issuer's own English text of a warning (the next API release; absent before it). */
-export type WarningText = { headline: string | null; description: string | null; instruction: string | null; sourceFamily: string };
+export type WarningText = { headline: string | null; description: string | null; instruction: string | null; sourceFamily: string; unaltered?: boolean };
 export type WeatherWarning = {
   headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null }; inForce?: boolean;
   event?: string | null; area?: { name: string | null; cellId: string | null } | null; sourceFamily?: string;
   /** The next API release's official text and CAP fields; undefined while the API does not send them. */
   description?: string | null; instruction?: string | null; urgency?: string | null; certainty?: string | null; english?: WarningText | null;
+  /** The API's word that headline, description and instruction are the issuer's text as published (today's officialSha256 check). */
+  unaltered?: boolean;
 };
 /** One forecast hour of a road-weather station (the next API release). */
 export type RoadForecastHour = { validAt: string; runAt: string; roadCondition: number | null; surfaceTempC: number | null };
