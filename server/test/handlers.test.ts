@@ -844,10 +844,15 @@ describe("find_place, find_poi, find_address", () => {
 
   it("find_address: street and number, postcode and town, coordinate", async () => {
     const a = ex<{ addresses: Record<string, unknown>[] }>("listAddresses").addresses[0]!;
-    serve("listAddresses", { addresses: [a, { ...a, number: null, postcode: null, location: { lat: 1.234567, lon: 2.5 } }] });
+    // The fixture's row has no Land; the second carries one, said in the answer's language.
+    serve("listAddresses", { addresses: [a, { ...a, number: null, postcode: null, land: "Bayern", location: { lat: 1.234567, lon: 2.5 } }] });
     const r = await call("find_address", { query: "Marktweg 1", limit: 2, language: "en" });
     expect(query("listAddresses")).toEqual([{ q: "Marktweg 1", limit: "2", lang: "en" }]);
-    expect(body(r)).toBe("- Marktweg 1, 20000 Kansilkamp · 47.60983, 7.89724\n- Marktweg, Kansilkamp · 1.23457, 2.50000");
+    expect(body(r).split("\n").slice(0, 3)).toEqual([
+      "\"Marktweg 1\" — 2 mapped objects at this address:",
+      "1. Marktweg 1, 20000 Kansilkamp — 47.60983, 7.89724",
+      expect.stringMatching(/^2\. Marktweg, Kansilkamp, Bavaria — 1\.23457, 2\.50000 — \d+ m from point 1$/u),
+    ]);
   });
 
   for (const language of LANGS) {

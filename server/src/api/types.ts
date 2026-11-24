@@ -7,7 +7,7 @@ import type { LatLon } from "./client.js";
 /** PlaceItem */
 export type PlaceItem = { id: string; name: string; kind: string; location: LatLon; distanceM?: number; districtCode?: string | null; sourceFamily: string };
 /** Address */
-export type Address = { street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; location: LatLon };
+export type Address = { street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; location: LatLon; dataAsOf?: string | null };
 export type AddressData = { addresses: Address[] };
 /** FuelStation */
 export type FuelPrice = { fuel: string; priceEur: number; reportedAt: string; current: boolean };

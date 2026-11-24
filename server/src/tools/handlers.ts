@@ -29,6 +29,7 @@ import { describeLocation } from "./location.js";
 import { findDisabledBays } from "./parking-bays.js";
 import { NOT_FULL_NOTE, parkingHead, parkingLine } from "./parking-words.js";
 import { poiCategoryWord } from "./osm-words.js";
+import { addressAnswer } from "./address-words.js";
 import { warningBlock } from "./weather-block.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
@@ -581,7 +582,7 @@ const findAddress: Handler = async (args, ctx) => {
     if (cov.data.addresses.length === 0) return toolResult(ADDRESS_WORDS[language].notLoaded, [], language, { structured: { found: 0, query: str(args["query"]) } });
     return none(language, [r.meta], L(language, "Adressen", "addresses"));
   }
-  return toolResult(r.data.addresses.map((a) => `- ${[[a.street, a.number].filter(Boolean).join(" "), [a.postcode, a.place].filter(Boolean).join(" ")].filter(Boolean).join(", ")} · ${a.location.lat.toFixed(5)}, ${a.location.lon.toFixed(5)}`).join("\n"), [r.meta], language);
+  return toolResult(addressAnswer(str(args["query"]) ?? "", r.data.addresses, language), [r.meta], language);
 };
 
 /** The official region code the contract's `area` wants: given as one, a region name through listPlaces, or a position through describeLocation. */
