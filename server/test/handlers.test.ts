@@ -4,7 +4,7 @@
  * in `_meta`, and the model-actionable errors. Every answer starts from the API contract's v0.3.0 example
  * (test/fixtures/api-openapi.json), changed only in the fields a case is about.
  */
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
@@ -69,6 +69,8 @@ const rich = [
 ];
 
 describe("check_autobahn_traffic", () => {
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-03-30T09:00:00Z")); });
+  afterEach(() => { vi.useRealTimers(); });
   for (const language of LANGS) {
     it(`two roads (${language}): one read per road, each block headed by its road, situation details rendered`, async () => {
       serve("getMotorwayConditions", roads(rich));
@@ -100,7 +102,7 @@ describe("check_autobahn_traffic", () => {
   it("without a limit lists twenty situations", async () => {
     serve("getMotorwayConditions", roads(Array.from({ length: 25 }, (_, i) => situation({ headline: `S${i}` }))));
     const r = await call("check_autobahn_traffic", { roads: ["A1"], language: "en" });
-    expect(body(r).split("\n").filter((l) => l.startsWith("- "))).toHaveLength(20);
+    expect(body(r).split("\n").filter((l) => l.startsWith("• "))).toHaveLength(20);
     expect(body(r)).toContain("S19");
     expect(body(r)).not.toContain("S20");
   });
@@ -109,13 +111,13 @@ describe("check_autobahn_traffic", () => {
     const r = await call("check_autobahn_traffic", { land: "saarland", kinds: ["roadworks"], limit: 1, language: "en" });
     expect(paths("listStateRoadConditions")).toEqual(["/v1/states/10/road-conditions"]);
     expect(query("listStateRoadConditions")).toEqual([{ kinds: "roadworks", road_class: "motorway", limit: "1", lang: "en" }]);
-    expect(body(r)).toBe("traffic light yellow: traffic report.\n- A103: MaintenanceWorks");
+    expect(body(r)).toBe("traffic light yellow: traffic report.\n• Roadworks (Baustelle): A103, since 2026-03-29 21:33");
   });
 
   it("a position: the motorway conditions around it, the radius in metres", async () => {
     const r = await call("check_autobahn_traffic", { ...at, radius_km: 3, language: "en" });
     expect(query("listRoadConditions")).toEqual([{ at: "52.52,13.405", radius_m: "3000", road_class: "motorway", lang: "en" }]);
-    expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m");
+    expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n• Roadworks (Baustelle): A103, since 2026-03-29 21:33, about 0.5 km away");
   });
 
   for (const language of LANGS) {

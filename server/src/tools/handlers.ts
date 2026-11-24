@@ -6,7 +6,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/client.js";
 import type * as T from "../api/types.js";
-import { apiFailure, berlinDateTime, berlinTime, creditPlace, eur, km, toolError, toolResult, type Language } from "../presentation.js";
+import { apiFailure, berlinDateTime, berlinTime, creditPlace, eur, km, standTime, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, placeUnknown, position, radiusM, str, strs, townCentre, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
@@ -240,6 +240,45 @@ function situationsBody(d: T.RoadConditionsData, language: Language, limit: numb
   return rows.length === 0 ? head : [head, ...rows.map((s) => situationLine(s, language))].join("\n");
 }
 
+/**
+ * check_autobahn_traffic's entry, as today's line (check_autobahn_traffic.ts `line`): the kind in words, the road
+ * (English) or the provider's place words (German), since when and until when, the delay and the length in our
+ * words, and the provider's own German quoted and labelled in English. A provider code ("abnormalTraffic") is
+ * said by its kind, never read out. A start today is its clock time, one this year its day and time, an older one
+ * its day (today's sinceLabel); one not begun yet says "from".
+ */
+export function autobahnLine(s: T.RoadSituation, language: Language, now: Date = new Date()): string {
+  const de = language === "de";
+  const kind = KIND[language][s.kind] ?? s.kind;
+  const head = isCode(s.headline) ? "" : s.headline;
+  const desc = s.description === null ? "" : head !== "" && s.description.trimEnd().endsWith(head) ? s.description.trimEnd().slice(0, -head.length) : s.description;
+  // The signed destination is the provider's words too: it stands with them, quoted in English.
+  const where = [head, s.subtitle, s.directionText].filter((x) => x).join(" · ");
+  const words = [where, desc.trim() === "" ? "" : excerpt(desc)].filter((x) => x !== "").join(" — ");
+  const from = s.validity.from;
+  const started = from === null || new Date(from).getTime() <= now.getTime();
+  const sameYear = from !== null && berlinDateTime(from, language).slice(6, 10) === berlinDateTime(now.toISOString(), language).slice(6, 10);
+  const fromText = from === null ? null : !started || sameYear ? standTime(from, language, now) : language === "de" ? berlinDateTime(from, language).slice(0, 10) : standTime(from, language, now).slice(0, 10);
+  const parts = [
+    de ? (where === "" ? s.road : where) : s.road,
+    fromText === null ? null : started ? L(language, `seit ${fromText}`, `since ${fromText}`) : L(language, `ab ${fromText}`, `from ${fromText}`),
+    s.validity.until === null ? null : L(language, `bis ${standTime(s.validity.until, language, now)}`, `until ${standTime(s.validity.until, language, now)}`),
+    s.delayMin === null || s.delayMin <= 0 ? null : `+${s.delayMin} min`,
+    s.lengthM === null || s.lengthM === undefined || s.lengthM <= 0 ? null : L(language, `auf ${kmText(s.lengthM, language)}`, `over ${kmText(s.lengthM, language)}`),
+    s.distanceM === undefined ? null : L(language, `ca. ${kmText(s.distanceM, language)} entfernt`, `about ${kmText(s.distanceM, language)} away`),
+  ].filter((x): x is string => x !== null && x !== "");
+  const quote = de ? (desc.trim() === "" ? "" : ` — ${excerpt(desc)}`) : words === "" ? "" : ` — Provider text (German): "${words}"`;
+  return `• ${kind}: ${parts.join(", ")}${quote}`;
+}
+
+/** check_autobahn_traffic's body: the lamp's line, then each entry as today's line. */
+function autobahnBody(d: T.RoadConditionsData, language: Language, limit: number | undefined): string {
+  const rows = d.situations.slice(0, limit ?? 20);
+  const head = `${lampText(d, language)}.`;
+  const now = new Date();
+  return rows.length === 0 ? head : [head, ...rows.map((s) => autobahnLine(s, language, now))].join("\n");
+}
+
 const checkAutobahnTraffic: Handler = async (args, ctx) => {
   const { language } = ctx;
   const roads = strs(args["roads"]) ?? [];
@@ -254,18 +293,18 @@ const checkAutobahnTraffic: Handler = async (args, ctx) => {
     if (known.length === 0) {
       return toolError(UNKNOWN_ROAD.all(asked.join(", "), registered.length, asked.length === 1 ? nearestMotorways(asked[0]!, registered).join(", ") : "", language));
     }
-    const body = all.map((r, i) => (r === null ? UNKNOWN_ROAD.one(asked[i]!, nearestMotorways(asked[i]!, registered).join(", "), language) : `${asked[i]} — ${situationsBody(r.data, language, limit)}`)).join("\n\n");
+    const body = all.map((r, i) => (r === null ? UNKNOWN_ROAD.one(asked[i]!, nearestMotorways(asked[i]!, registered).join(", "), language) : `${asked[i]} — ${autobahnBody(r.data, language, limit)}`)).join("\n\n");
     return toolResult(body, known.flatMap((r) => roadWeatherCredits([r.meta], r.data)), language, { nextCursor: all.length === 1 ? (known[0]!.meta.page?.nextCursor ?? null) : null });
   }
   const land = str(args["land"]);
   if (land !== undefined) {
     const r = await ctx.api.get<T.RoadConditionsData>("listStateRoadConditions", { state: LAND_CODES[land] ?? land, kinds, limit, road_class: ["motorway"] });
-    return toolResult(situationsBody(r.data, language, limit), roadWeatherCredits([r.meta], r.data), language);
+    return toolResult(autobahnBody(r.data, language, limit), roadWeatherCredits([r.meta], r.data), language);
   }
   const pos = await position(args, ctx);
   if (isResult(pos)) return pos;
   const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), kinds, limit, road_class: ["motorway"] });
-  return toolResult(situationsBody(r.data, language, limit), roadWeatherCredits([r.meta], r.data), language);
+  return toolResult(autobahnBody(r.data, language, limit), roadWeatherCredits([r.meta], r.data), language);
 };
 
 const checkRoadStatus: Handler = async (args, ctx) => {

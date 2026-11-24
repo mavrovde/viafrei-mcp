@@ -1,7 +1,7 @@
 A1 — traffic light yellow: roadworks narrowing the carriageway.
-- A1 Richtung Köln: Stau (+12 min) until 30/03/2026, 12:00 · 1.8 km
-- : Unfall · 400 m
+• Hazard (Gefahr): A1, since 10:00, until 12:00, +12 min, about 1.8 km away — Provider text (German): "Stau · Richtung Köln"
+• Hazard (Gefahr): since 2026-03-28 19:09, about 0.4 km away — Provider text (German): "Unfall"
 
 A7 — traffic light yellow: roadworks narrowing the carriageway.
-- A1 Richtung Köln: Stau (+12 min) until 30/03/2026, 12:00 · 1.8 km
-- : Unfall · 400 m
+• Hazard (Gefahr): A1, since 10:00, until 12:00, +12 min, about 1.8 km away — Provider text (German): "Stau · Richtung Köln"
+• Hazard (Gefahr): since 2026-03-28 19:09, about 0.4 km away — Provider text (German): "Unfall"

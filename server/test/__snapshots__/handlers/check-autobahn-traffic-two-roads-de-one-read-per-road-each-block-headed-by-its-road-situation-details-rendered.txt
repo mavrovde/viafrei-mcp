@@ -1,7 +1,7 @@
 A1 — Ampel Gelb: Baustelle, Fahrbahn eingeengt.
-- A1 Richtung Köln: Stau (+12 min) bis 30.03.2026, 12:00 · 1,8 km
-- : Unfall · 400 m
+• Gefahr: Stau · Richtung Köln, seit 10:00, bis 12:00, +12 min, ca. 1,8 km entfernt
+• Gefahr: Unfall, seit 28.03. 19:09, ca. 0,4 km entfernt
 
 A7 — Ampel Gelb: Baustelle, Fahrbahn eingeengt.
-- A1 Richtung Köln: Stau (+12 min) bis 30.03.2026, 12:00 · 1,8 km
-- : Unfall · 400 m
+• Gefahr: Stau · Richtung Köln, seit 10:00, bis 12:00, +12 min, ca. 1,8 km entfernt
+• Gefahr: Unfall, seit 28.03. 19:09, ca. 0,4 km entfernt
