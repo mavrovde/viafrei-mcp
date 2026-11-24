@@ -90,7 +90,11 @@ export type WeatherRiskData = { warnings: WeatherWarning[] };
 /** LocationData's places: the nearest municipality, the nearest district, the district's Land. */
 export type LocationPlace = { id: string; name: string; code?: string | null; location: { lat: number; lon: number }; distanceM: number | null; sourceFamily: string };
 /** LocationData.lowEmissionZone: the verdict, and the zone it is in (inside, transfer) or the nearest (outside). */
-export type LowEmissionZone = { verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null; liftedOn?: string | null };
+export type ZonePlaque = { from: "curated_entry" | "national_fact"; entry: string | null; plakette: string | null; covered: boolean | null };
+export type LowEmissionZone = {
+  verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null; liftedOn?: string | null;
+  exemptRoad?: string | null; releasedArea?: string | null; plaque?: ZonePlaque | null; dataDate?: string | null; boundaryReadAt?: string | null;
+};
 export type LocationAddress = { street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; distanceM: number; dataAsOf: string | null };
 export type LocationData = {
   address: LocationAddress | null; municipality: LocationPlace | null; district: LocationPlace | null; state: LocationPlace | null;

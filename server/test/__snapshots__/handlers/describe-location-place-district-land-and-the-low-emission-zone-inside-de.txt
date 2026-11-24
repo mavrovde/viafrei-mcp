@@ -4,3 +4,5 @@ Beschreibung für 52.5200, 13.4050:
 - Kreis: Kreis B (11,0 km)
 - Bundesland: Brandenburg
 - Umweltzone: Der Punkt liegt in der Umweltzone Köln.
+  Erforderlich: die grüne Plakette (Schadstoffgruppe 4). Sie gibt es bei Zulassungsstellen, TÜV/DEKRA/GTÜ/KÜS und anerkannten Werkstätten gegen Vorlage der Zulassungsbescheinigung Teil I.
+  Zonengrenze zuletzt abgerufen am 18.11.2026.

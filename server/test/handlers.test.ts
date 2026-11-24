@@ -815,7 +815,7 @@ describe("describe_location", () => {
   const noAddresses = () => serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [] });
   for (const language of LANGS) {
     for (const [name, zone] of [
-      ["inside", { ...lez, verdict: "inside" }],
+      ["inside", { ...lez, verdict: "inside", plaque: { from: "curated_entry", entry: "Köln", plakette: "green", covered: true }, boundaryReadAt: "2026-11-18T08:00:00Z" }],
       ["transfer", { ...lez, verdict: "transfer", zone: "Randbereich Nord" }],
       ["outside", lez],
       ["outside, under a kilometre", { ...lez, distanceM: 4 }],

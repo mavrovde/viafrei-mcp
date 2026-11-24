@@ -83,6 +83,49 @@ export function zoneHead(z: T.LowEmissionZone, language: Language): string {
   }
 }
 
+/** Verbatim from today's server (ingest domain/roads/lez-zones.ts LEZ_GREEN_PLAQUE, LEZ_NATIONAL_PLAQUE, UNVERIFIED_NOTE). */
+const PLAQUE = {
+  green: {
+    de: "Erforderlich: die grüne Plakette (Schadstoffgruppe 4). Sie gibt es bei Zulassungsstellen, TÜV/DEKRA/GTÜ/KÜS und anerkannten Werkstätten gegen Vorlage der Zulassungsbescheinigung Teil I.",
+    en: "Required: the green plaque (emission group 4). You can buy it at vehicle registration offices, TÜV/DEKRA/GTÜ/KÜS and approved garages on presentation of the vehicle registration document (part I).",
+  },
+  national: {
+    de: "Praktisch alle ausgeschilderten Umweltzonen verlangen heute die grüne Plakette (Schadstoffgruppe 4). Das Zusatzzeichen unter dem Schild sagt verbindlich, welche Plakette gilt. (Umweltbundesamt, Umweltzonen in Deutschland; nicht bestätigt: ob irgendwo noch eine einzelne Zone gelbe oder rote Plaketten zulässt — im Zweifel gilt das Zusatzzeichen — bitte an der Quelle nachlesen)",
+    en: "In practice every signposted Umweltzone today requires the green plaque (emission group 4). The supplementary sign under the zone sign is what actually decides which plaque applies. (Umweltbundesamt, Umweltzonen in Deutschland; not confirmed: whether any single zone still admits yellow or red plaques — if in doubt, the supplementary sign decides — check the source)",
+  },
+} as const;
+
+/** A calendar day in Berlin: "2026-11-18" / "18.11.2026" (lez-answer-text.ts lezDay). */
+function zoneDay(iso: string, language: Language): string {
+  const day = /^\d{4}-\d{2}-\d{2}$/u.test(iso) ? iso : new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
+  if (language === "en") return day;
+  const [y, m, d] = day.split("-");
+  return `${d ?? ""}.${m ?? ""}.${y ?? ""}`;
+}
+
+/**
+ * The lines today's lezAnswerLines adds under the head for a zone in force: the exempt road and the released area
+ * inside it, the plaque, and the data's date. A curated entry's own source name and open doubt are not in the
+ * contract, so its plaque sentence stands without them.
+ */
+export function zoneDetail(z: T.LowEmissionZone, language: Language): string[] {
+  if (z.liftedOn !== null && z.liftedOn !== undefined) return [];
+  const de = language === "de";
+  const out: string[] = [];
+  if (z.verdict === "inside") {
+    if (z.exemptRoad) out.push(de ? `Der Punkt liegt auf der ${z.exemptRoad}, die laut Herausgeber nicht zur Umweltzone gehört.` : `The point is on the ${z.exemptRoad}, which the publisher lists as not part of the zone.`);
+    if (z.releasedArea) out.push(de ? `Er liegt in der freigegebenen Fläche „${z.releasedArea}“.` : `It lies in the released area “${z.releasedArea}”.`);
+  }
+  const p = z.plaque ?? null;
+  if (p !== null) {
+    if (p.from === "national_fact") out.push(PLAQUE.national[language]);
+    else if (p.plakette === "green") out.push(PLAQUE.green[language]);
+  }
+  if (z.dataDate) out.push(de ? `Stand der Zonendaten: ${zoneDay(z.dataDate, language)} (Angabe des Herausgebers).` : `Zone data as of ${zoneDay(z.dataDate, language)} (the publisher's date).`);
+  else if (z.boundaryReadAt) out.push(de ? `Zonengrenze zuletzt abgerufen am ${zoneDay(z.boundaryReadAt, language)}.` : `Zone boundary last read on ${zoneDay(z.boundaryReadAt, language)}.`);
+  return out;
+}
+
 /** The Land of a district by its key's first two digits, in the answer's language; else the API's Land row. */
 function landName(d: T.LocationData, language: Language): string | null {
   const key = d.district?.code ?? d.state?.code ?? null;
@@ -113,7 +156,7 @@ export const describeLocation: Handler = async (args, ctx): Promise<CallToolResu
   if (d.district !== null) lines.push(`- ${c.district}: ${d.district.name} (${away(d.district)})`);
   const land = landName(d, language);
   if (land !== null) lines.push(`- ${c.land}: ${land}`);
-  if (d.lowEmissionZone !== null && !abroad) lines.push(`- ${c.zone}: ${zoneHead(d.lowEmissionZone, language)}`);
+  if (d.lowEmissionZone !== null && !abroad) lines.push(`- ${c.zone}: ${zoneHead(d.lowEmissionZone, language)}`, ...zoneDetail(d.lowEmissionZone, language).map((l) => `  ${l}`));
   if (d.address !== null && d.address.dataAsOf !== null) lines.push("", c.stand(d.address.dataAsOf));
   return toolResult(lines.join("\n"), [r.meta], language);
 };
