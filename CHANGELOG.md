@@ -5,6 +5,19 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.4] - 2026-11-25
+
+**Seven answers carry what today's server says, where the API already returns it.** The server's tools, prompts and resources are those of 2.7.3; what changes is the wording of these answers.
+
+### Fixed
+- **`find_parking`** lists each site with its kind, spaces, free places, the share occupied and the operator's status with its time; a reading from another day is dated, and a reading more than 30 minutes old (three of the 10-minute updates today's server assumes when a feed's own cadence is unknown) says its age and is worded as last reported. The head line and the not-full note are today's.
+- **`describe_location`** gives the low-emission zone's details under its line: the plaque, an exempt road, a released area and the date of the zone data.
+- **`find_poi`** answers with today's head and lines (kind in words, brand, address, distance from the place, the page count and the extract date); a town given with `in` is used as given and `near` is not looked up.
+- **`check_weather_warnings`** gives each warning its DWD level name, hazard, area and warn cell, valid window, the headline and the sentence for the drive.
+- **`check_autobahn_traffic`** gives one line per entry with since and until, the delay, its length and distance, and the provider's own text; a provider code is said by its kind, never read out.
+- **`find_address`** folds one door mapped twice (a chain of points within 150 m with no contradicting postcode or town, names folded as today) into one point with a note, gives the Land and numbers points further apart with their spread.
+- **`find_roadworks_ahead`** refuses a calendar date it cannot read with today's message.
+
 ## [2.7.3] - 2026-11-24
 
 **Three answers say what the API already returns.** The server's tools, prompts and resources are those of 2.7.2, and one parameter's text (`limit` of `get_departures`) now says it counts per stop around a place; what changes is how `get_departures`, `check_road_status` and `check_weather_warnings` word their answers.
@@ -4578,6 +4591,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.4]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.4
 [2.7.3]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.3
 [2.7.2]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.2
 [2.7.1]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.1
