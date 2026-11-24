@@ -184,6 +184,24 @@ describe("arguments the tool's schema refuses (as the SDK answers them, before a
   });
 });
 
+describe("a calendar day the schema refuses", () => {
+  it("is refused in today's words for its pattern, one line per argument; another pattern keeps zod's words", async () => {
+    const { client, close } = await connect();
+    try {
+      const r = (await client.callTool({ name: "find_roadworks_ahead", arguments: { language: "en", road: "A3", from: "Frankfurt", to: "Würzburg" } })) as CallToolResult;
+      expect(r).toEqual({
+        content: [{ type: "text", text: "MCP error -32602: Input validation error: Invalid arguments for tool find_roadworks_ahead: a calendar date as YYYY-MM-DD, e.g. 2026-07-25 at from\na calendar date as YYYY-MM-DD, e.g. 2026-07-25 at to" }],
+        isError: true,
+        _meta: { errorCode: "invalid_input" },
+      });
+      const road = (await client.callTool({ name: "find_roadworks_ahead", arguments: { language: "en", road: "Q3" } })) as CallToolResult;
+      expect(textOf(road)).toMatch(/Invalid string: must match pattern .* at road$/u);
+    } finally {
+      await close();
+    }
+  });
+});
+
 describe("a date-time argument the schema refuses", () => {
   it("one issue, the format's, as today's server words it", async () => {
     const { client, close } = await connect();
