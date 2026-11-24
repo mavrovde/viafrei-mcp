@@ -1340,6 +1340,27 @@ describe("parity of four answers with today's server", () => {
       expect(ops()).toEqual(["listStationDepartures"]);
       expect(body(r)).toBe("Board of x:\n- 19:42 S9 → Flughafen BER · pl. 3");
     });
+    it("a station id no board holds: today's unknown-stop refusal", async () => {
+      mockServer.use(handlerFor("listStationDepartures", () => problem(404, "not-found")));
+      for (const language of LANGS) {
+        const r = await call("get_departures", { stop_id: "1:de:99999:1", language });
+        expect(ops().at(-1)).toBe("listStationDepartures");
+        expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "1:de:99999:1" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "1:de:99999:1". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true });
+      }
+    });
+    it("every board failing is the API's failure, an error; no list of unread stops", async () => {
+      world([alex], [st("1:a", "de:1:a", alex.name, 21), st("1:b", "de:1:b", "U Rotes Rathaus (Berlin)", 400)], () => "fail");
+      const r = await call("get_departures", { place: "Berlin Alexanderplatz", language: "en" });
+      expect(r.isError).toBe(true);
+      expect(textOf(r)).not.toMatch(/departures not read/u);
+    });
+    it("an empty board by name keeps the stop search's credit beside the board's", async () => {
+      const station = { family: "zhv", domain: "transit", text: "Haltestellendaten: DELFI e.V. (zentrales Haltestellenverzeichnis), CC BY 4.0, bearbeitet", licence: "CC BY 4.0" };
+      serve("listStations", undefined, { attribution: [station] });
+      serve("listStationDepartures", { ...ex<object>("listStationDepartures"), departures: [] });
+      const r = await call("get_departures", { stop: "Schömpingbach", language: "en" });
+      expect(meta(r)["sources"]).toContain("zhv");
+    });
     it("one board that fails is said for its stop; an empty board says until when; the others still answer", async () => {
       world([alex], [st("1:a", "de:1:a", alex.name, 21), st("1:b", "de:1:b", "U Rotes Rathaus (Berlin)", 400), st("1:c", "de:1:c", "U Klosterstr. (Berlin)", 500)], (path) => (path.includes("1%3Ab") ? "fail" : path.includes("1%3Ac") ? [] : [d({})]));
       for (const language of LANGS) {

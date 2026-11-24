@@ -6,7 +6,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/client.js";
 import type * as T from "../api/types.js";
-import { berlinDateTime, berlinTime, creditPlace, eur, km, toolError, toolResult, type Language } from "../presentation.js";
+import { apiFailure, berlinDateTime, berlinTime, creditPlace, eur, km, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, placeUnknown, position, radiusM, str, strs, townCentre, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
@@ -625,6 +625,9 @@ async function departuresNear(args: Args, ctx: ToolContext): Promise<CallToolRes
   const boards = await Promise.allSettled(stops.map((s) => ctx.api.get<T.Board>("listStationDepartures", {
     stationId: s.id, from: str(args["when"]), duration_min: num(args["duration_min"]) ?? NEAR_WINDOW_MIN, modes: strs(args["modes"]), limit: num(args["limit"]) ?? NEAR_PER_STOP,
   })));
+  // Only the API's own failure is said per stop; anything else is a fault here and is not hidden.
+  for (const b of boards) if (b.status === "rejected" && !(b.reason instanceof ApiError)) throw b.reason;
+  if (boards.every((b) => b.status === "rejected")) return apiFailure((boards[0] as PromiseRejectedResult).reason, language);
   const blocks = stops.map((s, i) => {
     const b = boards[i]!;
     const dist = s.distanceM === null || s.distanceM === undefined ? "" : ` (${km(s.distanceM, language)})`;
@@ -652,7 +655,9 @@ const getDepartures: Handler = async (args, ctx) => {
   const id = str(args["stop_id"]);
   if (id !== undefined && STATION_ID.test(id)) {
     // A station id this tool printed goes straight to its board; no lookup by code.
-    const r = await ctx.api.get<T.Board>("listStationDepartures", { stationId: id, from: str(args["when"]), duration_min: num(args["duration_min"]), modes: strs(args["modes"]), limit: num(args["limit"]) });
+    const r = await ctx.api.get<T.Board>("listStationDepartures", { stationId: id, from: str(args["when"]), duration_min: num(args["duration_min"]), modes: strs(args["modes"]), limit: num(args["limit"]) })
+      .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; });
+    if (r === null) return NOT_KNOWN.stop(id, language);
     return boardAnswer(r, [r.meta], language);
   }
   let stations = given("stop") || given("stop_id") ? await stationOf(args, ctx) : null;
@@ -674,7 +679,7 @@ const getDepartures: Handler = async (args, ctx) => {
 
 function boardAnswer(r: Envelope<T.Board>, metas: DataMeta[], language: Language): CallToolResult {
   const head = `${r.data.station.name}:`;
-  if (r.data.departures.length === 0) return toolResult(`${head} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}`, [r.meta], language);
+  if (r.data.departures.length === 0) return toolResult(`${head} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}`, metas, language);
   return toolResult([head, ...r.data.departures.map((d) => departureLine(d, language))].join("\n"), metas, language);
 }
 
