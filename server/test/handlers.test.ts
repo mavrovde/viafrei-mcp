@@ -451,6 +451,9 @@ describe("find_hydrogen_station", () => {
 });
 
 describe("find_parking", () => {
+  // The listing's reading is 7 min old, the motorway's 4 h 22 min: fresh and stale on one clock.
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-03-29T20:00:00Z")); });
+  afterEach(() => { vi.useRealTimers(); });
   const park = (o: Record<string, unknown>) => ({ ...ex<Record<string, unknown>[]>("listParkingOptions")[0], ...o });
   const sites = [
     park({}),
@@ -472,7 +475,8 @@ describe("find_parking", () => {
     const r = await call("find_parking", { road: "a 7", kind: "any", only_with_free_spaces: false, language: "en" });
     expect(paths("listMotorwayParking")).toEqual(["/v1/motorways/A7/parking-options"]);
     expect(query("listMotorwayParking")).toEqual([{ lang: "en" }]);
-    expect(body(r)).toBe("- Stunsaltal Parken (rest_area) · 32 free of 229");
+    expect(body(r)).toBe("Parking along the A7:\n1. Stunsaltal Parken — Rest area (Rastanlage), 229 spaces, last reported 32 free, 86 % occupied, operator's status: spaces available (as of 17:37, 4 h 22 min ago)");
+    expect(textOf(r).endsWith("\nWhere no \"free\" count is shown the operator publishes no occupancy — it does not mean the site is full.")).toBe(true);
   });
 
   for (const language of LANGS) {

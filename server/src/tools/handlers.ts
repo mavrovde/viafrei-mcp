@@ -27,6 +27,7 @@ import { checkTransitDisruption } from "./transit.js";
 import { findSharing } from "./sharing.js";
 import { describeLocation } from "./location.js";
 import { findDisabledBays } from "./parking-bays.js";
+import { NOT_FULL_NOTE, parkingHead, parkingLine } from "./parking-words.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -444,11 +445,9 @@ const findParking: Handler = async (args, ctx) => {
     }
     return none(language, [r.meta], L(language, "Parkplätze", "car parks"));
   }
-  const lines = r.data.map((p) => {
-    const occ = p.occupancy === null || p.occupancy.free === null ? "" : L(language, ` · ${p.occupancy.free} frei${p.occupancy.total === null ? "" : ` von ${p.occupancy.total}`}`, ` · ${p.occupancy.free} free${p.occupancy.total === null ? "" : ` of ${p.occupancy.total}`}`);
-    return `- ${p.name ?? p.operator ?? p.id} (${p.kind})${p.distanceM === null || p.distanceM === undefined ? "" : ` · ${km(p.distanceM, language)}`}${occ}`;
-  });
-  return toolResult(lines.join("\n"), [r.meta], language, read.conditionNote === undefined ? {} : { conditionNote: read.conditionNote });
+  const now = new Date();
+  const lines = [parkingHead(where, language), ...r.data.map((p, i) => parkingLine(p, i, language, now))];
+  return toolResult(lines.join("\n"), [r.meta], language, { note: NOT_FULL_NOTE[language], ...(read.conditionNote === undefined ? {} : { conditionNote: read.conditionNote }) });
 };
 
 const findPoi: Handler = async (args, ctx) => {
