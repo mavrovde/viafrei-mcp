@@ -11,7 +11,7 @@ import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js
 import { pinned } from "./pinned.js";
 import { haversineM } from "../src/tools/location.js";
 import { connect, textOf } from "./harness.js";
-import { GAPS, lampText, nearestMotorways } from "../src/tools/handlers.js";
+import { GAPS, HANDLERS, lampText, nearestMotorways } from "../src/tools/handlers.js";
 import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
 import { kmText } from "../src/tools/nearby.js";
 import { conditionSentence } from "../src/tools/watch-words.js";
@@ -1360,6 +1360,21 @@ describe("parity of four answers with today's server", () => {
       serve("listStationDepartures", { ...ex<object>("listStationDepartures"), departures: [] });
       const r = await call("get_departures", { stop: "Schömpingbach", language: "en" });
       expect(meta(r)["sources"]).toContain("zhv");
+    });
+    it("a board's rejection that is no API failure is thrown, never said as an unread stop", async () => {
+      const station = (id: string, d: number) => ({ id, name: `Stop ${id}`, location: { lat: 52.52, lon: 13.41 }, stopCode: `de:${id}`, eva: null, evaNumbers: [], distanceM: d, districtCode: "11000" });
+      const fault = new TypeError("a fault in the server");
+      const get = vi.fn(async (op: string, params: Record<string, unknown>) => {
+        const meta = { attribution: [], freshness: [] };
+        if (op === "listStations") return { data: [station("1:a", 21), station("1:b", 400)], meta };
+        if (op === "listStationDepartures") {
+          if (params["stationId"] === "1:b") throw fault;
+          return { data: { station: { id: "1:a", name: "Stop 1:a" }, window: { from: "2026-11-24T18:40:00Z", until: "2026-11-24T19:40:00Z" }, departures: [] }, meta };
+        }
+        throw new Error(`unexpected ${op}`);
+      });
+      const ctx = { tool: "get_departures", language: "en", api: { get } } as unknown as Parameters<(typeof HANDLERS)[string]>[1];
+      await expect(HANDLERS["get_departures"]!({ lat: 52.52, lon: 13.41 }, ctx)).rejects.toBe(fault);
     });
     it("one board that fails is said for its stop; an empty board says until when; the others still answer", async () => {
       world([alex], [st("1:a", "de:1:a", alex.name, 21), st("1:b", "de:1:b", "U Rotes Rathaus (Berlin)", 400), st("1:c", "de:1:c", "U Klosterstr. (Berlin)", 500)], (path) => (path.includes("1%3Ab") ? "fail" : path.includes("1%3Ac") ? [] : [d({})]));
