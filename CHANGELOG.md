@@ -7,7 +7,7 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.7.3] - 2026-11-24
 
-**Three answers say what the API already returns.** The server's tools, prompts and resources are those of 2.7.2; what changes is how `get_departures`, `check_road_status` and `check_weather_warnings` word their answers.
+**Three answers say what the API already returns.** The server's tools, prompts and resources are those of 2.7.2, and one parameter's text (`limit` of `get_departures`) now says it counts per stop around a place; what changes is how `get_departures`, `check_road_status` and `check_weather_warnings` word their answers.
 
 ### Fixed
 - **`get_departures` around a place or a position** reads the boards of up to 8 nearest stops within 5 km, one per stop code, each with its board and the realtime state (+N min with the expected time, on time, cancelled, no forecast, timetable). A place the place search lacks is found as a stop of that name, taken only in the town the place names. A station id the answer prints is accepted back and goes straight to its board. A board that fails is said for its stop, an empty one with the time it was read until, and when every board fails the answer is the API's failure as an error. The catalogue's `limit` text says it is per stop around a place.
