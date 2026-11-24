@@ -60,7 +60,7 @@ export type DataMeta = {
   readonly notes?: Notes;
   readonly warnings?: readonly DataWarning[];
   readonly terms?: readonly TermsOffer[];
-  readonly page?: { readonly limit?: number; readonly hasMore?: boolean; readonly nextCursor?: string | null };
+  readonly page?: { readonly limit?: number; readonly hasMore?: boolean; readonly nextCursor?: string | null; readonly total?: number };
   readonly [k: string]: unknown;
 };
 export type Envelope<D> = { readonly data: D; readonly meta: DataMeta };

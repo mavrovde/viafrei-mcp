@@ -1,4 +1,5 @@
-- Möniltal Parken (rest_area) · 39.0 km · 106 free of 231
-- Parkraum GmbH (garage) · 5 free
-- p:3 (street) · 80 m
-- Nur Zahl (rest_area) · 39.0 km
+Parking around 52.520, 13.405 (within 1 km), nearest first:
+1. Möniltal Parken — Rest area (Rastanlage), 39.0 km, 231 spaces, 106 free, 54 % occupied, operator's status: spaces available (as of 21:53)
+2. Parkraum GmbH — Car park (Parkhaus), 5 free
+3. Parking area (Parkplatz) — 0.1 km, no occupancy published
+4. Nur Zahl — Rest area (Rastanlage), 39.0 km, 40 spaces, no occupancy published

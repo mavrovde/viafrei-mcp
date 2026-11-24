@@ -7,7 +7,7 @@ import type { LatLon } from "./client.js";
 /** PlaceItem */
 export type PlaceItem = { id: string; name: string; kind: string; location: LatLon; distanceM?: number; districtCode?: string | null; sourceFamily: string };
 /** Address */
-export type Address = { street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; location: LatLon };
+export type Address = { street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; location: LatLon; dataAsOf?: string | null };
 export type AddressData = { addresses: Address[] };
 /** FuelStation */
 export type FuelPrice = { fuel: string; priceEur: number; reportedAt: string; current: boolean };
@@ -38,7 +38,7 @@ export type ParkingSite = {
 export type SpeedCamera = { id: string; kind: string; enforces: string | null; street: string | null; locationLabel: string | null; municipality: string | null; direction: string | null; limitKmh: number | null; lorryLimitKmh: number | null; firstDay: string | null; lastDay: string | null; dataAsOf: string | null; staleYear: number | null; location: LatLon | null; sourceFamily: string };
 export type SpeedData = { official: SpeedCamera[]; officialTotal: number; osm: SpeedCamera[]; osmTotal: number };
 /** Poi, PoiPage */
-export type Poi = { name: string | null; category: string; kind: string | null; street: string | null; number: string | null; postcode: string | null; place: string | null; distanceM: number | null };
+export type Poi = { name: string | null; brand?: string | null; location: LatLon; dataAsOf?: string | null; category: string; kind: string | null; street: string | null; number: string | null; postcode: string | null; place: string | null; distanceM: number | null };
 /** NearbyData */
 export type NeedPlace = { name: string; kind: string; street: string | null; houseNo: string | null; distanceM: number };
 export type NearbyFuelStation = { name: string | null; brand: string | null; distanceM: number; prices: FuelPrice[] };
@@ -90,7 +90,11 @@ export type WeatherRiskData = { warnings: WeatherWarning[] };
 /** LocationData's places: the nearest municipality, the nearest district, the district's Land. */
 export type LocationPlace = { id: string; name: string; code?: string | null; location: { lat: number; lon: number }; distanceM: number | null; sourceFamily: string };
 /** LocationData.lowEmissionZone: the verdict, and the zone it is in (inside, transfer) or the nearest (outside). */
-export type LowEmissionZone = { verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null; liftedOn?: string | null };
+export type ZonePlaque = { from: "curated_entry" | "national_fact"; entry: string | null; plakette: string | null; covered: boolean | null };
+export type LowEmissionZone = {
+  verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null; liftedOn?: string | null;
+  exemptRoad?: string | null; releasedArea?: string | null; plaque?: ZonePlaque | null; dataDate?: string | null; boundaryReadAt?: string | null;
+};
 export type LocationAddress = { street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; distanceM: number; dataAsOf: string | null };
 export type LocationData = {
   address: LocationAddress | null; municipality: LocationPlace | null; district: LocationPlace | null; state: LocationPlace | null;

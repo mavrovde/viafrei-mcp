@@ -4,3 +4,5 @@ Description of 52.5200, 13.4050:
 - District: Kreis B (11.0 km)
 - State (Land): Brandenburg
 - Low-emission zone: The point lies inside the Umweltzone Köln (Umweltzone).
+  Required: the green plaque (emission group 4). You can buy it at vehicle registration offices, TÜV/DEKRA/GTÜ/KÜS and approved garages on presentation of the vehicle registration document (part I).
+  Zone boundary last read on 2026-11-18.

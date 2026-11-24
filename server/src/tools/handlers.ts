@@ -6,7 +6,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/client.js";
 import type * as T from "../api/types.js";
-import { apiFailure, berlinDateTime, berlinTime, creditPlace, eur, km, toolError, toolResult, type Language } from "../presentation.js";
+import { apiFailure, berlinDateTime, berlinTime, creditPlace, eur, km, standTime, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, placeUnknown, position, radiusM, str, strs, townCentre, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
@@ -27,6 +27,10 @@ import { checkTransitDisruption } from "./transit.js";
 import { findSharing } from "./sharing.js";
 import { describeLocation } from "./location.js";
 import { findDisabledBays } from "./parking-bays.js";
+import { NOT_FULL_NOTE, parkingHead, parkingLine } from "./parking-words.js";
+import { poiCategoryWord } from "./osm-words.js";
+import { addressAnswer } from "./address-words.js";
+import { warningBlock } from "./weather-block.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -237,6 +241,45 @@ function situationsBody(d: T.RoadConditionsData, language: Language, limit: numb
   return rows.length === 0 ? head : [head, ...rows.map((s) => situationLine(s, language))].join("\n");
 }
 
+/**
+ * check_autobahn_traffic's entry, as today's line (check_autobahn_traffic.ts `line`): the kind in words, the road
+ * (English) or the provider's place words (German), since when and until when, the delay and the length in our
+ * words, and the provider's own German quoted and labelled in English. A provider code ("abnormalTraffic") is
+ * said by its kind, never read out. A start today is its clock time, one this year its day and time, an older one
+ * its day (today's sinceLabel); one not begun yet says "from".
+ */
+export function autobahnLine(s: T.RoadSituation, language: Language, now: Date = new Date()): string {
+  const de = language === "de";
+  const kind = KIND[language][s.kind] ?? s.kind;
+  const head = isCode(s.headline) ? "" : s.headline;
+  const desc = s.description === null ? "" : head !== "" && s.description.trimEnd().endsWith(head) ? s.description.trimEnd().slice(0, -head.length) : s.description;
+  // The signed destination is the provider's words too: it stands with them, quoted in English.
+  const where = [head, s.subtitle, s.directionText].filter((x) => x).join(" · ");
+  const words = [where, desc.trim() === "" ? "" : excerpt(desc)].filter((x) => x !== "").join(" — ");
+  const from = s.validity.from;
+  const started = from === null || new Date(from).getTime() <= now.getTime();
+  const sameYear = from !== null && berlinDateTime(from, language).slice(6, 10) === berlinDateTime(now.toISOString(), language).slice(6, 10);
+  const fromText = from === null ? null : !started || sameYear ? standTime(from, language, now) : language === "de" ? berlinDateTime(from, language).slice(0, 10) : standTime(from, language, now).slice(0, 10);
+  const parts = [
+    de ? (where === "" ? s.road : where) : s.road,
+    fromText === null ? null : started ? L(language, `seit ${fromText}`, `since ${fromText}`) : L(language, `ab ${fromText}`, `from ${fromText}`),
+    s.validity.until === null ? null : L(language, `bis ${standTime(s.validity.until, language, now)}`, `until ${standTime(s.validity.until, language, now)}`),
+    s.delayMin === null || s.delayMin <= 0 ? null : `+${s.delayMin} min`,
+    s.lengthM === null || s.lengthM === undefined || s.lengthM <= 0 ? null : L(language, `auf ${kmText(s.lengthM, language)}`, `over ${kmText(s.lengthM, language)}`),
+    s.distanceM === undefined ? null : L(language, `ca. ${kmText(s.distanceM, language)} entfernt`, `about ${kmText(s.distanceM, language)} away`),
+  ].filter((x): x is string => x !== null && x !== "");
+  const quote = de ? (desc.trim() === "" ? "" : ` — ${excerpt(desc)}`) : words === "" ? "" : ` — Provider text (German): "${words}"`;
+  return `• ${kind}: ${parts.join(", ")}${quote}`;
+}
+
+/** check_autobahn_traffic's body: the lamp's line, then each entry as today's line. */
+function autobahnBody(d: T.RoadConditionsData, language: Language, limit: number | undefined): string {
+  const rows = d.situations.slice(0, limit ?? 20);
+  const head = `${lampText(d, language)}.`;
+  const now = new Date();
+  return rows.length === 0 ? head : [head, ...rows.map((s) => autobahnLine(s, language, now))].join("\n");
+}
+
 const checkAutobahnTraffic: Handler = async (args, ctx) => {
   const { language } = ctx;
   const roads = strs(args["roads"]) ?? [];
@@ -251,18 +294,18 @@ const checkAutobahnTraffic: Handler = async (args, ctx) => {
     if (known.length === 0) {
       return toolError(UNKNOWN_ROAD.all(asked.join(", "), registered.length, asked.length === 1 ? nearestMotorways(asked[0]!, registered).join(", ") : "", language));
     }
-    const body = all.map((r, i) => (r === null ? UNKNOWN_ROAD.one(asked[i]!, nearestMotorways(asked[i]!, registered).join(", "), language) : `${asked[i]} — ${situationsBody(r.data, language, limit)}`)).join("\n\n");
+    const body = all.map((r, i) => (r === null ? UNKNOWN_ROAD.one(asked[i]!, nearestMotorways(asked[i]!, registered).join(", "), language) : `${asked[i]} — ${autobahnBody(r.data, language, limit)}`)).join("\n\n");
     return toolResult(body, known.flatMap((r) => roadWeatherCredits([r.meta], r.data)), language, { nextCursor: all.length === 1 ? (known[0]!.meta.page?.nextCursor ?? null) : null });
   }
   const land = str(args["land"]);
   if (land !== undefined) {
     const r = await ctx.api.get<T.RoadConditionsData>("listStateRoadConditions", { state: LAND_CODES[land] ?? land, kinds, limit, road_class: ["motorway"] });
-    return toolResult(situationsBody(r.data, language, limit), roadWeatherCredits([r.meta], r.data), language);
+    return toolResult(autobahnBody(r.data, language, limit), roadWeatherCredits([r.meta], r.data), language);
   }
   const pos = await position(args, ctx);
   if (isResult(pos)) return pos;
   const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at: atParam(pos.at), radius_m: radiusM(args["radius_km"]), kinds, limit, road_class: ["motorway"] });
-  return toolResult(situationsBody(r.data, language, limit), roadWeatherCredits([r.meta], r.data), language);
+  return toolResult(autobahnBody(r.data, language, limit), roadWeatherCredits([r.meta], r.data), language);
 };
 
 const checkRoadStatus: Handler = async (args, ctx) => {
@@ -444,25 +487,83 @@ const findParking: Handler = async (args, ctx) => {
     }
     return none(language, [r.meta], L(language, "Parkplätze", "car parks"));
   }
-  const lines = r.data.map((p) => {
-    const occ = p.occupancy === null || p.occupancy.free === null ? "" : L(language, ` · ${p.occupancy.free} frei${p.occupancy.total === null ? "" : ` von ${p.occupancy.total}`}`, ` · ${p.occupancy.free} free${p.occupancy.total === null ? "" : ` of ${p.occupancy.total}`}`);
-    return `- ${p.name ?? p.operator ?? p.id} (${p.kind})${p.distanceM === null || p.distanceM === undefined ? "" : ` · ${km(p.distanceM, language)}`}${occ}`;
-  });
-  return toolResult(lines.join("\n"), [r.meta], language, read.conditionNote === undefined ? {} : { conditionNote: read.conditionNote });
+  const now = new Date();
+  const lines = [parkingHead(where, language), ...r.data.map((p, i) => parkingLine(p, i, language, now))];
+  return toolResult(lines.join("\n"), [r.meta], language, { note: NOT_FULL_NOTE[language], ...(read.conditionNote === undefined ? {} : { conditionNote: read.conditionNote }) });
 };
+
+/** Today's find_poi words (main packages/mcp/src/tools/find_poi.ts COPY), verbatim. */
+const POI_WORDS = {
+  de: {
+    head: (name: string, where: string): string => `"${name}"${where}:`,
+    inTown: (t: string): string => ` in ${t}`,
+    around: (t: string, km: number): string => ` im Umkreis von ${km} km um ${t}`,
+    from: (km: string, t: string): string => `${km} von ${t}`,
+    page: (total: number, a: number, b: number): string => `${total} Treffer, hier ${a}–${b}.`,
+    pageNext: (total: number, a: number, b: number): string => `${total} Treffer, hier ${a}–${b} — die nächsten auf der nächsten Seite.`,
+    stand: (d: string): string => `Stand der OpenStreetMap-Daten: ${d}`,
+  },
+  en: {
+    head: (name: string, where: string): string => `"${name}"${where}:`,
+    inTown: (t: string): string => ` in ${t}`,
+    around: (t: string, km: number): string => ` within ${km} km of ${t}`,
+    from: (km: string, t: string): string => `${km} from ${t}`,
+    page: (total: number, a: number, b: number): string => `${total} matches, ${a}–${b} shown.`,
+    pageNext: (total: number, a: number, b: number): string => `${total} matches, ${a}–${b} shown — the next on the next page.`,
+    stand: (d: string): string => `OpenStreetMap data as of ${d}`,
+  },
+} as const;
+
+/**
+ * One object, as today's line says where it is: what it is (never the OSM tag), its address, its distance from the
+ * place it is measured from, and its point. The nearest address of an object without one and its Land are today's
+ * and not in the contract, so they are not said.
+ */
+export function poiLine(p: T.Poi, i: number, from: string | null, language: Language): string {
+  const what = poiCategoryWord(p.category, p.kind ?? "", language);
+  const address = [[p.street, p.number].filter((x) => x !== null && x !== "").join(" "), [p.postcode, p.place].filter((x) => x !== null && x !== "").join(" ")].filter((x) => x !== "").join(", ");
+  const kmShown = p.distanceM === null ? null : kmText(p.distanceM, language);
+  const distance = kmShown === null ? null : from === null ? kmShown : POI_WORDS[language].from(kmShown, from);
+  const brand = p.brand === null || p.brand === undefined || p.brand === p.name ? "" : ` (${p.brand})`;
+  const point = `${p.location.lat.toFixed(5)}, ${p.location.lon.toFixed(5)}`;
+  // A nameless object is headed by what it is, which is then not said twice.
+  return `${i + 1}. ${p.name ?? what}${brand} — ${[p.name === null ? null : what, address === "" ? null : address, distance, point].filter((x): x is string => x !== null).join(", ")}`;
+}
 
 const findPoi: Handler = async (args, ctx) => {
   const { language } = ctx;
+  const w = POI_WORDS[language];
   let at: string | undefined;
-  if (str(args["near"]) !== undefined || num(args["lat"]) !== undefined) {
+  let where = "";
+  let from: string | null = null;
+  const town = str(args["in"])?.trim();
+  // Today's order (find_poi.ts): a town given is the scope and `near` is not resolved at all; else the position.
+  if (town !== undefined && town !== "") {
+    where = w.inTown(town);
+    from = town;
+  } else if (str(args["near"]) !== undefined || num(args["lat"]) !== undefined) {
     const pos = await position(args, ctx, "near");
     if (isResult(pos)) return pos;
     at = atParam(pos.at);
+    const label = pos.label ?? `${pos.at.lat.toFixed(5)}, ${pos.at.lon.toFixed(5)}`;
+    where = w.around(label, num(args["radius_km"]) ?? 10);
+    from = pos.label ?? `(${label})`;
   }
-  const r = await ctx.api.get<T.Poi[]>("listPois", { name: str(args["name"]), in: str(args["in"]), at, radius_m: radiusM(args["radius_km"]), category: str(args["category"]), limit: num(args["limit"]), cursor: str(args["cursor"]) });
+  const inTown = town === "" ? undefined : town;
+  const r = await ctx.api.get<T.Poi[]>("listPois", { name: str(args["name"]), in: inTown, at, radius_m: at === undefined ? undefined : radiusM(args["radius_km"]), category: str(args["category"]), limit: num(args["limit"]), cursor: str(args["cursor"]) });
   if (r.data.length === 0) return none(language, [r.meta], L(language, "Orte", "places"));
-  const lines = r.data.map((p) => `- ${p.name ?? p.kind ?? p.category} · ${[[p.street, p.number].filter(Boolean).join(" "), [p.postcode, p.place].filter(Boolean).join(" ")].filter(Boolean).join(", ")}${p.distanceM === null ? "" : ` · ${km(p.distanceM, language)}`}`);
-  return toolResult(lines.join("\n"), [r.meta], language, { nextCursor: r.meta.page?.nextCursor ?? null });
+  const total = r.meta.page?.total;
+  const next = r.meta.page?.nextCursor ?? null;
+  // The page's first number is known on the first page only: a cursor's offset is the API's.
+  const pageLine = total === undefined || str(args["cursor"]) !== undefined || total <= r.data.length ? null : next === null ? w.page(total, 1, r.data.length) : w.pageNext(total, 1, r.data.length);
+  const days = r.data.map((p) => p.dataAsOf).filter((d): d is string => typeof d === "string").sort();
+  const lines = [
+    w.head(str(args["name"]) ?? "", where),
+    ...r.data.map((p, i) => poiLine(p, i, from, language)),
+    ...(pageLine === null ? [] : ["", pageLine]),
+    ...(days[0] === undefined ? [] : ["", w.stand(days[0])]),
+  ];
+  return toolResult(lines.join("\n"), [r.meta], language, { nextCursor: next });
 };
 
 /** Today's server's find_address sentences (main packages/mcp/src/tools/find_address.ts, COPY), verbatim. */
@@ -481,7 +582,7 @@ const findAddress: Handler = async (args, ctx) => {
     if (cov.data.addresses.length === 0) return toolResult(ADDRESS_WORDS[language].notLoaded, [], language, { structured: { found: 0, query: str(args["query"]) } });
     return none(language, [r.meta], L(language, "Adressen", "addresses"));
   }
-  return toolResult(r.data.addresses.map((a) => `- ${[[a.street, a.number].filter(Boolean).join(" "), [a.postcode, a.place].filter(Boolean).join(" ")].filter(Boolean).join(", ")} · ${a.location.lat.toFixed(5)}, ${a.location.lon.toFixed(5)}`).join("\n"), [r.meta], language);
+  return toolResult(addressAnswer(str(args["query"]) ?? "", r.data.addresses, language), [r.meta], language);
 };
 
 /** The official region code the contract's `area` wants: given as one, a region name through listPlaces, or a position through describeLocation. */
@@ -494,14 +595,6 @@ async function areaCode(args: Args, ctx: ToolContext): Promise<{ code: string | 
  * A warning's own detail the API carries, as today's answer gives it per warning: the level of 4, the DWD's
  * event word, the warn area and its cell, and since when a warning in force holds.
  */
-export function warningDetail(w: T.WeatherWarning, language: Language): string {
-  const parts = [L(language, `Stufe ${w.level} von 4`, `level ${w.level} of 4`)];
-  if (w.event) parts.push(L(language, `Ereignis ${w.event}`, `event ${w.event}`));
-  if (w.area?.name) parts.push(`${L(language, "Gebiet", "area")}: ${w.area.name}${w.area.cellId ? L(language, ` (Warnzelle ${w.area.cellId})`, ` (warn cell ${w.area.cellId})`) : ""}`);
-  if (w.inForce === true && w.validity.from !== null) parts.push(L(language, `gilt seit ${berlinDateTime(w.validity.from, language)}`, `in force since ${berlinDateTime(w.validity.from, language)}`));
-  return ` — ${parts.join(" · ")}`;
-}
-
 const checkWeatherWarnings: Handler = async (args, ctx) => {
   const { language } = ctx;
   const pos = await position(args, ctx);
@@ -513,10 +606,10 @@ const checkWeatherWarnings: Handler = async (args, ctx) => {
   const around = aroundText(pos.label, pos.at);
   const { shown, hidden } = byLevel(r.data.warnings, minLevel);
   if (shown.length === 0) return toolResult(noWarning(language, around, minLevel, hidden), asSummary([r.meta]), language);
-  // A warning that starts within the look-ahead says when it starts, so it is never read as in force now.
-  const starts = (w: T.WeatherWarning): string => (w.inForce === false && w.validity.from !== null ? L(language, ` von ${berlinDateTime(w.validity.from, language)}`, ` from ${berlinDateTime(w.validity.from, language)}`) : "");
-  const items = shown.map((w) => `- ${w.headline} (${w.levelName})${starts(w)}${w.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(w.validity.until, language)}`, ` until ${berlinDateTime(w.validity.until, language)}`)}${warningDetail(w, language)}`);
-  return toolResult([warningsHead(language, around, shown), "", ...items].join("\n"), asSummary([r.meta]), language);
+  // Each warning as today's block; one not yet in force says when it starts, so it is never read as in force now.
+  const now = new Date();
+  const items = shown.map((w, i) => warningBlock(language, w, i + 1, now));
+  return toolResult([warningsHead(language, around, shown), "", items.join("\n\n")].join("\n"), asSummary([r.meta]), language);
 };
 
 /** The station a station tool asks about: an EVA number or a name, through the API's station search. */
