@@ -4,11 +4,11 @@
  * API's live refresher for a fresh board. A tool whose operation the API contract lacks answers `notAvailable` and is listed in GAPS.
  */
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { ApiError, type DataMeta, type Envelope } from "../api/client.js";
+import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/client.js";
 import type * as T from "../api/types.js";
 import { berlinDateTime, berlinTime, creditPlace, eur, km, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
-import { atParam, bool, isResult, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
+import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, position, radiusM, str, strs, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
 import { findPlace } from "./find-place.js";
@@ -147,12 +147,68 @@ export function nearestMotorways(road: string, registered: readonly string[], n 
 }
 
 /** check_road_status's list: today's answer shows no lamp; nothing listed is never "the road is clear". */
-function roadStatusBody(d: T.RoadConditionsData, language: Language, limit: number | undefined, what: string): string {
-  const rows = d.situations.slice(0, limit ?? 20);
+function roadStatusBody(d: T.RoadConditionsData, language: Language, limit: number | undefined, what: string, detail = false): string {
+  const all = detail ? roadEvents(d.situations) : d.situations;
+  const rows = all.slice(0, limit ?? 20);
   if (rows.length === 0) {
     return L(language, `${what}: Es liegt keine Meldung vor — das heißt ausdrücklich nicht, dass die Straße frei ist.`, `${what}: there is no report — which explicitly does not mean the road is clear.`);
   }
-  return rows.map((s) => situationLine(s, language)).join("\n");
+  if (!detail) return rows.map((s) => situationLine(s, language)).join("\n");
+  // A motorway asked by its number: today's counts head, one entry per event with its provider text, and the rest counted.
+  // The road's own reports by reason; a source's limited sight and the DWD's warnings are no road event.
+  const counts = (d.lampReasons ?? []).filter((r) => r.count > 0 && r.reason !== "limited_sight" && !WEATHER_REASONS.has(r.reason));
+  const head = counts.length === 0 ? null : L(language,
+    `${what}: ${counts.map((r) => `${r.count}× ${REASON.de[r.reason] ?? r.reason}`).join(", ")}.`,
+    `${what}: ${counts.map((r) => `${r.count}× ${REASON.en[r.reason] ?? r.reason}`).join(", ")}.`);
+  const reported = (d.counts ?? []).reduce((n, c) => n + c.situations, 0);
+  const more = Math.max(all.length, reported) - rows.length;
+  const tail = more > 0 ? L(language, `… ${more} weitere Meldungen — mit einem Ort (Straße und Ort zusammen) oder einem kürzeren Zeitfenster eingrenzen.`, `… ${more} more entries — narrow it with a place (road and place together) or a shorter window.`) : null;
+  return [head, ...rows.map((s) => roadEventLine(s, language)), tail].filter((x): x is string => x !== null).join("\n");
+}
+
+/** A situation's kind in words, the German term beside the English one as today's answer names it. */
+const KIND: Record<Language, Record<string, string>> = {
+  de: { closure: "Sperrung", roadworks: "Baustelle", jam: "Stau", accident: "Unfall", hazard: "Gefahr", restriction: "Einschränkung", weather: "Wetter", other: "Meldung" },
+  en: { closure: "Closure (Sperrung)", roadworks: "Roadworks (Baustelle)", jam: "Jam (Stau)", accident: "Accident (Unfall)", hazard: "Hazard (Gefahr)", restriction: "Restriction (Einschränkung)", weather: "Weather (Wetter)", other: "Report (Meldung)" },
+};
+
+/** One entry per event: the same text from two records is read once; closures first, as today's list. */
+export function roadEvents(situations: readonly T.RoadSituation[]): T.RoadSituation[] {
+  const seen = new Set<string>();
+  const out = situations.filter((s) => {
+    const key = [s.kind, s.road, s.directionText, s.headline, s.subtitle ?? "", s.description ?? "", s.validity.from, s.validity.until].join("\u0000");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const closed = (s: T.RoadSituation): number => (s.kind === "closure" || s.severity === "road_closed" ? 0 : 1);
+  return out.map((s, i) => ({ s, i })).sort((a, b) => closed(a.s) - closed(b.s) || a.i - b.i).map((x) => x.s);
+}
+
+/** The provider's text, one line, cut at a word near `max` characters. */
+const excerpt = (t: string, max = 160): string => {
+  const one = t.replace(/\s+/gu, " ").trim();
+  if (one.length <= max) return one;
+  const cut = one.slice(0, max);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), max - 20))}…`;
+};
+
+/** A provider code with no words in it (a DATEX "abnormalTraffic") is said by its kind, never read out. */
+const isCode = (t: string): boolean => /^[A-Za-z][a-z]+(?:[A-Z][a-z]+)+$/u.test(t);
+
+function roadEventLine(s: T.RoadSituation, language: Language): string {
+  const kind = KIND[language][s.kind] ?? s.kind;
+  const head = isCode(s.headline) ? "" : s.headline;
+  // The description repeats the headline at its end (the Autobahn GmbH's form); that copy is not read twice.
+  const desc = s.description === null ? "" : head !== "" && s.description.trimEnd().endsWith(head) ? s.description.trimEnd().slice(0, -head.length) : s.description;
+  const text = [[head, s.subtitle].filter((x) => x).join(" · "), desc.trim() === "" ? "" : excerpt(desc)].filter((x) => x).join(" — ");
+  const quoted = text === "" ? "" : L(language, ` Meldungstext: "${text}"`, ` Provider text (German): "${text}"`);
+  const dir = s.directionText === null ? "" : ` — ${s.directionText}`;
+  const from = s.validity.from === null ? null : berlinDateTime(s.validity.from, language);
+  const until = s.validity.until === null ? null : berlinDateTime(s.validity.until, language);
+  const when = from === null && until === null ? "" : ` (${from ?? ""}${until === null ? "" : `–${until}`})`;
+  const delay = s.delayMin === null ? "" : ` (+${s.delayMin} min)`;
+  return `• ${kind}${s.road ? ` ${s.road}` : ""}:${quoted}${dir}${delay}${when}${s.distanceM === undefined ? "" : ` · ${km(s.distanceM, language)}`}`;
 }
 
 function situationsBody(d: T.RoadConditionsData, language: Language, limit: number | undefined): string {
@@ -210,7 +266,7 @@ const checkRoadStatus: Handler = async (args, ctx) => {
       return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)));
     }
     metas.push(r.meta);
-    body = roadStatusBody(r.data, language, limit, code);
+    body = roadStatusBody(r.data, language, limit, code, true);
   } else if (asked !== undefined && /^[BLS]\d{1,4}$/u.test(asked) && args["place"] === undefined && args["lat"] === undefined) {
     // A federal or Land road asked by its number alone: the API reads the situations naming it (a Kreisstraße is no reference).
     const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: asked, horizon_days: horizon, limit });
@@ -414,6 +470,18 @@ async function areaCode(args: Args, ctx: ToolContext): Promise<{ code: string | 
   return { code, metas };
 }
 
+/**
+ * A warning's own detail the API carries, as today's answer gives it per warning: the level of 4, the DWD's
+ * event word, the warn area and its cell, and since when a warning in force holds.
+ */
+export function warningDetail(w: T.WeatherWarning, language: Language): string {
+  const parts = [L(language, `Stufe ${w.level} von 4`, `level ${w.level} of 4`)];
+  if (w.event) parts.push(L(language, `Ereignis ${w.event}`, `event ${w.event}`));
+  if (w.area?.name) parts.push(`${L(language, "Gebiet", "area")}: ${w.area.name}${w.area.cellId ? L(language, ` (Warnzelle ${w.area.cellId})`, ` (warn cell ${w.area.cellId})`) : ""}`);
+  if (w.inForce !== false && w.validity.from !== null) parts.push(L(language, `gilt seit ${berlinDateTime(w.validity.from, language)}`, `in force since ${berlinDateTime(w.validity.from, language)}`));
+  return ` — ${parts.join(" · ")}`;
+}
+
 const checkWeatherWarnings: Handler = async (args, ctx) => {
   const { language } = ctx;
   const pos = await position(args, ctx);
@@ -427,7 +495,7 @@ const checkWeatherWarnings: Handler = async (args, ctx) => {
   if (shown.length === 0) return toolResult(noWarning(language, around, minLevel, hidden), asSummary([r.meta]), language);
   // A warning that starts within the look-ahead says when it starts, so it is never read as in force now.
   const starts = (w: T.WeatherWarning): string => (w.inForce === false && w.validity.from !== null ? L(language, ` von ${berlinDateTime(w.validity.from, language)}`, ` from ${berlinDateTime(w.validity.from, language)}`) : "");
-  const items = shown.map((w) => `- ${w.headline} (${w.levelName})${starts(w)}${w.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(w.validity.until, language)}`, ` until ${berlinDateTime(w.validity.until, language)}`)}`);
+  const items = shown.map((w) => `- ${w.headline} (${w.levelName})${starts(w)}${w.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(w.validity.until, language)}`, ` until ${berlinDateTime(w.validity.until, language)}`)}${warningDetail(w, language)}`);
   return toolResult([warningsHead(language, around, shown), "", ...items].join("\n"), asSummary([r.meta]), language);
 };
 
@@ -467,6 +535,68 @@ async function townIn(q: string, ctx: ToolContext): Promise<string | undefined> 
   return undefined;
 }
 
+/** How far, how many stops and how many departures each the answer around a place gives, as today's. */
+export const NEAR_RADIUS_M = 5000;
+export const NEAR_STOPS = 8;
+const NEAR_PER_STOP = 4;
+const NEAR_WINDOW_MIN = 60;
+
+/** A departure in today's words around a place: line, destination, platform and its realtime state. */
+export function nearDepartureLine(d: T.Departure, language: Language): string {
+  const mode = d.mode === "tram" ? L(language, "Tram ", "tram ") : d.mode === "bus" ? L(language, "Bus ", "bus ") : "";
+  const line = d.line ?? d.category;
+  const what = line === null ? L(language, "Fahrt", "service") : `${mode}${line}`;
+  const platform = d.platform === null ? "" : `, ${d.mode === "bus" ? L(language, "Steig", "stand") : L(language, "Gleis", "platform")} ${d.platform}${d.platformChanged ? L(language, " (geändert)", " (changed)") : ""}`;
+  const expected = d.expectedAt === null ? "" : L(language, ` (erwartet ${berlinTime(d.expectedAt)})`, ` (expected ${berlinTime(d.expectedAt)})`);
+  const state = d.cancelled ? L(language, "fällt aus", "cancelled")
+    : d.noForecast === true ? L(language, "keine Prognose", "no forecast")
+    : d.delayMin === null ? L(language, "Fahrplan", "timetable")
+    : d.delayMin === 0 ? L(language, "pünktlich", "on time")
+    : `${d.delayMin > 0 ? "+" : ""}${d.delayMin} min${expected}`;
+  return `${berlinTime(d.plannedAt)} ${what} → ${d.destination ?? L(language, "Ziel nicht angegeben", "destination not given")}${platform}, ${state}`;
+}
+
+/** The point a place names: the place search first, else a stop of that name, else today's town-centre reading. */
+async function nearPoint(args: Args, ctx: ToolContext): Promise<{ at: LatLon; label: string; metas: DataMeta[] } | CallToolResult> {
+  const place = num(args["lat"]) === undefined ? str(args["place"]) : undefined;
+  // A street and house number keeps today's resolver and its refusal where no address data is held.
+  if (place !== undefined && !looksLikeHouseNumber(place)) {
+    const p = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: place, limit: 1 });
+    if (p.data[0] !== undefined) { creditPlace(p.meta.attribution); return { at: p.data[0].location, label: p.data[0].name, metas: [] }; }
+    const s = await ctx.api.get<T.Station[]>("listStations", { q: place, limit: 1 });
+    if (s.data[0] !== undefined) return { at: s.data[0].location, label: place, metas: [s.meta] };
+  }
+  const pos = await position(args, ctx);
+  if (isResult(pos)) return pos;
+  return { at: pos.at, label: aroundText(pos.label, pos.at), metas: [] };
+}
+
+/** With a place or a position: the nearest stops (one per stop code) with their next departures, as today's answer. */
+async function departuresNear(args: Args, ctx: ToolContext): Promise<CallToolResult> {
+  const { language } = ctx;
+  const pt = await nearPoint(args, ctx);
+  if (isResult(pt)) return pt;
+  const near = await ctx.api.get<T.Station[]>("listStations", { at: atParam(pt.at), radius_m: NEAR_RADIUS_M, limit: 40 });
+  const seen = new Set<string>();
+  const stops = near.data.filter((s) => { const k = s.stopCode ?? s.id; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, NEAR_STOPS);
+  if (stops.length === 0) return none(language, [...pt.metas, near.meta], L(language, "Haltestellen", "stops"));
+  const boards = await Promise.all(stops.map((s) => ctx.api.get<T.Board>("listStationDepartures", {
+    stationId: s.id, from: str(args["when"]), duration_min: num(args["duration_min"]) ?? NEAR_WINDOW_MIN, modes: strs(args["modes"]), limit: num(args["limit"]) ?? NEAR_PER_STOP,
+  })));
+  const blocks = stops.flatMap((s, i) => {
+    const b = boards[i]!;
+    if (b.data.departures.length === 0) return [];
+    const dist = s.distanceM === null || s.distanceM === undefined ? "" : ` (${km(s.distanceM, language)})`;
+    return [[`${s.name}${dist} — stop_id ${s.stopCode ?? s.id}:`, ...b.data.departures.map((d) => nearDepartureLine(d, language))].join("\n")];
+  });
+  const radius = km(NEAR_RADIUS_M, language);
+  const head = L(language, `Die nächsten Haltestellen um ${pt.label} (im Umkreis von ${radius}) mit ihren nächsten Abfahrten:`, `The nearest stops around ${pt.label} (within ${radius}) with their next departures:`);
+  const metas = [...pt.metas, near.meta, ...boards.map((b) => b.meta)];
+  if (blocks.length === 0) return toolResult(`${head} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}`, metas, language);
+  const more = L(language, "Mehr Abfahrten einer Haltestelle: get_departures mit ihrer stop_id.", "More departures of one stop: get_departures with its stop_id.");
+  return toolResult([head, ...blocks, more].join("\n\n"), metas, language);
+}
+
 const getDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
   const given = (k: string): boolean => str(args[k]) !== undefined;
@@ -475,9 +605,7 @@ const getDepartures: Handler = async (args, ctx) => {
   // q or code to send (the API refuses that), so the stop nearest the position answers.
   let stations = given("stop") || given("stop_id") ? await stationOf(args, ctx) : null;
   if ((stations === null || stations.data.length === 0) && (str(args["place"]) !== undefined || num(args["lat"]) !== undefined)) {
-    const pos = await position(args, ctx);
-    if (isResult(pos)) return pos;
-    stations = await ctx.api.get<T.Station[]>("listStations", { at: atParam(pos.at), limit: 1 });
+    return departuresNear(args, ctx);
   }
   if (stations === null) return placeMissing(ctx);
   const station = stations.data[0];

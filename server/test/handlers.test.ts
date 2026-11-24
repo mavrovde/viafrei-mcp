@@ -1256,6 +1256,52 @@ describe("a town and a thing the place search does not hold", () => {
   });
 });
 
+describe("parity of four answers with today's server", () => {
+  const sit = (o: Record<string, unknown>) => ({ ...ex<{ situations: Record<string, unknown>[] }>("getMotorwayConditions").situations[0], road: "A1", directionText: null, delayMin: null, distanceM: undefined, ...o });
+  it("check_road_status A1: the counts head, closures first, one entry per event with its provider text, the rest counted", async () => {
+    const works = sit({ kind: "roadworks", severity: "narrowing", headline: "A1 Grunderneuerung", subtitle: "Bremen -> Osnabrück", description: "Zeitraum dieser Bauphase: bis 26.02.27\n\nA1 Grunderneuerung", validity: { from: "2026-08-03T04:00:00Z", until: "2027-02-26T17:00:00Z" } });
+    const closed = sit({ kind: "closure", severity: "road_closed", headline: "A1 Brückenersatzneubau", subtitle: "AS Sereetz", description: null, validity: { from: "2026-10-09T22:00:00Z", until: null } });
+    const code = sit({ kind: "jam", severity: "minor", headline: "abnormalTraffic", subtitle: null, description: null, validity: { from: "2026-11-24T18:35:00Z", until: null } });
+    serve("getMotorwayConditions", { ...ex<object>("getMotorwayConditions"), lampReasons: [{ reason: "road_closed", lamp: "red", count: 1 }, { reason: "narrowing", lamp: "amber", count: 2 }, { reason: "weather_warning", lamp: "amber", count: 9 }, { reason: "limited_sight", lamp: "amber", count: 3 }], counts: [{ sourceFamily: "autobahn", situations: 30 }], situations: [works, works, code, closed] });
+    const lines = body(await call("check_road_status", { road: "A1", limit: 3, language: "en" })).split("\n");
+    expect(lines[0]).toBe("A1: 1× full closure, 2× roadworks narrowing the carriageway.");
+    expect(lines[1]).toBe('• Closure (Sperrung) A1: Provider text (German): "A1 Brückenersatzneubau · AS Sereetz" (10/10/2026, 00:00)');
+    expect(lines[2]).toBe('• Roadworks (Baustelle) A1: Provider text (German): "A1 Grunderneuerung · Bremen -> Osnabrück — Zeitraum dieser Bauphase: bis 26.02.27" (03/08/2026, 06:00–26/02/2027, 18:00)');
+    expect(lines[3]).toBe("• Jam (Stau) A1: (24/11/2026, 19:35)");
+    expect(lines[4]).toBe("… 27 more entries — narrow it with a place (road and place together) or a shorter window.");
+    expect(lines).toHaveLength(5);
+  });
+  it("check_weather_warnings: each warning with its level of 4, event, warn area and cell, and since when it holds", async () => {
+    const w = ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!;
+    serve("getWeatherRisk", { warnings: [{ ...w, headline: "Amtliche WARNUNG vor FROST", level: 1, levelName: "Minor", event: "FROST", inForce: true, area: { name: "Stadt Hannover", cellId: "803241001" }, validity: { from: "2026-11-24T15:00:00Z", until: "2026-11-25T11:00:00Z" } }] });
+    for (const language of LANGS) {
+      expect(body(await call("check_weather_warnings", { ...at, language })).split("\n")[2]).toBe(language === "de"
+        ? "- Amtliche WARNUNG vor FROST (Minor) bis 25.11.2026, 12:00 — Stufe 1 von 4 · Ereignis FROST · Gebiet: Stadt Hannover (Warnzelle 803241001) · gilt seit 24.11.2026, 16:00"
+        : "- Amtliche WARNUNG vor FROST (Minor) until 25/11/2026, 12:00 — level 1 of 4 · event FROST · area: Stadt Hannover (warn cell 803241001) · in force since 24/11/2026, 16:00");
+    }
+  });
+  it("get_departures with a place the place search lacks: a stop of that name is the point; the nearest stops, one per stop code, each with its realtime board", async () => {
+    const st = (id: string, code: string, name: string, d: number) => ({ id, name, location: { lat: 52.52, lon: 13.41 }, stopCode: code, eva: null, evaNumbers: [], distanceM: d, districtCode: "11000" });
+    mockServer.use(handlerFor("listPlaces", () => HttpResponse.json({ ...exampleOf<Body>("listPlaces"), data: [] })));
+    mockServer.use(handlerFor("listStations", (url) => HttpResponse.json({ ...exampleOf<Body>("listStations"), data: url.searchParams.get("q") !== null
+      ? [st("1:a", "de:1:a", "S+U Alexanderplatz Bhf (Berlin)", 0)]
+      : [st("1:a", "de:1:a", "S+U Alexanderplatz Bhf (Berlin)", 21), st("1:a::2", "de:1:a", "S+U Alexanderplatz Bhf (Berlin)", 30), st("1:b", "de:1:b", "U Rotes Rathaus (Berlin)", 400)] })));
+    const d = (o: Record<string, unknown>) => ({ line: "S9", category: "S", mode: "sbahn", destination: "Flughafen BER", plannedAt: "2026-11-24T18:42:00Z", expectedAt: null, delayMin: null, platform: "3", plannedPlatform: null, platformChanged: false, cancelled: false, realtime: false, noForecast: false, ...o });
+    mockServer.use(handlerFor("listStationDepartures", (url) => HttpResponse.json({ ...exampleOf<Body>("listStationDepartures"), data: { station: { id: "x", name: "x" }, window: { from: "", until: "" }, departures: url.pathname.includes("1%3Aa")
+      ? [d({ delayMin: 2, expectedAt: "2026-11-24T18:44:00Z", realtime: true }), d({ cancelled: true, line: "S7" }), d({ delayMin: 0, realtime: true, line: "S3" }), d({ mode: "tram", line: "M4", destination: null, platform: null, noForecast: true })]
+      : [d({ line: "U5", mode: "subway", destination: "U Hönow (Berlin)", platform: "2" })] } })));
+    const r = await call("get_departures", { place: "Berlin Alexanderplatz", language: "en" });
+    expect(query("listStations")).toEqual([{ q: "Berlin Alexanderplatz", limit: "1", lang: "en" }, { at: "52.52,13.41", radius_m: "5000", limit: "40", lang: "en" }]);
+    expect(paths("listStationDepartures")).toHaveLength(2);
+    expect(body(r).split("\n\n").slice(0, 4)).toEqual([
+      "The nearest stops around Berlin Alexanderplatz (within 5.0 km) with their next departures:",
+      ["S+U Alexanderplatz Bhf (Berlin) (21 m) — stop_id de:1:a:", "19:42 S9 → Flughafen BER, platform 3, +2 min (expected 19:44)", "19:42 S7 → Flughafen BER, platform 3, cancelled", "19:42 S3 → Flughafen BER, platform 3, on time", "19:42 tram M4 → destination not given, no forecast"].join("\n"),
+      ["U Rotes Rathaus (Berlin) (400 m) — stop_id de:1:b:", "19:42 U5 → U Hönow (Berlin), platform 2, timetable"].join("\n"),
+      "More departures of one stop: get_departures with its stop_id.",
+    ]);
+  });
+});
+
 describe("check_weather_warnings", () => {
   const w = () => ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!;
   for (const language of LANGS) {
@@ -1265,8 +1311,8 @@ describe("check_weather_warnings", () => {
       expect(query("getWeatherRisk")).toEqual([{ at: "52.52,13.405", lang: language }]);
       const lines = body(r).split("\n");
       expect(lines.slice(0, 3)).toEqual(language === "de"
-        ? ["2 amtliche Meldungen für 52.520, 13.405, höchste Stufe 3 von 4:", "", "- Sturm (Stufe 3)"]
-        : ["2 official notices for 52.520, 13.405, highest level 3 of 4:", "", "- Sturm (Stufe 3)"]);
+        ? ["2 amtliche Meldungen für 52.520, 13.405, höchste Stufe 3 von 4:", "", expect.stringMatching(/^- Sturm \(Stufe 3\) — Stufe 3 von 4/u)]
+        : ["2 official notices for 52.520, 13.405, highest level 3 of 4:", "", expect.stringMatching(/^- Sturm \(Stufe 3\) — level 3 of 4/u)]);
       expect(lines[3]).toMatch(/^- Warnung vor uv \(Stufe 2\) \(Stufe 2\) (bis|until) /u);
       expect(lines).toHaveLength(4);
     });
@@ -1297,8 +1343,10 @@ describe("check_weather_warnings", () => {
     for (const language of ["de", "en"] as const) {
       serve("getWeatherRisk", { warnings: [{ ...w(), inForce: false, validity: { from: "2026-11-22T21:16:00Z", until: "2026-11-23T05:16:00Z" } }, { ...w(), inForce: true, validity: { from: "2026-11-22T10:00:00Z", until: "2026-11-23T05:16:00Z" } }] });
       const lines = body(await call("check_weather_warnings", { ...at, language })).split("\n");
-      expect(lines[2]).toMatch(language === "de" ? / von 22\.11\.2026, 22:16 bis 23\.11\.2026, 06:16$/u : / from .*22:16 until .*06:16$/u);
-      expect(lines[3]).not.toMatch(/ von | from /u);
+      expect(lines[2]).toMatch(language === "de" ? / von 22\.11\.2026, 22:16 bis 23\.11\.2026, 06:16 — /u : / from .*22:16 until .*06:16 — /u);
+      expect(lines[2]).not.toMatch(/gilt seit|in force since/u);
+      expect(lines[3]!.split(" — ")[0]).not.toMatch(/ von | from /u);
+      expect(lines[3]).toMatch(language === "de" ? / — Stufe \d von 4 .*· gilt seit 22\.11\.2026, 11:00$/u : / — level \d of 4 .*· in force since .*11:00$/u);
     }
   });
   it("a level-0 advance notice (the API's minimum is 0) is listed at min_level 0 and hidden, and counted, from level 1", async () => {
@@ -1370,9 +1418,9 @@ describe("stations", () => {
   it("get_departures with only a place or a position: no empty station search (the API refuses one), the stop nearest it", async () => {
     const r = await call("get_departures", { place: "Leipzig", language: "de" });
     expect(r.isError).not.toBe(true);
-    expect(query("listStations")).toEqual([{ at: expect.stringMatching(/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/u) as string, limit: "1", lang: "de" }]);
+    expect(query("listStations")).toEqual([{ at: expect.stringMatching(/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/u) as string, radius_m: "5000", limit: "40", lang: "de" }]);
     await call("get_departures", { lat: 52.5, lon: 13.4, language: "en" });
-    expect(query("listStations").slice(-1)).toEqual([{ at: "52.5,13.4", limit: "1", lang: "en" }]);
+    expect(query("listStations").slice(-1)).toEqual([{ at: "52.5,13.4", radius_m: "5000", limit: "40", lang: "en" }]);
   });
 
   it("get_departures: no stop by name, but a place: the nearest stop to it", async () => {
@@ -1380,12 +1428,13 @@ describe("stations", () => {
     const list = exampleOf<Body>("listStations");
     mockServer.use(handlerFor("listStations", () => HttpResponse.json({ ...list, data: n++ === 0 ? [] : list.data })));
     await call("get_departures", { stop: "Nowhere", place: "Köln", language: "en" });
-    expect(ops()).toEqual(["listStations", "listPlaces", "listStations", "listStationDepartures"]);
-    expect(query("listStations")[1]).toEqual({ at: "48.24375,7.01625", limit: "1", lang: "en" });
+    expect(ops().slice(0, 3)).toEqual(["listStations", "listPlaces", "listStations"]);
+    expect(new Set(ops().slice(3))).toEqual(new Set(["listStationDepartures"]));
+    expect(query("listStations")[1]).toEqual({ at: "48.24375,7.01625", radius_m: "5000", limit: "40", lang: "en" });
     calls.length = 0;
     n = 0;
     await call("get_departures", { stop: "Nowhere", ...at, language: "en" });
-    expect(query("listStations")[1]).toEqual({ at: "52.52,13.405", limit: "1", lang: "en" });
+    expect(query("listStations")[1]).toEqual({ at: "52.52,13.405", radius_m: "5000", limit: "40", lang: "en" });
   });
 
   it("get_departures: no stop and a place nobody knows", async () => {

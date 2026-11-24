@@ -1,3 +1,3 @@
-- A1 Richtung Köln: Stau (+12 min) until 30/03/2026, 12:00 · 1.8 km
-- : Unfall · 400 m
-- B 27: Baustelle
+• Hazard (Gefahr) A1: Provider text (German): "Stau" — Richtung Köln (+12 min) (30/03/2026, 10:00–30/03/2026, 12:00) · 1.8 km
+• Hazard (Gefahr): Provider text (German): "Unfall" (28/03/2026, 19:09) · 400 m
+• Hazard (Gefahr) B 27: Provider text (German): "Baustelle" (28/03/2026, 19:09)
