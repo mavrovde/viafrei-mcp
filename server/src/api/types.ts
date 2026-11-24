@@ -63,6 +63,7 @@ export type SharingData = { stations: SharingStation[]; stationsInRadius: number
 export type RoadSituation = {
   id: string; kind: string; severity: string; road: string | null; direction: string | null; directionText: string | null;
   validity: { from: string | null; until: string | null }; headline: string; description: string | null; delayMin: number | null; lengthM: number | null; distanceM?: number;
+  subtitle?: string | null; sourceFamily?: string;
 };
 export type LampReason = { reason: string; lamp: string; count: number };
 export type FamilyCount = { sourceFamily: string; situations: number };
@@ -81,7 +82,10 @@ export type DrivingRulesData = { topic: string; title: string; rules: DrivingRul
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
 export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; alertsChecked?: boolean; punctuality: { name: string | null; level: string; late: number; observed: number; stopsReporting?: number; untimed?: number } | null; windowMin: number };
 /** WeatherRiskData */
-export type WeatherWarning = { headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null }; inForce?: boolean };
+export type WeatherWarning = {
+  headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null }; inForce?: boolean;
+  event?: string | null; area?: { name: string | null; cellId: string | null } | null;
+};
 export type WeatherRiskData = { warnings: WeatherWarning[] };
 /** LocationData's places: the nearest municipality, the nearest district, the district's Land. */
 export type LocationPlace = { id: string; name: string; code?: string | null; location: { lat: number; lon: number }; distanceM: number | null; sourceFamily: string };
@@ -98,6 +102,7 @@ export type Station = { id: string; name: string; location: LatLon; stopCode: st
 export type Departure = {
   line: string | null; category: string | null; destination: string | null; plannedAt: string; expectedAt: string | null; delayMin: number | null;
   platform: string | null; plannedPlatform: string | null; platformChanged: boolean; cancelled: boolean; mode: string;
+  realtime?: boolean; noForecast?: boolean;
 };
 export type Board = { station: { id: string; name: string }; window: { from: string; until: string }; departures: Departure[] };
 /** TrainBoardData, TrainBoardDeparture */

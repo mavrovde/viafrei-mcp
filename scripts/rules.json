@@ -618,7 +618,9 @@
       "05002",
       "05315",
       "06631",
+      "07134",
       "08001",
+      "11000",
       "1275",
       "26789",
       "29296",
@@ -782,7 +784,9 @@
     { "blob": "df93b48f6e221adb01604b8e9595043240d77f24", "findings": 1 },
     { "blob": "e8207c2b090a2e82752c2fd2e7ca378a29e087a6", "findings": 1 },
     { "blob": "29a1ac0d20084e91bdd9ca144da143d0a2e583c5", "findings": 2 },
-    { "blob": "92d6fba9842373169b14ad4b520040fe4a2d5ba8", "findings": 2 }
+    { "blob": "92d6fba9842373169b14ad4b520040fe4a2d5ba8", "findings": 2 },
+    { "blob": "5350cd1ebbe610c47cd59222580103a6ceab8972", "findings": 3 },
+    { "blob": "7f29d0d4b59a49453d974437314235f7a8b7aba7", "findings": 3 }
   ],
   "_patterns": [
     "Each pattern is stored base64-encoded AND reversed, and both halves of that",
