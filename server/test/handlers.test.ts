@@ -1343,9 +1343,9 @@ describe("parity of four answers with today's server", () => {
     it("a station id no board holds: today's unknown-stop refusal", async () => {
       mockServer.use(handlerFor("listStationDepartures", () => problem(404, "not-found")));
       for (const language of LANGS) {
-        const r = await call("get_departures", { stop_id: "1:de:99999:1", language });
+        const r = await call("get_departures", { stop_id: "1:de:01002:1", language });
         expect(ops().at(-1)).toBe("listStationDepartures");
-        expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "1:de:99999:1" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "1:de:99999:1". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true });
+        expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "1:de:01002:1" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "1:de:01002:1". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true });
       }
     });
     it("every board failing is the API's failure, an error; no list of unread stops", async () => {
