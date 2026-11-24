@@ -2,8 +2,11 @@
  * One official DWD warning as today's server lists it (main packages/mcp/src/presentation/dwd.ts `oneWarning`,
  * `levelLabel`, `windowLabel`, `areaLabel`; ingest analysis/dwd-text `dwdHazardLabel`, `dwdDrivingNote`; COPY):
  * the level in the DWD's own name, the hazard, the area with its warn cell, the window, and what it means for the
- * drive in our words. The DWD's description and instruction, its CAP fields and whether the level was derived are
- * not in the contract and are not said; the headline the API gives is quoted as published.
+ * drive in our words; then, when the API gives the official text (its next release), the DWD's own words verbatim:
+ * the German original, or in English the DWD's own English text, or where it gave none the German original under
+ * an English label (today's translation of it from the template table is not ported, so not shown); and the CAP
+ * fields. Whether the level was derived is not in the contract and is not said. An API without the text gets the
+ * block before it: the headline quoted, our words, the summary credit.
  */
 import type * as T from "../api/types.js";
 import { standTime, type Language } from "../presentation.js";
@@ -126,13 +129,15 @@ type DriveKey = keyof (typeof DRIVE)["en"];
 
 /**
  * Which driving sentences an event word and level call for, in today's order (dwd-text drivingKeys). A plain FROST
- * warning earns the winter-tyre line only with a slippery road-surface forecast, which this answer does not read.
+ * warning earns the winter-tyre line only with a slippery road-surface forecast near the point.
  */
-export function drivingKeys(level: number, event: string | null | undefined): DriveKey[] {
+export function drivingKeys(level: number, event: string | null | undefined, forecastSlippery = false): DriveKey[] {
   const e = (event ?? "").toUpperCase();
   const keys: DriveKey[] = [];
   if (/STURM|ORKAN|BÖEN|BOEEN/u.test(e)) keys.push("gusts");
-  if (/SCHNEE|GLÄTTE|GLAETTE|EIS|GLATTEIS/u.test(e)) keys.push("ice");
+  // A FROST warning (air temperature) earns the winter-tyre line only when a road-weather station near the point
+  // forecasts a slippery class (today's gate).
+  if (/SCHNEE|GLÄTTE|GLAETTE|EIS|GLATTEIS/u.test(e) || (forecastSlippery && /FROST/u.test(e))) keys.push("ice");
   if (/REGEN|NIEDERSCHLAG|HOCHWASSER/u.test(e)) keys.push("rain");
   if (/GEWITTER|HAGEL/u.test(e)) keys.push("thunder");
   if (/NEBEL|SICHT/u.test(e)) keys.push("fog");
@@ -144,7 +149,8 @@ export function drivingKeys(level: number, event: string | null | undefined): Dr
   return keys;
 }
 
-export const drivingNote = (language: Language, level: number, event: string | null | undefined): string => drivingKeys(level, event).map((k) => DRIVE[language][k]).join(" ");
+export const drivingNote = (language: Language, level: number, event: string | null | undefined, forecastSlippery = false): string =>
+  drivingKeys(level, event, forecastSlippery).map((k) => DRIVE[language][k]).join(" ");
 
 /** "until 2026-11-25 12:00 (since 16:00)"; a warning not yet in force "from … until …". */
 export function windowText(language: Language, w: Pick<T.WeatherWarning, "validity" | "inForce">, now: Date): string {
@@ -164,8 +170,40 @@ function areaText(language: Language, a: T.WeatherWarning["area"]): string {
   return cell === null ? name : language === "de" ? `${name} (Warnzelle ${cell})` : `${name} (warn cell ${cell})`;
 }
 
-/** One warning, numbered, as today's block: head, area, window, the headline as published, the drive. */
-export function warningBlock(language: Language, w: T.WeatherWarning, index: number, now: Date): string {
+/** How a list is rendered: the DWD's own words (verbatim), our words only (summary), or the block before the API gave the text (legacy). */
+export type WarningMode = "verbatim" | "summary" | "legacy";
+
+/** Today's VERBATIM_BUDGET_CHARS: the official text of the whole list must fit, or the list is a summary. */
+export const VERBATIM_BUDGET_CHARS = 6_500;
+
+const quoted = (x: string | null | undefined): string[] => (x === null || x === undefined || x === "" ? [] : [`   „${x}“`]);
+
+/** The DWD's own English text is used when it says anything. */
+export const hasEnglish = (w: T.WeatherWarning): boolean =>
+  w.english !== null && w.english !== undefined && [w.english.headline, w.english.description, w.english.instruction].some((x) => x !== null && x !== "");
+
+/** The DWD's CAP fields, as published, under our label (today's capLine). */
+function capLine(language: Language, w: T.WeatherWarning): string | null {
+  const parts: string[] = [];
+  if (w.urgency) parts.push(`urgency=${w.urgency}`);
+  if (w.certainty) parts.push(`certainty=${w.certainty}`);
+  return parts.length === 0 ? null : `   ${language === "de" ? "CAP-Angaben des DWD" : "The DWD's own CAP fields"}: ${parts.join(", ")}`;
+}
+
+/** The official words: the German original, the DWD's English, or the German original under an English label. */
+function officialLines(language: Language, w: T.WeatherWarning): string[] {
+  if (language === "en" && hasEnglish(w)) {
+    return ["   Official DWD wording in English (the DWD's own text), reproduced unaltered:", ...quoted(w.english?.headline), ...quoted(w.english?.description), ...quoted(w.english?.instruction)];
+  }
+  const label = language === "de" ? "Amtlicher Wortlaut des DWD, unverändert:" : "Official text of the DWD (German original, binding), reproduced unaltered:";
+  return [`   ${label}`, ...quoted(w.headline), ...quoted(w.description), ...quoted(w.instruction)];
+}
+
+/** Whether the API gave the official text (its next release): the description key is there, null or not. */
+export const carriesText = (ws: readonly T.WeatherWarning[]): boolean => ws.length > 0 && ws.every((w) => w.description !== undefined);
+
+/** One warning, numbered, as today's block: head, area, window, the CAP fields, the official words (verbatim), the drive. */
+export function warningBlock(language: Language, w: T.WeatherWarning, index: number, now: Date, mode: WarningMode = "legacy", forecastSlippery = false): string {
   const de = language === "de";
   const hazard = hazardLabel(language, w.event);
   const lines = [
@@ -173,7 +211,30 @@ export function warningBlock(language: Language, w: T.WeatherWarning, index: num
     `   ${de ? "Gebiet" : "Area"}: ${areaText(language, w.area)}`,
     `   ${de ? "Gültig" : "Valid"}: ${windowText(language, w, now)}`,
   ];
-  if (w.headline.trim() !== "") lines.push(`   „${w.headline}“`);
-  lines.push(`   ${de ? "Für die Fahrt" : "For the drive"}: ${drivingNote(language, w.level, w.event)}`);
+  if (mode === "legacy") {
+    if (w.headline.trim() !== "") lines.push(`   „${w.headline}“`);
+  } else {
+    const cap = capLine(language, w);
+    if (cap !== null) lines.push(cap);
+    if (mode === "verbatim") lines.push(...officialLines(language, w));
+  }
+  lines.push(`   ${de ? "Für die Fahrt" : "For the drive"}: ${drivingNote(language, w.level, w.event, forecastSlippery)}`);
   return lines.join("\n");
+}
+
+/** Today's sentence a summary carries in place of the quotation. */
+export function summaryNotice(language: Language, reason: string): string {
+  const where = "https://www.dwd.de/warnungen";
+  return language === "de"
+    ? `Der amtliche Wortlaut wird hier nicht wiedergegeben (${reason}). Eine veränderte amtliche Warnung darf den Quellenvermerk des DWD nicht tragen — die Warnungen im Wortlaut stehen unter ${where}.`
+    : `The official wording is not reproduced here (${reason}). An altered official warning may not carry the DWD source note — the warnings in full are at ${where}.`;
+}
+
+/** The list in one mode for the whole answer (one credit line): verbatim when the API gave the text and it fits. */
+export function warningsList(language: Language, shown: readonly T.WeatherWarning[], now: Date, o: { budgetChars?: number; forecastSlippery?: boolean } = {}): { mode: WarningMode; text: string; notice: string | null } {
+  const render = (mode: WarningMode): string => shown.map((w, i) => warningBlock(language, w, i + 1, now, mode, o.forecastSlippery ?? false)).join("\n\n");
+  if (!carriesText(shown)) return { mode: "legacy", text: render("legacy"), notice: null };
+  const text = render("verbatim");
+  if (text.length <= (o.budgetChars ?? VERBATIM_BUDGET_CHARS)) return { mode: "verbatim", text, notice: null };
+  return { mode: "summary", text: render("summary"), notice: summaryNotice(language, "the official wording does not fit in one answer") };
 }

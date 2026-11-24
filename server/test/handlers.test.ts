@@ -1573,6 +1573,106 @@ describe("check_weather_warnings", () => {
   });
 });
 
+describe("check_weather_warnings with the next API release's text, English and road forecast", () => {
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-11-24T21:13:00Z")); });
+  afterEach(() => { vi.useRealTimers(); });
+  const credit = (family: string, text: string) => ({ family, domain: "weather", publisher: text, text, licence: "GeoNutzV", licenceUrl: "https://licences.example/geonutzv", shareAlike: false, shareAlikeOffer: null, termsUrl: null });
+  const credits = [credit("dwd_warnings", "Quelle: Deutscher Wetterdienst"), credit("dwd_warnings_en", "Source: Deutscher Wetterdienst (English)"), credit("dwd_road", "Glättemeldeanlagen: DWD"), credit("dwd_road_forecast", "Straßenwetter: DWD")];
+  const frost = {
+    ...ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0], headline: "Amtliche WARNUNG vor FROST", level: 1, levelName: "Stufe 1", event: "FROST", inForce: true,
+    area: { name: "Stadt Hannover", cellId: "803241001" }, validity: { from: "2026-11-24T15:00:00Z", until: "2026-11-25T11:00:00Z" }, sourceFamily: "dwd_warnings",
+    description: "Es tritt leichter Frost um -3 °C auf.", instruction: null, urgency: "Immediate", certainty: "Likely",
+    english: { headline: "Official WARNING of FROST", description: "There is a risk of frost (Level 1 of 4).", instruction: null, sourceFamily: "dwd_warnings_en" },
+  };
+  const hour = (validAt: string, roadCondition: number | null, surfaceTempC: number | null, runAt = "2026-11-24T18:00:00Z") => ({ validAt, validAtLocal: validAt, runAt, roadCondition, surfaceTempC });
+  const station = (o: Record<string, unknown> = {}) => ({
+    id: "10001", name: "Hannover-Süd", segmentType: 2, positionSource: null, location: { lat: 52.3, lon: 9.8 }, distanceM: 420, sourceFamily: "dwd_road", forecastFamily: "dwd_road_forecast",
+    hours: [hour("2026-11-24T20:00:00Z", 2, 1.2), hour("2026-11-24T22:00:00Z", 2, 0.4), hour("2026-11-25T03:00:00Z", 4, -1.5)], ...o,
+  });
+  const notes = { condition: ["Die Daten der Glättemeldeanlagen stellen ungeprüfte Punktmessungen dar."], purpose: [] };
+  const sources = (r: CallToolResult): unknown => meta(r)["sources"];
+
+  it("English: the DWD's own English quoted, the CAP fields, the road forecast block, the winter-tyre line through the slippery forecast, every source credited", async () => {
+    serve("getWeatherRisk", { lamp: "amber", warnings: [frost], truncated: false, roadWeather: [], roadForecast: [station()] }, { attribution: credits, notes });
+    const r = await call("check_weather_warnings", { ...at, language: "en" });
+    expect(body(r).split("\n")).toEqual([
+      "Die Daten der Glättemeldeanlagen stellen ungeprüfte Punktmessungen dar.",
+      "One official notice for 52.520, 13.405, highest level 1 of 4:",
+      "",
+      "1. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) — Frost (FROST)",
+      "   Area: Stadt Hannover (warn cell 803241001)",
+      "   Valid: until 2026-11-25 12:00 (since 16:00)",
+      "   The DWD's own CAP fields: urgency=Immediate, certainty=Likely",
+      "   Official DWD wording in English (the DWD's own text), reproduced unaltered:",
+      "   „Official WARNING of FROST“",
+      "   „There is a risk of frost (Level 1 of 4).“",
+      expect.stringMatching(/^ {3}For the drive: .*winter tyres|^ {3}For the drive: .*§ 2 /u),
+      "",
+      "DWD road-surface forecast for the nearest road-weather stations (SWSMOS/METRo model forecast, run 19:00 — not a measurement and not an official warning):",
+      "- Station Hannover-Süd (bridge, 0.4 km) — forecast 23:00: damp, road surface 0.4 °C; forecast: slippery class from 2026-11-25 04:00 — hoar frost, road surface −1.5 °C.",
+      "A forecast slippery class is a model forecast for that point, not an official DWD ice warning.",
+      "Each line is for the station's own location, not for the whole road.",
+    ]);
+    expect(sources(r)).toEqual(["dwd_warnings", "dwd_warnings_en", "dwd_road", "dwd_road_forecast"]);
+    expect(meta(r)["conditionNote"]).toBe("Die Daten der Glättemeldeanlagen stellen ungeprüfte Punktmessungen dar.");
+    // The official credit, not the summary one: the text is shown unaltered.
+    expect(footer(r)).toMatch(/^Quelle: Deutscher Wetterdienst \(Lizenz: GeoNutzV, [^)]+\) · Source: Deutscher Wetterdienst \(English\) /u);
+  });
+
+  it("German: the official German text, the English source not credited; without a slippery forecast a FROST warning gets no winter-tyre line", async () => {
+    const dry = station({ hours: [hour("2026-11-24T22:00:00Z", 1, 3.5)] });
+    serve("getWeatherRisk", { lamp: "amber", warnings: [frost], truncated: false, roadWeather: [], roadForecast: [dry] }, { attribution: credits, notes });
+    const r = await call("check_weather_warnings", { ...at, language: "de" });
+    const lines = body(r).split("\n");
+    expect(lines.slice(6, 11)).toEqual([
+      "   CAP-Angaben des DWD: urgency=Immediate, certainty=Likely",
+      "   Amtlicher Wortlaut des DWD, unverändert:",
+      "   „Amtliche WARNUNG vor FROST“",
+      "   „Es tritt leichter Frost um -3 °C auf.“",
+      "   Für die Fahrt: Auf die amtlichen Hinweise achten und die Fahrweise den Verhältnissen anpassen.",
+    ]);
+    expect(lines).toContain("- Station Hannover-Süd (Brücke, 0,4 km) — Prognose 23:00: trocken, Fahrbahn 3,5 °C; bis 25.11. 22:13 keine Glätte-Klasse prognostiziert.");
+    expect(lines.some((l) => l.startsWith("Eine prognostizierte Glätte-Klasse"))).toBe(false);
+    expect(sources(r)).toEqual(["dwd_warnings", "dwd_road", "dwd_road_forecast"]);
+  });
+
+  it("English without the DWD's English: the German original under an English label, the English source not credited", async () => {
+    serve("getWeatherRisk", { lamp: "amber", warnings: [{ ...frost, english: null }], truncated: false, roadWeather: [], roadForecast: [] }, { attribution: credits });
+    const r = await call("check_weather_warnings", { ...at, language: "en" });
+    expect(body(r).split("\n").slice(6, 9)).toEqual(["   Official text of the DWD (German original, binding), reproduced unaltered:", "   „Amtliche WARNUNG vor FROST“", "   „Es tritt leichter Frost um -3 °C auf.“"]);
+    expect(sources(r)).toEqual(["dwd_warnings", "dwd_road", "dwd_road_forecast"]);
+  });
+
+  it("a list whose official text does not fit is a summary: no quotation, today's notice, the summary credit", async () => {
+    // The German original is what a German answer quotes, so its length decides; the English one is short.
+    const long = { ...frost, description: "x ".repeat(4000) };
+    serve("getWeatherRisk", { lamp: "amber", warnings: [long], truncated: false, roadWeather: [], roadForecast: [] }, { attribution: credits });
+    const en = await call("check_weather_warnings", { ...at, language: "en" });
+    expect(body(en)).toContain("   „There is a risk of frost (Level 1 of 4).“");
+    const r = await call("check_weather_warnings", { ...at, language: "de" });
+    const t = body(r);
+    expect(t).not.toContain("„");
+    expect(t).toContain("   CAP-Angaben des DWD: urgency=Immediate, certainty=Likely");
+    // Today's reason is its English phrase in both languages (renderWarnings), kept as today.
+    expect(t.split("\n").at(-1)).toBe("Der amtliche Wortlaut wird hier nicht wiedergegeben (the official wording does not fit in one answer). Eine veränderte amtliche Warnung darf den Quellenvermerk des DWD nicht tragen — die Warnungen im Wortlaut stehen unter https://www.dwd.de/warnungen.");
+    expect(footer(r)).toContain("Datenbasis: Deutscher Wetterdienst, zusammengefasst");
+    expect(sources(r)).toEqual(["dwd_warnings", "dwd_road", "dwd_road_forecast"]);
+  });
+
+  it("a forecast run older than 24 h: one sentence, no value, and the road sources not credited; older than 4 h: the caution first", async () => {
+    const old = station({ hours: [hour("2026-11-24T22:00:00Z", 1, 3.5, "2026-11-23T20:00:00Z")] });
+    serve("getWeatherRisk", { lamp: "green", warnings: [], truncated: false, roadWeather: [], roadForecast: [old] }, { attribution: credits });
+    const r = await call("check_weather_warnings", { ...at, language: "en" });
+    expect(body(r).split("\n").at(-1)).toBe("DWD road-surface forecast currently unavailable: the latest forecast run held is more than 24 hours old.");
+    // No warning shown: one summary credit for the DWD's warnings, none for the road forecast.
+    expect(sources(r)).toEqual(["dwd_warnings"]);
+    const stale = station({ hours: [hour("2026-11-24T22:00:00Z", 1, 3.5, "2026-11-24T16:00:00Z")] });
+    serve("getWeatherRisk", { lamp: "green", warnings: [], truncated: false, roadWeather: [], roadForecast: [stale] }, { attribution: credits });
+    const s2 = body(await call("check_weather_warnings", { ...at, language: "de" })).split("\n");
+    expect(s2).toContain("Achtung, nicht aktuell: Dieser Prognoselauf (17:00) ist älter als 4 Stunden. Straßenwetter-Prognose des DWD für die nächsten Straßenwetterstationen (Modellvorhersage SWSMOS/METRo, Lauf 17:00 — keine Messung und keine amtliche Warnung):");
+  });
+});
+
 describe("stations", () => {
   const dep = (o: Record<string, unknown>) => ({ line: "S1", category: "S", mode: "rail", destination: "Flughafen", plannedAt: "2026-03-30T06:05:00Z", delayMin: null, cancelled: false, platform: "3", platformChanged: false, ...o });
   const board = (departures: unknown[]) => ({ ...ex<object>("listStationDepartures"), departures });

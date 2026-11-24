@@ -30,7 +30,8 @@ import { findDisabledBays } from "./parking-bays.js";
 import { NOT_FULL_NOTE, parkingHead, parkingLine } from "./parking-words.js";
 import { poiCategoryWord } from "./osm-words.js";
 import { addressAnswer } from "./address-words.js";
-import { warningBlock } from "./weather-block.js";
+import { hasEnglish, VERBATIM_BUDGET_CHARS, warningsList } from "./weather-block.js";
+import { roadFamilies, roadForecastAnswer } from "./road-forecast.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -605,12 +606,34 @@ const checkWeatherWarnings: Handler = async (args, ctx) => {
   const minLevel = num(args["min_level"]) ?? MIN_LEVEL;
   const around = aroundText(pos.label, pos.at);
   const { shown, hidden } = byLevel(r.data.warnings, minLevel);
-  if (shown.length === 0) return toolResult(noWarning(language, around, minLevel, hidden), asSummary([r.meta]), language);
-  // Each warning as today's block; one not yet in force says when it starts, so it is never read as in force now.
   const now = new Date();
-  const items = shown.map((w, i) => warningBlock(language, w, i + 1, now));
-  return toolResult([warningsHead(language, around, shown), "", items.join("\n\n")].join("\n"), asSummary([r.meta]), language);
+  // The road-surface forecast beside the warnings, as its own last block; a run older than 24 h is one sentence
+  // and credits nothing of it.
+  const road = roadForecastAnswer(language, r.data.roadForecast, now);
+  const unused = new Set(road.shown ? [] : roadFamilies(r.data.roadForecast));
+  const tail = road.text === null ? [] : ["", road.text];
+  if (shown.length === 0) return toolResult([noWarning(language, around, minLevel, hidden), ...tail].join("\n"), withoutFamilies(asSummary([r.meta]), unused), language);
+  // Each warning as today's block; one not yet in force says when it starts, so it is never read as in force now.
+  const head = warningsHead(language, around, shown);
+  const list = warningsList(language, shown, now, { forecastSlippery: road.anySlippery, budgetChars: VERBATIM_BUDGET_CHARS - head.length - (road.text?.length ?? 0) });
+  // The DWD's English source is credited only when its words are shown (the family the API names, and the
+  // register's name for it when no warning names one).
+  if (list.mode !== "verbatim" || language !== "en" || !shown.some(hasEnglish)) {
+    unused.add(DWD_ENGLISH_FAMILY);
+    for (const w of shown) if (w.english) unused.add(w.english.sourceFamily);
+  }
+  const metas = withoutFamilies(list.mode === "verbatim" ? [r.meta] : asSummary([r.meta]), unused);
+  const body = [head, "", list.text, ...(list.notice === null ? [] : ["", list.notice]), ...tail].join("\n");
+  return toolResult(body, metas, language);
 };
+
+/** The API's family of the DWD's English warning texts. */
+const DWD_ENGLISH_FAMILY = "dwd_warnings_en";
+
+/** The metas without the credits of families the answer does not show. */
+function withoutFamilies(metas: readonly DataMeta[], families: ReadonlySet<string>): DataMeta[] {
+  return families.size === 0 ? [...metas] : metas.map((m) => ({ ...m, attribution: (m.attribution ?? []).filter((a) => !families.has(a.family)) }));
+}
 
 /**
  * The station a station tool asks about: an EVA number or a name, through the API's station search. `railway`

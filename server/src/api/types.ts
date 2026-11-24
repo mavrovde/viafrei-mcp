@@ -82,11 +82,21 @@ export type DrivingRulesData = { topic: string; title: string; rules: DrivingRul
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
 export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; alertsChecked?: boolean; punctuality: { name: string | null; level: string; late: number; observed: number; stopsReporting?: number; untimed?: number } | null; windowMin: number };
 /** WeatherRiskData */
+/** The issuer's own English text of a warning (the next API release; absent before it). */
+export type WarningText = { headline: string | null; description: string | null; instruction: string | null; sourceFamily: string };
 export type WeatherWarning = {
   headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null }; inForce?: boolean;
-  event?: string | null; area?: { name: string | null; cellId: string | null } | null;
+  event?: string | null; area?: { name: string | null; cellId: string | null } | null; sourceFamily?: string;
+  /** The next API release's official text and CAP fields; undefined while the API does not send them. */
+  description?: string | null; instruction?: string | null; urgency?: string | null; certainty?: string | null; english?: WarningText | null;
 };
-export type WeatherRiskData = { warnings: WeatherWarning[] };
+/** One forecast hour of a road-weather station (the next API release). */
+export type RoadForecastHour = { validAt: string; runAt: string; roadCondition: number | null; surfaceTempC: number | null };
+export type RoadForecastStation = {
+  id: string; name: string; segmentType: number | null; positionSource: string | null; location: LatLon; distanceM: number;
+  hours: RoadForecastHour[]; sourceFamily: string; forecastFamily: string;
+};
+export type WeatherRiskData = { warnings: WeatherWarning[]; roadForecast?: RoadForecastStation[] };
 /** LocationData's places: the nearest municipality, the nearest district, the district's Land. */
 export type LocationPlace = { id: string; name: string; code?: string | null; location: { lat: number; lon: number }; distanceM: number | null; sourceFamily: string };
 /** LocationData.lowEmissionZone: the verdict, and the zone it is in (inside, transfer) or the nearest (outside). */
