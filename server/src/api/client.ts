@@ -3,6 +3,7 @@
  * VIAFREI_API_KEY); the operations, their paths and parameter names come from the contract
  * (`test/fixtures/api-openapi.json`, through the generated `operations.ts`), so no path is spelled by hand.
  */
+import { PENDING_QUERY } from "./pending.js";
 import { OPERATIONS, type OperationId } from "./operations.js";
 
 export const DEFAULT_API_URL = "https://api.viafrei.de";
@@ -119,7 +120,8 @@ export class ApiClient {
       path = path.replace(`{${name}}`, encodeURIComponent(String(v)));
     }
     const q = new URLSearchParams();
-    for (const name of spec.query as readonly string[]) {
+    const pending = (PENDING_QUERY[op] ?? []).filter((name) => !(spec.query as readonly string[]).includes(name));
+    for (const name of [...(spec.query as readonly string[]), ...pending]) {
       const v = name === "lang" ? (params[name] ?? this.lang) : params[name];
       if (v === undefined || v === null || v === "") continue;
       q.set(name, Array.isArray(v) ? v.join(",") : String(v));

@@ -612,11 +612,15 @@ const checkWeatherWarnings: Handler = async (args, ctx) => {
   return toolResult([warningsHead(language, around, shown), "", items.join("\n\n")].join("\n"), asSummary([r.meta]), language);
 };
 
-/** The station a station tool asks about: an EVA number or a name, through the API's station search. */
-async function stationOf(args: Args, ctx: ToolContext): Promise<Envelope<T.Station[]>> {
+/**
+ * The station a station tool asks about: an EVA number or a name, through the API's station search. `railway`
+ * keeps the DB stations only, as today's station facilities check resolves a name (a bus stop of the same name
+ * is no station with lifts DB reports); a stop board asks every stop.
+ */
+async function stationOf(args: Args, ctx: ToolContext, railway = false): Promise<Envelope<T.Station[]>> {
   const eva = str(args["eva_no"]) ?? str(args["stop_id"]);
   const q = str(args["station"]) ?? str(args["stop"]);
-  return ctx.api.get<T.Station[]>("listStations", { code: eva, q: eva === undefined ? q : undefined, limit: 1 });
+  return ctx.api.get<T.Station[]>("listStations", { code: eva, q: eva === undefined ? q : undefined, limit: 1, railway: railway ? "true" : undefined });
 }
 
 const departureLine = (d: T.Departure, language: Language): string => {
@@ -788,7 +792,7 @@ const FACILITIES_LIMIT = 20;
 const checkStationFacilities: Handler = async (args, ctx) => {
   const { language } = ctx;
   if (noStation(args)) return NEED_STATION(language);
-  const stations = await stationOf(args, ctx);
+  const stations = await stationOf(args, ctx, true);
   const station = stations.data[0];
   if (station === undefined) {
     const asked = str(args["station"]) ?? str(args["eva_no"]);

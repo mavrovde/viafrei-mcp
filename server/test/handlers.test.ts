@@ -1653,7 +1653,7 @@ describe("stations", () => {
       const d = ex<{ facilities: Record<string, unknown>[] }>("listStationFacilities");
       serve("listStationFacilities", { ...d, counts: { active: 3, inactive: 1, unknown: 1 }, facilities: [{ ...d.facilities[0], state: "active" }, { ...d.facilities[0], kind: "elevator", state: "inactive" }, { ...d.facilities[1], position: null }] });
       const r = await call("check_station_facilities", { eva_no: "8001001", facility: "elevator", limit: 5, language });
-      expect(query("listStations")).toEqual([{ code: "8001001", limit: "1", lang: language }]);
+      expect(query("listStations")).toEqual([{ code: "8001001", limit: "1", railway: "true", lang: language }]);
       expect(query("listStationFacilities")).toEqual([{ kind: "elevator", limit: "5", lang: language }]);
       await pinned("handlers", body(r));
     });

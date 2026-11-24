@@ -258,7 +258,8 @@ export const getTrainDepartures: Handler = async (args, ctx) => {
   const eva = str(args["eva_no"]);
   const name = str(args["station"]);
   if (eva === undefined && name === undefined) return toolError(COPY[language].needStation);
-  const stations = await ctx.api.get<T.Station[]>("listStations", { code: eva, q: eva === undefined ? name : undefined, limit: 1 });
+  // Only the DB stations of a name, as today's server resolves a train station (the API's railway).
+  const stations = await ctx.api.get<T.Station[]>("listStations", { code: eva, q: eva === undefined ? name : undefined, limit: 1, railway: "true" });
   const station = stations.data[0];
   if (eva !== undefined) return liveBoard([eva], station?.name ?? null, args, ctx, [stations.meta]);
   if (station === undefined) {
