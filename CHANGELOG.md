@@ -5,6 +5,15 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.3] - 2026-11-24
+
+**Three answers say what the API already returns.** The server's tools, prompts and resources are those of 2.7.2; what changes is how `get_departures`, `check_road_status` and `check_weather_warnings` word their answers.
+
+### Fixed
+- **`get_departures` around a place or a position** reads the boards of up to 8 nearest stops within 5 km, one per stop code, each with its board and the realtime state (+N min with the expected time, on time, cancelled, no forecast, timetable). A place the place search lacks is found as a stop of that name, taken only in the town the place names. A station id the answer prints is accepted back and goes straight to its board. A board that fails is said for its stop, an empty one with the time it was read until, and when every board fails the answer is the API's failure as an error. The catalogue's `limit` text says it is per stop around a place.
+- **`check_road_status` for a motorway** reads 100 rows, reads the same event once, sorts closures first and only then cuts; the tail counts the deduplicated rest and its closures. The answer opens with counts from the lamp reasons (without an article), and gives the provider's headline, subtitle, a description excerpt and its validity; a one-sided validity says from or until.
+- **`check_weather_warnings`** gives each warning its level of 4, the DWD event word, the warn area and cell, and says "in force since" only for a warning the API says is in force.
+
 ## [2.7.2] - 2026-11-23
 
 **2.7.1 was tagged and its image built, but its npm publish was stopped again: 7 of the 8 mutation shards ran past the 15-minute job limit. 2.7.2 carries the fix and everything 2.7.1 holds.** The server's tools, prompts and resources and what they answer are those of 2.7.1.
@@ -4569,6 +4578,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.3]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.3
 [2.7.2]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.2
 [2.7.1]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.1
 [2.7.0]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.0
