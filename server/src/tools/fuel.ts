@@ -263,9 +263,9 @@ export const findCheapestFuel: Handler = async (args, ctx): Promise<CallToolResu
   const q = ((r.meta as { query?: Record<string, unknown> }).query ?? {}) as { stationsWithoutCurrentPrice?: number; stationsInRadius?: number; osmUnpriced?: readonly T.OsmFuelStation[] };
   const uncovered = unrankedLine(language, q.stationsWithoutCurrentPrice ?? 0, q.stationsInRadius ?? 0, grade);
   const osm = osmFuelLines(language, q.osmUnpriced ?? []);
-  const newest = rows.flatMap((s) => s.prices.filter((p) => p.fuel === fuel).map((p) => p.reportedAt)).sort();
+  const observed = rows.flatMap((s) => s.prices.filter((p) => p.fuel === fuel).map((p) => p.reportedAt)).sort();
   // Today's stamp: the oldest price observation ranked (oldestObservedAt), not the feed's last write.
-  const stamp = newest.length === 0 ? {} : { asOf: newest[0]! };
+  const stamp = observed.length === 0 ? {} : { asOf: observed[0]! };
   return toolResult(`${head}\n${lines.join("\n")}${short}${uncovered}${osm.length === 0 ? "" : `\n${osm.join("\n")}`}`, [r.meta], language, stamp);
 };
 

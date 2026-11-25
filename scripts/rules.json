@@ -392,7 +392,10 @@
     "example values, and download.geonames.org, www.bast.de and www.nextbike.de",
     "are licence or terms pages its attribution examples name. That file is",
     "copied, never edited here, so a host it names is admitted by name rather",
-    "than the file being exempted."
+    "than the file being exempted. The operations this repository proposes to",
+    "the API are not in that copy: they are server/test/fixtures/api-proposed.json,",
+    "written here, each marked x-proposed, and merged in by",
+    "server/scripts/gen-operations.mjs and server/test/api-mock.ts."
   ],
   "allowedHosts": [
     "127.0.0.1",

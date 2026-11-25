@@ -6,7 +6,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { HttpResponse } from "msw";
 import { ApiClient, ApiError, apiConfigFromEnv, atParam } from "../src/api/client.js";
-import { apiFailure, berlinDateTime, berlinTime, eur, km, languageOf, notAvailable, toolResult, TOOL_RESULT_CHARS } from "../src/presentation.js";
+import { apiFailure, berlinDateTime, berlinTime, eur, km, languageOf, notAvailable, toolResult, TOOL_RESULT_CHARS, withPlaceCredits } from "../src/presentation.js";
 import { outcomeOf, SID_CONDITION_NOTE, SID_CONSENT_TIMEOUT_MS, SID_TERMS_URL, SidConsent, sidElicitation } from "../src/sid-consent.js";
 import { pickPlace, SessionWatches } from "../src/tools/context.js";
 import { API_BASE, calls, handlerFor, mockServer } from "./api-mock.js";
@@ -283,5 +283,14 @@ describe("the place a name resolves to", () => {
     const found = { data: [row("Berlin Alexanderplatz", "locality", "geonames"), row("Berlin", "municipality", "bkg_gvisys"), row("Berlin Alexanderplatz", "municipality", "osm")], meta: {} };
     expect(pickPlace("Berlin Alexanderplatz", found)).toBe(found.data[0]);
     expect(pickPlace("x", { data: [], meta: {} })).toBeUndefined();
+  });
+  it("credits the row's own source; every credit where none has the row's family, never none", async () => {
+    const credit = (family: string) => ({ family, text: `T ${family}` }) as never;
+    const credited = (attribution: never[]) => withPlaceCredits(async () => {
+      pickPlace("Hannover", { data: [row("Hannover", "municipality", "bkg_gvisys")], meta: { attribution } });
+      return toolResult("x", [], "en")._meta?.["attribution"];
+    });
+    expect(await credited([credit("bkg_gvisys"), credit("geonames")])).toBe("T bkg_gvisys");
+    expect(await credited([credit("osm"), credit("geonames")])).toBe("T osm · T geonames");
   });
 });

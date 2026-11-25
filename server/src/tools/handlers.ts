@@ -893,7 +893,7 @@ const inTown = (stop: T.Station, town: T.PlaceItem): boolean => (stop.districtCo
 /**
  * The proposed listStopBoards: the API chooses the stops around the place (today's choice, the API's job) and
  * reads their boards in one call. Undefined, and the stops read one by one as before, when the API does not
- * offer it (404) or names no place for the text; any other failure is the API's failure.
+ * offer it (its document does not list it) or names no place for the text; any other failure is the API's failure.
  */
 async function stopBoards(args: Args, ctx: ToolContext): Promise<Envelope<NonNullable<T.StopBoards>> | undefined> {
   const lat = num(args["lat"]);
@@ -902,7 +902,7 @@ async function stopBoards(args: Args, ctx: ToolContext): Promise<Envelope<NonNul
   if (q === undefined && (lat === undefined || lon === undefined)) return undefined;
   try {
     const r = await ctx.api.get<T.StopBoards>("listStopBoards", {
-      q, at: q === undefined ? atParam({ lat: lat!, lon: lon! }) : undefined, radius_m: NEAR_RADIUS_M, limit: NEAR_STOPS, per_stop: num(args["limit"]) ?? NEAR_PER_STOP,
+      q, at: q === undefined ? atParam({ lat: lat!, lon: lon! }) : undefined, radius_m: NEAR_RADIUS_M, limit: NEAR_STOPS, per_stop: NEAR_PER_STOP,
       from: str(args["when"]), duration_min: num(args["duration_min"]) ?? NEAR_WINDOW_MIN, modes: strs(args["modes"]),
     });
     return r.data === null ? undefined : { ...r, data: r.data };
@@ -948,7 +948,7 @@ async function departuresNear(args: Args, ctx: ToolContext): Promise<CallToolRes
   if (stops.length === 0) return none(language, [...pt.metas, near.meta], L(language, "Haltestellen", "stops"));
   // One stop's board that fails is said for that stop; the others still answer.
   const boards = await Promise.allSettled(stops.map((s) => ctx.api.get<T.Board>("listStationDepartures", {
-    stationId: s.id, from: str(args["when"]), duration_min: num(args["duration_min"]) ?? NEAR_WINDOW_MIN, modes: strs(args["modes"]), limit: num(args["limit"]) ?? NEAR_PER_STOP,
+    stationId: s.id, from: str(args["when"]), duration_min: num(args["duration_min"]) ?? NEAR_WINDOW_MIN, modes: strs(args["modes"]), limit: NEAR_PER_STOP,
   })));
   // Only the API's own failure is said per stop; anything else is a fault here and is not hidden.
   for (const b of boards) if (b.status === "rejected" && !(b.reason instanceof ApiError)) throw b.reason;
@@ -1048,7 +1048,7 @@ const checkStationFacilities: Handler = async (args, ctx) => {
 /** Today's DEFAULT_STATION_DEPARTURES (BOARD_MIN_ROWS), the catalogue's default: as many as the station page shows. */
 const STATION_DEPARTURES = 10;
 
-/** The proposed getStationPage: the page's sections; undefined where the API does not offer it (404) or holds no page. */
+/** The proposed getStationPage: the page's sections; undefined where the API does not offer it (its document does not list it) or holds no page. */
 async function stationPage(stationId: string, departures: number, ctx: ToolContext): Promise<{ data: NonNullable<T.StationPage>; meta: DataMeta } | undefined> {
   try {
     const r = await ctx.api.get<T.StationPage>("getStationPage", { stationId, departures });

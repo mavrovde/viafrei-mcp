@@ -104,19 +104,24 @@ const fold = (x: string): string => x.normalize("NFC").toLocaleLowerCase("de");
 /**
  * The place a name resolves to, as today's resolver (a Gemeinde of its official key first): of the
  * search's candidates the municipality of exactly that name from the BKG register, else the search's first. Its
- * credit is that row's source only.
+ * credit is that row's source only; where the answer's credits name no source of that row's family, every credit
+ * of the answer is kept (a credit is never dropped because the families disagree).
  */
 export function pickPlace(q: string, found: { data: readonly PlaceItem[]; meta: { attribution?: readonly Attribution[] } }): PlaceItem | undefined {
   const official = found.data.find((p) => p.kind === "municipality" && p.sourceFamily === "bkg_gvisys" && fold(p.name) === fold(q.trim()));
   const pick = official ?? found.data[0];
-  if (pick !== undefined) creditPlace((found.meta.attribution ?? []).filter((a) => a.family === pick.sourceFamily));
+  if (pick !== undefined) {
+    const all = found.meta.attribution ?? [];
+    const own = all.filter((a) => a.family === pick.sourceFamily);
+    creditPlace(own.length > 0 ? own : all);
+  }
   return pick;
 }
 
 /**
  * The proposed resolvePlace: the API says which one place the text names and how the answer calls it (today's
  * resolver, which is the API's job, not the MCP's). Undefined, and the place search read as before, when the API
- * does not offer the operation (404) or names no place for the text.
+ * does not offer the operation (its document does not list it) or names no place for the text.
  */
 export async function resolvePlace(q: string, ctx: ToolContext): Promise<Position | undefined> {
   try {

@@ -159,7 +159,7 @@ describe("special cases", () => {
   it("a place name resolves through listPlaces where the API offers no resolvePlace", async () => {
     const { client, close } = await connect();
     await client.callTool({ name: "find_speed_cameras", arguments: { place: "Köln", language: "en" } });
-    expect(calls.map((c) => c.operationId)).toEqual(["resolvePlace", "listPlaces", "listSpeedCameras"]);
+    expect(calls.map((c) => c.operationId)).toEqual(["listPlaces", "listSpeedCameras"]);
     await close();
   });
 

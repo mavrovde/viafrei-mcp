@@ -2,6 +2,10 @@
  * The typed ViaFrei API client: the one source of every answer the MCP server gives. The base URL and the key come from the environment (VIAFREI_API_URL,
  * VIAFREI_API_KEY); the operations, their paths and parameter names come from the contract
  * (`test/fixtures/api-openapi.json`, through the generated `operations.ts`), so no path is spelled by hand.
+ * A proposed operation (`test/fixtures/api-proposed.json`, in no released API yet) is asked only once the API's own
+ * OpenAPI document lists it: that document is read once per process and API, kept for DISCOVERY_TTL_MS, and while it
+ * does not list the operation no request for it is sent (today's API counts every unknown path against the client's
+ * address, so a probe on every call would run the server into 429s).
  */
 import { OPERATIONS, type OperationId } from "./operations.js";
 
@@ -93,6 +97,31 @@ export class ApiError extends Error {
 export type ParamValue = string | number | boolean | readonly string[] | undefined | null;
 export type Params = Readonly<Record<string, ParamValue>>;
 
+/** The API's own OpenAPI document, the address getMeta's `openapi` names: which operations this API offers. */
+export const OPENAPI_PATH = "/v1/openapi.json";
+/** How long the API's list of operations is trusted before it is read again. */
+export const DISCOVERY_TTL_MS = 10 * 60_000;
+/** How long a failed read of that list is said again, without a request, before it is read again. */
+export const DISCOVERY_RETRY_MS = 15_000;
+
+type Discovery = { at: number; offered?: ReadonlySet<string>; failure?: ApiError; pending?: Promise<ReadonlySet<string>> };
+/** Per API (its config, which every language's client shares): what its document lists, or why it could not be read. */
+let discoveries = new WeakMap<ApiConfig, Discovery>();
+/** Forget every API's list of operations (tests that change what the mock API offers). */
+export function forgetDiscovery(): void {
+  discoveries = new WeakMap();
+}
+
+/**
+ * A failed read of the document: its own kind, except a 404, which here means the document was not served (not that
+ * an operation is not offered) and so is never read as "not offered".
+ */
+const discoveryFailure = (err: unknown): ApiError => {
+  const e = err instanceof ApiError ? err : new ApiError("unavailable", "the ViaFrei API did not answer its OpenAPI document");
+  const message = `the ViaFrei API's list of operations (${OPENAPI_PATH}) could not be read: ${e.message}`;
+  return new ApiError(e.kind === "not_found" ? "unavailable" : e.kind, message, e.status, e.problem);
+};
+
 /** `lat,lon` as the contract's `at` parameter spells it. */
 export const atParam = (p: LatLon): string => `${Number(p.lat.toFixed(6))},${Number(p.lon.toFixed(6))}`;
 
@@ -136,6 +165,52 @@ export class ApiClient {
     return this.send<D>(op, params, undefined);
   }
 
+  /**
+   * Whether the API offers an operation: a contract operation always; a proposed one only when the API's own document
+   * lists it. A failed read of the document throws (rate_limited, unavailable, …): it is reported, never "not offered".
+   */
+  async offers(op: OperationId): Promise<boolean> {
+    if (!("proposed" in OPERATIONS[op])) return true;
+    return (await this.offered()).has(op);
+  }
+
+  private offered(): Promise<ReadonlySet<string>> {
+    const now = Date.now();
+    const d = discoveries.get(this.config);
+    if (d?.pending !== undefined) return d.pending;
+    if (d?.offered !== undefined && now - d.at < DISCOVERY_TTL_MS) return Promise.resolve(d.offered);
+    if (d?.failure !== undefined && now - d.at < DISCOVERY_RETRY_MS) return Promise.reject(d.failure);
+    const pending = this.readOperations().then(
+      (offered) => {
+        discoveries.set(this.config, { at: Date.now(), offered });
+        return offered;
+      },
+      (err: unknown) => {
+        const failure = discoveryFailure(err);
+        discoveries.set(this.config, { at: Date.now(), failure });
+        throw failure;
+      },
+    );
+    discoveries.set(this.config, { at: now, pending });
+    return pending;
+  }
+
+  /** The operation ids the API's own OpenAPI document lists. */
+  private async readOperations(): Promise<ReadonlySet<string>> {
+    const res = await this.fetchJson(`${this.config.baseUrl}${OPENAPI_PATH}`, "GET", undefined, "the OpenAPI document");
+    const paths = res.json !== null && typeof res.json === "object" ? (res.json as { paths?: unknown }).paths : undefined;
+    if (!res.ok || paths === null || typeof paths !== "object") throw failureOf("the OpenAPI document", res.status, res.json, res.ok);
+    const ids = new Set<string>();
+    for (const item of Object.values(paths as Record<string, unknown>)) {
+      if (item === null || typeof item !== "object") continue;
+      for (const op of Object.values(item as Record<string, unknown>)) {
+        const id = op !== null && typeof op === "object" ? (op as { operationId?: unknown }).operationId : undefined;
+        if (typeof id === "string") ids.add(id);
+      }
+    }
+    return ids;
+  }
+
   /** A write operation of the contract (createRefresh), with its JSON body. */
   async post<D>(op: OperationId, body: unknown, params: Params = {}): Promise<Envelope<D>> {
     return this.send<D>(op, params, body);
@@ -146,19 +221,31 @@ export class ApiClient {
       throw new ApiError("not_configured", "the ViaFrei API key is not configured (VIAFREI_API_KEY); no request was made");
     }
     const url = this.url(op, params);
+    // A proposed operation the API's document does not list: answered as the API would (not offered), unsent.
+    if (!(await this.offers(op))) throw new ApiError("not_found", `${op} is not offered by this API (not in ${OPENAPI_PATH}); no request was made`);
+    const res = await this.fetchJson(url, OPERATIONS[op].method, body, op);
+    const json = res.json;
+    if (res.ok) {
+      if (json === null || typeof json !== "object" || !("data" in json)) throw new ApiError("unavailable", `${op} answered ${res.status} without a body`, res.status);
+      return json as Envelope<D>;
+    }
+    throw failureOf(op, res.status, json, false);
+  }
+
+  private async fetchJson(url: string, method: string, body: unknown, what: string): Promise<{ ok: boolean; status: number; json: unknown }> {
     const headers: Record<string, string> = { accept: "application/json" };
     if (this.config.key !== null) headers["x-api-key"] = this.config.key;
     if (body !== undefined) headers["content-type"] = "application/json";
     let res: Response;
     try {
       res = await this.doFetch(url, {
-        method: OPERATIONS[op].method,
+        method,
         headers,
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch (err) {
-      throw new ApiError("unavailable", `the ViaFrei API did not answer ${op}: ${err instanceof Error ? err.name : "error"}`);
+      throw new ApiError("unavailable", `the ViaFrei API did not answer ${what}: ${err instanceof Error ? err.name : "error"}`);
     }
     const text = await res.text();
     let json: unknown = null;
@@ -167,19 +254,21 @@ export class ApiClient {
     } catch {
       json = null;
     }
-    if (res.status >= 200 && res.status < 300) {
-      if (json === null || typeof json !== "object" || !("data" in json)) throw new ApiError("unavailable", `${op} answered ${res.status} without a body`, res.status);
-      return json as Envelope<D>;
-    }
-    const problem = json !== null && typeof json === "object" ? (json as Problem) : null;
-    const detail = problem?.detail ?? problem?.title ?? `HTTP ${res.status}`;
-    const kind: ApiFailure =
-      res.status === 401 ? "not_configured"
-      : res.status === 403 ? "refused"
-      : res.status === 404 ? "not_found"
-      : res.status === 400 || res.status === 422 ? "invalid"
-      : res.status === 429 ? "rate_limited"
-      : "unavailable";
-    throw new ApiError(kind, `${op}: ${detail}`, res.status, problem);
+    return { ok: res.status >= 200 && res.status < 300, status: res.status, json };
   }
+}
+
+/** The API's failure as its kind: the status read, the problem body's detail said. */
+function failureOf(what: string, status: number, json: unknown, ok: boolean): ApiError {
+  if (ok) return new ApiError("unavailable", `${what} answered ${status} without a body`, status);
+  const problem = json !== null && typeof json === "object" ? (json as Problem) : null;
+  const detail = problem?.detail ?? problem?.title ?? `HTTP ${status}`;
+  const kind: ApiFailure =
+    status === 401 ? "not_configured"
+    : status === 403 ? "refused"
+    : status === 404 ? "not_found"
+    : status === 400 || status === 422 ? "invalid"
+    : status === 429 ? "rate_limited"
+    : "unavailable";
+  return new ApiError(kind, `${what}: ${detail}`, status, problem);
 }

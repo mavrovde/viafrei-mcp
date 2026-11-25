@@ -1,5 +1,6 @@
 /**
- * MSW handlers for every operation of the API contract (test/fixtures/api-openapi.json), each answering
+ * MSW handlers for every operation of the API contract (test/fixtures/api-openapi.json, with the proposed operations of
+ * api-proposed.json merged in), each answering
  * the contract's first 200 example (201 for a write that has no 200, createRefresh). A test overrides one only for its special case (empty, 404, 429,
  * terms not accepted). Unmatched requests fail the test (`onUnhandledRequest: "error"`), so a handler
  * that asks an operation the contract lacks shows up at once. A query parameter the operation does not declare
@@ -14,10 +15,16 @@ export const API_BASE = "http://127.0.0.1";
 type Op = { operationId: string; method: string; path: string; status: number; example: unknown; responses: Record<string, unknown>; query: readonly string[]; proposed: boolean };
 type Param = { name?: string; in?: string; $ref?: string };
 
-export const SPEC = JSON.parse(readFileSync(new URL("./fixtures/api-openapi.json", import.meta.url), "utf8")) as {
+type Spec = {
   components?: { parameters?: Record<string, Param> };
   paths: Record<string, Record<string, { operationId?: string; parameters?: Param[]; responses?: Record<string, { content?: Record<string, { examples?: Record<string, { value: unknown }>; example?: unknown }> }> }>>;
 };
+/** The API's own document, as the API serves it at /v1/openapi.json. */
+const API_SPEC = JSON.parse(readFileSync(new URL("./fixtures/api-openapi.json", import.meta.url), "utf8")) as Spec;
+/** The proposed operations (x-proposed): in no released API yet. */
+const PROPOSED = JSON.parse(readFileSync(new URL("./fixtures/api-proposed.json", import.meta.url), "utf8")) as Pick<Spec, "paths">;
+/** The contract the mock answers: the API's document with the proposed operations merged in, as gen-operations.mjs merges them. */
+export const SPEC: Spec = { ...API_SPEC, paths: { ...API_SPEC.paths, ...PROPOSED.paths } };
 
 const resolve = (p: Param): Param => (p.$ref === undefined ? p : (SPEC.components?.parameters?.[p.$ref.split("/").pop() ?? ""] ?? p));
 const queryOf = (...lists: (Param[] | undefined)[]): string[] => lists.flatMap((l) => l ?? []).map(resolve).filter((p) => p.in === "query").map((p) => p.name ?? "");
@@ -53,6 +60,25 @@ export const exampleOf = <T = { data: unknown; meta: Record<string, unknown> }>(
 
 /** Every request the mock answered, for assertions on which operation was asked with which query. */
 export const calls: { operationId: string; url: URL; headers: Headers }[] = [];
+/** Every read of the API's OpenAPI document (kept apart from `calls`: it is read once per process and API). */
+export const documentReads: URL[] = [];
+
+/**
+ * The API's OpenAPI document listing the proposed operations `offered` (none by default, as today's API), or a
+ * failure of that read (`respond`).
+ */
+export function offering(offered: readonly string[] = [], respond?: () => Response): RequestHandler {
+  return http.get(`${API_BASE}/v1/openapi.json`, ({ request }) => {
+    documentReads.push(new URL(request.url));
+    return respond === undefined ? apiDocument(offered) : respond();
+  });
+}
+
+/** The API's /v1/openapi.json answer: its own document, with the proposed operations `offered` as a later API would list them. */
+export function apiDocument(offered: readonly string[]): Response {
+  const proposed = Object.fromEntries(Object.entries(PROPOSED.paths).filter(([, item]) => Object.values(item).some((op) => offered.includes(op.operationId ?? ""))));
+  return HttpResponse.json({ ...API_SPEC, paths: { ...API_SPEC.paths, ...proposed } }, { headers: { "content-type": "application/vnd.oai.openapi+json;version=3.1" } });
+}
 
 export function handlerFor(id: string, respond?: (url: URL) => Response | Promise<Response>): RequestHandler {
   const op = opById(id);
@@ -63,7 +89,7 @@ export function handlerFor(id: string, respond?: (url: URL) => Response | Promis
     const unknown = [...new Set(url.searchParams.keys())].filter((k) => !op.query.includes(k));
     if (unknown.length > 0) return unknownParameters(url.pathname, unknown);
     if (respond !== undefined) return respond(url);
-    // A proposed operation is answered as today's API answers it: not offered (404).
+    // A proposed operation is answered as today's API answers it: not offered (404); its document does not list it.
     if (op.proposed) return notOffered(op.path);
     if (op.example === undefined) return HttpResponse.json({ status: 500, title: "no example" }, { status: 500 });
     return HttpResponse.json(structuredClone(op.example) as Record<string, unknown>, { status: op.status });
@@ -91,4 +117,4 @@ export const DB_STATION = {
 };
 const stationsWorld = handlerFor("listStations", () => HttpResponse.json(exampleOf<Record<string, unknown>>("listStations")));
 
-export const mockServer = setupServer(...OPS.map((o) => (o.operationId === "listStations" ? stationsWorld : handlerFor(o.operationId))));
+export const mockServer = setupServer(offering(), ...OPS.map((o) => (o.operationId === "listStations" ? stationsWorld : handlerFor(o.operationId))));

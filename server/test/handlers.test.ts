@@ -295,7 +295,7 @@ describe("find_roadworks_ahead", () => {
   for (const key of ["place"]) {
     it(`a place (${key}): the roadworks around the resolved place`, async () => {
       const r = await call("find_roadworks_ahead", { [key]: "Köln", language: "en" });
-      expect(ops()).toEqual(["resolvePlace", "listPlaces", "listRoadConditions"]);
+      expect(ops()).toEqual(["listPlaces", "listRoadConditions"]);
       expect(query("listPlaces")).toEqual([{ q: "Köln", limit: "10", lang: "en" }]);
       expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", horizon_days: "14", lang: "en" }]);
       expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m");
@@ -843,14 +843,14 @@ describe("find_place, find_poi, find_address", () => {
 
   it("find_poi near a named place resolves it", async () => {
     await call("find_poi", { name: "Apotheke", near: "Köln", language: "en" });
-    expect(ops()).toEqual(["resolvePlace", "listPlaces", "listPois"]);
+    expect(ops()).toEqual(["listPlaces", "listPois"]);
     expect(query("listPois")[0]!["at"]).toBe("48.24375,7.01625");
   });
 
   it("find_poi near an unknown place says so", async () => {
     serve("listPlaces", []);
     expect((await call("find_poi", { name: "Apotheke", near: "Nirgendwo", language: "en" })).isError).toBe(true);
-    expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
+    expect(ops()).toEqual(["listPlaces"]);
   });
 
   it("find_address: street and number, postcode and town, coordinate", async () => {
@@ -1196,7 +1196,7 @@ describe("get_driving_rules", () => {
         content: [{ type: "text", text: language === "de" ? "„Nirgendwo“ habe ich als Ort nicht gefunden." : 'I could not find "Nirgendwo" as a place.' }],
         isError: true,
       });
-      expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
+      expect(ops()).toEqual(["listPlaces"]);
     });
   }
 
@@ -1861,7 +1861,7 @@ describe("stations", () => {
 
   it("describe_station with no departures asked reads no board", async () => {
     const r = await call("describe_station", { station: "Schömpingbach Hbf", departures: 0, language: "en" });
-    expect(ops().sort()).toEqual(["getStationPage", "listStationFacilities", "listStations"]);
+    expect(ops().sort()).toEqual(["listStationFacilities", "listStations"]);
     expect(body(r)).toBe([
       "Schömpingbach Hbf", "Schleswig-Holstein · EVA 8001001", "",
       "Lifts and escalators (As of 2026-03-29 14:00):", "- Escalator (Platform 1): in service", "- Escalator (Platform 2): in service", "",
@@ -2313,7 +2313,7 @@ describe("a place given as a street and house number", () => {
       serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [{ land: "Hessen", dataAsOf: "2026-11-01" }] });
       serve("listPlaces", []);
       await call("find_parking", { place: "Hauptstraße 12, Fulda", language });
-      expect(ops().slice(0, 3)).toEqual(["getPlacesCoverage", "resolvePlace", "listPlaces"]);
+      expect(ops().slice(0, 2)).toEqual(["getPlacesCoverage", "listPlaces"]);
     });
   }
 });

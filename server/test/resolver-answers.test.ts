@@ -6,7 +6,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
+import { calls, documentReads, exampleOf, handlerFor, mockServer, offering, problem } from "./api-mock.js";
 import { connect, textOf } from "./harness.js";
 import { OPERATIONS } from "../src/api/operations.js";
 import type * as T from "../src/api/types.js";
@@ -20,6 +20,7 @@ beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
   mockServer.resetHandlers();
   calls.length = 0;
+  documentReads.length = 0;
 });
 afterAll(() => mockServer.close());
 
@@ -33,10 +34,10 @@ async function call(tool: string, args: Record<string, unknown>): Promise<CallTo
 }
 const ops = (): string[] => calls.map((c) => c.operationId);
 const geonames = { family: "geonames_x", domain: "places", publisher: "Ortsdaten X", text: "Ortsdaten: X", licence: "CC BY 4.0", licenceUrl: "https://creativecommons.org/licenses/by/4.0/", termsUrl: "https://alpha.example/x" };
-const resolved = (data: T.ResolvedPlace, status = 200) => mockServer.use(handlerFor("resolvePlace", () => HttpResponse.json({ data, meta: { ...exampleOf<{ meta: Record<string, unknown> }>("listPlaces").meta, attribution: [geonames] } }, { status })));
+const resolved = (data: T.ResolvedPlace, status = 200) => mockServer.use(offering(["resolvePlace"]), handlerFor("resolvePlace", () => HttpResponse.json({ data, meta: { ...exampleOf<{ meta: Record<string, unknown> }>("listPlaces").meta, attribution: [geonames] } }, { status })));
 
 describe("resolvePlace", () => {
-  it("is a proposed operation: generated with its flag, answered 404 by the contract mock", () => {
+  it("is a proposed operation: generated with its flag, not in the API's own document", () => {
     expect(OPERATIONS.resolvePlace).toMatchObject({ method: "GET", path: "/v1/places/resolve", query: ["q", "lang"], proposed: true });
     expect("proposed" in OPERATIONS.listPlaces).toBe(false);
   });
@@ -49,17 +50,41 @@ describe("resolvePlace", () => {
     expect(textOf(r)).toContain("near Sylt (town), also: Sylt (island) (within");
     expect(textOf(r)).toContain("Ortsdaten: X (https://alpha.example/x; Lizenz: CC BY 4.0");
   });
-  it("names no place (null) or is not offered (404): the place search is read as before", async () => {
+  it("names no place (null) or is not offered (not in its document, so not asked): the place search is read as before", async () => {
     resolved(null);
     await call("find_hydrogen_station", { place: "Köln", language: "en" });
     expect(ops()).toEqual(["resolvePlace", "listPlaces", "listHydrogenOptions"]);
     calls.length = 0;
     mockServer.resetHandlers();
     await call("find_hydrogen_station", { place: "Köln", language: "en" });
-    expect(ops()).toEqual(["resolvePlace", "listPlaces", "listHydrogenOptions"]);
+    expect(ops()).toEqual(["listPlaces", "listHydrogenOptions"]);
+  });
+  it("two place calls on one server against an API without it: one read of its document, no request for it", async () => {
+    const { client, close } = await connect();
+    try {
+      for (const place of ["Köln", "Bonn"]) await client.callTool({ name: "find_hydrogen_station", arguments: { place, language: "en" } });
+    } finally {
+      await close();
+    }
+    expect(documentReads.map((u) => u.pathname)).toEqual(["/v1/openapi.json"]);
+    expect(ops()).toEqual(["listPlaces", "listHydrogenOptions", "listPlaces", "listHydrogenOptions"]);
+  });
+  it("a 429 on that read is reported, not read as \"not offered\"; said again without a request until the retry", async () => {
+    mockServer.use(offering([], () => problem(429, "rate_limited")));
+    const { client, close } = await connect();
+    try {
+      for (let i = 0; i < 2; i++) {
+        const r = (await client.callTool({ name: "find_hydrogen_station", arguments: { place: "Köln", language: "en" } })) as CallToolResult;
+        expect(r.isError).toBe(true);
+      }
+    } finally {
+      await close();
+    }
+    expect(documentReads).toHaveLength(1);
+    expect(ops()).toEqual([]);
   });
   it("any other failure is the API's failure, not a quiet fallback", async () => {
-    mockServer.use(handlerFor("resolvePlace", () => problem(503, "unavailable")));
+    mockServer.use(offering(["resolvePlace"]), handlerFor("resolvePlace", () => problem(503, "unavailable")));
     const r = await call("find_hydrogen_station", { place: "Köln", language: "en" });
     expect(r.isError).toBe(true);
     expect(ops()).toEqual(["resolvePlace"]);
@@ -146,7 +171,7 @@ describe("listStopBoards: the stops around a place in one read", () => {
     id: "d", journeyId: "j", line: "RB30", mode: "rail", routeType: 2, trainNumber: null, category: null, destination: "Remagen", plannedAt: soon, plannedAtLocal: soon, platform: null, plannedPlatform: null,
     platformChanged: false, realtime: false, realtimeSource: null, cancelled: false, delayMin: null, expectedAt: null, noForecast: false, sourceFamily: "delfi_static", ...o,
   } as T.Departure);
-  const boards = (data: T.StopBoards) => mockServer.use(handlerFor("listStopBoards", () => HttpResponse.json({ data, meta: { ...exampleOf<{ meta: Record<string, unknown> }>("listPlaces").meta, attribution: [geonames] } })));
+  const boards = (data: T.StopBoards) => mockServer.use(offering(["listStopBoards"]), handlerFor("listStopBoards", () => HttpResponse.json({ data, meta: { ...exampleOf<{ meta: Record<string, unknown> }>("listPlaces").meta, attribution: [geonames] } })));
   const place = { label: "Köln", location: { lat: 50.9, lon: 6.9 } };
   it("the API's stops, its stop_id as the timetable spells it, their departures; nothing else read", async () => {
     boards({ place, window: { from: soon, until: soon }, stops: [{ id: "1:de:1:2", name: "Köln Hbf", stopId: "000009", distanceM: 552, departures: [dep({ plannedAt: soon, line: "RB30", destination: "Remagen" })] }, { id: "1:de:3", name: "Köln Rathaus", stopId: "de:3_G", distanceM: 200, departures: [] }] });
@@ -163,22 +188,29 @@ describe("listStopBoards: the stops around a place in one read", () => {
   });
   it("a position is sent as at; no stop near is said as none", async () => {
     boards({ place, window: { from: soon, until: soon }, stops: [] });
-    const r = await call("get_departures", { lat: 50.9, lon: 6.9, language: "en" });
+    const r = await call("get_departures", { lat: 50.9, lon: 6.9, limit: 10, language: "en" });
     expect(calls[0]!.url.searchParams.get("at")).toBe("50.9,6.9");
     expect(calls[0]!.url.searchParams.get("q")).toBeNull();
     expect(calls[0]!.url.searchParams.get("per_stop")).toBe("4");
     expect(ops()).toEqual(["listStopBoards"]);
     expect(textOf(r)).not.toContain("stop_id");
   });
-  it("not offered (404) or no place named (null): the stops are read one by one as before; another failure is the API's", async () => {
+  it("read one by one, each stop's board holds today's 4 departures whatever limit the client sends (its default 10)", async () => {
+    await call("get_departures", { place: "Köln", limit: 10, language: "en" });
+    const boards = calls.filter((c) => c.operationId === "listStationDepartures");
+    expect(boards.length).toBeGreaterThan(0);
+    expect(boards.map((c) => c.url.searchParams.get("limit"))).toEqual(boards.map(() => "4"));
+  });
+  it("not offered (not asked) or no place named (null): the stops are read one by one as before; another failure is the API's", async () => {
     await call("get_departures", { place: "Köln", language: "en" });
-    expect(ops().slice(0, 2)).toEqual(["listStopBoards", "listPlaces"]);
+    expect(ops()[0]).toBe("listPlaces");
+    expect(ops()).not.toContain("listStopBoards");
     calls.length = 0;
     boards(null);
     await call("get_departures", { place: "Köln", language: "en" });
     expect(ops().slice(0, 2)).toEqual(["listStopBoards", "listPlaces"]);
     calls.length = 0;
-    mockServer.use(handlerFor("listStopBoards", () => problem(503, "unavailable")));
+    mockServer.use(offering(["listStopBoards"]), handlerFor("listStopBoards", () => problem(503, "unavailable")));
     const r = await call("get_departures", { place: "Köln", language: "en" });
     expect(r.isError).toBe(true);
     expect(ops()).toEqual(["listStopBoards"]);
