@@ -11,6 +11,18 @@ export type PlaceItem = { id: string; name: string; kind: string; location: LatL
 };
 /** Proposed resolvePlace: the one place a text names, as today's resolver says it (label), with its alternatives. */
 export type ResolvedPlace = { name: string; label: string; kind: string; location: LatLon; districtCode?: string | null; alternatives?: { name: string; kind: string }[] } | null;
+/** Proposed listStopBoards: the stops around a place, chosen as today's server chooses them, each with its next departures. */
+export type StopBoards = {
+  place: { label: string; location: LatLon }; window: { from: string; until: string };
+  stops: { id: string; name: string; stopId: string; distanceM: number; departures: Departure[] }[];
+  /** Today's FlixBus/FlixTrain block near the point (its own feed, not DELFI's twins); null where none is near. */
+  longDistance?: LongDistance | null;
+} | null;
+export type LongDistanceDeparture = {
+  at: string; line: string; mode: "coach" | "train"; destination: string | null; operator: string | null;
+  stop: { id: string; name: string; distanceM: number }; cancelled: boolean; delayMin: number | null; expectedAt: string | null;
+};
+export type LongDistance = { operator: string; realtime: boolean; radiusM: number; departures: LongDistanceDeparture[] };
 /** Address */
 export type Address = {
   street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; location: LatLon; dataAsOf?: string | null;

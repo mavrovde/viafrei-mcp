@@ -14,6 +14,7 @@ import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, place
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
 import { findPlace, LAENDER } from "./find-place.js";
+import { flixBlock } from "./flix-words.js";
 import { findCheapestFuel, findFuelStation } from "./fuel.js";
 import { findChargingStation } from "./charging.js";
 import { findHydrogenStation } from "./hydrogen.js";
@@ -725,9 +726,56 @@ const inTown = (stop: T.Station, town: T.PlaceItem): boolean => (stop.districtCo
   ? stop.districtCode === town.districtCode
   : stop.name.toLocaleLowerCase("de").includes(town.name.toLocaleLowerCase("de")));
 
+/**
+ * The proposed listStopBoards: the API chooses the stops around the place (today's choice, the API's job) and
+ * reads their boards in one call. Undefined, and the stops read one by one as before, when the API does not
+ * offer it (404) or names no place for the text; any other failure is the API's failure.
+ */
+async function stopBoards(args: Args, ctx: ToolContext): Promise<Envelope<NonNullable<T.StopBoards>> | undefined> {
+  const lat = num(args["lat"]);
+  const lon = num(args["lon"]);
+  const q = lat === undefined || lon === undefined ? str(args["place"]) : undefined;
+  if (q === undefined && (lat === undefined || lon === undefined)) return undefined;
+  try {
+    const r = await ctx.api.get<T.StopBoards>("listStopBoards", {
+      q, at: q === undefined ? atParam({ lat: lat!, lon: lon! }) : undefined, radius_m: NEAR_RADIUS_M, limit: NEAR_STOPS, per_stop: num(args["limit"]) ?? NEAR_PER_STOP,
+      from: str(args["when"]), duration_min: num(args["duration_min"]) ?? NEAR_WINDOW_MIN, modes: strs(args["modes"]),
+    });
+    return r.data === null ? undefined : { ...r, data: r.data };
+  } catch (err) {
+    if (err instanceof ApiError && err.kind === "not_found") return undefined;
+    throw err;
+  }
+}
+
+/** Today's answer around a place: the head with the window's end, each stop with its stop_id and departures, the hint. */
+function nearAnswer(label: string, stops: readonly { name: string; stopId: string; distanceM: number | null | undefined; departures: readonly T.Departure[] | null }[], metas: DataMeta[], language: Language, longDistance?: T.LongDistance | null): CallToolResult {
+  const now = new Date();
+  // Today's window around a place: the next 60 minutes from now, one end for the head and every empty stop.
+  const to = timeBeside(new Date(now.getTime() + NEAR_WINDOW_MIN * 60_000).toISOString(), now, language);
+  const c = BOARD[language];
+  const live = anyLive(stops.flatMap((s) => s.departures ?? []));
+  const lines = [c.nearHead(label, NEAR_RADIUS_M / 1000, to)];
+  for (const s of stops) {
+    const dist = s.distanceM === null || s.distanceM === undefined ? "" : ` (${kmText(s.distanceM, language)})`;
+    lines.push(`${s.name}${dist} — stop_id ${s.stopId}:`);
+    if (s.departures === null) lines.push(`  ${L(language, "Abfahrten nicht gelesen.", "departures not read.")}`);
+    else if (s.departures.length === 0) lines.push(c.nearNone(to));
+    else for (const d of s.departures) lines.push(`  ${boardLine(d, live, now, language)}`);
+  }
+  lines.push(L(language, "Mehr Abfahrten einer Haltestelle: get_departures mit ihrer stop_id.", "More departures of one stop: get_departures with its stop_id."));
+  lines.push(...flixBlock(longDistance, now, language));
+  return toolResult(lines.join("\n"), metas, language, { asOf: now.toISOString(), note: c.nearNote(live), ...(live ? { shareAlikeSubject: LIVE_SHARE_ALIKE_SUBJECT[language] } : {}) });
+}
+
 /** With a place or a position: the nearest stops (one per stop code) with their next departures, as today's answer. */
 async function departuresNear(args: Args, ctx: ToolContext): Promise<CallToolResult> {
   const { language } = ctx;
+  const one = await stopBoards(args, ctx);
+  if (one !== undefined) {
+    if (one.data.stops.length === 0) return none(language, [one.meta], L(language, "Haltestellen", "stops"));
+    return nearAnswer(one.data.place.label, one.data.stops, [one.meta], language, one.data.longDistance);
+  }
   const pt = await nearPoint(args, ctx);
   if (isResult(pt)) return pt;
   const near = await ctx.api.get<T.Station[]>("listStations", { at: atParam(pt.at), radius_m: NEAR_RADIUS_M, limit: 40 });
@@ -741,24 +789,9 @@ async function departuresNear(args: Args, ctx: ToolContext): Promise<CallToolRes
   // Only the API's own failure is said per stop; anything else is a fault here and is not hidden.
   for (const b of boards) if (b.status === "rejected" && !(b.reason instanceof ApiError)) throw b.reason;
   if (boards.every((b) => b.status === "rejected")) return apiFailure((boards[0] as PromiseRejectedResult).reason, language);
-  const now = new Date();
-  // Today's window around a place: the next 60 minutes from now, one end for the head and every empty stop.
-  const to = timeBeside(new Date(now.getTime() + NEAR_WINDOW_MIN * 60_000).toISOString(), now, language);
-  const c = BOARD[language];
-  const shown = boards.flatMap((b) => (b.status === "fulfilled" ? b.value.data.departures : []));
-  const live = anyLive(shown);
-  const lines = [c.nearHead(pt.label, NEAR_RADIUS_M / 1000, to)];
-  stops.forEach((s, i) => {
-    const b = boards[i]!;
-    const dist = s.distanceM === null || s.distanceM === undefined ? "" : ` (${kmText(s.distanceM, language)})`;
-    lines.push(`${s.name}${dist} — stop_id ${s.id}:`);
-    if (b.status === "rejected") lines.push(`  ${L(language, "Abfahrten nicht gelesen.", "departures not read.")}`);
-    else if (b.value.data.departures.length === 0) lines.push(c.nearNone(to));
-    else for (const d of b.value.data.departures) lines.push(`  ${boardLine(d, live, now, language)}`);
-  });
-  lines.push(L(language, "Mehr Abfahrten einer Haltestelle: get_departures mit ihrer stop_id.", "More departures of one stop: get_departures with its stop_id."));
+  const rows = stops.map((s, i) => { const b = boards[i]!; return { name: s.name, stopId: s.id, distanceM: s.distanceM, departures: b.status === "fulfilled" ? b.value.data.departures : null }; });
   const metas = [...pt.metas, near.meta, ...boards.flatMap((b) => (b.status === "fulfilled" ? [b.value.meta] : []))];
-  return toolResult(lines.join("\n"), metas, language, { asOf: now.toISOString(), note: c.nearNote(live), ...(live ? { shareAlikeSubject: LIVE_SHARE_ALIKE_SUBJECT[language] } : {}) });
+  return nearAnswer(pt.label, rows, metas, language);
 }
 
 /** The API's own station id ("1:de:11000:900100003"), as the answer around a place prints it as stop_id. */

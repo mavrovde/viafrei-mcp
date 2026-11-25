@@ -613,6 +613,24 @@ export const OPERATIONS = {
       "q"
     ],
     "proposed": true
+  },
+  "listStopBoards": {
+    "method": "GET",
+    "path": "/v1/stop-boards",
+    "pathParams": [],
+    "query": [
+      "q",
+      "at",
+      "radius_m",
+      "limit",
+      "per_stop",
+      "from",
+      "duration_min",
+      "modes",
+      "lang"
+    ],
+    "required": [],
+    "proposed": true
   }
 } as const;
 export type OperationId = keyof typeof OPERATIONS;

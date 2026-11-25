@@ -8,6 +8,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
+import { ApiError } from "../src/api/client.js";
 import { pinned } from "./pinned.js";
 import { haversineM } from "../src/tools/location.js";
 import { connect, textOf } from "./harness.js";
@@ -1472,6 +1473,8 @@ describe("parity of four answers with today's server", () => {
       const fault = new TypeError("a fault in the server");
       const get = vi.fn(async (op: string, params: Record<string, unknown>) => {
         const meta = { attribution: [], freshness: [] };
+        // An API without the proposed one-read board around a place (listStopBoards).
+        if (op === "listStopBoards") throw new ApiError("not_found", "not offered", 404);
         if (op === "listStations") return { data: [station("1:a", 21), station("1:b", 400)], meta };
         if (op === "listStationDepartures") {
           if (params["stationId"] === "1:b") throw fault;

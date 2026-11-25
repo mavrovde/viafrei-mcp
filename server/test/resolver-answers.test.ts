@@ -14,6 +14,7 @@ import { creditWithLinks } from "../src/presentation.js";
 import { kreisWord } from "../src/tools/find-place.js";
 import { poiLine } from "../src/tools/handlers.js";
 import { gemeindeLines, junctionLines, plaqueSource } from "../src/tools/location.js";
+import { flixBlock, flixLine } from "../src/tools/flix-words.js";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
@@ -136,5 +137,84 @@ describe("describe_location: Gemeinde, junction, plaque source", () => {
 describe("a credit whose register links no licence text", () => {
   it("carries its terms only", () => {
     expect(creditWithLinks({ family: "gbfs_x", text: "Bikesharing: X, CC0 1.0", licence: "CC0 1.0", licenceUrl: null, termsUrl: "https://alpha.example" })).toBe("Bikesharing: X, CC0 1.0 (https://alpha.example)");
+  });
+});
+
+describe("listStopBoards: the stops around a place in one read", () => {
+  const soon = new Date(Date.now() + 10 * 60_000).toISOString();
+  const dep = (o: Partial<T.Departure> = {}): T.Departure => ({
+    id: "d", journeyId: "j", line: "RB30", mode: "rail", routeType: 2, trainNumber: null, category: null, destination: "Remagen", plannedAt: soon, plannedAtLocal: soon, platform: null, plannedPlatform: null,
+    platformChanged: false, realtime: false, realtimeSource: null, cancelled: false, delayMin: null, expectedAt: null, noForecast: false, sourceFamily: "delfi_static", ...o,
+  } as T.Departure);
+  const boards = (data: T.StopBoards) => mockServer.use(handlerFor("listStopBoards", () => HttpResponse.json({ data, meta: { ...exampleOf<{ meta: Record<string, unknown> }>("listPlaces").meta, attribution: [geonames] } })));
+  const place = { label: "Köln", location: { lat: 50.9, lon: 6.9 } };
+  it("the API's stops, its stop_id as the timetable spells it, their departures; nothing else read", async () => {
+    boards({ place, window: { from: soon, until: soon }, stops: [{ id: "1:de:1:2", name: "Köln Hbf", stopId: "000009", distanceM: 552, departures: [dep({ plannedAt: soon, line: "RB30", destination: "Remagen" })] }, { id: "1:de:3", name: "Köln Rathaus", stopId: "de:3_G", distanceM: 200, departures: [] }] });
+    const r = await call("get_departures", { place: "Köln", language: "en" });
+    expect(ops()).toEqual(["listStopBoards"]);
+    expect(Object.fromEntries(calls[0]!.url.searchParams)).toEqual({ q: "Köln", radius_m: "5000", limit: "8", per_stop: "4", duration_min: "60", lang: "en" });
+    const t = textOf(r);
+    expect(t).toMatch(/^The nearest stops around Köln \(within 5 km\)/u);
+    expect(t).toContain("Köln Hbf (0.6 km) — stop_id 000009:\n  ");
+    expect(t).toContain("RB30 → Remagen");
+    expect(t).toMatch(/Köln Rathaus \(0\.2 km\) — stop_id de:3_G:\n {2}no departure until/u);
+    expect(t).toContain("More departures of one stop: get_departures with its stop_id.");
+    expect(t).toContain("Ortsdaten: X");
+  });
+  it("a position is sent as at; no stop near is said as none", async () => {
+    boards({ place, window: { from: soon, until: soon }, stops: [] });
+    const r = await call("get_departures", { lat: 50.9, lon: 6.9, language: "en" });
+    expect(calls[0]!.url.searchParams.get("at")).toBe("50.9,6.9");
+    expect(calls[0]!.url.searchParams.get("q")).toBeNull();
+    expect(calls[0]!.url.searchParams.get("per_stop")).toBe("4");
+    expect(ops()).toEqual(["listStopBoards"]);
+    expect(textOf(r)).not.toContain("stop_id");
+  });
+  it("not offered (404) or no place named (null): the stops are read one by one as before; another failure is the API's", async () => {
+    await call("get_departures", { place: "Köln", language: "en" });
+    expect(ops().slice(0, 2)).toEqual(["listStopBoards", "listPlaces"]);
+    calls.length = 0;
+    boards(null);
+    await call("get_departures", { place: "Köln", language: "en" });
+    expect(ops().slice(0, 2)).toEqual(["listStopBoards", "listPlaces"]);
+    calls.length = 0;
+    mockServer.use(handlerFor("listStopBoards", () => problem(503, "unavailable")));
+    const r = await call("get_departures", { place: "Köln", language: "en" });
+    expect(r.isError).toBe(true);
+    expect(ops()).toEqual(["listStopBoards"]);
+  });
+  it("with the FlixBus/FlixTrain block after the stops", async () => {
+    const flix: T.LongDistance = { operator: "FlixBus/FlixTrain", realtime: true, radiusM: 5000, departures: [{ at: soon, line: "FlixBus N86", mode: "coach", destination: null, operator: "x", stop: { id: "s", name: "Leipzig central", distanceM: 191 }, cancelled: false, delayMin: 0, expectedAt: soon }] };
+    boards({ place, window: { from: soon, until: soon }, stops: [{ id: "1:a", name: "A", stopId: "a", distanceM: 5, departures: [] }], longDistance: flix });
+    const lines = textOf(await call("get_departures", { place: "Leipzig", language: "de" })).split("\n");
+    const i = lines.indexOf("Mehr Abfahrten einer Haltestelle: get_departures mit ihrer stop_id.");
+    expect(lines[i + 1]).toBe("FlixBus/FlixTrain im Umkreis von 5 km (1):");
+    expect(lines[i + 2]).toMatch(/^- \d\d:\d\d Fernbus FlixBus N86, ab Leipzig central \(191 m\) — pünktlich$/u);
+    expect(lines[i + 3]).toBe("Buchung und Preise nur bei FlixBus selbst; die Echtzeit ist FlixBus' eigene Prognose.");
+  });
+});
+
+describe("flixLine and flixBlock (today's FlixBus/FlixTrain block)", () => {
+  const now = new Date("2026-03-30T10:00:00Z");
+  const d: T.LongDistanceDeparture = { at: "2026-03-30T11:05:00Z", line: "FlixBus N86", mode: "coach", destination: "Berlin", operator: null, stop: { id: "s", name: "ZOB", distanceM: 191 }, cancelled: false, delayMin: 3, expectedAt: "2026-03-30T11:08:00Z" };
+  it("delay with the expected time, early, on time, cancelled, timetable time, a train, no line", () => {
+    expect(flixLine(d, true, now, "en")).toBe("- 13:05 coach FlixBus N86 to Berlin, from ZOB (191 m) — +3 min (expected 13:08)");
+    expect(flixLine({ ...d, delayMin: -2 }, true, now, "en")).toBe("- 13:05 coach FlixBus N86 to Berlin, from ZOB (191 m) — -2 min (expected 13:08)");
+    expect(flixLine({ ...d, delayMin: -2 }, true, now, "de")).toBe("- 13:05 Fernbus FlixBus N86 nach Berlin, ab ZOB (191 m) — -2 min (erwartet 13:08)");
+    expect(flixLine({ ...d, delayMin: 0 }, true, now, "en")).toBe("- 13:05 coach FlixBus N86 to Berlin, from ZOB (191 m) — on time");
+    expect(flixLine({ ...d, cancelled: true }, true, now, "de")).toBe("- 13:05 Fernbus FlixBus N86 nach Berlin, ab ZOB (191 m) — fällt aus");
+    expect(flixLine({ ...d, delayMin: null }, true, now, "en")).toBe("- 13:05 coach FlixBus N86 to Berlin, from ZOB (191 m) — timetable time");
+    expect(flixLine({ ...d, delayMin: null }, false, now, "en")).toBe("- 13:05 coach FlixBus N86 to Berlin, from ZOB (191 m)");
+    expect(flixLine({ ...d, expectedAt: null }, false, now, "en")).toBe("- 13:05 coach FlixBus N86 to Berlin, from ZOB (191 m)");
+    expect(flixLine({ ...d, mode: "train", destination: null }, true, now, "en")).toContain("- 13:05 FlixTrain, from ZOB");
+    expect(flixLine({ ...d, line: "" }, true, now, "en")).toContain("- 13:05 coach to Berlin");
+  });
+  it("the block: head with count and radius, the note by realtime; nothing where none is near", () => {
+    const b: T.LongDistance = { operator: "FlixBus/FlixTrain", realtime: false, radiusM: 2500, departures: [d] };
+    expect(flixBlock(b, now, "en")).toEqual(["FlixBus/FlixTrain within 2.5 km (1):", flixLine(d, false, now, "en"), "No current realtime from FlixBus: timetable times. Booking and fares only with FlixBus itself; the realtime is FlixBus' own prediction."]);
+    expect(flixBlock({ ...b, radiusM: 2500 }, now, "de")[0]).toBe("FlixBus/FlixTrain im Umkreis von 2,5 km (1):");
+    expect(flixBlock({ ...b, departures: [] }, now, "en")).toEqual([]);
+    expect(flixBlock(null, now, "en")).toEqual([]);
+    expect(flixBlock(undefined, now, "en")).toEqual([]);
   });
 });
