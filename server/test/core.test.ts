@@ -8,7 +8,7 @@ import { HttpResponse } from "msw";
 import { ApiClient, ApiError, apiConfigFromEnv, atParam } from "../src/api/client.js";
 import { apiFailure, berlinDateTime, berlinTime, eur, km, languageOf, notAvailable, toolResult, TOOL_RESULT_CHARS } from "../src/presentation.js";
 import { outcomeOf, SID_CONDITION_NOTE, SID_CONSENT_TIMEOUT_MS, SID_TERMS_URL, SidConsent, sidElicitation } from "../src/sid-consent.js";
-import { SessionWatches } from "../src/tools/context.js";
+import { pickPlace, SessionWatches } from "../src/tools/context.js";
 import { API_BASE, calls, handlerFor, mockServer } from "./api-mock.js";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
@@ -270,5 +270,18 @@ describe("the credit line in today's shape", () => {
     expect(standTime("2026-09-17T21:59:00Z", "de", now)).toBe("17.09. 23:59");
     expect(standTime("2026-09-17T21:59:00Z", "en", now)).toBe("2026-09-17 23:59");
     expect(standTime("2026-09-17T22:00:00Z", "en", now)).toBe("00:00");
+  });
+});
+
+describe("the place a name resolves to", () => {
+  const row = (name: string, kind: string, sourceFamily: string) => ({ id: `${sourceFamily}:${name}`, name, kind, sourceFamily, location: { lat: 52, lon: 9 } }) as never;
+  it("prefers the official BKG Gemeinde of that very name over the search's first row, as today's place resolution does", () => {
+    const found = { data: [row("Hannover", "city", "geonames"), row("Hannoversch Münden", "municipality", "bkg_gvisys"), row("Hannover", "municipality", "bkg_gvisys")], meta: {} };
+    expect(pickPlace(" hannover ", found)).toBe(found.data[2]);
+  });
+  it("keeps the first row when no Gemeinde has the name, or the one named is not the BKG's", () => {
+    const found = { data: [row("Berlin Alexanderplatz", "locality", "geonames"), row("Berlin", "municipality", "bkg_gvisys"), row("Berlin Alexanderplatz", "municipality", "osm")], meta: {} };
+    expect(pickPlace("Berlin Alexanderplatz", found)).toBe(found.data[0]);
+    expect(pickPlace("x", { data: [], meta: {} })).toBeUndefined();
   });
 });

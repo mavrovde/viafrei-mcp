@@ -1,5 +1,5 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { ApiClient, LatLon } from "../api/client.js";
+import type { ApiClient, Attribution, LatLon } from "../api/client.js";
 import { atParam } from "../api/client.js";
 import type { PlaceItem, PlacesCoverageData } from "../api/types.js";
 import { creditPlace, toolError, type Language } from "../presentation.js";
@@ -96,6 +96,23 @@ export function looksLikeHouseNumber(query: string): boolean {
   return /[a-zäöüß.]\s*\d{1,4}\s*[a-z]?\s*(,|$)/iu.test(query.trim()) && !/^\s*[ab]\s*\d{1,3}\s*$/iu.test(query.trim());
 }
 
+/** How many candidates a name is asked with: enough to hold the official Gemeinde beside its GeoNames namesake. */
+export const PLACE_CANDIDATES = 10;
+
+const fold = (x: string): string => x.normalize("NFC").toLocaleLowerCase("de");
+
+/**
+ * The place a name resolves to, as today's resolver (a Gemeinde of its official key first): of the
+ * search's candidates the municipality of exactly that name from the BKG register, else the search's first. Its
+ * credit is that row's source only.
+ */
+export function pickPlace(q: string, found: { data: readonly PlaceItem[]; meta: { attribution?: readonly Attribution[] } }): PlaceItem | undefined {
+  const official = found.data.find((p) => p.kind === "municipality" && p.sourceFamily === "bkg_gvisys" && fold(p.name) === fold(q.trim()));
+  const pick = official ?? found.data[0];
+  if (pick !== undefined) creditPlace((found.meta.attribution ?? []).filter((a) => a.family === pick.sourceFamily));
+  return pick;
+}
+
 /** The position a tool asks about: lat/lon as given, else the place name resolved through the API's place search. */
 export async function position(args: Args, ctx: ToolContext, placeKey = "place", unknown?: (q: string) => CallToolResult): Promise<Position | CallToolResult> {
   const lat = num(args["lat"]);
@@ -108,10 +125,8 @@ export async function position(args: Args, ctx: ToolContext, placeKey = "place",
   if (looksLikeHouseNumber(q) && (await ctx.api.get<PlacesCoverageData>("getPlacesCoverage", {})).data.addresses.length === 0) {
     return toolError(HOUSE_NUMBER_COPY[ctx.language]);
   }
-  const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: 1 });
-  const first = found.data[0];
+  const first = pickPlace(q, await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: PLACE_CANDIDATES }));
   if (first === undefined) return (await townCentre(q, ctx)) ?? (unknown === undefined ? placeUnknown(ctx, q) : unknown(q));
-  creditPlace(found.meta.attribution);
   return { at: first.location, label: first.name };
 }
 
@@ -137,10 +152,8 @@ export async function townCentre(q: string, ctx: ToolContext): Promise<Position 
   for (let n = Math.min(words.length - 1, TOWN_READINGS); n >= 1; n--) {
     const town = words.slice(0, n).join(" ");
     const thing = words.slice(n).join(" ");
-    const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q: town, limit: 1 });
-    const first = found.data[0];
+    const first = pickPlace(town, await ctx.api.get<PlaceItem[]>("listPlaces", { q: town, limit: PLACE_CANDIDATES }));
     if (first === undefined) continue;
-    creditPlace(found.meta.attribution);
     return { at: first.location, label: CENTRE_WORDS.test(thing) ? first.name : `${first.name}${CENTRE_NOTE[ctx.language](thing)}` };
   }
   return undefined;

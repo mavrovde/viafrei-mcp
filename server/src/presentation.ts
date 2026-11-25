@@ -40,11 +40,21 @@ const berlinDay = (d: Date): string => new Intl.DateTimeFormat("en-CA", { timeZo
 export function standTime(iso: string, language: Language, now: Date = new Date()): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "–";
+  if (berlinDay(d) === berlinDay(now)) return berlinTime(iso);
+  return datedTime(iso, language);
+}
+
+/** Always with the day (today's berlinDatedTime): "18.09. 08:05", "2026-09-18 08:05". */
+export function datedTime(iso: string, language: Language): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "–";
   const time = berlinTime(iso);
   const day = berlinDay(d);
-  if (day === berlinDay(now)) return time;
   return language === "de" ? `${day.slice(8, 10)}.${day.slice(5, 7)}. ${time}` : `${day} ${time}`;
 }
+
+/** Same Berlin calendar day (today's sameBerlinDay). */
+export const sameBerlinDay = (a: Date, b: Date): boolean => berlinDay(a) === berlinDay(b);
 
 /** A row that opens with a label supplies its own (the DWD's prescribed "Quelle: Deutscher Wetterdienst"). */
 const OWN_LABELS = ["Quelle: ", "Source: "];

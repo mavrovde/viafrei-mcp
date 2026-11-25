@@ -9,7 +9,7 @@
  * block before it: the headline quoted, our words, the summary credit.
  */
 import type * as T from "../api/types.js";
-import { standTime, type Language } from "../presentation.js";
+import { datedTime, sameBerlinDay, standTime, type Language } from "../presentation.js";
 
 /** The DWD's own level names, and our English gloss, marked as ours. */
 const LEVEL_WORD: Record<number, { de: string; gloss: string }> = {
@@ -153,10 +153,14 @@ export const drivingNote = (language: Language, level: number, event: string | n
   drivingKeys(level, event, forecastSlippery).map((k) => DRIVE[language][k]).join(" ");
 
 /** "until 2026-11-25 12:00 (since 16:00)"; a warning not yet in force "from … until …". */
-export function windowText(language: Language, w: Pick<T.WeatherWarning, "validity" | "inForce">, now: Date): string {
+export function windowText(language: Language, w: Pick<T.WeatherWarning, "validity" | "inForce">, now: Date, asOf?: string): string {
   const from = w.validity.from;
-  const start = from === null ? null : standTime(from, language, now);
-  const end = w.validity.until === null ? null : standTime(w.validity.until, language, now);
+  // Today's windowLabel: when the answer's Stand is another Berlin day than now, every time of the window
+  // carries its date, so a bare "12:00" is never read as the Stand's day.
+  const dated = asOf !== undefined && !sameBerlinDay(new Date(asOf), now);
+  const at = (iso: string): string => (dated ? datedTime(iso, language) : standTime(iso, language, now));
+  const start = from === null ? null : at(from);
+  const end = w.validity.until === null ? null : at(w.validity.until);
   const future = w.inForce === false || (from !== null && new Date(from).getTime() > now.getTime());
   const de = language === "de";
   if (start === null) return end === null ? (de ? "Ende offen" : "no end given") : de ? `bis ${end}` : `until ${end}`;
@@ -203,14 +207,19 @@ function officialLines(language: Language, w: T.WeatherWarning): string[] {
 export const carriesText = (ws: readonly T.WeatherWarning[]): boolean => ws.length > 0 && ws.every((w) => w.description !== undefined);
 
 /** One warning, numbered, as today's block: head, area, window, the CAP fields, the official words (verbatim), the drive. */
-export function warningBlock(language: Language, w: T.WeatherWarning, index: number, now: Date, mode: WarningMode = "legacy", forecastSlippery = false): string {
+export function warningBlock(language: Language, w: T.WeatherWarning, index: number, now: Date, mode: WarningMode = "legacy", forecastSlippery = false, asOf?: string): string {
   const de = language === "de";
   const hazard = hazardLabel(language, w.event);
   const lines = [
     `${index}. ${levelLabel(language, w.level)}${hazard === null ? "" : ` — ${hazard}`}`,
     `   ${de ? "Gebiet" : "Area"}: ${areaText(language, w.area)}`,
-    `   ${de ? "Gültig" : "Valid"}: ${windowText(language, w, now)}`,
+    `   ${de ? "Gültig" : "Valid"}: ${windowText(language, w, now, asOf)}`,
   ];
+  // Today's derivedLevelNote: a level mapped from the DWD's CAP severity word is said to be our mapping.
+  if (w.levelSource === "derived_from_severity") {
+    lines.push(de ? "   Diese Stufe hat der DWD nicht als Zahl veröffentlicht; sie stammt aus seinem eigenen Severity-Wort (CAP-Zuordnung, unsere Ableitung)."
+      : "   The DWD did not publish this level as a number; it comes from its own CAP severity word (our mapping).");
+  }
   if (mode === "legacy") {
     if (w.headline.trim() !== "") lines.push(`   „${w.headline}“`);
   } else {
@@ -231,8 +240,8 @@ export function summaryNotice(language: Language, reason: string): string {
 }
 
 /** The list in one mode for the whole answer (one credit line): verbatim when the API gave the text and it fits. */
-export function warningsList(language: Language, shown: readonly T.WeatherWarning[], now: Date, o: { budgetChars?: number; forecastSlippery?: boolean } = {}): { mode: WarningMode; text: string; notice: string | null } {
-  const render = (mode: WarningMode): string => shown.map((w, i) => warningBlock(language, w, i + 1, now, mode, o.forecastSlippery ?? false)).join("\n\n");
+export function warningsList(language: Language, shown: readonly T.WeatherWarning[], now: Date, o: { budgetChars?: number; forecastSlippery?: boolean; asOf?: string } = {}): { mode: WarningMode; text: string; notice: string | null } {
+  const render = (mode: WarningMode): string => shown.map((w, i) => warningBlock(language, w, i + 1, now, mode, o.forecastSlippery ?? false, o.asOf)).join("\n\n");
   if (!carriesText(shown)) return { mode: "legacy", text: render("legacy"), notice: null };
   // Today's gate: a warning is quoted only in the DWD's English (en, english.unaltered) or its German as published
   // (unaltered); one that is neither makes the whole list a summary, said with today's reason.

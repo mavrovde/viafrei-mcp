@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { drivingKeys, drivingNote, hazardLabel, levelLabel, windowText } from "../src/tools/weather-block.js";
+import { drivingKeys, drivingNote, hazardLabel, levelLabel, warningBlock, windowText } from "../src/tools/weather-block.js";
+import type * as T from "../src/api/types.js";
 
 const now = new Date("2026-11-24T21:00:00Z");
 const v = (from: string | null, until: string | null, inForce?: boolean) => ({ validity: { from, until }, ...(inForce === undefined ? {} : { inForce }) });
@@ -33,6 +34,21 @@ describe("a DWD warning's words, as today's server says them", () => {
     expect(drivingKeys(1, "SICHT")).toEqual(["fog"]);
     expect(drivingNote("de", 3, "STURM")).toBe("Böen können Fahrzeuge versetzen; auf Brücken, in Waldstücken und beim Überholen von Lkw besonders vorsichtig fahren. Fahrten möglichst verschieben oder zusätzliche Zeit einplanen.");
     expect(drivingNote("en", 0, null)).toBe("A DWD advance notice: severe weather is likely and the warning itself is still to come. Check again before setting off.");
+  });
+  it("the window carries its dates when the Stand is another Berlin day than now (today's windowLabel)", () => {
+    const w = v("2026-11-24T15:00:00Z", "2026-11-25T11:00:00Z", true);
+    const after = new Date("2026-11-24T23:50:00Z");
+    expect(windowText("en", w, after, "2026-11-24T22:17:39Z")).toBe("until 2026-11-25 12:00 (since 2026-11-24 16:00)");
+    expect(windowText("de", w, after, "2026-11-24T22:17:39Z")).toBe("bis 25.11. 12:00 (seit 24.11. 16:00)");
+    expect(windowText("en", w, now, "2026-11-24T20:00:00Z")).toBe("until 2026-11-25 12:00 (since 16:00)");
+    expect(windowText("en", w, after)).toBe("until 12:00 (since 2026-11-24 16:00)");
+  });
+  it("a level mapped from the CAP severity word says it is our mapping, a published one does not", () => {
+    const w = { id: "x", level: 1, event: "FROST", headline: "", validity: { from: null, until: null }, area: { name: "Stadt Hannover" } } as unknown as T.WeatherWarning;
+    expect(warningBlock("en", { ...w, levelSource: "derived_from_severity" }, 1, now)).toContain("   The DWD did not publish this level as a number; it comes from its own CAP severity word (our mapping).");
+    expect(warningBlock("de", { ...w, levelSource: "derived_from_severity" }, 1, now)).toContain("   Diese Stufe hat der DWD nicht als Zahl veröffentlicht; sie stammt aus seinem eigenen Severity-Wort (CAP-Zuordnung, unsere Ableitung).");
+    expect(warningBlock("en", { ...w, levelSource: "published" }, 1, now)).not.toContain("our mapping");
+    expect(warningBlock("en", w, 1, now)).not.toContain("our mapping");
   });
   it("the window: in force, not yet, no end, no start", () => {
     expect(windowText("en", v("2026-11-24T15:00:00Z", "2026-11-25T11:00:00Z", true), now)).toBe("until 2026-11-25 12:00 (since 16:00)");

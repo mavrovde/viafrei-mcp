@@ -615,7 +615,8 @@ const checkWeatherWarnings: Handler = async (args, ctx) => {
   if (shown.length === 0) return toolResult([noWarning(language, around, minLevel, hidden), ...tail].join("\n"), withoutFamilies(asSummary([r.meta]), unused), language);
   // Each warning as today's block; one not yet in force says when it starts, so it is never read as in force now.
   const head = warningsHead(language, around, shown);
-  const list = warningsList(language, shown, now, { forecastSlippery: road.anySlippery, budgetChars: VERBATIM_BUDGET_CHARS - head.length - (road.text?.length ?? 0) });
+  const asOf = r.meta.asOf ?? undefined;
+  const list = warningsList(language, shown, now, { forecastSlippery: road.anySlippery, budgetChars: VERBATIM_BUDGET_CHARS - head.length - (road.text?.length ?? 0), ...(asOf === undefined ? {} : { asOf }) });
   // The DWD's English source is credited only when its words are shown (the family the API names, and the
   // register's name for it when no warning names one).
   if (list.mode !== "verbatim" || language !== "en" || !shown.some(hasEnglish)) {

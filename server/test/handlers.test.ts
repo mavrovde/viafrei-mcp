@@ -295,7 +295,7 @@ describe("find_roadworks_ahead", () => {
     it(`a place (${key}): the roadworks around the resolved place`, async () => {
       const r = await call("find_roadworks_ahead", { [key]: "Köln", language: "en" });
       expect(ops()).toEqual(["listPlaces", "listRoadConditions"]);
-      expect(query("listPlaces")).toEqual([{ q: "Köln", limit: "1", lang: "en" }]);
+      expect(query("listPlaces")).toEqual([{ q: "Köln", limit: "10", lang: "en" }]);
       expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", horizon_days: "14", lang: "en" }]);
       expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m");
     });
@@ -744,7 +744,7 @@ describe("find_place, find_poi, find_address", () => {
 
   it("find_place near a named place resolves it first; near a position passes it", async () => {
     await call("find_place", { query: "Neustadt", near: "Hamburg", language: "en" });
-    expect(query("listPlaces")).toEqual([{ q: "Hamburg", limit: "1", lang: "en" }, { q: "Neustadt", at: "48.24375,7.01625", lang: "en" }]);
+    expect(query("listPlaces")).toEqual([{ q: "Hamburg", limit: "10", lang: "en" }, { q: "Neustadt", at: "48.24375,7.01625", lang: "en" }]);
     calls.length = 0;
     await call("find_place", { query: "Neustadt", ...at, language: "en" });
     expect(query("listPlaces")).toEqual([{ q: "Neustadt", at: "52.52,13.405", lang: "en" }]);
@@ -1369,13 +1369,13 @@ describe("parity of four answers with today's server", () => {
         "",
         "1. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) — Frost (FROST)",
         "   Area: Stadt Hannover (warn cell 803241001)",
-        "   Valid: until 2026-11-25 12:00 (since 16:00)",
+        "   Valid: until 2026-11-25 12:00 (since 2026-11-24 16:00)",
         "   „Official WARNING of FROST“",
         "   For the drive: Follow the official advice and adapt your driving to the conditions.",
         "",
         "2. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) — Fog (NEBEL)",
         "   Area: Stadt Hannover (warn cell 803241001)",
-        "   Valid: until 2026-11-25 07:00 (since 18:08)",
+        "   Valid: until 2026-11-25 07:00 (since 2026-11-24 18:08)",
         "   „Official WARNING of FOG“",
         "   For the drive: With visibility below 50 m in fog, snow or rain the limit is 50 km/h (§ 3 (1) StVO); the rear fog light only in fog with visibility below 50 m (§ 17 (3) StVO).",
       ].join("\n"));
@@ -1383,7 +1383,7 @@ describe("parity of four answers with today's server", () => {
       expect(body(await call("check_weather_warnings", { ...at, language: "de" })).split("\n").slice(2)).toEqual([
         "1. Stufe 1 von 4 — Wetterwarnung — FROST",
         "   Gebiet: Stadt Hannover (Warnzelle 803241001)",
-        "   Gültig: bis 25.11. 12:00 (seit 16:00)",
+        "   Gültig: bis 25.11. 12:00 (seit 24.11. 16:00)",
         "   „Amtliche WARNUNG vor FROST“",
         "   Für die Fahrt: Auf die amtlichen Hinweise achten und die Fahrweise den Verhältnissen anpassen.",
       ]);
@@ -1392,7 +1392,7 @@ describe("parity of four answers with today's server", () => {
       expect(body(await call("check_weather_warnings", { ...at, language: "en" })).split("\n").slice(2)).toEqual([
         "1. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning)",
         "   Area: warn cell",
-        "   Valid: until 2026-11-25 12:00 (since 16:00)",
+        "   Valid: until 2026-11-25 12:00 (since 2026-11-24 16:00)",
         "   For the drive: Follow the official advice and adapt your driving to the conditions.",
       ]);
     } finally {
@@ -1604,7 +1604,7 @@ describe("check_weather_warnings with the next API release's text, English and r
       "",
       "1. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) — Frost (FROST)",
       "   Area: Stadt Hannover (warn cell 803241001)",
-      "   Valid: until 2026-11-25 12:00 (since 16:00)",
+      "   Valid: until 2026-11-25 12:00 (since 2026-11-24 16:00)",
       "   The DWD's own CAP fields: urgency=Immediate, certainty=Likely",
       "   Official DWD wording in English (the DWD's own text), reproduced unaltered:",
       "   „Official WARNING of FROST“",
@@ -1943,7 +1943,10 @@ describe("the credit footer and _meta of a tool answer", () => {
 
   it("a place found by name credits the place search's row after the answer's own, and never moves the data time; coordinates credit nothing more", async () => {
     const place = { family: "gazetteer_x", text: "Ortsdaten: Gazetteer X", licence: "CC BY 4.0", shareAlike: false };
-    serve("listPlaces", ex<unknown[]>("listPlaces"), { attribution: [place], asOf: "2020-01-01T00:00:00Z" });
+    // Of the candidates' credits only the picked row's family is said: the other candidate's source is not.
+    const other = { family: "gazetteer_y", text: "Ortsdaten: Gazetteer Y", licence: "CC BY 4.0", shareAlike: false };
+    const rows = ex<{ sourceFamily: string }[]>("listPlaces");
+    serve("listPlaces", [{ ...rows[0], sourceFamily: "gazetteer_x" }, { ...rows[0], name: "Kölnhausen", sourceFamily: "gazetteer_y" }], { attribution: [place, other], asOf: "2020-01-01T00:00:00Z" });
     const named = await call("find_cheapest_fuel", { place: "Köln", language: "de" });
     expect(footer(named)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Ortsdaten: Gazetteer X · Stand 30.03. 01:57");
     expect(meta(named)["sources"]).toEqual(["tankerkoenig_gamma", "gazetteer_x"]);
@@ -2140,7 +2143,7 @@ describe("watch_situation: the target is the platform's key, resolved from the p
   it("a road as its number; a place and a weather watch on the place's position; a position as given", async () => {
     expect(await target("road", "a 8")).toBe("A8");
     expect(await target("place", "Leipzig")).toBe("48.24375,7.01625");
-    expect(query("listPlaces")).toEqual([{ q: "Leipzig", limit: "1", lang: "de" }]);
+    expect(query("listPlaces")).toEqual([{ q: "Leipzig", limit: "10", lang: "de" }]);
     expect(await target("weather", "Dresden")).toBe("48.24375,7.01625");
     expect(await target("place", "51.34, 12.37")).toBe("51.34,12.37");
     expect(query("listPlaces")).toEqual([]);

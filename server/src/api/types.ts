@@ -91,6 +91,8 @@ export type WeatherWarning = {
   description?: string | null; instruction?: string | null; urgency?: string | null; certainty?: string | null; english?: WarningText | null;
   /** The API's word that headline, description and instruction are the issuer's text as published (today's officialSha256 check). */
   unaltered?: boolean;
+  /** Proposed (API change list): "derived_from_severity" when the DWD published no level number and the level is mapped from its CAP severity word. */
+  levelSource?: string | null;
 };
 /** One forecast hour of a road-weather station (the next API release). */
 export type RoadForecastHour = { validAt: string; runAt: string; roadCondition: number | null; surfaceTempC: number | null };
