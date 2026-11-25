@@ -8,7 +8,7 @@ import { anyLive, BOARD, boardLine, boardNote, LIVE_SHARE_ALIKE_SUBJECT, timeBes
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/client.js";
 import type * as T from "../api/types.js";
-import { apiFailure, berlinDateTime, berlinTime, checkedStamp, creditPlace, eur, km, standTime, toolError, toolResult, type Language } from "../presentation.js";
+import { apiFailure, berlinDateTime, berlinTime, checkedStamp, creditPlace, datedTime, eur, km, standTime, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, placeUnknown, position, radiusM, str, strs, townCentre, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
@@ -146,6 +146,26 @@ export function roadWideLine(road: string, w: T.RoadWide, language: Language, no
     + (police.length === 0 ? "" : L(language, `; dazu Polizei-/Landesmeldungen: ${police.join(", ")}`, `; plus police/Land messages: ${police.join(", ")}`))
     + (announced.length === 0 ? "" : L(language, `; angekündigt${from}: ${announced.join(", ")}`, `; announced${from}: ${announced.join(", ")}`))
     + ` — ${L(language, "Stand", "As of")} ${standTime(w.asOf, language, now)}.${measured}`;
+}
+
+/** Today's plan lines: at most this many, never "+1 more" (today's linesShown). */
+export const PLANS_NOW_LINES = 3;
+const PLAN_LABEL: Record<Language, string> = { de: "Arbeitsstelle kürzerer Dauer (Planung der Autobahn GmbH)", en: "Short-duration roadworks (Autobahn GmbH plan)" };
+
+/**
+ * The short-duration roadworks planned now on a motorway, as today: the label, the road, the publisher's words,
+ * the window "per the plan now" (never "closed"); its end without the day when it ends the day it starts.
+ */
+export function plannedNowLines(road: string, plans: NonNullable<T.RoadConditionsData["plannedNow"]>, language: Language): string[] {
+  const shown = plans.slice(0, plans.length <= PLANS_NOW_LINES + 1 ? plans.length : PLANS_NOW_LINES).map((p) => {
+    const { from, to } = p.window;
+    const span = from === null ? "" : to === null ? L(language, `ab ${datedTime(from, language)}`, `from ${datedTime(from, language)}`)
+      : `${datedTime(from, language)}–${standTime(to, language, new Date(from))}`;
+    const window = span === "" ? "" : ` — ${L(language, "laut Planung jetzt", "per the plan now")} ${span}`;
+    return `• ${PLAN_LABEL[language]} ${road}${p.where === null ? "" : `: ${p.where}`}${window}`;
+  });
+  const more = plans.length - shown.length;
+  return more > 0 ? [...shown, L(language, `  +${more} weitere im strukturierten Ergebnis.`, `  +${more} more in the structured result.`)] : shown;
 }
 
 /** Today's last line of a page that has a next one. */
@@ -333,7 +353,8 @@ function autobahnBody(d: T.RoadConditionsData, language: Language, limit: number
   const now = new Date();
   const head = [`${lampText(d, language)}.`, road === undefined || d.roadWide === undefined || d.roadWide === null ? null : roadWideLine(road, d.roadWide, language, now)]
     .filter((x): x is string => x !== null).join("\n");
-  return [head, ...rows.map((s) => autobahnLine(s, language, now)), ...(nextPage ? [NEXT_PAGE[language]] : [])].join("\n");
+  const plans = road === undefined ? [] : plannedNowLines(road, d.plannedNow ?? [], language);
+  return [head, ...rows.map((s) => autobahnLine(s, language, now)), ...plans, ...(nextPage ? [NEXT_PAGE[language]] : [])].join("\n");
 }
 
 const checkAutobahnTraffic: Handler = async (args, ctx) => {

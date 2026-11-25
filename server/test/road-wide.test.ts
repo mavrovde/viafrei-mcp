@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type * as T from "../src/api/types.js";
-import { HANDLERS, lampText, roadWideLine } from "../src/tools/handlers.js";
+import { HANDLERS, lampText, plannedNowLines, roadWideLine } from "../src/tools/handlers.js";
 
 const now = new Date("2026-03-30T10:00:00Z");
 const wide = (o: Partial<T.RoadWide> = {}): T.RoadWide => ({
@@ -77,5 +77,32 @@ describe("check_autobahn_traffic's head and last line", () => {
     expect((await run({ roadWide: null }, null))[1]).toBe("");
     expect((await run({}, null))[1]).toBe("");
     expect((await run({}, "5", ["A9", "A7"])).filter((l) => l.startsWith("…"))).toEqual([]);
+  });
+});
+
+describe("the short-duration roadworks planned now", () => {
+  const plan = (where: string | null, from: string | null, to: string | null) => ({ where, window: { from, to } });
+  it("label, road, the publisher's words and the window per the plan; the end's day only when it differs", () => {
+    expect(plannedNowLines("A9", [plan("A9 von Ingolstadt-Süd (AS) nach Neuburg (AS) Grünpflege", "2026-03-29T17:00:00Z", "2026-03-30T04:00:00Z"), plan(null, "2026-03-30T06:00:00Z", "2026-03-30T14:00:00Z")], "en")).toEqual([
+      "• Short-duration roadworks (Autobahn GmbH plan) A9: A9 von Ingolstadt-Süd (AS) nach Neuburg (AS) Grünpflege — per the plan now 2026-03-29 19:00–2026-03-30 06:00",
+      "• Short-duration roadworks (Autobahn GmbH plan) A9 — per the plan now 2026-03-30 08:00–16:00",
+    ]);
+    expect(plannedNowLines("A1", [plan("Strecke", "2026-03-29T17:00:00Z", null), plan("B", null, null)], "de")).toEqual([
+      "• Arbeitsstelle kürzerer Dauer (Planung der Autobahn GmbH) A1: Strecke — laut Planung jetzt ab 29.03. 19:00",
+      "• Arbeitsstelle kürzerer Dauer (Planung der Autobahn GmbH) A1: B",
+    ]);
+    expect(plannedNowLines("A1", [plan("S", "2026-03-29T17:00:00Z", null)], "en")).toEqual(["• Short-duration roadworks (Autobahn GmbH plan) A1: S — per the plan now from 2026-03-29 19:00"]);
+  });
+  it("three lines and the rest counted, never '+1 more'", () => {
+    const four = [1, 2, 3, 4].map((i) => plan(`W${i}`, null, null));
+    expect(plannedNowLines("A1", four, "en")[3]).toBe("• Short-duration roadworks (Autobahn GmbH plan) A1: W4");
+    expect(plannedNowLines("A1", [...four, plan("W5", null, null)], "de").slice(3)).toEqual(["  +2 weitere im strukturierten Ergebnis."]);
+    expect(plannedNowLines("A1", [...four, plan("W5", null, null)], "en").slice(3)).toEqual(["  +2 more in the structured result."]);
+    expect(plannedNowLines("A1", [], "en")).toEqual([]);
+  });
+  it("after the entries, before the next page", async () => {
+    const get = async () => ({ data: { lamp: "amber", lampReason: "jam", situations: [], plannedNow: [plan("W", null, null)] }, meta: { generatedAt: "2026-03-30T09:59:00Z", language: "en", asOf: "2026-03-30T09:58:00Z", freshness: [], attribution: [], page: { limit: 5, hasMore: true, nextCursor: "5" } } });
+    const r = await HANDLERS["check_autobahn_traffic"]!({ roads: ["A9"], language: "en" }, { tool: "check_autobahn_traffic", language: "en", api: { get } } as never);
+    expect((r.content[0] as { text: string }).text.split("\n").slice(1, 3)).toEqual(["• Short-duration roadworks (Autobahn GmbH plan) A9: W", "… more entries on the next page."]);
   });
 });

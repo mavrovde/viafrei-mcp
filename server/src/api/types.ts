@@ -113,6 +113,8 @@ export type RoadConditionsData = {
   lampReasonsTotal?: number;
   /** Proposed (today's road-wide headline): the road's figures, the police/Land messages and the announced ones beside them. */
   roadWide?: RoadWide | null;
+  /** Proposed (today's planned-now lines): the short-duration roadworks the Autobahn GmbH plans in force now, in the publisher's words. */
+  plannedNow?: { where: string | null; window: { from: string | null; to: string | null } }[];
 };
 /** Proposed: today's road-wide figures (check_autobahn_traffic's Counts, policeCountsText and the NRW traffic state). */
 export type RoadWide = {
