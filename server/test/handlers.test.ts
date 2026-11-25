@@ -1867,6 +1867,21 @@ describe("watch_situation and stop_watch", () => {
       expect(r.structuredContent).toMatchObject({ uri: "viafrei://watch/1", watchId: 1, kind: "road", key: "A1", condition: { event: "any", events: ["restrictions", "jams"] }, expiresAt: "2026-03-30T03:00:00.000Z", openWatches: 1, maxWatches: 10, scope: "session", externalChannels: false });
       expect((r._meta as Record<string, unknown>)["conditionNote"]).toBeUndefined();
     });
+    it(`a road watch on a word with no digit, or a condition key the kind does not take, is refused before anything is read (${language})`, async () => {
+      const r = await call("watch_situation", { kind: "road", key: "Leipzig", language });
+      expect(r.isError).toBe(true);
+      expect(textOf(r)).toBe(language === "de"
+        ? "„Leipzig“ ist keine Straßennummer — eine road-Beobachtung braucht eine wie „A7“ oder „B5“. Für einen Ort: kind „place“ mit key „Leipzig“. Keine Beobachtung geöffnet."
+        : '"Leipzig" is not a road number — a road watch needs one such as "A7" or "B5". For a town use kind "place" with key "Leipzig". No watch was opened.');
+      const c = await call("watch_situation", { kind: "place", key: "Leipzig", condition: { delay_min: 5, radius_km: 3 }, language });
+      expect(textOf(c)).toBe(language === "de"
+        ? "condition „delay_min“ passt nicht zu einer Beobachtung der Art „place“ — diese Art nimmt: radius_km. Keine Beobachtung geöffnet."
+        : 'condition "delay_min" does not fit a "place" watch — that kind takes: radius_km. No watch was opened.');
+      expect(calls).toEqual([]);
+      // A road number has a digit, and a key the kind takes is no error.
+      serve("getWatch", { ...ex<Record<string, unknown>>("getWatch"), kind: "road", key: "B5" });
+      expect((await call("watch_situation", { kind: "road", key: "B 5", condition: { event: "reopen" }, language })).isError).toBeFalsy();
+    });
     it(`a watch without kind or key (${language}) is refused by the schema before the API is asked`, async () => {
       for (const [args, issue] of [
         [{ kind: "road" }, "Invalid input: expected string, received undefined at key"],

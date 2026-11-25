@@ -19,7 +19,7 @@ import { findHydrogenStation } from "./hydrogen.js";
 import { facilitiesText } from "./facilities.js";
 import { stationPageText } from "./station-page.js";
 import { stopWatchHandler } from "./stop-watch.js";
-import { MAX_WATCHES, watchOpened, type Resolved } from "./watch-words.js";
+import { MAX_WATCHES, watchKeyError, watchOpened, type Resolved } from "./watch-words.js";
 import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
 import { findSpeedCameras } from "./speed-cameras.js";
 import { getTrainDepartures } from "./trains.js";
@@ -948,6 +948,8 @@ const watchSituation: Handler = async (args, ctx) => {
   const kind = str(args["kind"]);
   const key = str(args["key"]);
   if (kind === undefined || key === undefined) return toolError(L(language, "kind und key sind nötig.", "kind and key are required."));
+  const keyError = watchKeyError(kind, key, args["condition"], language);
+  if (keyError !== null) return { ...toolError(keyError), _meta: { errorCode: "invalid_input" } };
   if (ctx.watches.list().length >= MAX_WATCHES) {
     return toolError(L(language,
       `Diese Sitzung hat bereits ${MAX_WATCHES} offene Beobachtungen — das Maximum ist ${MAX_WATCHES}. Beende eine mit stop_watch (die Liste steht in viafrei://watches) und versuche es dann noch einmal.`,

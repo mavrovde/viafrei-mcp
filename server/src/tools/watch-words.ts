@@ -11,6 +11,34 @@ import { KIND_LABEL, WATCH_CREDIT, watchUri } from "./stop-watch.js";
 
 export const MAX_WATCHES = 10;
 
+/** The condition keys each kind takes (today's WATCH_CONDITION_KEYS). */
+const CONDITION_KEYS: Record<string, readonly string[]> = {
+  road: ["event", "events"], station: ["delay_min"], region: ["late_share", "delay_min", "min_trips"],
+  place: ["radius_km"], weather: ["min_level"], charger: ["point_id"],
+};
+
+/**
+ * A watch refused before anything is read, in today's words (conditionKeyError, roadKeyError):
+ * a condition key the kind does not take; a road watch keyed on a word with no digit (every road number has one,
+ * "A7", "B 5", "L1001"), which is a town and could never fire.
+ */
+export function watchKeyError(kind: string, key: string, condition: unknown, language: Language): string | null {
+  const de = language === "de";
+  const allowed = CONDITION_KEYS[kind];
+  const given = condition !== null && typeof condition === "object" ? Object.keys(condition) : [];
+  const wrong = allowed === undefined ? [] : given.filter((k) => !allowed.includes(k));
+  if (allowed !== undefined && wrong.length > 0) {
+    const list = allowed.length === 0 ? (de ? "keine" : "none") : allowed.join(", ");
+    return de
+      ? `condition ${wrong.map((w) => `„${w}“`).join(", ")} passt nicht zu einer Beobachtung der Art „${kind}“ — diese Art nimmt: ${list}. Keine Beobachtung geöffnet.`
+      : `condition ${wrong.map((w) => `"${w}"`).join(", ")} does not fit a "${kind}" watch — that kind takes: ${list}. No watch was opened.`;
+  }
+  if (kind !== "road" || /\d/u.test(key)) return null;
+  return de
+    ? `„${key}“ ist keine Straßennummer — eine road-Beobachtung braucht eine wie „A7“ oder „B5“. Für einen Ort: kind „place“ mit key „${key}“. Keine Beobachtung geöffnet.`
+    : `"${key}" is not a road number — a road watch needs one such as "A7" or "B5". For a town use kind "place" with key "${key}". No watch was opened.`;
+}
+
 /** The condition the platform applies when the request sets none (getWatch's `condition`). */
 const DEFAULTS: Record<string, Record<string, unknown>> = {
   road: { event: "any", events: ["restrictions"] },
