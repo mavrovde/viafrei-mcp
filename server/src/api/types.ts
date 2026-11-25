@@ -14,7 +14,12 @@ export type FuelPrice = { fuel: string; priceEur: number; reportedAt: string; cu
 export type FuelStation = { id: string; name: string; brand: string | null; location: LatLon; distanceM?: number; openingState: string; prices: FuelPrice[] };
 /** FuelStationData (getFuelStation): one station with its postal address. */
 export type FuelAddress = { street: string | null; number: string | null; postcode: string | null; place: string | null };
-export type FuelStationData = { id: string; name: string | null; brand: string | null; location: LatLon; address: FuelAddress | null; aroundTheClock: boolean; openingState: string; prices: FuelPrice[] };
+export type FuelStationData = { id: string; name: string | null; brand: string | null; location: LatLon; address: FuelAddress | null; aroundTheClock: boolean; openingState: string; prices: FuelPrice[] ;
+  /** Proposed (today's detail_refreshed_at and its freshness): when the station's opening hours were last read. */
+  hoursRefreshedAt?: string | null; hoursFreshness?: "fresh" | "stale" | null;
+};
+/** Proposed (listFuelOptions meta.query.osmUnpriced): a station OpenStreetMap maps and the price feed does not hold. */
+export type OsmFuelStation = { name: string; brand: string | null; address: FuelAddress | null; location: LatLon; distanceM: number; sourceFamily: string };
 /** ChargingSite */
 export type ChargingSite = {
   id: string; name: string | null; operator: string | null; location: LatLon; distanceM?: number; access: string;
@@ -86,7 +91,7 @@ export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; a
 export type WarningText = { headline: string | null; description: string | null; instruction: string | null; sourceFamily: string; unaltered?: boolean };
 export type WeatherWarning = {
   headline: string; levelName: string; level: number; hazard: string; validity: { from: string | null; until: string | null }; inForce?: boolean;
-  event?: string | null; area?: { name: string | null; cellId: string | null } | null; sourceFamily?: string;
+  event?: string | null; area?: { name: string | null; cellId: string | null } | null; sourceFamily?: string; published?: string | null;
   /** The next API release's official text and CAP fields; undefined while the API does not send them. */
   description?: string | null; instruction?: string | null; urgency?: string | null; certainty?: string | null; english?: WarningText | null;
   /** The API's word that headline, description and instruction are the issuer's text as published (today's officialSha256 check). */

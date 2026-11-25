@@ -1960,13 +1960,14 @@ describe("watch_situation and stop_watch", () => {
 describe("the credit footer and _meta of a tool answer", () => {
   it("names the sources, the licence and the data time in Berlin", async () => {
     const r = await call("find_cheapest_fuel", { ...at, language: "de" });
-    expect(footer(r)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 01:57");
+    // The data time is today's: the oldest price observation ranked (oldestObservedAt), not the feed's last write.
+    expect(footer(r)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 02:00");
     expect(meta(r)).toEqual({
       attribution: "Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0)",
       license: "CC BY 4.0",
       licenses: { tankerkoenig_gamma: "CC BY 4.0" },
-      asOf: "2026-03-29T23:57:30Z",
-      asOfLocal: "30.03.2026, 01:57",
+      asOf: "2026-03-30T00:00:00Z",
+      asOfLocal: "30.03.2026, 02:00",
       sources: ["tankerkoenig_gamma"],
       purposeNote: "For consumer information only (synthetic).",
     });
@@ -1979,10 +1980,10 @@ describe("the credit footer and _meta of a tool answer", () => {
     const rows = ex<{ sourceFamily: string }[]>("listPlaces");
     serve("listPlaces", [{ ...rows[0], sourceFamily: "gazetteer_x" }, { ...rows[0], name: "Kölnhausen", sourceFamily: "gazetteer_y" }], { attribution: [place, other], asOf: "2020-01-01T00:00:00Z" });
     const named = await call("find_cheapest_fuel", { place: "Köln", language: "de" });
-    expect(footer(named)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Ortsdaten: Gazetteer X · Stand 30.03. 01:57");
+    expect(footer(named)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Ortsdaten: Gazetteer X · Stand 30.03. 02:00");
     expect(meta(named)["sources"]).toEqual(["tankerkoenig_gamma", "gazetteer_x"]);
-    expect(meta(named)["asOf"]).toBe("2026-03-29T23:57:30Z");
-    expect(footer(await call("find_cheapest_fuel", { ...at, language: "de" }))).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 01:57");
+    expect(meta(named)["asOf"]).toBe("2026-03-30T00:00:00Z");
+    expect(footer(await call("find_cheapest_fuel", { ...at, language: "de" }))).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 02:00");
   });
 
   it("the gap list names a tool, a case and the operation it needs, for each gap", () => {

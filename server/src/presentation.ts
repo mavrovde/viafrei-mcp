@@ -53,6 +53,19 @@ export function datedTime(iso: string, language: Language): string {
   return language === "de" ? `${day.slice(8, 10)}.${day.slice(5, 7)}. ${time}` : `${day} ${time}`;
 }
 
+/**
+ * The stamp of an answer whose source is asked on a schedule (today's checkedAsOfLabel): "As of <the last check>",
+ * and ", unchanged since <t>" when the data shown last changed a minute or more before that check. Undefined
+ * while the API does not say when the family was last checked.
+ */
+export function checkedStamp(meta: DataMeta, family: string, changedAt: string | null, language: Language, now: Date = new Date()): { asOf: string; asOfLabel: string } | undefined {
+  const checked = meta.freshness?.find((f) => f.family === family)?.lastCheckedAt;
+  if (checked === null || checked === undefined) return undefined;
+  const head = `${AS_OF_LABEL[language]} ${standTime(checked, language, now)}`;
+  if (changedAt === null || new Date(checked).getTime() - new Date(changedAt).getTime() < 60_000) return { asOf: checked, asOfLabel: head };
+  return { asOf: checked, asOfLabel: `${head}, ${language === "de" ? "unverändert seit" : "unchanged since"} ${standTime(changedAt, language, now)}` };
+}
+
 /** Same Berlin calendar day (today's sameBerlinDay). */
 export const sameBerlinDay = (a: Date, b: Date): boolean => berlinDay(a) === berlinDay(b);
 

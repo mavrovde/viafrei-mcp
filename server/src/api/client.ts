@@ -49,7 +49,11 @@ export type TermsOffer = {
   readonly providerTerms: string;
   readonly texts: readonly TermsBody[];
 };
-export type FreshnessEntry = { readonly family: string; readonly dataAsOf: string | null; readonly ageS?: number | null; readonly stale?: boolean };
+export type FreshnessEntry = {
+  readonly family: string; readonly dataAsOf: string | null; readonly ageS?: number | null; readonly stale?: boolean;
+  /** Proposed: when the family's feed was last asked, also when it answered "unchanged" (listSources' SourceStamp). */
+  readonly lastCheckedAt?: string | null;
+};
 export type DataMeta = {
   readonly requestId: string;
   readonly generatedAt: string;

@@ -8,7 +8,7 @@ import { anyLive, BOARD, boardLine, LIVE_SHARE_ALIKE_SUBJECT, timeBeside } from 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/client.js";
 import type * as T from "../api/types.js";
-import { apiFailure, berlinDateTime, berlinTime, creditPlace, eur, km, standTime, toolError, toolResult, type Language } from "../presentation.js";
+import { apiFailure, berlinDateTime, berlinTime, checkedStamp, creditPlace, eur, km, standTime, toolError, toolResult, type Language } from "../presentation.js";
 import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, placeUnknown, position, radiusM, str, strs, townCentre, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
@@ -614,10 +614,14 @@ const checkWeatherWarnings: Handler = async (args, ctx) => {
   const road = roadForecastAnswer(language, r.data.roadForecast, now);
   const unused = new Set(road.shown ? [] : roadFamilies(r.data.roadForecast));
   const tail = road.text === null ? [] : ["", road.text];
-  if (shown.length === 0) return toolResult([noWarning(language, around, minLevel, hidden), ...tail].join("\n"), withoutFamilies(asSummary([r.meta]), unused), language);
+  // Today's stamp (stampOf): the last DWD fetch, and the newest publication shown.
+  const newest = shown.map((w) => w.published ?? null).filter((x): x is string => x !== null).sort().at(-1) ?? null;
+  const checked = checkedStamp(r.meta, "dwd_warnings", newest, language, now);
+  const stamp = checked ?? {};
+  if (shown.length === 0) return toolResult([noWarning(language, around, minLevel, hidden), ...tail].join("\n"), withoutFamilies(asSummary([r.meta]), unused), language, stamp);
   // Each warning as today's block; one not yet in force says when it starts, so it is never read as in force now.
   const head = warningsHead(language, around, shown);
-  const asOf = r.meta.asOf ?? undefined;
+  const asOf = newest ?? checked?.asOf ?? r.meta.asOf ?? undefined;
   const list = warningsList(language, shown, now, { forecastSlippery: road.anySlippery, budgetChars: VERBATIM_BUDGET_CHARS - head.length - (road.text?.length ?? 0), ...(asOf === undefined ? {} : { asOf }) });
   // The DWD's English source is credited only when its words are shown (the family the API names, and the
   // register's name for it when no warning names one).
@@ -627,7 +631,7 @@ const checkWeatherWarnings: Handler = async (args, ctx) => {
   }
   const metas = withoutFamilies(list.mode === "verbatim" ? [r.meta] : asSummary([r.meta]), unused);
   const body = [head, "", list.text, ...(list.notice === null ? [] : ["", list.notice]), ...tail].join("\n");
-  return toolResult(body, metas, language);
+  return toolResult(body, metas, language, stamp);
 };
 
 /** The API's family of the DWD's English warning texts. */
