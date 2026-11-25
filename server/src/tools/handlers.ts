@@ -13,6 +13,7 @@ import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, placeUnknown, position, radiusM, str, strs, townCentre, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
+import { roadStatusText } from "./road-status-words.js";
 import { findPlace, LAENDER } from "./find-place.js";
 import { flixBlock } from "./flix-words.js";
 import { findCheapestFuel, findFuelStation } from "./fuel.js";
@@ -495,7 +496,8 @@ const checkRoadStatus: Handler = async (args, ctx) => {
       return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)));
     }
     metas.push(r.meta);
-    body = roadStatusBody(r.data, language, limit, code, true, r.meta.page?.hasMore === true);
+    const status = r.data.roadStatus ?? null;
+    body = status === null ? roadStatusBody(r.data, language, limit, code, true, r.meta.page?.hasMore === true) : roadStatusText(code, status, language);
   } else if (asked !== undefined && /^[BLS]\d{1,4}$/u.test(asked) && args["place"] === undefined && args["lat"] === undefined) {
     // A federal or Land road asked by its number alone: the API reads the situations naming it (a Kreisstraße is no reference).
     const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: asked, horizon_days: horizon, limit });

@@ -116,6 +116,24 @@ export type RoadSituation = {
   /** Proposed (today's jamStructured): a jam's end and length, its trend, the hour's usual and how long jams here last. */
   jam?: RoadJam | null;
 };
+/** Proposed (today's check_road_status by road number): the window's tally, the page's entries, the rest, the sources that answered, the guidance. */
+export type RoadStatus = {
+  counts: { closed: number; restricted: number; planned: number; current: number; currentBy: string[] };
+  /** The window's end; null for "right now" (horizon 0). */
+  windowEnd: string | null;
+  items: RoadStatusItem[];
+  hidden: number; hiddenClosures: number;
+  /** A higher limit would show every entry (today: limit below the most and the tally within it). */
+  canRaise: boolean;
+  sourcesAnswered: { label: string; asOf: string | null }[];
+  guidance: RoadGuidance[];
+  /** Planned or current roadworks are among the tally: they carry no coordinates, so the answer is by road. */
+  plannedByRoad: boolean;
+};
+/** One entry of a road's page: today's label, whether the road is named (a Land or local publisher), the publisher's words, the facts, the span. */
+export type RoadStatusItem = { label: string; road: string; namedRoad: boolean; shown: string; facts: RoadFacts | null; from: string | null; to: string | null; measureTo: string | null };
+/** The Autobahn GmbH's traffic guidance (strategic routing) switched on for the road. */
+export type RoadGuidance = { title: string | null; titleEn: string | null; words: string | null; wordsEn: string | null; from: string | null; to: string | null; via: string | null; until: string | null };
 /** Proposed: today's jam detail (JamDetail, as jamStructured sends it). */
 export type RoadJam = {
   lengthKm: number | null; endText: string | null; endPlace: { km: number | null; side: string; place: string } | null;
@@ -140,6 +158,8 @@ export type RoadConditionsData = {
   roadWide?: RoadWide | null;
   /** Proposed (today's planned-now lines): the short-duration roadworks the Autobahn GmbH plans in force now, in the publisher's words. */
   plannedNow?: { where: string | null; window: { from: string | null; to: string | null } }[];
+  /** Proposed: check_road_status's answer for the road asked by number, as today. */
+  roadStatus?: RoadStatus | null;
 };
 /** Proposed: today's road-wide figures (check_autobahn_traffic's Counts, policeCountsText and the NRW traffic state). */
 export type RoadWide = {
