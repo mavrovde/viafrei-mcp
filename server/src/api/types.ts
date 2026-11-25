@@ -103,6 +103,19 @@ export type RoadSituation = {
   id: string; kind: string; severity: string; road: string | null; direction: string | null; directionText: string | null;
   validity: { from: string | null; until: string | null }; headline: string; description: string | null; delayMin: number | null; lengthM: number | null; distanceM?: number;
   subtitle?: string | null; sourceFamily?: string;
+  /** Proposed (today's segments): the sections the Autobahn GmbH publishes this one site as, merged into this entry. */
+  segments?: number;
+  /** Proposed (today's phase dates): the phase's end and the whole measure's, as the description states them (Berlin stamps). */
+  phase?: { end: string | null; measureEnd: string | null } | null;
+  /** Proposed (today's descriptionShown): the description's first two kept lines, cut as today cuts them. */
+  descriptionShown?: string | null;
+  /** Proposed (today's GistFacts): what the description and subtitle state apart from their prose, said in English. */
+  facts?: RoadFacts | null;
+};
+/** Proposed: today's facts of a road entry (GistFacts), the points already named in English. */
+export type RoadFacts = {
+  between?: { from: string; to: string }; posts?: { fromKm: number; toKm: number }; towards?: string; lengthKm?: number;
+  lanes?: string; hardShoulderClosed?: boolean; maxSpeedKmh?: number; maxWidthM?: number; queueKm?: number;
 };
 export type LampReason = { reason: string; lamp: string; count: number };
 export type FamilyCount = { sourceFamily: string; situations: number };

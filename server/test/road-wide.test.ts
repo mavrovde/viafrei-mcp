@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type * as T from "../src/api/types.js";
-import { HANDLERS, lampText, plannedNowLines, roadWideLine } from "../src/tools/handlers.js";
+import { autobahnLine, factWords, HANDLERS, lampText, phaseEndWords, plannedNowLines, roadWideLine, stampText } from "../src/tools/handlers.js";
 
 const now = new Date("2026-03-30T10:00:00Z");
 const wide = (o: Partial<T.RoadWide> = {}): T.RoadWide => ({
@@ -104,5 +104,35 @@ describe("the short-duration roadworks planned now", () => {
     const get = async () => ({ data: { lamp: "amber", lampReason: "jam", situations: [], plannedNow: [plan("W", null, null)] }, meta: { generatedAt: "2026-03-30T09:59:00Z", language: "en", asOf: "2026-03-30T09:58:00Z", freshness: [], attribution: [], page: { limit: 5, hasMore: true, nextCursor: "5" } } });
     const r = await HANDLERS["check_autobahn_traffic"]!({ roads: ["A9"], language: "en" }, { tool: "check_autobahn_traffic", language: "en", api: { get } } as never);
     expect((r.content[0] as { text: string }).text.split("\n").slice(1, 3)).toEqual(["• Short-duration roadworks (Autobahn GmbH plan) A9: W", "… more entries on the next page."]);
+  });
+});
+
+describe("an entry's merged sections, phase dates, cut description and facts", () => {
+  const nowRow = new Date("2026-11-24T21:13:00Z");
+  const sit = (o: Partial<T.RoadSituation>): T.RoadSituation => ({
+    id: "s", kind: "roadworks", severity: "none", road: "A9", direction: null, directionText: null, validity: { from: "2026-08-02T03:00:00Z", until: "2026-08-03T03:00:00Z" },
+    headline: "AS Alpha", description: "Zeitraum dieser Bauphase: Beginn Ende", delayMin: null, lengthM: 300, subtitle: null, ...o,
+  });
+  it("English: the phase's end in full, the sections, the facts, the description as cut", () => {
+    const s = sit({ segments: 3, phase: { end: "2027-08-02T05:00+02:00", measureEnd: "2028-01-31T00:00+01:00" }, descriptionShown: "Zeitraum […] Ende …", facts: { between: { from: "junction A", to: "interchange B" }, towards: "Nürnberg", lengthKm: 0.4, maxWidthM: 3.254 } });
+    expect(autobahnLine(s, "en", nowRow)).toBe("• Roadworks (Baustelle): A9, since 2026-08-02 05:00, until 2027-08-02 05:00 (whole measure until 2028-01-31), over 0.3 km, reported as 3 sections — between junction A and interchange B, towards Nürnberg, over 0.4 km, max. width 3.25 m — Provider text (German): \"AS Alpha — Zeitraum […] Ende …\"");
+  });
+  it("German: the phase in German dates, the sections, no facts, the cut description", () => {
+    const s = sit({ segments: 2, lengthM: null, phase: { end: "2026-12-11T12:00+01:00", measureEnd: "2026-12-11T00:00+01:00" }, descriptionShown: "Zeitraum […]", facts: { towards: "X" } });
+    expect(autobahnLine(s, "de", nowRow)).toBe("• Baustelle: AS Alpha, seit 02.08. 05:00, bis 11.12.2026 12:00, in 2 Teilabschnitten gemeldet — Zeitraum […]");
+  });
+  it("one section, no phase end, an empty cut description, no facts", () => {
+    const s = sit({ segments: 1, lengthM: null, phase: { end: null, measureEnd: "2027-01-31T00:00+01:00" }, descriptionShown: "", facts: {} });
+    expect(autobahnLine(s, "en", nowRow)).toBe("• Roadworks (Baustelle): A9, since 2026-08-02 05:00, whole measure until 2027-01-31 — Provider text (German): \"AS Alpha\"");
+    expect(autobahnLine(sit({ lengthM: null, phase: null, validity: { from: null, until: null }, descriptionShown: "" }), "de", nowRow)).toBe("• Baustelle: AS Alpha");
+    expect(autobahnLine(sit({ lengthM: null, phase: { end: null, measureEnd: null }, descriptionShown: null }), "en", nowRow)).toBe("• Roadworks (Baustelle): A9, since 2026-08-02 05:00 — Provider text (German): \"AS Alpha\"");
+  });
+  it("the facts in today's words", () => {
+    expect(factWords({ posts: { fromKm: 12.3, toKm: 15 }, lanes: "1 lane closed", hardShoulderClosed: true, maxSpeedKmh: 60, queueKm: 2.5 })).toEqual(["from km 12.3 to km 15", "1 lane closed", "hard shoulder closed", "speed limit 60 km/h", "2.5 km long"]);
+    expect(factWords({ lengthKm: 0, maxSpeedKmh: 0, maxWidthM: 0, queueKm: 0, hardShoulderClosed: false })).toEqual([]);
+    expect(stampText("2026-12-11T00:00+01:00", "de")).toBe("11.12.2026");
+    expect(phaseEndWords({ end: "2026-12-11T12:00+01:00", measureEnd: null }, "de")).toBe(", bis 11.12.2026 12:00");
+    expect(phaseEndWords({ end: null, measureEnd: "2026-12-11T00:00+01:00" }, "de")).toBe(", Gesamtmaßnahme bis 11.12.2026");
+    expect(phaseEndWords({ end: "2026-12-10T12:00+01:00", measureEnd: "2026-12-11T00:00+01:00" }, "de")).toBe(", bis 10.12.2026 12:00 (Gesamtmaßnahme bis 11.12.2026)");
   });
 });

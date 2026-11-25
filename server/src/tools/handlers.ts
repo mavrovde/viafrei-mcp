@@ -316,6 +316,37 @@ function situationsBody(d: T.RoadConditionsData, language: Language, limit: numb
   return rows.length === 0 ? head : [head, ...rows.map((s) => situationLine(s, language))].join("\n");
 }
 
+/** Today's stampText: the Berlin day in full, and its time unless midnight ("2026-12-11 12:00", "11.12.2026"). */
+export function stampText(iso: string, language: Language): string {
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
+  const time = berlinTime(iso);
+  const date = language === "de" ? `${day.slice(8, 10)}.${day.slice(5, 7)}.${day.slice(0, 4)}` : day;
+  return time === "00:00" ? date : `${date} ${time}`;
+}
+
+/** Today's phaseEndText: ", until <phase end>" and, when the whole measure ends later, its end beside it. */
+export function phaseEndWords(phase: { end: string | null; measureEnd: string | null }, language: Language): string {
+  const whole = (iso: string): string => L(language, `Gesamtmaßnahme bis ${stampText(iso, language)}`, `whole measure until ${stampText(iso, language)}`);
+  if (phase.end === null) return phase.measureEnd === null ? "" : `, ${whole(phase.measureEnd)}`;
+  const later = phase.measureEnd !== null && new Date(phase.end).getTime() < new Date(phase.measureEnd).getTime();
+  return `, ${L(language, "bis", "until")} ${stampText(phase.end, language)}${later ? ` (${whole(phase.measureEnd!)})` : ""}`;
+}
+
+/** Today's gistDetails: the facts apart from the prose, in English. */
+export function factWords(f: T.RoadFacts): string[] {
+  const k = (n: number): string => kmText(n * 1000, "en");
+  return [
+    f.between === undefined ? (f.posts === undefined ? null : `from km ${f.posts.fromKm} to km ${f.posts.toKm}`) : `between ${f.between.from} and ${f.between.to}`,
+    f.towards === undefined ? null : `towards ${f.towards}`,
+    f.lengthKm !== undefined && f.lengthKm > 0 ? `over ${k(f.lengthKm)}` : null,
+    f.lanes ?? null,
+    f.hardShoulderClosed === true ? "hard shoulder closed" : null,
+    f.maxSpeedKmh !== undefined && f.maxSpeedKmh > 0 ? `speed limit ${f.maxSpeedKmh} km/h` : null,
+    f.maxWidthM !== undefined && f.maxWidthM > 0 ? `max. width ${Math.round(f.maxWidthM * 100) / 100} m` : null,
+    f.queueKm !== undefined && f.queueKm > 0 ? `${k(f.queueKm)} long` : null,
+  ].filter((x): x is string => x !== null && x !== "");
+}
+
 /**
  * check_autobahn_traffic's entry, as today's line (check_autobahn_traffic.ts `line`): the kind in words, the road
  * (English) or the provider's place words (German), since when and until when, the delay and the length in our
@@ -330,7 +361,8 @@ export function autobahnLine(s: T.RoadSituation, language: Language, now: Date =
   const desc = s.description === null ? "" : head !== "" && s.description.trimEnd().endsWith(head) ? s.description.trimEnd().slice(0, -head.length) : s.description;
   // The signed destination is the provider's words too: it stands with them, quoted in English.
   const where = [head, s.subtitle, s.directionText].filter((x) => x).join(" · ");
-  const words = [where, desc.trim() === "" ? "" : excerpt(desc)].filter((x) => x !== "").join(" — ");
+  const shown = s.descriptionShown === undefined ? (desc.trim() === "" ? "" : excerpt(desc)) : (s.descriptionShown ?? "");
+  const words = [where, shown].filter((x) => x !== "").join(" — ");
   const from = s.validity.from;
   const started = from === null || new Date(from).getTime() <= now.getTime();
   const sameYear = from !== null && berlinDateTime(from, language).slice(6, 10) === berlinDateTime(now.toISOString(), language).slice(6, 10);
@@ -338,13 +370,15 @@ export function autobahnLine(s: T.RoadSituation, language: Language, now: Date =
   const parts = [
     de ? (where === "" ? s.road : where) : s.road,
     fromText === null ? null : started ? L(language, `seit ${fromText}`, `since ${fromText}`) : L(language, `ab ${fromText}`, `from ${fromText}`),
-    s.validity.until === null ? null : L(language, `bis ${standTime(s.validity.until, language, now)}`, `until ${standTime(s.validity.until, language, now)}`),
+    s.phase !== undefined && s.phase !== null ? phaseEndWords(s.phase, language).slice(2) : s.validity.until === null ? null : L(language, `bis ${standTime(s.validity.until, language, now)}`, `until ${standTime(s.validity.until, language, now)}`),
     s.delayMin === null || s.delayMin <= 0 ? null : `+${s.delayMin} min`,
     s.lengthM === null || s.lengthM === undefined || s.lengthM <= 0 ? null : L(language, `auf ${kmText(s.lengthM, language)}`, `over ${kmText(s.lengthM, language)}`),
     s.distanceM === undefined ? null : L(language, `ca. ${kmText(s.distanceM, language)} entfernt`, `about ${kmText(s.distanceM, language)} away`),
   ].filter((x): x is string => x !== null && x !== "");
-  const quote = de ? (desc.trim() === "" ? "" : ` — ${excerpt(desc)}`) : words === "" ? "" : ` — Provider text (German): "${words}"`;
-  return `• ${kind}: ${parts.join(", ")}${quote}`;
+  const quote = de ? (shown === "" ? "" : ` — ${shown}`) : words === "" ? "" : ` — Provider text (German): "${words}"`;
+  const segments = (s.segments ?? 1) > 1 ? L(language, `, in ${s.segments} Teilabschnitten gemeldet`, `, reported as ${s.segments} sections`) : "";
+  const facts = de || s.facts === undefined || s.facts === null ? [] : factWords(s.facts);
+  return `• ${kind}: ${parts.join(", ")}${segments}${facts.length === 0 ? "" : ` — ${facts.join(", ")}`}${quote}`;
 }
 
 /** check_autobahn_traffic's body: the lamp's line, then each entry as today's line. */
