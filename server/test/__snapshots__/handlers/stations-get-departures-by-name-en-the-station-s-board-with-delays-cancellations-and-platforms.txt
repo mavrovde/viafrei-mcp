@@ -1,5 +1,6 @@
-Pienköckheim Nord:
-- 08:05 S1 → Flughafen · pl. 3
-- 08:05 S1 → Flughafen · +4 · pl. 3!
-- 08:05 S → Flughafen
-- 08:05 rail → ? · cancelled · pl. 3
+Departures from Pienköckheim Nord — timetable with realtime, 02:00 to 03:00:
+08:05 S1 → Flughafen, platform 3, timetable
+08:05 S1 → Flughafen, platform 3, +4 min (expected 08:09)
+08:05 train S → Flughafen, on time
+08:05 train → destination not given, platform 3, cancelled
+Stop id (for watch_situation, kind "station"): de:04002:2

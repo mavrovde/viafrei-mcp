@@ -4,6 +4,7 @@
  * API's live refresher for a fresh board. A tool whose operation the API contract lacks answers `notAvailable` and is listed in GAPS.
  */
 import { departuresRefusal } from "./departures-input.js";
+import { anyLive, BOARD, boardLine, LIVE_SHARE_ALIKE_SUBJECT, timeBeside } from "./departure-words.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/client.js";
 import type * as T from "../api/types.js";
@@ -648,12 +649,6 @@ async function stationOf(args: Args, ctx: ToolContext, railway = false): Promise
   return ctx.api.get<T.Station[]>("listStations", { code: eva, q: eva === undefined ? q : undefined, limit: 1, railway: railway ? "true" : undefined });
 }
 
-const departureLine = (d: T.Departure, language: Language): string => {
-  const delay = d.cancelled ? L(language, " · fällt aus", " · cancelled") : d.delayMin === null ? "" : d.delayMin === 0 ? "" : ` · +${d.delayMin}`;
-  const platform = d.platform === null ? "" : `${L(language, " · Gl. ", " · pl. ")}${d.platform}${d.platformChanged ? "!" : ""}`;
-  return `- ${berlinTime(d.plannedAt)} ${d.line ?? d.category ?? d.mode} → ${d.destination ?? "?"}${delay}${platform}`;
-};
-
 /**
  * The town a stop's name carries ("München, Marienplatz", "Hauptbahnhof München", "Köln Nippes"), as today's
  * server reads it (main get_departures.ts, the town out of the question): a part before a comma, else a word,
@@ -686,21 +681,6 @@ export const NEAR_RADIUS_M = 5000;
 export const NEAR_STOPS = 8;
 const NEAR_PER_STOP = 4;
 const NEAR_WINDOW_MIN = 60;
-
-/** A departure in today's words around a place: line, destination, platform and its realtime state. */
-export function nearDepartureLine(d: T.Departure, language: Language): string {
-  const mode = d.mode === "tram" ? L(language, "Tram ", "tram ") : d.mode === "bus" ? L(language, "Bus ", "bus ") : "";
-  const line = d.line ?? d.category;
-  const what = line === null ? L(language, "Fahrt", "service") : `${mode}${line}`;
-  const platform = d.platform === null ? "" : `, ${d.mode === "bus" ? L(language, "Steig", "stand") : L(language, "Gleis", "platform")} ${d.platform}${d.platformChanged ? L(language, " (geändert)", " (changed)") : ""}`;
-  const expected = d.expectedAt === null ? "" : L(language, ` (erwartet ${berlinTime(d.expectedAt)})`, ` (expected ${berlinTime(d.expectedAt)})`);
-  const state = d.cancelled ? L(language, "fällt aus", "cancelled")
-    : d.noForecast === true ? L(language, "keine Prognose", "no forecast")
-    : d.delayMin === null ? L(language, "Fahrplan", "timetable")
-    : d.delayMin === 0 ? L(language, "pünktlich", "on time")
-    : `${d.delayMin > 0 ? "+" : ""}${d.delayMin} min${expected}`;
-  return `${berlinTime(d.plannedAt)} ${what} → ${d.destination ?? L(language, "Ziel nicht angegeben", "destination not given")}${platform}, ${state}`;
-}
 
 /** The point a place names: the place search first, else a stop of that name, else today's town-centre reading. */
 async function nearPoint(args: Args, ctx: ToolContext): Promise<{ at: LatLon; label: string; metas: DataMeta[] } | CallToolResult> {
@@ -750,19 +730,24 @@ async function departuresNear(args: Args, ctx: ToolContext): Promise<CallToolRes
   // Only the API's own failure is said per stop; anything else is a fault here and is not hidden.
   for (const b of boards) if (b.status === "rejected" && !(b.reason instanceof ApiError)) throw b.reason;
   if (boards.every((b) => b.status === "rejected")) return apiFailure((boards[0] as PromiseRejectedResult).reason, language);
-  const blocks = stops.map((s, i) => {
+  const now = new Date();
+  // Today's window around a place: the next 60 minutes from now, one end for the head and every empty stop.
+  const to = timeBeside(new Date(now.getTime() + NEAR_WINDOW_MIN * 60_000).toISOString(), now, language);
+  const c = BOARD[language];
+  const shown = boards.flatMap((b) => (b.status === "fulfilled" ? b.value.data.departures : []));
+  const live = anyLive(shown);
+  const lines = [c.nearHead(pt.label, NEAR_RADIUS_M / 1000, to)];
+  stops.forEach((s, i) => {
     const b = boards[i]!;
-    const dist = s.distanceM === null || s.distanceM === undefined ? "" : ` (${km(s.distanceM, language)})`;
-    const head = `${s.name}${dist} — stop_id ${s.id}:`;
-    if (b.status === "rejected") return `${head} ${L(language, "Abfahrten nicht gelesen.", "departures not read.")}`;
-    if (b.value.data.departures.length === 0) return `${head} ${L(language, `keine Abfahrt bis ${berlinTime(b.value.data.window.until)}.`, `no departure until ${berlinTime(b.value.data.window.until)}.`)}`;
-    return [head, ...b.value.data.departures.map((d) => nearDepartureLine(d, language))].join("\n");
+    const dist = s.distanceM === null || s.distanceM === undefined ? "" : ` (${kmText(s.distanceM, language)})`;
+    lines.push(`${s.name}${dist} — stop_id ${s.id}:`);
+    if (b.status === "rejected") lines.push(`  ${L(language, "Abfahrten nicht gelesen.", "departures not read.")}`);
+    else if (b.value.data.departures.length === 0) lines.push(c.nearNone(to));
+    else for (const d of b.value.data.departures) lines.push(`  ${boardLine(d, live, now, language)}`);
   });
-  const radius = km(NEAR_RADIUS_M, language);
-  const head = L(language, `Die nächsten Haltestellen um ${pt.label} (im Umkreis von ${radius}) mit ihren nächsten Abfahrten:`, `The nearest stops around ${pt.label} (within ${radius}) with their next departures:`);
+  lines.push(L(language, "Mehr Abfahrten einer Haltestelle: get_departures mit ihrer stop_id.", "More departures of one stop: get_departures with its stop_id."));
   const metas = [...pt.metas, near.meta, ...boards.flatMap((b) => (b.status === "fulfilled" ? [b.value.meta] : []))];
-  const more = L(language, "Mehr Abfahrten einer Haltestelle: get_departures mit ihrer stop_id.", "More departures of one stop: get_departures with its stop_id.");
-  return toolResult([head, ...blocks, more].join("\n\n"), metas, language);
+  return toolResult(lines.join("\n"), metas, language, { asOf: now.toISOString(), ...(live ? { shareAlikeSubject: LIVE_SHARE_ALIKE_SUBJECT[language] } : {}) });
 }
 
 /** The API's own station id ("1:de:11000:900100003"), as the answer around a place prints it as stop_id. */
@@ -800,9 +785,21 @@ const getDepartures: Handler = async (args, ctx) => {
 };
 
 function boardAnswer(r: Envelope<T.Board>, metas: DataMeta[], language: Language): CallToolResult {
-  const head = `${r.data.station.name}:`;
-  if (r.data.departures.length === 0) return toolResult(`${head} ${L(language, "keine Abfahrten im Zeitfenster.", "no departures in the window.")}`, metas, language);
-  return toolResult([head, ...r.data.departures.map((d) => departureLine(d, language))].join("\n"), metas, language);
+  const now = new Date();
+  const { station, window, departures } = r.data;
+  const from = timeBeside(window.from, now, language), to = timeBeside(window.until, now, language);
+  // Today's board is dated by the call, not by the plan's load time (its asOf: now).
+  const asOf = now.toISOString();
+  if (departures.length === 0) {
+    return toolResult(L(language, `Ab ${station.name} fährt zwischen ${from} und ${to} planmäßig nichts ab.`, `Nothing is scheduled to leave ${station.name} between ${from} and ${to}.`), metas, language, { asOf });
+  }
+  const live = anyLive(departures);
+  const c = BOARD[language];
+  const lines = [c.head(station.name, from, to, live), ...departures.map((d) => boardLine(d, live, now, language))];
+  const more = (window.matched ?? departures.length) - departures.length;
+  if (more > 0) lines.push(c.more(more));
+  if (station.stopCode) lines.push(c.stopId(station.stopCode));
+  return toolResult(lines.join("\n"), metas, language, { asOf, ...(live ? { shareAlikeSubject: LIVE_SHARE_ALIKE_SUBJECT[language] } : {}) });
 }
 
 /** Today's words when a station tool is called with no station at all: ask, never search for nothing. */

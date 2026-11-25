@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Attribution } from "../src/api/client.js";
 import { creditWithLinks, shareAlikeNote, toolResult, type Language } from "../src/presentation.js";
+import { LIVE_SHARE_ALIKE_SUBJECT } from "../src/tools/departure-words.js";
 
 // Today's server's credit rows, copied from the parity run's old answers (fixtures/credit-golden.json).
 const golden = JSON.parse(readFileSync(new URL("./fixtures/credit-golden.json", import.meta.url), "utf8")) as {
@@ -43,6 +44,13 @@ describe("a share-alike credit carries today's share-alike sentence, after the c
       expect((toolResult("B", [meta], c.language).content[0] as { text: string }).text.split("\n").at(-1)).toBe(c.today);
     });
   }
+  it("a departure board names what is share-alike: its realtime figures (today's LIVE_SHARE_ALIKE_SUBJECT, recorded 2026-11-25)", () => {
+    const a: Attribution = { family: "sa", text: "Echtzeitdaten: X", licence: "CC BY-SA", shareAlike: true };
+    expect(shareAlikeNote([a], "de", LIVE_SHARE_ALIKE_SUBJECT.de)).toBe("Die Echtzeitangaben aus DELFI GTFS-RT und DELFI SIRI ET stehen unter CC BY-SA (Share-alike), so lizenziert sie die Quelle; unsere Bearbeitung geben wir unter CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/) weiter: wer sie weitergibt oder daraus etwas Neues ableitet, muss das Ergebnis unter derselben Lizenz und mit dieser Quellenangabe weitergeben.");
+    expect(shareAlikeNote([{ ...a, licence: "CC BY-SA 4.0" }], "en", LIVE_SHARE_ALIKE_SUBJECT.en)).toMatch(/^The realtime figures from DELFI GTFS-RT and DELFI SIRI ET are licensed CC BY-SA 4\.0 /u);
+    const meta = { requestId: "r", generatedAt: "2026-03-30T00:00:00Z", language: "en" as const, asOf: "2026-03-30T00:00:00Z", freshness: [], attribution: [a] };
+    expect((toolResult("B", [meta], "en", { shareAlikeSubject: LIVE_SHARE_ALIKE_SUBJECT.en }).content[0] as { text: string }).text.split("\n").at(-1)).toBe("The realtime figures from DELFI GTFS-RT and DELFI SIRI ET are licensed CC BY-SA (share-alike) by their source; we release our adaptation under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/): anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution.");
+  });
   it("no sentence for a share-alike database that is not Creative Commons, nor for a credit that is not share-alike", () => {
     expect(shareAlikeNote([{ family: "osm", text: "OSM", licence: "ODbL 1.0", shareAlike: true }], "de")).toBeUndefined();
     expect(shareAlikeNote([{ family: "x", text: "X", licence: "CC BY-SA", shareAlike: false }], "de")).toBeUndefined();

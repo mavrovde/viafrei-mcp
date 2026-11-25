@@ -1,5 +1,6 @@
-Pienköckheim Nord:
-- 08:05 S1 → Flughafen · Gl. 3
-- 08:05 S1 → Flughafen · +4 · Gl. 3!
-- 08:05 S → Flughafen
-- 08:05 rail → ? · fällt aus · Gl. 3
+Abfahrten ab Pienköckheim Nord — Fahrplan mit Echtzeit, 02:00 bis 03:00:
+08:05 S1 → Flughafen, Gleis 3, Plan
+08:05 S1 → Flughafen, Gleis 3, +4 Min. (voraussichtlich 08:09)
+08:05 Zug S → Flughafen, pünktlich
+08:05 Zug → Ziel nicht angegeben, Gleis 3, fällt aus
+Haltestellen-ID (für watch_situation, kind "station"): de:04002:2

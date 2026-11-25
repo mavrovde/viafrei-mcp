@@ -120,9 +120,9 @@ export type Station = { id: string; name: string; location: LatLon; stopCode: st
 export type Departure = {
   line: string | null; category: string | null; destination: string | null; plannedAt: string; expectedAt: string | null; delayMin: number | null;
   platform: string | null; plannedPlatform: string | null; platformChanged: boolean; cancelled: boolean; mode: string;
-  realtime?: boolean; noForecast?: boolean;
+  realtime?: boolean; noForecast?: boolean; routeType?: number | null; trainNumber?: string | null;
 };
-export type Board = { station: { id: string; name: string }; window: { from: string; until: string }; departures: Departure[] };
+export type Board = { station: { id: string; name: string; stopCode?: string | null }; window: { from: string; until: string; matched?: number }; departures: Departure[] };
 /** TrainBoardData, TrainBoardDeparture */
 export type TrainBoardDeparture = {
   line: string | null; category: string | null; number: string | null; destination: string | null; plannedAt: string; expectedAt: string; delayMin: number;

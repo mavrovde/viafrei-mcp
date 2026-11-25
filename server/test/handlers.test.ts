@@ -1408,6 +1408,8 @@ describe("parity of four answers with today's server", () => {
   });
 
   describe("get_departures around a place", () => {
+    beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-11-24T18:40:00Z")); });
+    afterEach(() => { vi.useRealTimers(); });
     const st = (id: string, code: string, name: string, d: number, districtCode = "11000") => ({ id, name, location: { lat: 52.52, lon: 13.41 }, stopCode: code, eva: null, evaNumbers: [], distanceM: d, districtCode });
     const d = (o: Record<string, unknown>) => ({ line: "S9", category: "S", mode: "sbahn", destination: "Flughafen BER", plannedAt: "2026-11-24T18:42:00Z", expectedAt: null, delayMin: null, platform: "3", plannedPlatform: null, platformChanged: false, cancelled: false, realtime: false, noForecast: false, ...o });
     const window = { from: "2026-11-24T18:40:00Z", until: "2026-11-24T19:40:00Z" };
@@ -1429,10 +1431,11 @@ describe("parity of four answers with today's server", () => {
         : [d({ line: "U5", mode: "subway", destination: "U Hönow (Berlin)", platform: "2" })]));
       const r = await call("get_departures", { place: "Berlin Alexanderplatz", language: "en" });
       expect(query("listStations")).toEqual([{ q: "Berlin Alexanderplatz", limit: "1", lang: "en" }, { at: "52.52,13.41", radius_m: "5000", limit: "40", lang: "en" }]);
-      expect(body(r).split("\n\n").slice(0, 4)).toEqual([
-        "The nearest stops around Berlin Alexanderplatz (within 5.0 km) with their next departures:",
-        ["S+U Alexanderplatz Bhf (Berlin) (21 m) — stop_id 1:a:", "19:42 S9 → Flughafen BER, platform 3, +2 min (expected 19:44)", "19:42 S7 → Flughafen BER, platform 3, cancelled", "19:42 S3 → Flughafen BER, platform 3, on time", "19:42 tram M4 → destination not given, no forecast"].join("\n"),
-        ["U Rotes Rathaus (Berlin) (400 m) — stop_id 1:b:", "19:42 U5 → U Hönow (Berlin), platform 2, timetable"].join("\n"),
+      // Today's words around a place: the window's end in the head, one line per stop, each departure indented.
+      expect(body(r).split("\n")).toEqual([
+        "The nearest stops around Berlin Alexanderplatz (within 5 km) with their next departures until 20:40:",
+        "S+U Alexanderplatz Bhf (Berlin) (21 m) — stop_id 1:a:", "  19:42 S9 → Flughafen BER, platform 3, +2 min (expected 19:44)", "  19:42 S7 → Flughafen BER, platform 3, cancelled", "  19:42 S3 → Flughafen BER, platform 3, on time", "  19:42 tram M4 → destination not given, no forecast",
+        "U Rotes Rathaus (Berlin) (0.4 km) — stop_id 1:b:", "  19:42 U5 → U Hönow (Berlin), platform 2, timetable",
         "More departures of one stop: get_departures with its stop_id.",
       ]);
     });
@@ -1440,7 +1443,7 @@ describe("parity of four answers with today's server", () => {
       world([], [], (path) => (path === "/v1/stations/1%3Ade%3A11000%3A900100024%3A%3A1/departures" ? [d({})] : []));
       const r = await call("get_departures", { stop_id: "1:de:11000:900100024::1", language: "en" });
       expect(ops()).toEqual(["listStationDepartures"]);
-      expect(body(r)).toBe("Board of x:\n- 19:42 S9 → Flughafen BER · pl. 3");
+      expect(body(r)).toBe("Departures from Board of x — timetable, 19:40 to 20:40:\n19:42 S9 → Flughafen BER, platform 3");
     });
     it("a station id no board holds: today's unknown-stop refusal", async () => {
       mockServer.use(handlerFor("listStationDepartures", () => problem(404, "not-found")));
@@ -1481,10 +1484,12 @@ describe("parity of four answers with today's server", () => {
     it("one board that fails is said for its stop; an empty board says until when; the others still answer", async () => {
       world([alex], [st("1:a", "de:1:a", alex.name, 21), st("1:b", "de:1:b", "U Rotes Rathaus (Berlin)", 400), st("1:c", "de:1:c", "U Klosterstr. (Berlin)", 500)], (path) => (path.includes("1%3Ab") ? "fail" : path.includes("1%3Ac") ? [] : [d({})]));
       for (const language of LANGS) {
-        const blocks = body(await call("get_departures", { place: "Berlin Alexanderplatz", language })).split("\n\n");
-        expect(blocks[1]).toMatch(/^S\+U Alexanderplatz Bhf \(Berlin\) \(21 m\) — stop_id 1:a:\n19:42 S9/u);
-        expect(blocks[2]).toBe(language === "de" ? "U Rotes Rathaus (Berlin) (400 m) — stop_id 1:b: Abfahrten nicht gelesen." : "U Rotes Rathaus (Berlin) (400 m) — stop_id 1:b: departures not read.");
-        expect(blocks[3]).toBe(language === "de" ? "U Klosterstr. (Berlin) (500 m) — stop_id 1:c: keine Abfahrt bis 20:40." : "U Klosterstr. (Berlin) (500 m) — stop_id 1:c: no departure until 20:40.");
+        const lines = body(await call("get_departures", { place: "Berlin Alexanderplatz", language })).split("\n");
+        expect(lines.slice(1, 7)).toEqual([
+          "S+U Alexanderplatz Bhf (Berlin) (21 m) — stop_id 1:a:", language === "de" ? "  19:42 S9 → Flughafen BER, Gleis 3" : "  19:42 S9 → Flughafen BER, platform 3",
+          `U Rotes Rathaus (Berlin) (${language === "de" ? "0,4" : "0.4"} km) — stop_id 1:b:`, language === "de" ? "  Abfahrten nicht gelesen." : "  departures not read.",
+          `U Klosterstr. (Berlin) (${language === "de" ? "0,5" : "0.5"} km) — stop_id 1:c:`, language === "de" ? "  keine Abfahrt bis 20:40" : "  no departure until 20:40",
+        ]);
       }
     });
     it("at most 8 stops, each board asked for 4 departures over 60 minutes", async () => {
@@ -1510,7 +1515,7 @@ describe("parity of four answers with today's server", () => {
       world([], [st("1:a", "de:1:a", alex.name, 21)], () => [d({})]);
       const r = await call("get_departures", { place: "Berlin Nirgendwo", language: "en" });
       expect(calls.filter((c) => c.operationId === "listPlaces").map((c) => c.url.searchParams.get("q"))).toEqual(["Berlin Nirgendwo", "Berlin"]);
-      expect(body(r).split("\n")[0]).toBe('The nearest stops around Berlin (measured from the town centre — I found no "Nirgendwo" there) (within 5.0 km) with their next departures:');
+      expect(body(r).split("\n")[0]).toBe('The nearest stops around Berlin (measured from the town centre — I found no "Nirgendwo" there) (within 5 km) with their next departures until 20:40:');
     });
     it("a stop of that name in another town than the place names is not taken: the town centre answers", async () => {
       world([st("1:z", "de:2:z", "Alexanderplatz (Elsewhere)", 0, "07134")], [st("1:a", "de:1:a", alex.name, 21)], () => [d({})]);
@@ -1521,8 +1526,8 @@ describe("parity of four answers with today's server", () => {
       world([st("1:a", "de:1:a", "Alexanderplatz (Berlin)", 0)], [st("1:a", "de:1:a", alex.name, 21)], () => [d({})]);
       for (const language of LANGS) {
         expect(body(await call("get_departures", { place: "Alexanderplatz", language })).split("\n")[0]).toBe(language === "de"
-          ? "Die nächsten Haltestellen um Alexanderplatz (Haltestelle Alexanderplatz (Berlin)) (im Umkreis von 5,0 km) mit ihren nächsten Abfahrten:"
-          : "The nearest stops around Alexanderplatz (the stop Alexanderplatz (Berlin)) (within 5.0 km) with their next departures:");
+          ? "Die nächsten Haltestellen um Alexanderplatz (Haltestelle Alexanderplatz (Berlin)) (Umkreis 5 km) mit ihren nächsten Abfahrten bis 20:40:"
+          : "The nearest stops around Alexanderplatz (the stop Alexanderplatz (Berlin)) (within 5 km) with their next departures until 20:40:");
       }
     });
   });
@@ -1711,6 +1716,8 @@ describe("check_weather_warnings with the next API release's text, English and r
 });
 
 describe("stations", () => {
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-03-30T00:30:00Z")); });
+  afterEach(() => { vi.useRealTimers(); });
   const dep = (o: Record<string, unknown>) => ({ line: "S1", category: "S", mode: "rail", destination: "Flughafen", plannedAt: "2026-03-30T06:05:00Z", delayMin: null, cancelled: false, platform: "3", platformChanged: false, ...o });
   const board = (departures: unknown[]) => ({ ...ex<object>("listStationDepartures"), departures });
   const deps = [
@@ -1730,9 +1737,16 @@ describe("stations", () => {
       await pinned("handlers", body(r));
       expect(meta(r)["sources"]).toEqual(["bkg_gvisys", "delfi_static"]);
     });
+    it(`a board with more departures in its window than shown says how many more (${language})`, async () => {
+      const b = ex<{ window: Record<string, unknown> }>("listStationDepartures");
+      serve("listStationDepartures", { ...b, window: { ...b.window, matched: 6 }, departures: deps.slice(0, 2) });
+      const lines = body(await call("get_departures", { stop: "Schömpingbach", limit: 2, language })).split("\n");
+      expect(lines.at(-2)).toBe(language === "de" ? "… und 4 weitere im Fenster." : "… and 4 more in the window.");
+    });
     it(`get_departures with an empty window (${language})`, async () => {
       const r = await call("get_departures", { stop: "Schömpingbach", language });
-      expect(body(r)).toBe(`Pienköckheim Nord: ${language === "de" ? "keine Abfahrten im Zeitfenster." : "no departures in the window."}`);
+      // Today's noneInWindow, with the board's window.
+      expect(body(r)).toBe(language === "de" ? "Ab Pienköckheim Nord fährt zwischen 02:00 und 03:00 planmäßig nichts ab." : "Nothing is scheduled to leave Pienköckheim Nord between 02:00 and 03:00.");
     });
     it(`get_departures, no such stop (${language})`, async () => {
       serve("listStations", []);
