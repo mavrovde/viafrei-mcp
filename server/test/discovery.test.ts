@@ -5,6 +5,7 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiClient, ApiError, DISCOVERY_RETRY_MS, DISCOVERY_TTL_MS, forgetDiscovery, OPENAPI_PATH } from "../src/api/client.js";
+import { log } from "../src/log.js";
 
 const BASE = "http://127.0.0.1";
 const doc = (ids: readonly string[]) => ({ openapi: "3.1.0", paths: { "/v1/a": { get: { operationId: "listPlaces" }, parameters: [] }, "/v1/b": { get: { operationId: ids[0] }, post: { operationId: ids[1] } }, "/v1/c": null } });
@@ -26,6 +27,7 @@ const json = (body: unknown, status = 200) => () => new Response(JSON.stringify(
 afterEach(() => {
   forgetDiscovery();
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe("which operations the API offers", () => {
@@ -60,27 +62,34 @@ describe("which operations the API offers", () => {
     expect(seen).toHaveLength(2);
   });
 
-  it("a 429 is reported as rate_limited and said again without a request until the retry; then read again", async () => {
+  it("a 429 is rate_limited, logged at warn once per read, said again without a request until the retry; then read again", async () => {
     vi.useFakeTimers({ now: new Date("2026-11-25T00:00:00Z") });
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
     let status = 429;
     const { api, seen } = fakeApi(() => new Response(JSON.stringify({ status, detail: "slow down" }), { status }));
     for (let i = 0; i < 2; i++) {
-      const err = await api.get("resolvePlace", { q: "Sylt" }).catch((e: unknown) => e);
+      const err = await api.offers("resolvePlace").catch((e: unknown) => e);
       expect((err as ApiError).kind).toBe("rate_limited");
       expect((err as ApiError).message).toBe(`the ViaFrei API's list of operations (${OPENAPI_PATH}) could not be read: the OpenAPI document: slow down`);
     }
+    // The proposed operation is not asked while the list cannot be read: the released path answers.
+    const unsent = await api.get("resolvePlace", { q: "Sylt" }).catch((e: unknown) => e);
+    expect((unsent as ApiError).kind).toBe("not_found");
     expect(seen).toEqual([OPENAPI_PATH]);
+    expect(warn.mock.calls).toEqual([[{ kind: "rate_limited", status: 429, document: OPENAPI_PATH }, "the API's list of operations could not be read; proposed operations are not asked, the released ones answer"]]);
     vi.setSystemTime(Date.now() + DISCOVERY_RETRY_MS - 1);
     await expect(api.offers("resolvePlace")).rejects.toBeInstanceOf(ApiError);
     expect(seen).toHaveLength(1);
-    status = 200;
+    status = 500;
     vi.setSystemTime(Date.now() + 1);
     await expect(api.offers("resolvePlace")).rejects.toBeInstanceOf(ApiError);
     expect(seen).toHaveLength(2);
+    expect(warn.mock.calls.map(([fields]) => fields)).toEqual([{ kind: "rate_limited", status: 429, document: OPENAPI_PATH }, { kind: "unavailable", status: 500, document: OPENAPI_PATH }]);
   });
 
   it("a document not served (404), a body without paths or no answer is a failure, never \"not offered\"", async () => {
     const said: string[] = [];
+    vi.spyOn(log, "warn").mockImplementation(() => undefined);
     for (const document of [json({ status: 404, title: "Not Found" }, 404), json({ openapi: "3.1.0" }), json({ paths: null }), () => new Response("", { status: 200 }), () => { throw new TypeError("fetch failed"); }]) {
       forgetDiscovery();
       const err = await fakeApi(document).api.offers("resolvePlace").catch((e: unknown) => e);

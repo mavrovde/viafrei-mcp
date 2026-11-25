@@ -5,8 +5,10 @@
  * A proposed operation (`test/fixtures/api-proposed.json`, in no released API yet) is asked only once the API's own
  * OpenAPI document lists it: that document is read once per process and API, kept for DISCOVERY_TTL_MS, and while it
  * does not list the operation no request for it is sent (today's API counts every unknown path against the client's
- * address, so a probe on every call would run the server into 429s).
+ * address, so a probe on every call would run the server into 429s). While the document cannot be read, a tool takes
+ * the released operations, as the server did before the proposals; the failed read is logged at warn, once per read.
  */
+import { log } from "../log.js";
 import { OPERATIONS, type OperationId } from "./operations.js";
 
 export const DEFAULT_API_URL = "https://api.viafrei.de";
@@ -188,6 +190,7 @@ export class ApiClient {
       (err: unknown) => {
         const failure = discoveryFailure(err);
         discoveries.set(this.config, { at: Date.now(), failure });
+        log.warn({ kind: failure.kind, status: failure.status, document: OPENAPI_PATH }, "the API's list of operations could not be read; proposed operations are not asked, the released ones answer");
         throw failure;
       },
     );
@@ -221,8 +224,9 @@ export class ApiClient {
       throw new ApiError("not_configured", "the ViaFrei API key is not configured (VIAFREI_API_KEY); no request was made");
     }
     const url = this.url(op, params);
-    // A proposed operation the API's document does not list: answered as the API would (not offered), unsent.
-    if (!(await this.offers(op))) throw new ApiError("not_found", `${op} is not offered by this API (not in ${OPENAPI_PATH}); no request was made`);
+    // A proposed operation the API's document does not list, or while the document cannot be read (that failure is
+    // logged where it is read): answered as the API would (not offered), unsent, so the released path answers.
+    if (!(await this.offers(op).catch(() => false))) throw new ApiError("not_found", `${op} is not offered by this API (not in ${OPENAPI_PATH}); no request was made`);
     const res = await this.fetchJson(url, OPERATIONS[op].method, body, op);
     const json = res.json;
     if (res.ok) {

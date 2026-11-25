@@ -3,12 +3,13 @@
  * place the API names (resolvePlace, read before the place search and skipped where the API does not offer it),
  * a place's Kreis by name, a POI's nearest address and Land, a coordinate's Gemeinde, junction and plaque source.
  */
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { calls, documentReads, exampleOf, handlerFor, mockServer, offering, problem } from "./api-mock.js";
 import { connect, textOf } from "./harness.js";
 import { OPERATIONS } from "../src/api/operations.js";
+import { log } from "../src/log.js";
 import type * as T from "../src/api/types.js";
 import { creditWithLinks } from "../src/presentation.js";
 import { kreisWord } from "../src/tools/find-place.js";
@@ -69,19 +70,23 @@ describe("resolvePlace", () => {
     expect(documentReads.map((u) => u.pathname)).toEqual(["/v1/openapi.json"]);
     expect(ops()).toEqual(["listPlaces", "listHydrogenOptions", "listPlaces", "listHydrogenOptions"]);
   });
-  it("a 429 on that read is reported, not read as \"not offered\"; said again without a request until the retry", async () => {
+  it("a 429 on that read: the place tool answers from the released operations, one warn line, no request for the proposed one", async () => {
     mockServer.use(offering([], () => problem(429, "rate_limited")));
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
     const { client, close } = await connect();
     try {
       for (let i = 0; i < 2; i++) {
         const r = (await client.callTool({ name: "find_hydrogen_station", arguments: { place: "Köln", language: "en" } })) as CallToolResult;
-        expect(r.isError).toBe(true);
+        expect(r.isError, textOf(r)).not.toBe(true);
       }
     } finally {
       await close();
     }
+    const warned = warn.mock.calls.map(([fields]) => fields);
+    warn.mockRestore();
     expect(documentReads).toHaveLength(1);
-    expect(ops()).toEqual([]);
+    expect(ops()).toEqual(["listPlaces", "listHydrogenOptions", "listPlaces", "listHydrogenOptions"]);
+    expect(warned).toEqual([{ kind: "rate_limited", status: 429, document: "/v1/openapi.json" }]);
   });
   it("any other failure is the API's failure, not a quiet fallback", async () => {
     mockServer.use(offering(["resolvePlace"]), handlerFor("resolvePlace", () => problem(503, "unavailable")));
