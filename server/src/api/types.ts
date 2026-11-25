@@ -183,7 +183,28 @@ export type TrainBoardData = { eva: string; fresh: boolean; fetchedAt: string | 
 export type RefreshState = "pending" | "refreshed" | "none_due" | "refused" | "failed";
 export type RefreshData = { id: string; source: string; state: RefreshState; settledAt: string | null; reason: string | null; reused: boolean };
 /** StationFacilitiesData */
-export type StationFacilitiesData = { station: { name: string }; counts: { active: number; inactive: number; unknown: number }; facilities: { id: string; kind: string; position: string | null; state: string }[] };
+export type StationFacilitiesData = {
+  station: { name: string }; counts: { active: number; inactive: number; unknown: number };
+  facilities: {
+    id: string; kind: string; position: string | null; state: string;
+    /** Proposed (today's): the operator's own explanation of the state ("not monitored", "under maintenance"). */
+    stateExplanation?: string | null;
+    /** Proposed (today's): another unit at the station has the same kind and name, so the answer names its number. */
+    nameShared?: boolean;
+  }[];
+  /** Proposed (today's platform block, DB OpenStation's inventory): per station, its platforms' accessibility. */
+  platforms?: PlatformAccess | null;
+};
+export type Limitation = "yes" | "partial" | "no" | "unknown";
+export type PlatformAccess = {
+  /** DB's newest publication day of the rows used, a Berlin calendar date (YYYY-MM-DD). */
+  releasedOn: string | null;
+  stations: {
+    name: string | null; station: { stepFree: Limitation; wheelchair: Limitation } | null;
+    stepFreeCounts: Record<Limitation, number>; total: number;
+    list: { name: string | null; tracks: string[]; stepFree: Limitation; wheelchair: Limitation; tactileGuidance: Limitation; levelBoarding: Limitation; stated: boolean; heightCm: { min: number; max: number } | null }[];
+  }[];
+};
 /** WatchData */
 export type WatchData = { watchId: string; uri: string; kind: string; key: string; condition?: Record<string, unknown>; from: string; until: string; ended: boolean; note: string | null; situations: RoadSituation[] };
 /** SourceRow */

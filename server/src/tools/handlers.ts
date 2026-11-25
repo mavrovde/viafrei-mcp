@@ -876,7 +876,9 @@ const checkStationFacilities: Handler = async (args, ctx) => {
   // None of the asked kind: one more read, on this path only, says what DB does list ("nur 6 Fahrtreppen").
   const empty = d.counts.active + d.counts.inactive + d.counts.unknown === 0;
   const others = kind !== undefined && empty ? await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id, limit: 50 }) : null;
-  return toolResult(facilitiesText(language, d, kind, limit, others?.data.facilities ?? []), [stations.meta, r.meta, ...(others === null ? [] : [others.meta])], language);
+  // Credited as today: the facilities read names its own sources (DB's station data among them); the station
+  // lookup only found the id the read is keyed by, and none of its timetable data is said.
+  return toolResult(facilitiesText(language, d, kind, limit, others?.data.facilities ?? []), [r.meta, ...(others === null ? [] : [others.meta])], language);
 };
 
 const describeStation: Handler = async (args, ctx) => {

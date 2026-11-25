@@ -81,6 +81,24 @@ export function facilityNameIn(language: Language, name: string): string {
   return leftover ? `Provider text (German): "${raw}"` : out;
 }
 
+/** Today's EXPLANATION: an operator's state word in the answer's language; null where it only repeats the state. */
+const EXPLANATION: Readonly<Record<string, { de: string; en: string } | null>> = {
+  "available": null,
+  "not available": null,
+  "under construction": { de: "im Umbau", en: "under construction" },
+  "under maintenance": { de: "in Wartung", en: "under maintenance" },
+  "not monitored": { de: "wird nicht überwacht", en: "not monitored" },
+  "monitoring disrupted": { de: "Überwachung gestört", en: "monitoring disrupted" },
+  "monitoring not available": { de: "Überwachung nicht verfügbar", en: "monitoring not available" },
+};
+
+/** Today's explanationIn: a known word translated, else the operator's own words quoted as theirs. */
+export function explanationIn(language: Language, raw: string): string | null {
+  const key = raw.trim().toLowerCase();
+  if (key in EXPLANATION) return EXPLANATION[key]?.[language] ?? null;
+  return language === "de" ? `Meldung der Bahn: „${raw}“` : `DB's report: "${raw}"`;
+}
+
 const STATE_ORDER: Readonly<Record<string, number>> = { inactive: 0, unknown: 1, active: 2 };
 
 function kindCounts(language: Language, facilities: readonly Facility[]): string {
@@ -93,13 +111,15 @@ function kindCounts(language: Language, facilities: readonly Facility[]): string
 /** The unit's number as today prints it: the operator's equipment number, without the API's id prefix. */
 export const unitNumber = (id: string): string => id.replace(/^(?:fasta|equipment):/u, "");
 
-function facilityLine(language: Language, f: Facility, withUnit: boolean): string {
+export function facilityLine(language: Language, f: Facility, withUnit: boolean): string {
   const c = COPY[language];
   const kind = f.kind === "elevator" ? c.elevator : f.kind === "escalator" ? c.escalator : c.other;
   const unit = withUnit ? ` (${c.unit(unitNumber(f.id))})` : "";
   const where = f.position === null ? unit : ` ${facilityNameIn(language, f.position)}${unit}`;
   const state = f.state === "active" ? c.active : f.state === "inactive" ? c.inactive : c.unknownState;
-  return `${kind}${where}: ${state}`;
+  const raw = f.stateExplanation ?? null;
+  const said = raw !== null && f.state !== "active" ? explanationIn(language, raw) : null;
+  return `${kind}${where}: ${state}${said === null ? "" : ` — ${said}`}`;
 }
 
 /**
@@ -114,13 +134,92 @@ export function facilitiesText(language: Language, d: StationFacilitiesData, kin
   const { active, inactive, unknown } = d.counts;
   const known = total - unknown;
   const head = inactive > 0 ? c.someBroken(s, inactive, known, unknown) : unknown > 0 ? c.someActive(s, active, known, unknown) : c.allActive(s, total);
-  const summary = [head, unknown > 0 ? c.someUnknown(unknown) : "", c.scope, c.noCityOperator].filter((x) => x !== "").join(" ");
+  const platforms = (d.platforms?.stations ?? []).filter(platformAccessSays);
+  const day = d.platforms?.releasedOn ?? null;
+  const platformsScope = platforms.length === 0 ? "" : PLATFORM_COPY[language].scope(day === null ? null : dayIn(language, day));
+  const summary = [head, unknown > 0 ? c.someUnknown(unknown) : "", c.scope, platformsScope, c.noCityOperator].filter((x) => x !== "").join(" ");
   const sorted = [...d.facilities].sort((a, b) => (STATE_ORDER[a.state] ?? 1) - (STATE_ORDER[b.state] ?? 1) || (a.position ?? "").localeCompare(b.position ?? ""));
   const key = (f: Facility): string => `${f.kind}\u0000${f.position ?? ""}`;
   const same = new Map<string, number>();
   for (const f of sorted) same.set(key(f), (same.get(key(f)) ?? 0) + 1);
   const shown = sorted.slice(0, limit);
-  const lines = [summary, ...shown.map((f) => facilityLine(language, f, (same.get(key(f)) ?? 0) > 1))];
+  const lines = [summary, ...shown.map((f) => facilityLine(language, f, f.nameShared === true || (same.get(key(f)) ?? 0) > 1))];
   if (total > shown.length) lines.push(c.more(total - shown.length));
+  return [lines.join("\n"), ...platforms.map((p) => platformText(language, p, s))].join("\n\n");
+}
+
+// ---------------------------------------------------------------------------
+// Platforms: today's platform block (DB OpenStation's inventory)
+// ---------------------------------------------------------------------------
+
+type PlatformStation = T.PlatformAccess["stations"][number];
+type Platform = PlatformStation["list"][number];
+
+/** Today's PLATFORM_COPY. */
+const PLATFORM_COPY = {
+  de: {
+    head: (station: string, counts: string) => `Bahnsteige in ${station} laut Stationsdaten der Bahn: ${counts}.`,
+    countStepFree: (k: T.Limitation, n: number, total: number) =>
+      k === "yes" ? `${n} von ${total} stufenfrei` : k === "partial" ? `${n} teilweise stufenfrei` : k === "no" ? `${n} nicht stufenfrei` : `${n} ohne Angabe`,
+    station: (facts: string) => `Der Bahnhof insgesamt: ${facts}.`,
+    stepFree: { yes: "stufenfrei", partial: "teilweise stufenfrei", no: "nicht stufenfrei", unknown: "stufenfrei: unbekannt" },
+    wheelchair: { yes: "rollstuhlgerecht", partial: "eingeschränkt rollstuhlgerecht", no: "nicht rollstuhlgerecht", unknown: "rollstuhlgerecht: unbekannt" },
+    tactileGuidance: { yes: "Blindenleitsystem", partial: "Blindenleitsystem teilweise", no: "kein Blindenleitsystem", unknown: "Blindenleitsystem: unbekannt" },
+    levelBoarding: { yes: "stufenloser Einstieg in den Zug", partial: "stufenloser Einstieg teilweise", no: "kein stufenloser Einstieg in den Zug", unknown: "stufenloser Einstieg in den Zug: unbekannt" },
+    height: (min: number, max: number) => (min === max ? `Bahnsteighöhe ${min} cm` : `Bahnsteighöhe ${min}–${max} cm`),
+    noFacts: "Barrierefreiheit: keine Angabe der Bahn",
+    tracks: (codes: readonly string[]) => `Gleis ${codes.map((x) => x.replace(/^Gleis\s+/iu, "")).join(", ")}`,
+    platform: "Bahnsteig",
+    more: (n: number) => `… und ${n} weitere Bahnsteige.`,
+    scope: (stand: string | null) => `Die Angaben zu den Bahnsteigen stammen aus den Stationsdaten der Bahn${stand === null ? "" : `, Stand ${stand}`}.`,
+  },
+  en: {
+    head: (station: string, counts: string) => `Platforms at ${station} per DB's station data: ${counts}.`,
+    countStepFree: (k: T.Limitation, n: number, total: number) =>
+      k === "yes" ? `${n} of ${total} step-free` : k === "partial" ? `${n} partly step-free` : k === "no" ? `${n} not step-free` : `${n} not stated`,
+    station: (facts: string) => `The station as a whole: ${facts}.`,
+    stepFree: { yes: "step-free", partial: "partly step-free", no: "not step-free", unknown: "step-free: unknown" },
+    wheelchair: { yes: "wheelchair accessible", partial: "partly wheelchair accessible", no: "not wheelchair accessible", unknown: "wheelchair access: unknown" },
+    tactileGuidance: { yes: "tactile guidance", partial: "tactile guidance in part", no: "no tactile guidance", unknown: "tactile guidance: unknown" },
+    levelBoarding: { yes: "level boarding into the train", partial: "level boarding in part", no: "no level boarding into the train", unknown: "level boarding into the train: unknown" },
+    height: (min: number, max: number) => (min === max ? `platform height ${min} cm` : `platform height ${min}–${max} cm`),
+    noFacts: "accessibility: not stated by DB",
+    tracks: (codes: readonly string[]) => `${codes.length === 1 ? "Platform" : "Platforms"} ${codes.map((x) => x.replace(/^Gleis\s+/iu, "")).join(", ")}`,
+    platform: "Platform",
+    more: (n: number) => `… and ${n} more platforms.`,
+    scope: (stand: string | null) => `The platform details are from DB's station data${stand === null ? "" : `, as of ${stand}`}.`,
+  },
+} as const;
+
+/** Today's PLATFORMS_MAX. */
+export const PLATFORMS_MAX = 24;
+
+/** A Berlin calendar day (YYYY-MM-DD) as today's berlinDateIn says it. */
+const dayIn = (language: Language, day: string): string => (language === "de" ? day.split("-").reverse().join(".") : day);
+
+/** Today's platformAccessSays: the inventory states something there. */
+export const platformAccessSays = (s: PlatformStation): boolean => s.station !== null || s.list.some((p) => p.stated || p.heightCm !== null);
+
+/** Today's platformLine: "Platforms 1, 2: step-free · wheelchair accessible · platform height 96 cm · …". */
+export function platformLine(language: Language, p: Platform): string {
+  const c = PLATFORM_COPY[language];
+  const named = p.name === null ? null : facilityNameIn(language, p.name);
+  const name = named !== null && language !== "de" && p.tracks.length > 0 && /^platforms? [\d\s/a-z,]*$/iu.test(named) ? null : named;
+  const label = p.tracks.length > 0 ? `${c.tracks(p.tracks)}${name === null ? "" : ` (${name})`}` : (name ?? c.platform);
+  const height = p.heightCm === null ? null : c.height(p.heightCm.min, p.heightCm.max);
+  const facts = p.stated ? [c.stepFree[p.stepFree], c.wheelchair[p.wheelchair], height, c.tactileGuidance[p.tactileGuidance], c.levelBoarding[p.levelBoarding]] : [height, c.noFacts];
+  return `${label}: ${facts.filter((x): x is string => x !== null).join(" · ")}`;
+}
+
+/** Today's platformText: the head with the step-free counts and the station's own facts, one line per platform. */
+export function platformText(language: Language, s: PlatformStation, fallbackName: string): string {
+  const c = PLATFORM_COPY[language];
+  const order: readonly T.Limitation[] = ["yes", "partial", "no", "unknown"];
+  const counts = order.filter((k) => s.stepFreeCounts[k] > 0).map((k) => c.countStepFree(k, s.stepFreeCounts[k], s.total)).join(", ");
+  const head = c.head(s.name ?? fallbackName, counts === "" ? c.noFacts : counts);
+  const station = s.station === null ? null : c.station(`${c.stepFree[s.station.stepFree]}, ${c.wheelchair[s.station.wheelchair]}`);
+  const shown = s.list.slice(0, PLATFORMS_MAX);
+  const lines = [[head, station].filter((x): x is string => x !== null).join(" "), ...shown.map((p) => platformLine(language, p))];
+  if (s.total > shown.length) lines.push(c.more(s.total - shown.length));
   return lines.join("\n");
 }
