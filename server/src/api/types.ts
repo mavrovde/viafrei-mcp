@@ -111,6 +111,18 @@ export type RoadSituation = {
   descriptionShown?: string | null;
   /** Proposed (today's GistFacts): what the description and subtitle state apart from their prose, said in English. */
   facts?: RoadFacts | null;
+  /** Proposed (today's abnormal traffic type): the Autobahn GmbH's type of a jam, said as today's term. */
+  trafficType?: string | null;
+  /** Proposed (today's jamStructured): a jam's end and length, its trend, the hour's usual and how long jams here last. */
+  jam?: RoadJam | null;
+};
+/** Proposed: today's jam detail (JamDetail, as jamStructured sends it). */
+export type RoadJam = {
+  lengthKm: number | null; endText: string | null; endPlace: { km: number | null; side: string; place: string } | null;
+  trend: { direction: "growing" | "stable" | "shrinking"; metric: "length" | "delay"; earlier: { at: string; value: number } } | null;
+  usual: { verdict: string; weeks: number; jamWeeks: number; weekday: number; hour: number } | null;
+  howLong: { cases: number; fromHours: number; toHours: number; dayKind: string; weeks: number } | null;
+  routeRecommendations: string[];
 };
 /** Proposed: today's facts of a road entry (GistFacts), the points already named in English. */
 export type RoadFacts = {

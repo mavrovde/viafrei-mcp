@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type * as T from "../src/api/types.js";
-import { autobahnLine, factWords, HANDLERS, lampText, phaseEndWords, plannedNowLines, roadWideLine, stampText } from "../src/tools/handlers.js";
+import { autobahnLine, factWords, HANDLERS, jamWords, lampText, phaseEndWords, plannedNowLines, roadWideLine, stampText } from "../src/tools/handlers.js";
 
 const now = new Date("2026-03-30T10:00:00Z");
 const wide = (o: Partial<T.RoadWide> = {}): T.RoadWide => ({
@@ -134,5 +134,50 @@ describe("an entry's merged sections, phase dates, cut description and facts", (
     expect(phaseEndWords({ end: "2026-12-11T12:00+01:00", measureEnd: null }, "de")).toBe(", bis 11.12.2026 12:00");
     expect(phaseEndWords({ end: null, measureEnd: "2026-12-11T00:00+01:00" }, "de")).toBe(", Gesamtmaßnahme bis 11.12.2026");
     expect(phaseEndWords({ end: "2026-12-10T12:00+01:00", measureEnd: "2026-12-11T00:00+01:00" }, "de")).toBe(", bis 10.12.2026 12:00 (Gesamtmaßnahme bis 11.12.2026)");
+  });
+});
+
+describe("a jam's detail and its traffic type", () => {
+  const now = new Date("2026-11-25T00:27:00Z");
+  const jam = (o: Partial<T.RoadJam> = {}): T.RoadJam => ({
+    lengthKm: 1.3, endText: "2.6 km hinter Alpha", endPlace: { km: 2.6, side: "past", place: "Alpha" }, trend: null,
+    usual: { verdict: "usual", weeks: 4, jamWeeks: 4, weekday: 3, hour: 23 }, howLong: { cases: 83, fromHours: 1, toHours: 3, dayKind: "weekday", weeks: 8 }, routeRecommendations: [], ...o,
+  });
+  it("German: the end, the length, the hour's usual, how long jams here last", () => {
+    expect(jamWords("de", jam(), now)).toBe(", Stauende 2,6 km hinter Alpha, ca. 1,3 km lang, für Mittwoch 23–00 Uhr üblich (Stau in 4 von 4 Wochen), Staus an dieser Stelle lösten sich werktags meist innerhalb von 1–3 Std. auf (83 Fälle in 8 Wochen)");
+  });
+  it("English, with the trend, an unusual hour, a weekend, one span, a detour", () => {
+    const j = jam({ endPlace: { km: 0.5, side: "before", place: "B" }, trend: { direction: "growing", metric: "length", earlier: { at: "2026-11-25T00:06:00Z", value: 870 } },
+      usual: { verdict: "unusual", weeks: 4, jamWeeks: 0, weekday: 7, hour: 1 }, howLong: { cases: 2, fromHours: 2, toHours: 2, dayKind: "weekend", weeks: 8 }, routeRecommendations: [" U1 "] });
+    expect(jamWords("en", j, now)).toBe(', end of the jam 0.5 km before B, about 1.3 km long, growing (about 0.9 km 21 min ago), unusual for Sunday 01–02 (jammed in 0 of 4 weeks), jams here usually cleared within 2 h at weekends (2 cases in 8 weeks), Autobahn GmbH recommends "U1"');
+  });
+  it("the trend's words and its delay form; ends without a km or a place", () => {
+    const t = (direction: "growing" | "stable" | "shrinking", metric: "length" | "delay", value: number) => ({ direction, metric, earlier: { at: "2026-11-25T00:27:00Z", value } });
+    const only = (o: Partial<T.RoadJam>) => jam({ endText: null, lengthKm: null, usual: null, howLong: null, ...o });
+    expect(jamWords("de", only({ trend: t("stable", "length", 870) }), now)).toBe(", unverändert (vor 1 Min.: ca. 0,9 km)");
+    expect(jamWords("de", only({ trend: t("shrinking", "delay", 900) }), now)).toBe(", geht zurück (vor 1 Min.: +15 min)");
+    expect(jamWords("en", only({ trend: t("stable", "delay", 600) }), now)).toBe(", steady (+10 min 1 min ago)");
+    expect(jamWords("en", only({ trend: t("shrinking", "length", 100) }), now)).toBe(", easing (about 0.1 km 1 min ago)");
+    expect(jamWords("de", only({ trend: t("growing", "length", 100) }), now)).toBe(", wächst (vor 1 Min.: ca. 0,1 km)");
+    expect(jamWords("de", only({ endText: "x", endPlace: null }), now)).toBe(", Stauende bei „x“");
+    expect(jamWords("en", only({ endText: "x", endPlace: null }), now)).toBe(', end of the jam at "x"');
+    expect(jamWords("de", only({ endText: "x", endPlace: { km: null, side: "past", place: "P" } }), now)).toBe(", Stauende bei P");
+    expect(jamWords("en", only({ endText: "x", endPlace: { km: null, side: "past", place: "P" } }), now)).toBe(", end of the jam at P");
+    expect(jamWords("en", only({ endText: "x", endPlace: { km: 1, side: "past", place: "P" } }), now)).toBe(", end of the jam 1.0 km past P");
+    expect(jamWords("de", only({ endText: "x", endPlace: { km: 1, side: "before", place: "P" } }), now)).toBe(", Stauende 1,0 km vor P");
+    expect(jamWords("de", only({ lengthKm: 0.04 }), now)).toBe("");
+    expect(jamWords("de", only({ lengthKm: 0.05 }), now)).toBe(", ca. 0,1 km lang");
+    expect(jamWords("de", only({ routeRecommendations: ["U1", "U2"] }), now)).toBe(", Empfehlung der Autobahn GmbH: „U1“; „U2“");
+    expect(jamWords("de", only({ howLong: { cases: 1, fromHours: 1, toHours: 2, dayKind: "weekend", weeks: 8 } }), now)).toMatch(/am Wochenende meist innerhalb von 1–2 Std\./u);
+    expect(jamWords("en", only({ usual: { verdict: "usual", weeks: 4, jamWeeks: 2, weekday: 1, hour: 8 } }), now)).toBe(", usual for Monday 08–09 (jammed in 2 of 4 weeks)");
+    expect(jamWords("de", only({ usual: { verdict: "unusual", weeks: 4, jamWeeks: 0, weekday: 1, hour: 8 } }), now)).toBe(", für Montag 08–09 Uhr ungewöhnlich (Stau in 0 von 4 Wochen)");
+  });
+  it("the line: the type's term, the jam's clauses after the place", () => {
+    const s: T.RoadSituation = { id: "j", kind: "warning", severity: "none", road: "A1", direction: null, directionText: null, validity: { from: "2026-11-25T00:13:00Z", until: null },
+      headline: "A1 | Alpha - Beta", subtitle: "Bremen -> Lübeck", description: null, delayMin: 24, lengthM: null, trafficType: "QUEUING_TRAFFIC", jam: jam({ usual: null, howLong: null }) };
+    expect(autobahnLine(s, "de", now)).toBe("• Stau: A1 | Alpha - Beta · Bremen -> Lübeck, Stauende 2,6 km hinter Alpha, ca. 1,3 km lang, seit 01:13, +24 min");
+    expect(autobahnLine({ ...s, trafficType: "UNSPECIFIED_ABNORMAL_TRAFFIC", jam: null }, "en", now)).toBe('• Traffic disruption (Verkehrsstörung): A1, since 01:13, +24 min — Provider text (German): "A1 | Alpha - Beta · Bremen -> Lübeck"');
+    expect(autobahnLine({ ...s, trafficType: "NEW_TYPE", jam: null }, "de", now)).not.toMatch(/^• (Stau|Verkehrsstörung)/u);
+    expect(autobahnLine({ ...s, trafficType: null, jam: null }, "de", now)).not.toMatch(/^• (Stau|Verkehrsstörung)/u);
   });
 });

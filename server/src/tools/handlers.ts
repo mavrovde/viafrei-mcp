@@ -332,6 +332,58 @@ export function phaseEndWords(phase: { end: string | null; measureEnd: string | 
   return `, ${L(language, "bis", "until")} ${stampText(phase.end, language)}${later ? ` (${whole(phase.measureEnd!)})` : ""}`;
 }
 
+/** Today's terms for the Autobahn GmbH's traffic types (today's TERMS). */
+const TRAFFIC_TYPE: Record<string, { de: string; en: string }> = {
+  QUEUING_TRAFFIC: { de: "Stau", en: "Traffic jam" }, STATIONARY_TRAFFIC: { de: "Stau (stehend)", en: "Stationary traffic" },
+  HEAVY_TRAFFIC: { de: "Dichter Verkehr", en: "Heavy traffic" }, SLOW_TRAFFIC: { de: "Stockender Verkehr", en: "Slow traffic" },
+  UNSPECIFIED_ABNORMAL_TRAFFIC: { de: "Verkehrsstörung", en: "Traffic disruption" },
+};
+const WEEKDAY: Record<Language, readonly string[]> = {
+  de: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+  en: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+};
+
+/** Today's jamClauses: the jam's end, its length, its trend, the hour's usual, how long jams here last, the detour. */
+export function jamWords(language: Language, j: T.RoadJam, now: Date): string {
+  const de = language === "de";
+  const k = (n: number): string => kmText(n * 1000, language);
+  const quoted = (s: string): string => (de ? `„${s.trim()}“` : `"${s.trim()}"`);
+  const parts: string[] = [];
+  if (j.endText !== null) {
+    const p = j.endPlace;
+    parts.push(p === null ? L(language, `Stauende bei ${quoted(j.endText)}`, `end of the jam at ${quoted(j.endText)}`)
+      : p.km === null ? L(language, `Stauende bei ${p.place}`, `end of the jam at ${p.place}`)
+      : L(language, `Stauende ${k(p.km)} ${p.side === "past" ? "hinter" : "vor"} ${p.place}`, `end of the jam ${k(p.km)} ${p.side === "past" ? "past" : "before"} ${p.place}`));
+  }
+  if (j.lengthKm !== null && j.lengthKm >= 0.05) parts.push(L(language, `ca. ${k(j.lengthKm)} lang`, `about ${k(j.lengthKm)} long`));
+  if (j.trend !== null) {
+    const t = j.trend;
+    const ago = Math.max(1, Math.round((now.getTime() - new Date(t.earlier.at).getTime()) / 60_000));
+    const was = t.metric === "length" ? `${L(language, "ca.", "about")} ${k(t.earlier.value / 1000)}` : `${Math.round(t.earlier.value / 60) >= 0 ? "+" : ""}${Math.round(t.earlier.value / 60)} min`;
+    const word = de ? { growing: "wächst", stable: "unverändert", shrinking: "geht zurück" }[t.direction] : { growing: "growing", stable: "steady", shrinking: "easing" }[t.direction];
+    parts.push(de ? `${word} (vor ${ago} Min.: ${was})` : `${word} (${was} ${ago} min ago)`);
+  }
+  if (j.usual !== null) {
+    const u = j.usual;
+    const hours = `${String(u.hour).padStart(2, "0")}–${String((u.hour + 1) % 24).padStart(2, "0")}`;
+    const day = WEEKDAY[language][u.weekday - 1] ?? "";
+    const usual = u.verdict === "usual";
+    parts.push(de ? `für ${day} ${hours} Uhr ${usual ? "üblich" : "ungewöhnlich"} (Stau in ${u.jamWeeks} von ${u.weeks} Wochen)` : `${usual ? "usual" : "unusual"} for ${day} ${hours} (jammed in ${u.jamWeeks} of ${u.weeks} weeks)`);
+  }
+  if (j.howLong !== null) {
+    const h = j.howLong;
+    const span = h.fromHours === h.toHours ? String(h.toHours) : `${h.fromHours}–${h.toHours}`;
+    const weekend = h.dayKind === "weekend";
+    parts.push(de ? `Staus an dieser Stelle lösten sich ${weekend ? "am Wochenende" : "werktags"} meist innerhalb von ${span} Std. auf (${h.cases} Fälle in ${h.weeks} Wochen)`
+      : `jams here usually cleared within ${span} h ${weekend ? "at weekends" : "on weekdays"} (${h.cases} cases in ${h.weeks} weeks)`);
+  }
+  if (j.routeRecommendations.length > 0) {
+    const recs = j.routeRecommendations.map(quoted).join("; ");
+    parts.push(L(language, `Empfehlung der Autobahn GmbH: ${recs}`, `Autobahn GmbH recommends ${recs}`));
+  }
+  return parts.length === 0 ? "" : `, ${parts.join(", ")}`;
+}
+
 /** Today's gistDetails: the facts apart from the prose, in English. */
 export function factWords(f: T.RoadFacts): string[] {
   const k = (n: number): string => kmText(n * 1000, "en");
@@ -356,7 +408,8 @@ export function factWords(f: T.RoadFacts): string[] {
  */
 export function autobahnLine(s: T.RoadSituation, language: Language, now: Date = new Date()): string {
   const de = language === "de";
-  const kind = KIND[language][s.kind] ?? s.kind;
+  const typed = TRAFFIC_TYPE[s.trafficType ?? ""];
+  const kind = typed === undefined ? (KIND[language][s.kind] ?? s.kind) : de ? typed.de : `${typed.en} (${typed.de})`;
   const head = isCode(s.headline) ? "" : s.headline;
   const desc = s.description === null ? "" : head !== "" && s.description.trimEnd().endsWith(head) ? s.description.trimEnd().slice(0, -head.length) : s.description;
   // The signed destination is the provider's words too: it stands with them, quoted in English.
@@ -367,8 +420,10 @@ export function autobahnLine(s: T.RoadSituation, language: Language, now: Date =
   const started = from === null || new Date(from).getTime() <= now.getTime();
   const sameYear = from !== null && berlinDateTime(from, language).slice(6, 10) === berlinDateTime(now.toISOString(), language).slice(6, 10);
   const fromText = from === null ? null : !started || sameYear ? standTime(from, language, now) : language === "de" ? berlinDateTime(from, language).slice(0, 10) : standTime(from, language, now).slice(0, 10);
+  const jam = s.jam === undefined || s.jam === null ? "" : jamWords(language, s.jam, now).slice(2);
   const parts = [
     de ? (where === "" ? s.road : where) : s.road,
+    jam,
     fromText === null ? null : started ? L(language, `seit ${fromText}`, `since ${fromText}`) : L(language, `ab ${fromText}`, `from ${fromText}`),
     s.phase !== undefined && s.phase !== null ? phaseEndWords(s.phase, language).slice(2) : s.validity.until === null ? null : L(language, `bis ${standTime(s.validity.until, language, now)}`, `until ${standTime(s.validity.until, language, now)}`),
     s.delayMin === null || s.delayMin <= 0 ? null : `+${s.delayMin} min`,
