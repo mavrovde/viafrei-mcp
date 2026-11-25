@@ -70,3 +70,31 @@ describe("find_address, as today's answer", () => {
     expect(sameDoor(a({ place: "" }), a({ place: "Potsdam" }))).toBe(true);
   });
 });
+
+describe("find_address with the proposed object types and objects at the address", () => {
+  const obj = (o: Partial<T.AddressObject> = {}): T.AddressObject => ({ name: "Bertelsmann Stiftung", alsoNamed: [], kinds: [{ category: "office", categoryValue: "ngo" }], distanceM: 0, ownAddress: true, ...o });
+  it("says what each folded point was and lists the named objects, as today's answer", () => {
+    expect(addressAnswer("q", [a({ osmType: "node" }), { ...way, osmType: "way" }], "en", [obj({ name: "Kommandantenhaus", kinds: [{ category: "historic", categoryValue: "house" }] }), obj()])).toBe([
+      "\"q\":",
+      "Unter den Linden 1, 10117 Berlin, Berlin",
+      "52.51728, 13.39782",
+      "(2 OpenStreetMap objects of this address, up to 9 m apart, shown as one point: address point (OSM node), outline, usually the building (OSM way; point = its centre))",
+      "",
+      "Mapped at this address in OpenStreetMap:",
+      "- Kommandantenhaus — house",
+      "- Bertelsmann Stiftung — NGO",
+      "",
+      "OpenStreetMap data as of 2026-10-27",
+    ].join("\n"));
+  });
+  it("one type said once; an object without its own address, other names, more than eight, and none", () => {
+    expect(addressAnswer("q", [a({ osmType: "way" }), { ...way, osmType: "way" }], "de").split("\n")[3]).toBe("(2 OpenStreetMap-Objekte dieser Adresse, bis 9 m auseinander, als ein Punkt gezeigt: Umriss, meist das Gebäude (OSM-Weg; Punkt = Mitte))");
+    expect(addressAnswer("q", [a({ osmType: "relation" }), { ...way, osmType: null }], "en").split("\n")[3]).toBe("(2 OpenStreetMap objects of this address, up to 9 m apart, shown as one point: multipart outline (OSM relation; point = its centre))");
+    expect(addressAnswer("q", [a()], "en", [obj({ ownAddress: false, distanceM: 12, alsoNamed: ["BS"] })]).split("\n")).toContain("- Bertelsmann Stiftung — NGO (no address of its own, 12 m away; also mapped as \"BS\")");
+    const nine = Array.from({ length: 9 }, (_, i) => obj({ name: `O${i}` }));
+    expect(addressAnswer("q", [a()], "de", nine).split("\n")).toContain("… und 1 weitere (9 Objekte an dieser Adresse kartiert)");
+    expect(addressAnswer("q", [a()], "de", nine).split("\n")).not.toContain("- O8 — NGO");
+    expect(addressAnswer("q", [a()], "en", []).split("\n")).toContain("OpenStreetMap maps no named object at this address — none carries this address, and none without an address of its own lies within 30 m.");
+    expect(addressAnswer("q", [a()], "en")).not.toContain("Mapped at");
+  });
+});

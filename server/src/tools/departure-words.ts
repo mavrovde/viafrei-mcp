@@ -152,6 +152,32 @@ export const BOARD = {
   },
 } as const;
 
+/** Today's berlinStamp: the Berlin date with the year, then the clock ("28.11.2026 00:00", "2026-11-28 00:00"). */
+export function berlinStamp(iso: string, language: Language): string {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
+  return `${language === "de" ? `${p["day"]}.${p["month"]}.${p["year"]}` : `${p["year"]}-${p["month"]}-${p["day"]}`} ${p["hour"]}:${p["minute"]}`;
+}
+
+/**
+ * Today's board note (its COPY note and noteLive): what the times are, and how far the loaded
+ * timetable reaches, with its load time. Undefined while the API does not say the timetable's reach.
+ */
+export function boardNote(window: { timetableUntil?: string | null; timetableLoadedAt?: string | null }, live: boolean, language: Language): string | undefined {
+  if (window.timetableUntil === undefined || window.timetableUntil === null) return undefined;
+  const until = berlinStamp(window.timetableUntil, language);
+  const loaded = window.timetableLoadedAt === undefined || window.timetableLoadedAt === null ? null : berlinStamp(window.timetableLoadedAt, language);
+  if (language === "de") {
+    const reach = `Der Fahrplan reicht derzeit bis ${until}${loaded === null ? "" : ` (Fahrplan geladen ${loaded})`}.`;
+    return live
+      ? `Verspätungen und Ausfälle aus den DELFI-Echtzeitdaten, wo sie vorliegen; mit „Plan“ markierte Zeiten sind Fahrplanzeiten ohne Echtzeitangabe. ${reach}`
+      : `Nur Fahrplan, keine Echtzeit: Verspätungen, Ausfälle und Gleiswechsel sind hier nicht enthalten. ${reach}`;
+  }
+  const reach = `The timetable currently reaches ${until}${loaded === null ? "" : ` (timetable loaded ${loaded})`}.`;
+  return live
+    ? `Delays and cancellations from DELFI realtime data where held; times marked "timetable" are planned times with no realtime figure. ${reach}`
+    : `Timetable only, no realtime: delays, cancellations and platform changes are not included here. ${reach}`;
+}
+
 /** The share-alike sentence's subject on a board with a live figure (today's LIVE_SHARE_ALIKE_SUBJECT). */
 export const LIVE_SHARE_ALIKE_SUBJECT: Record<Language, string> = {
   de: "Die Echtzeitangaben aus DELFI GTFS-RT und DELFI SIRI ET",

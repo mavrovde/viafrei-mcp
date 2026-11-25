@@ -4,7 +4,7 @@
  * API's live refresher for a fresh board. A tool whose operation the API contract lacks answers `notAvailable` and is listed in GAPS.
  */
 import { departuresRefusal } from "./departures-input.js";
-import { anyLive, BOARD, boardLine, LIVE_SHARE_ALIKE_SUBJECT, timeBeside } from "./departure-words.js";
+import { anyLive, BOARD, boardLine, boardNote, LIVE_SHARE_ALIKE_SUBJECT, timeBeside } from "./departure-words.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/client.js";
 import type * as T from "../api/types.js";
@@ -585,7 +585,7 @@ const findAddress: Handler = async (args, ctx) => {
     if (cov.data.addresses.length === 0) return toolResult(ADDRESS_WORDS[language].notLoaded, [], language, { structured: { found: 0, query: str(args["query"]) } });
     return none(language, [r.meta], L(language, "Adressen", "addresses"));
   }
-  return toolResult(addressAnswer(str(args["query"]) ?? "", r.data.addresses, language), [r.meta], language);
+  return toolResult(addressAnswer(str(args["query"]) ?? "", r.data.addresses, language, r.data.objects), [r.meta], language);
 };
 
 /** The official region code the contract's `area` wants: given as one, a region name through listPlaces, or a position through describeLocation. */
@@ -794,16 +794,19 @@ function boardAnswer(r: Envelope<T.Board>, metas: DataMeta[], language: Language
   const from = timeBeside(window.from, now, language), to = timeBeside(window.until, now, language);
   // Today's board is dated by the call, not by the plan's load time (its asOf: now).
   const asOf = now.toISOString();
-  if (departures.length === 0) {
-    return toolResult(L(language, `Ab ${station.name} fährt zwischen ${from} und ${to} planmäßig nichts ab.`, `Nothing is scheduled to leave ${station.name} between ${from} and ${to}.`), metas, language, { asOf });
-  }
   const live = anyLive(departures);
+  // Today's note on what the times are and how far the timetable reaches, when the API says its reach.
+  const note = boardNote(window, live, language);
+  const noted = note === undefined ? {} : { note };
+  if (departures.length === 0) {
+    return toolResult(L(language, `Ab ${station.name} fährt zwischen ${from} und ${to} planmäßig nichts ab.`, `Nothing is scheduled to leave ${station.name} between ${from} and ${to}.`), metas, language, { asOf, ...noted });
+  }
   const c = BOARD[language];
   const lines = [c.head(station.name, from, to, live), ...departures.map((d) => boardLine(d, live, now, language))];
   const more = (window.matched ?? departures.length) - departures.length;
   if (more > 0) lines.push(c.more(more));
   if (station.stopCode) lines.push(c.stopId(station.stopCode));
-  return toolResult(lines.join("\n"), metas, language, { asOf, ...(live ? { shareAlikeSubject: LIVE_SHARE_ALIKE_SUBJECT[language] } : {}) });
+  return toolResult(lines.join("\n"), metas, language, { asOf, ...noted, ...(live ? { shareAlikeSubject: LIVE_SHARE_ALIKE_SUBJECT[language] } : {}) });
 }
 
 /** Today's words when a station tool is called with no station at all: ask, never search for nothing. */

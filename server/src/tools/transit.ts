@@ -10,6 +10,7 @@ import { toolError, toolResult, type Language } from "../presentation.js";
 import { num, placeMissing, str, type Handler } from "./context.js";
 import { kmText } from "./nearby.js";
 import { regionOf, type Region } from "./region.js";
+import { windowAnswer } from "./transit-words.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -61,6 +62,9 @@ export const checkTransitDisruption: Handler = async (args, ctx): Promise<CallTo
   if (line === undefined && where.label !== undefined && emptyWindow(r.data.punctuality) && r.data.alerts.length === 0 && r.data.alertsChecked === false) {
     return toolResult(emptyAnswer(language, { ...where, label: where.label }, r.data.windowMin), metas, language);
   }
+  // Today's full answer for a region's window, when the API carries the figures it is built from.
+  const full = line === undefined && where.label !== undefined ? windowAnswer(language, where.distanceM === undefined && where.town === undefined ? where.label : `${where.label}${where.distanceM === undefined ? "" : TRANSIT_WORDS.placed(language, where.distanceM)}${where.town === undefined ? "" : TRANSIT_WORDS.town(language, where.town)}`, r.data) : undefined;
+  if (full !== undefined) return toolResult(full, metas, language);
   const lines = r.data.alerts.map((a) => `- ${a.lines.length > 0 ? `${a.lines.join(", ")}: ` : ""}${a.header ?? ""}`);
   if (r.data.punctuality !== null) lines.unshift(L(language, `Pünktlichkeit ${r.data.punctuality.name ?? ""}: ${r.data.punctuality.level} (${r.data.punctuality.late} von ${r.data.punctuality.observed} verspätet)`, `Punctuality ${r.data.punctuality.name ?? ""}: ${r.data.punctuality.level} (${r.data.punctuality.late} of ${r.data.punctuality.observed} late)`));
   if (lines.length === 0) return toolResult(L(language, "Keine Störungen gefunden.", "No disruptions found."), metas, language);

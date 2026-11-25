@@ -7,8 +7,14 @@ import type { LatLon } from "./client.js";
 /** PlaceItem */
 export type PlaceItem = { id: string; name: string; kind: string; location: LatLon; distanceM?: number; districtCode?: string | null; sourceFamily: string };
 /** Address */
-export type Address = { street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; location: LatLon; dataAsOf?: string | null };
-export type AddressData = { addresses: Address[] };
+export type Address = {
+  street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; location: LatLon; dataAsOf?: string | null;
+  /** Proposed: the OSM object the row came from (today's osmType). */
+  osmType?: "node" | "way" | "relation" | null;
+};
+/** Proposed (today's objectsAtAddress): a named OSM object at the address, the one that is the address first. */
+export type AddressObject = { name: string; alsoNamed: string[]; kinds: { category: string; categoryValue: string }[]; distanceM: number; ownAddress: boolean };
+export type AddressData = { addresses: Address[]; objects?: AddressObject[] };
 /** FuelStation */
 export type FuelPrice = { fuel: string; priceEur: number; reportedAt: string; current: boolean };
 export type FuelStation = { id: string; name: string; brand: string | null; location: LatLon; distanceM?: number; openingState: string; prices: FuelPrice[] };
@@ -85,7 +91,16 @@ export type ZoneVerdict = { kind: "inside" | "transfer" | "outside" | "unknown";
 export type DrivingRulesData = { topic: string; title: string; rules: DrivingRule[]; reviewedOn: string; disclaimer: string; zoneCity?: ZoneCity; zoneVerdict?: ZoneVerdict };
 /** DisruptionData */
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
-export type DisruptionData = { alerts: DisruptionAlert[]; alertsTotal: number; alertsChecked?: boolean; punctuality: { name: string | null; level: string; late: number; observed: number; stopsReporting?: number; untimed?: number } | null; windowMin: number };
+export type DisruptionData = {
+  alerts: DisruptionAlert[]; alertsTotal: number; alertsChecked?: boolean; windowMin: number;
+  punctuality: {
+    name: string | null; level: string; late: number; observed: number; stopsReporting?: number; untimed?: number; tripsSkippingStops?: number; sourceFamily?: string;
+    /** Proposed (today's aggregate): the counted trips' delay reports, the trips cancelled here, the window before and its trend, thin. */
+    reports?: number; tripsCancelled?: number; previous?: { observed: number; late: number } | null; trend?: "better" | "worse" | "unchanged" | "unknown"; thin?: "few_trips" | "low_coverage" | null;
+  } | null;
+  /** Proposed (today's alertsCoverage): whether any alert source covers the area, and when each of its Länder last published. */
+  alertsCoverage?: { covered: boolean; lookbackDays: number; lastSeenAt: (string | null)[] };
+};
 /** WeatherRiskData */
 /** The issuer's own English text of a warning (the next API release; absent before it). */
 export type WarningText = { headline: string | null; description: string | null; instruction: string | null; sourceFamily: string; unaltered?: boolean };
@@ -127,7 +142,7 @@ export type Departure = {
   platform: string | null; plannedPlatform: string | null; platformChanged: boolean; cancelled: boolean; mode: string;
   realtime?: boolean; noForecast?: boolean; routeType?: number | null; trainNumber?: string | null;
 };
-export type Board = { station: { id: string; name: string; stopCode?: string | null }; window: { from: string; until: string; matched?: number }; departures: Departure[] };
+export type Board = { station: { id: string; name: string; stopCode?: string | null }; window: { from: string; until: string; matched?: number; /** Proposed: how far the loaded timetable reaches, and when it was loaded (today's horizon). */ timetableUntil?: string | null; timetableLoadedAt?: string | null }; departures: Departure[] };
 /** TrainBoardData, TrainBoardDeparture */
 export type TrainBoardDeparture = {
   line: string | null; category: string | null; number: string | null; destination: string | null; plannedAt: string; expectedAt: string; delayMin: number;

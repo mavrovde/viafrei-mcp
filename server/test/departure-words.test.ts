@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type * as T from "../src/api/types.js";
-import { anyLive, boardLine } from "../src/tools/departure-words.js";
+import { anyLive, berlinStamp, boardLine, boardNote } from "../src/tools/departure-words.js";
 
 const now = new Date("2026-11-24T20:30:00Z");
 const row = (line: string | null, mode: string, routeType: number | null, o: Partial<T.Departure> = {}): T.Departure => ({
@@ -66,5 +66,23 @@ describe("a departure in today's words", () => {
     expect(anyLive([row("S1", "sbahn", 109), row("S1", "sbahn", 109, { realtime: true, delayMin: 0 })])).toBe(true);
     expect(anyLive([row("S1", "sbahn", 109, { cancelled: true })])).toBe(true);
     expect(anyLive([row("S1", "sbahn", 109, { noForecast: true })])).toBe(true);
+  });
+});
+
+describe("boardNote (today's note/noteLive)", () => {
+  const w = { timetableUntil: "2026-11-27T23:00:00Z", timetableLoadedAt: "2026-11-23T23:56:27Z" };
+  it("says what the times are and how far the timetable reaches, with its load time", () => {
+    expect(boardNote(w, true, "en")).toBe('Delays and cancellations from DELFI realtime data where held; times marked "timetable" are planned times with no realtime figure. The timetable currently reaches 2026-11-28 00:00 (timetable loaded 2026-11-24 00:56).');
+    expect(boardNote(w, true, "de")).toBe("Verspätungen und Ausfälle aus den DELFI-Echtzeitdaten, wo sie vorliegen; mit „Plan“ markierte Zeiten sind Fahrplanzeiten ohne Echtzeitangabe. Der Fahrplan reicht derzeit bis 28.11.2026 00:00 (Fahrplan geladen 24.11.2026 00:56).");
+    expect(boardNote({ timetableUntil: w.timetableUntil }, false, "en")).toBe("Timetable only, no realtime: delays, cancellations and platform changes are not included here. The timetable currently reaches 2026-11-28 00:00.");
+    expect(boardNote({ ...w, timetableLoadedAt: null }, false, "de")).toBe("Nur Fahrplan, keine Echtzeit: Verspätungen, Ausfälle und Gleiswechsel sind hier nicht enthalten. Der Fahrplan reicht derzeit bis 28.11.2026 00:00.");
+  });
+  it("is undefined while the API does not say the timetable's reach", () => {
+    expect(boardNote({}, true, "en")).toBeUndefined();
+    expect(boardNote({ timetableUntil: null, timetableLoadedAt: w.timetableLoadedAt }, true, "en")).toBeUndefined();
+  });
+  it("stamps in Berlin time with the year, across midnight and summer time", () => {
+    expect(berlinStamp("2026-07-01T22:30:00Z", "de")).toBe("02.07.2026 00:30");
+    expect(berlinStamp("2026-07-01T22:30:00Z", "en")).toBe("2026-07-02 00:30");
   });
 });
