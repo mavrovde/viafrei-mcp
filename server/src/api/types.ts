@@ -218,3 +218,21 @@ export type ParkingBay = {
 };
 export type ParkingBayCounts = { total: number; sensors: number; free: number; occupied: number; unknown: number; staticSites: number; staticSpaces: number };
 export type ParkingBaysData = { kind: string; counts: ParkingBayCounts; bays: ParkingBay[] };
+
+/** Proposed (getStationPage): today's station page, its sections built by the page's own rules, said by describe_station. */
+export type RailLamp = "red" | "yellow" | "green" | "unknown";
+export type RailReason = { kind: "late" | "cancelled" | "median" | "platform" | "alert" | "sight" | "line"; n?: number; of?: number; side?: "dep" | "arr" | "both"; min?: number; line?: string; long?: boolean; lamp?: RailLamp };
+export type StationPageLift = { kind: string; description: string | null; tracks: string[]; state: "active" | "inactive" | "unknown"; reason: string | null; resumeAt: string | null };
+export type StationPageDeparture = { planned: string; line: string | null; destination: string | null; platform: string | null; plannedPlatform: string | null; delayMin: number | null; cancelled: boolean; noForecast: boolean; replacementBus: boolean };
+export type StationPageAlert = { header: string; lines: string[]; atStation: boolean; until: string | null };
+export type StationPagePlatform = { tracks: string[]; name: string | null; lift?: "ok" | "unknown" | "none" | "out"; stepFree?: Limitation; heightCm?: { min: number; max: number } | null };
+export type StationPageSection = {
+  id: "header" | "rail_ampel" | "step_free_now" | "lifts" | "platforms" | "departures" | "service_alerts" | "parking_charging";
+  asOf: string; sources: string[];
+  name?: string; street?: string | null; zipcode?: string | null; city?: string | null; land?: string | null; category?: number | null; evaNo?: string | null;
+  lamp?: RailLamp; reasons?: RailReason[]; lines?: { line: string; long: boolean; lamp: RailLamp }[];
+  platforms?: StationPagePlatform[]; blocked?: StationPagePlatform[]; steplessAccess?: "yes" | "partial" | "no" | "unknown" | null;
+  units?: StationPageLift[]; rows?: StationPageDeparture[]; alerts?: StationPageAlert[];
+  facilities?: string[]; point?: LatLon | null;
+};
+export type StationPage = { station: { name: string }; pageUrl: string; sections: StationPageSection[] } | null;

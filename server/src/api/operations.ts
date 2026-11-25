@@ -631,6 +631,21 @@ export const OPERATIONS = {
     ],
     "required": [],
     "proposed": true
+  },
+  "getStationPage": {
+    "method": "GET",
+    "path": "/v1/stations/{stationId}/page",
+    "pathParams": [
+      "stationId"
+    ],
+    "query": [
+      "departures",
+      "lang"
+    ],
+    "required": [
+      "stationId"
+    ],
+    "proposed": true
   }
 } as const;
 export type OperationId = keyof typeof OPERATIONS;

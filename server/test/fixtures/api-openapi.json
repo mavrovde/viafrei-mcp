@@ -24839,6 +24839,156 @@
           }
         }
       }
+    },
+    "/v1/stations/{stationId}/page": {
+      "get": {
+        "x-proposed": true,
+        "operationId": "getStationPage",
+        "summary": "Proposed: a station's page, its sections built by the page's rules",
+        "description": "Proposed, not in a released API. The station page of viafrei.de as data: its sections in the page's order (header with the address, the Land in the asked language and DB's category; the rail lamp with its reasons and the lamp per line; step-free now; the lifts and escalators with their states, out of service first; the platforms; the board's first departures; the service alerts; parking and charging), each with its asOf and the sources it was built from, and pageUrl in the asked language. meta.attribution credits every section's sources once. data is null for a station the page register does not hold. An API without the operation answers 404, and the MCP then reads the facilities and the board as before.",
+        "tags": [
+          "transit"
+        ],
+        "parameters": [
+          {
+            "description": "The station id, as listStations answers it.",
+            "in": "path",
+            "name": "stationId",
+            "required": true,
+            "schema": {
+              "description": "The station id, as listStations answers it.",
+              "examples": [
+                "1:de:05315:11201"
+              ],
+              "maxLength": 120,
+              "minLength": 3,
+              "type": "string"
+            }
+          },
+          {
+            "description": "The board's first departures shown; default 5, 0 for none.",
+            "explode": false,
+            "in": "query",
+            "name": "departures",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20,
+              "description": "The board's first departures shown; default 5, 0 for none."
+            }
+          },
+          {
+            "description": "The language of the answer's texts (de, en): the source notes, rules texts and notices. Default: the instance's language, German.",
+            "example": "en",
+            "in": "query",
+            "name": "lang",
+            "schema": {
+              "enum": [
+                "de",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page, or null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "properties": {
+                    "data": {
+                      "oneOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "station",
+                            "pageUrl",
+                            "sections"
+                          ],
+                          "properties": {
+                            "station": {
+                              "type": "object"
+                            },
+                            "pageUrl": {
+                              "type": "string"
+                            },
+                            "sections": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "id",
+                                  "asOf",
+                                  "sources"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "enum": [
+                                      "header",
+                                      "rail_ampel",
+                                      "step_free_now",
+                                      "lifts",
+                                      "platforms",
+                                      "departures",
+                                      "service_alerts",
+                                      "parking_charging"
+                                    ]
+                                  },
+                                  "asOf": {
+                                    "type": "string"
+                                  },
+                                  "sources": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No station with this id.",
+            "headers": {
+              "RateLimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": [

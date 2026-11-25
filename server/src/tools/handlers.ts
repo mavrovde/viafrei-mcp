@@ -20,6 +20,7 @@ import { findChargingStation } from "./charging.js";
 import { findHydrogenStation } from "./hydrogen.js";
 import { facilitiesText } from "./facilities.js";
 import { stationPageText } from "./station-page.js";
+import { shareAlikeSubjectOf, stationPageSectionsText } from "./station-sections.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchKeyError, watchOpened, type Resolved } from "./watch-words.js";
 import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
@@ -881,6 +882,20 @@ const checkStationFacilities: Handler = async (args, ctx) => {
   return toolResult(facilitiesText(language, d, kind, limit, others?.data.facilities ?? []), [r.meta, ...(others === null ? [] : [others.meta])], language);
 };
 
+/** Today's DEFAULT_STATION_DEPARTURES (BOARD_MIN_ROWS), the catalogue's default: as many as the station page shows. */
+const STATION_DEPARTURES = 10;
+
+/** The proposed getStationPage: the page's sections; undefined where the API does not offer it (404) or holds no page. */
+async function stationPage(stationId: string, departures: number, ctx: ToolContext): Promise<{ data: NonNullable<T.StationPage>; meta: DataMeta } | undefined> {
+  try {
+    const r = await ctx.api.get<T.StationPage>("getStationPage", { stationId, departures });
+    return r.data === null ? undefined : { data: r.data, meta: r.meta };
+  } catch (err) {
+    if (err instanceof ApiError && err.kind === "not_found") return undefined;
+    throw err;
+  }
+}
+
 const describeStation: Handler = async (args, ctx) => {
   const { language } = ctx;
   if (noStation(args)) return NEED_STATION(language);
@@ -892,7 +907,12 @@ const describeStation: Handler = async (args, ctx) => {
     if (eva !== undefined) return NOT_KNOWN.eva(eva, language);
     return name === undefined ? none(language, [stations.meta], L(language, "Bahnhöfe", "stations")) : NOT_KNOWN.station(name, language);
   }
-  const n = num(args["departures"]) ?? 5;
+  const n = num(args["departures"]) ?? STATION_DEPARTURES;
+  const page = await stationPage(station.id, n, ctx);
+  if (page !== undefined) {
+    const subject = shareAlikeSubjectOf(page.data, language);
+    return toolResult(stationPageSectionsText(page.data, language, new Date()), [page.meta], language, subject === undefined ? {} : { shareAlikeSubject: subject });
+  }
   const [fac, board] = await Promise.all([
     ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id }),
     n > 0 ? ctx.api.get<T.Board>("listStationDepartures", { stationId: station.id, limit: n }) : Promise.resolve(null),

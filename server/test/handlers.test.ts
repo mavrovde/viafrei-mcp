@@ -1802,7 +1802,7 @@ describe("stations", () => {
     it(`describe_station (${language}): position, lifts and escalators, the next departures`, async () => {
       serve("listStationDepartures", board(deps.slice(0, 2)));
       const r = await call("describe_station", { station: "Schömpingbach Hbf", language });
-      expect(query("listStationDepartures")).toEqual([{ limit: "5", lang: language }]);
+      expect(query("listStationDepartures")).toEqual([{ limit: "10", lang: language }]);
       await pinned("handlers", body(r));
     });
   }
@@ -1861,7 +1861,7 @@ describe("stations", () => {
 
   it("describe_station with no departures asked reads no board", async () => {
     const r = await call("describe_station", { station: "Schömpingbach Hbf", departures: 0, language: "en" });
-    expect(ops().sort()).toEqual(["listStationFacilities", "listStations"]);
+    expect(ops().sort()).toEqual(["getStationPage", "listStationFacilities", "listStations"]);
     expect(body(r)).toBe([
       "Schömpingbach Hbf", "Schleswig-Holstein · EVA 8001001", "",
       "Lifts and escalators (As of 2026-03-29 14:00):", "- Escalator (Platform 1): in service", "- Escalator (Platform 2): in service", "",
