@@ -1438,6 +1438,7 @@ describe("parity of four answers with today's server", () => {
         "U Rotes Rathaus (Berlin) (0.4 km) — stop_id 1:b:", "  19:42 U5 → U Hönow (Berlin), platform 2, timetable",
         "More departures of one stop: get_departures with its stop_id.",
       ]);
+      expect(textOf(r).split("\n").at(-1)).toBe("Timetable with delays and cancellations from the realtime data where held; \"timetable\" marks a planned time with no realtime figure. viafrei.de's place page shows the same stops and departures.");
     });
     it("the stop_id printed, passed back, goes straight to that stop's board with no lookup", async () => {
       world([], [], (path) => (path === "/v1/stations/1%3Ade%3A11000%3A900100024%3A%3A1/departures" ? [d({})] : []));
@@ -1490,6 +1491,9 @@ describe("parity of four answers with today's server", () => {
           `U Rotes Rathaus (Berlin) (${language === "de" ? "0,4" : "0.4"} km) — stop_id 1:b:`, language === "de" ? "  Abfahrten nicht gelesen." : "  departures not read.",
           `U Klosterstr. (Berlin) (${language === "de" ? "0,5" : "0.5"} km) — stop_id 1:c:`, language === "de" ? "  keine Abfahrt bis 20:40" : "  no departure until 20:40",
         ]);
+        expect(textOf(await call("get_departures", { place: "Berlin Alexanderplatz", language })).split("\n").at(-1)).toBe(language === "de"
+          ? "Fahrplanzeiten (Plandaten). Dieselben Haltestellen und Abfahrten zeigt die Ortsseite auf viafrei.de."
+          : "Planned times (timetable). viafrei.de's place page shows the same stops and departures.");
       }
     });
     it("at most 8 stops, each board asked for 4 departures over 60 minutes", async () => {

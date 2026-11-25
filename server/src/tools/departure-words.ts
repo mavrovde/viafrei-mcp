@@ -136,6 +136,9 @@ export const BOARD = {
     stopId: (id: string) => `Haltestellen-ID (für watch_situation, kind "station"): ${id}`,
     nearHead: (where: string, km: number, to: string) => `Die nächsten Haltestellen um ${where} (Umkreis ${km} km) mit ihren nächsten Abfahrten bis ${to}:`,
     nearNone: (to: string) => `  keine Abfahrt bis ${to}`,
+    nearNote: (live: boolean) => live
+      ? "Fahrplan mit Verspätungen und Ausfällen aus den Echtzeitdaten, wo sie vorliegen; „Plan“ ist eine Fahrplanzeit ohne Echtzeitangabe. Dieselben Haltestellen und Abfahrten zeigt die Ortsseite auf viafrei.de."
+      : "Fahrplanzeiten (Plandaten). Dieselben Haltestellen und Abfahrten zeigt die Ortsseite auf viafrei.de.",
   },
   en: {
     head: (stop: string, from: string, to: string, live: boolean) => `Departures from ${stop} — ${live ? "timetable with realtime" : "timetable"}, ${from} to ${to}:`,
@@ -143,6 +146,9 @@ export const BOARD = {
     stopId: (id: string) => `Stop id (for watch_situation, kind "station"): ${id}`,
     nearHead: (where: string, km: number, to: string) => `The nearest stops around ${where} (within ${km} km) with their next departures until ${to}:`,
     nearNone: (to: string) => `  no departure until ${to}`,
+    nearNote: (live: boolean) => live
+      ? "Timetable with delays and cancellations from the realtime data where held; \"timetable\" marks a planned time with no realtime figure. viafrei.de's place page shows the same stops and departures."
+      : "Planned times (timetable). viafrei.de's place page shows the same stops and departures.",
   },
 } as const;
 

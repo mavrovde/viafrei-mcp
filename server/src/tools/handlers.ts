@@ -747,7 +747,7 @@ async function departuresNear(args: Args, ctx: ToolContext): Promise<CallToolRes
   });
   lines.push(L(language, "Mehr Abfahrten einer Haltestelle: get_departures mit ihrer stop_id.", "More departures of one stop: get_departures with its stop_id."));
   const metas = [...pt.metas, near.meta, ...boards.flatMap((b) => (b.status === "fulfilled" ? [b.value.meta] : []))];
-  return toolResult(lines.join("\n"), metas, language, { asOf: now.toISOString(), ...(live ? { shareAlikeSubject: LIVE_SHARE_ALIKE_SUBJECT[language] } : {}) });
+  return toolResult(lines.join("\n"), metas, language, { asOf: now.toISOString(), note: c.nearNote(live), ...(live ? { shareAlikeSubject: LIVE_SHARE_ALIKE_SUBJECT[language] } : {}) });
 }
 
 /** The API's own station id ("1:de:11000:900100003"), as the answer around a place prints it as stop_id. */
