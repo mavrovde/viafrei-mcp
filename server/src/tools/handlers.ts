@@ -91,15 +91,65 @@ const REASON: Record<Language, Record<string, string>> = {
   },
 };
 
-export function lampText(d: Pick<T.RoadConditionsData, "lamp" | "lampReason">, language: Language): string {
+export function lampText(d: Pick<T.RoadConditionsData, "lamp" | "lampReason" | "lampReasonsTotal">, language: Language): string {
   const lamp = LAMP[language][d.lamp] ?? d.lamp;
   if (d.lampReason === null || d.lamp === "green") {
     return L(language, `Ampel ${lamp}: von Autobahn GmbH, Polizei/Ländern und DWD nichts gemeldet — keine Garantie für freie Fahrt`, `traffic light ${lamp}: nothing reported by the Autobahn GmbH, the police/Länder or the DWD — no guarantee the road is clear`);
   }
-  // Today's ampel adds "(und N weitere Gründe)" over its folded reasons; the API's lampReasons count every
-  // situation unfolded (137 where today says 11 on the A9), so the count waits for the fold (viafrei-database#85).
-  return L(language, `Ampel ${lamp}: ${REASON.de[d.lampReason] ?? d.lampReason}`, `traffic light ${lamp}: ${REASON.en[d.lampReason] ?? d.lampReason}`);
+  // Today's ampel adds "(und N weitere Gründe)" over its folded reasons. The API's lampReasons count every
+  // situation unfolded, so the count is the proposed lampReasonsTotal, said only where the API sends it.
+  const more = (d.lampReasonsTotal ?? 1) - 1;
+  const tail = more <= 0 ? "" : L(language, ` (und ${more} ${more === 1 ? "weiterer Grund" : "weitere Gründe"})`, ` (and ${more} more ${more === 1 ? "reason" : "reasons"})`);
+  return L(language, `Ampel ${lamp}: ${REASON.de[d.lampReason] ?? d.lampReason}${tail}`, `traffic light ${lamp}: ${REASON.en[d.lampReason] ?? d.lampReason}${tail}`);
 }
+
+/** Today's count words (check_autobahn_traffic's COPY). */
+const N_WORDS: Record<Language, Record<"jams" | "warnings" | "closures" | "roadworks" | "reports" | "restrictions", (n: number) => string>> = {
+  de: {
+    jams: (n) => `${n} ${n === 1 ? "Stau" : "Staus"}`, warnings: (n) => `${n} ${n === 1 ? "Warnmeldung" : "Warnmeldungen"} (Unfall, Gefahr u. a.)`,
+    closures: (n) => `${n} ${n === 1 ? "Sperrung" : "Sperrungen"}`, roadworks: (n) => `${n} ${n === 1 ? "Baustelle" : "Baustellen"}`,
+    reports: (n) => `${n} ${n === 1 ? "Meldung" : "Meldungen"}`, restrictions: (n) => `${n} ${n === 1 ? "Einschränkung" : "Einschränkungen"}`,
+  },
+  en: {
+    jams: (n) => `${n} ${n === 1 ? "jam" : "jams"}`, warnings: (n) => `${n} ${n === 1 ? "warning" : "warnings"} (accident, hazard etc.)`,
+    closures: (n) => `${n} ${n === 1 ? "closure" : "closures"}`, roadworks: (n) => `${n} ${n === 1 ? "roadworks site" : "roadworks sites"}`,
+    reports: (n) => `${n} ${n === 1 ? "report" : "reports"}`, restrictions: (n) => `${n} ${n === 1 ? "restriction" : "restrictions"}`,
+  },
+};
+
+/**
+ * Today's road-wide headline: the road's jams, other warnings, closures and roadworks; the police/Land messages
+ * beside them; what is announced and from when; the time; and NRW's measured traffic state where it measures.
+ */
+export function roadWideLine(road: string, w: T.RoadWide, language: Language, now: Date = new Date()): string {
+  const n = N_WORDS[language];
+  const extra = w.warnings - w.jams;
+  const counts = `${n.jams(w.jams)}${extra > 0 ? `, ${n.warnings(extra)}` : ""}, ${n.closures(w.closures)}, ${n.roadworks(w.roadworks)}`;
+  const p = w.police;
+  const police = [p.jams > 0 ? n.jams(p.jams) : null, p.closures > 0 ? n.closures(p.closures) : null, p.restrictions > 0 ? n.restrictions(p.restrictions) : null,
+    p.roadworks > 0 ? n.roadworks(p.roadworks) : null, p.reports > 0 ? n.reports(p.reports) : null].filter((x): x is string => x !== null);
+  const a = w.announced;
+  const announced = [a.closures > 0 ? n.closures(a.closures) : null, a.roadworks > 0 ? n.roadworks(a.roadworks) : null, a.reports > 0 ? n.reports(a.reports) : null]
+    .filter((x): x is string => x !== null);
+  const from = a.from === null ? "" : L(language, ` ab ${standTime(a.from, language, now)}`, ` from ${standTime(a.from, language, now)}`);
+  const m = w.measured;
+  const measured = m === null ? "" : (() => {
+    const at = m.measuredAt === null ? "" : `, ${L(language, "Stand", "as of")} ${standTime(m.measuredAt, language, now)}`;
+    const words = L(language, "Stillstand|zähfließend|dicht|frei", "standstill|slow|heavy|free-flowing").split("|");
+    const parts = [m.standstill > 0 ? `${m.standstill} ${words[0]}` : null, m.slow > 0 ? `${m.slow} ${words[1]}` : null, m.heavy > 0 ? `${m.heavy} ${words[2]}` : null, `${m.free} ${words[3]}`]
+      .filter((x): x is string => x !== null).join(", ");
+    const near = m.near.length === 0 ? "" : L(language, `; Stillstand oder zähfließend bei ${m.near.join(", ")}`, `; standstill or slow near ${m.near.join(", ")}`);
+    const lanes = m.laneSites <= 0 ? "" : L(language, `; davon ${m.laneSites} ohne aktuellen Querschnittswert, nach dem langsamsten Fahrstreifen gezählt`, `; ${m.laneSites} of them without a current cross-section reading, counted by their slowest lane`);
+    return L(language, ` Verkehrslage an ${m.sites} ${m.sites === 1 ? "Messstelle" : "Messstellen"} (NRW${at}): ${parts}${near}${lanes}.`, ` Traffic state at ${m.sites} measuring ${m.sites === 1 ? "site" : "sites"} (NRW${at}): ${parts}${near}${lanes}.`);
+  })();
+  return L(language, `${road}, gesamte Strecke: ${counts}`, `${road}, road-wide: ${counts}`)
+    + (police.length === 0 ? "" : L(language, `; dazu Polizei-/Landesmeldungen: ${police.join(", ")}`, `; plus police/Land messages: ${police.join(", ")}`))
+    + (announced.length === 0 ? "" : L(language, `; angekündigt${from}: ${announced.join(", ")}`, `; announced${from}: ${announced.join(", ")}`))
+    + ` — ${L(language, "Stand", "As of")} ${standTime(w.asOf, language, now)}.${measured}`;
+}
+
+/** Today's last line of a page that has a next one. */
+const NEXT_PAGE: Record<Language, string> = { de: "… weitere Einträge auf der nächsten Seite.", en: "… more entries on the next page." };
 
 /** The lamp's weather reasons: a DWD warning and the road-weather forecast's slippery road. */
 const WEATHER_REASONS = new Set(["weather_warning", "slippery"]);
@@ -278,11 +328,12 @@ export function autobahnLine(s: T.RoadSituation, language: Language, now: Date =
 }
 
 /** check_autobahn_traffic's body: the lamp's line, then each entry as today's line. */
-function autobahnBody(d: T.RoadConditionsData, language: Language, limit: number | undefined): string {
+function autobahnBody(d: T.RoadConditionsData, language: Language, limit: number | undefined, road?: string, nextPage = false): string {
   const rows = d.situations.slice(0, limit ?? 20);
-  const head = `${lampText(d, language)}.`;
   const now = new Date();
-  return rows.length === 0 ? head : [head, ...rows.map((s) => autobahnLine(s, language, now))].join("\n");
+  const head = [`${lampText(d, language)}.`, road === undefined || d.roadWide === undefined || d.roadWide === null ? null : roadWideLine(road, d.roadWide, language, now)]
+    .filter((x): x is string => x !== null).join("\n");
+  return [head, ...rows.map((s) => autobahnLine(s, language, now)), ...(nextPage ? [NEXT_PAGE[language]] : [])].join("\n");
 }
 
 const checkAutobahnTraffic: Handler = async (args, ctx) => {
@@ -299,7 +350,7 @@ const checkAutobahnTraffic: Handler = async (args, ctx) => {
     if (known.length === 0) {
       return toolError(UNKNOWN_ROAD.all(asked.join(", "), registered.length, asked.length === 1 ? nearestMotorways(asked[0]!, registered).join(", ") : "", language));
     }
-    const body = all.map((r, i) => (r === null ? UNKNOWN_ROAD.one(asked[i]!, nearestMotorways(asked[i]!, registered).join(", "), language) : `${asked[i]} — ${autobahnBody(r.data, language, limit)}`)).join("\n\n");
+    const body = all.map((r, i) => (r === null ? UNKNOWN_ROAD.one(asked[i]!, nearestMotorways(asked[i]!, registered).join(", "), language) : `${asked[i]} — ${autobahnBody(r.data, language, limit, asked[i], all.length === 1 && (r.meta.page?.nextCursor ?? null) !== null)}`)).join("\n\n");
     return toolResult(body, known.flatMap((r) => roadWeatherCredits([r.meta], r.data)), language, { nextCursor: all.length === 1 ? (known[0]!.meta.page?.nextCursor ?? null) : null });
   }
   const land = str(args["land"]);

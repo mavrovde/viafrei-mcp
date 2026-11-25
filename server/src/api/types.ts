@@ -107,7 +107,22 @@ export type RoadSituation = {
 export type LampReason = { reason: string; lamp: string; count: number };
 export type FamilyCount = { sourceFamily: string; situations: number };
 export type RoadCoverage = { registered: boolean; roadType: string; families: string[] };
-export type RoadConditionsData = { lamp: string; lampReason: string | null; lampReasons?: LampReason[]; counts?: FamilyCount[]; coverage?: RoadCoverage | null; situations: RoadSituation[] };
+export type RoadConditionsData = {
+  lamp: string; lampReason: string | null; lampReasons?: LampReason[]; counts?: FamilyCount[]; coverage?: RoadCoverage | null; situations: RoadSituation[];
+  /** Proposed (today's ampel reasonsTotal): the lamp's reasons after the fold, the first one said among them. */
+  lampReasonsTotal?: number;
+  /** Proposed (today's road-wide headline): the road's figures, the police/Land messages and the announced ones beside them. */
+  roadWide?: RoadWide | null;
+};
+/** Proposed: today's road-wide figures (check_autobahn_traffic's Counts, policeCountsText and the NRW traffic state). */
+export type RoadWide = {
+  asOf: string;
+  jams: number; warnings: number; closures: number; roadworks: number;
+  police: { jams: number; closures: number; restrictions: number; roadworks: number; reports: number };
+  announced: { from: string | null; closures: number; roadworks: number; reports: number };
+  /** The measuring sites on the road (NRW's traffic state), null where none measures it. */
+  measured: { sites: number; standstill: number; slow: number; heavy: number; free: number; laneSites: number; near: string[]; measuredAt: string | null } | null;
+};
 /** LorryRule */
 export type LorryRule = { layer: string; kind: string | null; road: string | null; street: string | null; municipality: string | null; publishedText: string | null; value: number | null; unit: string | null };
 /** DrivingRulesData */

@@ -100,7 +100,7 @@ describe("check_autobahn_traffic", () => {
     calls.length = 0;
     const one = await call("check_autobahn_traffic", { roads: ["A1"], language: "en" });
     expect(meta(one)["nextCursor"]).toBe("next-1");
-    expect(body(one)).toBe("A1 — traffic light yellow: roadworks narrowing the carriageway.");
+    expect(body(one)).toBe("A1 — traffic light yellow: roadworks narrowing the carriageway.\n… more entries on the next page.");
   });
 
   it("without a limit lists twenty situations", async () => {
@@ -268,7 +268,7 @@ describe("check_autobahn_traffic's lamp, as today's ampel says it", () => {
   for (const language of LANGS) {
     it(`names the first reason, and no count until the API folds the reasons as today's ampel does (${language})`, async () => {
       serve("getMotorwayConditions", { ...roads([]), lamp: "red", lampReason: "road_closed", lampReasons: [{ reason: "road_closed", lamp: "red", count: 5 }, { reason: "jam", lamp: "amber", count: 3 }] });
-      expect(body(await call("check_autobahn_traffic", { roads: ["A9"], language }))).toBe(language === "de" ? "A9 — Ampel Rot: Vollsperrung." : "A9 — traffic light red: full closure.");
+      expect(body(await call("check_autobahn_traffic", { roads: ["A9"], language })).split("\n")[0]).toBe(language === "de" ? "A9 — Ampel Rot: Vollsperrung." : "A9 — traffic light red: full closure.");
     });
   }
 
