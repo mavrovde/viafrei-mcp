@@ -29,7 +29,7 @@ const COPY = {
 } as const;
 
 /** Today's find_place limit cap (MAX_RESULTS). */
-const MAX_RESULTS = 25;
+const MAX_RESULTS = 10;
 
 /** The API's place kinds in today's words (geo/distinguish.ts KIND_WORD, by the kind each maps from). */
 const KIND_WORD: Readonly<Record<string, Readonly<Record<Language, string>>>> = {

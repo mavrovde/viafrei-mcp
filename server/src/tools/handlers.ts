@@ -3,6 +3,7 @@
  * envelope. No handler reads a database or calls a provider; get_train_departures (in `trains.ts`) asks the
  * API's live refresher for a fresh board. A tool whose operation the API contract lacks answers `notAvailable` and is listed in GAPS.
  */
+import { departuresRefusal } from "./departures-input.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/client.js";
 import type * as T from "../api/types.js";
@@ -769,6 +770,8 @@ export const STATION_ID = /^\d+:\S+$/u;
 
 const getDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
+  const refusal = departuresRefusal(args, language);
+  if (refusal !== null) return refusal;
   const given = (k: string): boolean => str(args[k]) !== undefined;
   if (!given("stop") && !given("stop_id") && !given("place") && (num(args["lat"]) === undefined || num(args["lon"]) === undefined)) return placeMissing(ctx);
   // A stop named or given by id is searched first; with only a place or a position the search has no
@@ -781,11 +784,9 @@ const getDepartures: Handler = async (args, ctx) => {
     if (r === null) return NOT_KNOWN.stop(id, language);
     return boardAnswer(r, [r.meta], language);
   }
-  let stations = given("stop") || given("stop_id") ? await stationOf(args, ctx) : null;
-  if ((stations === null || stations.data.length === 0) && (str(args["place"]) !== undefined || num(args["lat"]) !== undefined)) {
-    return departuresNear(args, ctx);
-  }
-  if (stations === null) return placeMissing(ctx);
+  // One way in (departuresRefusal): without a stop or stop_id, a place or a position was given.
+  if (!given("stop") && !given("stop_id")) return departuresNear(args, ctx);
+  const stations = await stationOf(args, ctx);
   const station = stations.data[0];
   if (station === undefined) {
     const asked = str(args["stop"]) ?? str(args["stop_id"]);

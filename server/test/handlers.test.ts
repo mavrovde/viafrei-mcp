@@ -735,6 +735,13 @@ describe("find_place, find_poi, find_address", () => {
     expect(body(r)).toBe('"Köln" — one match:\n1. Köln — town, Schleswig-Holstein, 50.93751, 6.96028');
   });
 
+  it("find_place with more matches than shown names today's cap of 10, the catalogue's own", async () => {
+    const row = ex<object[]>("listPlaces")[0];
+    serve("listPlaces", [{ ...row, name: "Marienplatz" }, { ...row, name: "Marienplatz" }], { page: { limit: 2, hasMore: true, nextCursor: null } });
+    const r = await call("find_place", { query: "Marienplatz", limit: 2, language: "en" });
+    expect(body(r).split("\n")[0]).toBe('"Marienplatz" — the first 2 matches; more exist, so this is not a count of every place with that name (narrow with near or kind, limit up to 10):');
+  });
+
   for (const [kind, contract] of [["district", "district"], ["admin", "region"], ["station", "station_area"], ["stop", "station_area"]]) {
     it(`find_place kind=${kind} asks kind=${contract}`, async () => {
       await call("find_place", { query: "Xy", kind, language: "en" });
@@ -1486,6 +1493,19 @@ describe("parity of four answers with today's server", () => {
       expect(paths("listStationDepartures")).toEqual(Array.from({ length: 8 }, (_, i) => `/v1/stations/1%3As${i}/departures`));
       expect(query("listStationDepartures")).toEqual(Array.from({ length: 8 }, () => ({ duration_min: "60", limit: "4", lang: "en" })));
     });
+    it("one way in, as today's server refuses it: lat with lon, one of stop/stop_id/place/position, no board option around a place", async () => {
+      const refusal = async (args: Record<string, unknown>) => { const r = await call("get_departures", args); expect(r.isError).toBe(true); return [textOf(r), (r._meta as { errorReason?: string } | undefined)?.errorReason]; };
+      expect(await refusal({ place: "Berlin Alexanderplatz", limit: 5, language: "en" })).toEqual(["limit apply to one named stop. Around a place the answer is the nearest stops now with their next departures, as viafrei.de's place page shows them — leave limit out, or ask about one stop with stop or stop_id.", undefined]);
+      expect((await refusal({ lat: 52.52, lon: 13.41, when: "2026-11-25T10:00:00+01:00", duration_min: 30, modes: ["bus"], language: "de" }))[0]).toMatch(/^when, duration_min, modes gelten für eine benannte Haltestelle\./u);
+      expect(await refusal({ lat: 52.52, language: "en" })).toEqual(["lat and lon go together: give both, or give place instead.", "half_coordinate"]);
+      expect((await refusal({ place: "Berlin", lat: 52.52, lon: 13.41, language: "en" }))[1]).toBe("place_and_coords");
+      expect((await refusal({ place: "Berlin", stop: "Alexanderplatz", language: "en" }))[1]).toBe("two_ways_in");
+      expect(await refusal({ stop: "Alexanderplatz", stop_id: "de:11000:900100003", language: "en" })).toEqual(["Give either stop or stop_id, not both — they can disagree.", "two_ways_in"]);
+      expect(calls).toEqual([]);
+      // The defaults a client fills in are not the caller's own.
+      world([], [st("1:a", "de:1:a", alex.name, 21)], () => [d({})]);
+      expect((await call("get_departures", { place: "Berlin Alexanderplatz", limit: 10, duration_min: 60, language: "en" })).isError).toBeFalsy();
+    });
     it("a place the search misses and no stop holds: the town centre without a second search of the same words", async () => {
       world([], [st("1:a", "de:1:a", alex.name, 21)], () => [d({})]);
       const r = await call("get_departures", { place: "Berlin Nirgendwo", language: "en" });
@@ -1721,7 +1741,7 @@ describe("stations", () => {
   }
 
   it("get_departures by stop id asks the code, not the name", async () => {
-    await call("get_departures", { stop_id: "8001001", stop: "Ignored", language: "en" });
+    await call("get_departures", { stop_id: "8001001", language: "en" });
     expect(query("listStations")).toEqual([{ code: "8001001", limit: "1", lang: "en" }]);
   });
 
@@ -1741,28 +1761,6 @@ describe("stations", () => {
     expect(query("listStations")).toEqual([{ at: expect.stringMatching(/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/u) as string, radius_m: "5000", limit: "40", lang: "de" }]);
     await call("get_departures", { lat: 52.5, lon: 13.4, language: "en" });
     expect(query("listStations").slice(-1)).toEqual([{ at: "52.5,13.4", radius_m: "5000", limit: "40", lang: "en" }]);
-  });
-
-  it("get_departures: no stop by name, but a place: the nearest stop to it", async () => {
-    let n = 0;
-    const list = exampleOf<Body>("listStations");
-    mockServer.use(handlerFor("listStations", () => HttpResponse.json({ ...list, data: n++ === 0 ? [] : list.data })));
-    await call("get_departures", { stop: "Nowhere", place: "Köln", language: "en" });
-    expect(ops().slice(0, 3)).toEqual(["listStations", "listPlaces", "listStations"]);
-    expect(new Set(ops().slice(3))).toEqual(new Set(["listStationDepartures"]));
-    expect(query("listStations")[1]).toEqual({ at: "48.24375,7.01625", radius_m: "5000", limit: "40", lang: "en" });
-    calls.length = 0;
-    n = 0;
-    await call("get_departures", { stop: "Nowhere", ...at, language: "en" });
-    expect(query("listStations")[1]).toEqual({ at: "52.52,13.405", radius_m: "5000", limit: "40", lang: "en" });
-  });
-
-  it("get_departures: no stop and a place nobody knows", async () => {
-    serve("listStations", []);
-    serve("listPlaces", []);
-    const r = await call("get_departures", { stop: "Nowhere", place: "Nirgendwo", language: "en" });
-    expect(r.isError).toBe(true);
-    expect(textOf(r)).toContain("Nirgendwo");
   });
 
   for (const language of LANGS) {
