@@ -8,6 +8,7 @@ import type * as T from "../api/types.js";
 import { toolResult, type Language } from "../presentation.js";
 import { atParam, isResult, num, position, strs, type Handler } from "./context.js";
 import { fuelAreaText, fuelCoverage, readOnlyAreaWording } from "./fuel.js";
+import { osmFuelInline } from "./fuel-words.js";
 
 export const DEFAULT_RADIUS_KM = 5;
 const HOUR_MS = 60 * 60 * 1000;
@@ -68,6 +69,22 @@ export function clock(iso: string, language: Language, now: Date): string {
   return language === "de" ? `${dd.slice(8, 10)}.${dd.slice(5, 7)}. ${time}` : `${dd} ${time}`;
 }
 
+/** Today's registerCaveat (presentation/charging.ts): the register's release and what its rows are. */
+export function registerCaveat(language: Language, release: string | null): string {
+  if (language === "de") {
+    const head = release === null ? "Ladesäulenregister" : `Stand des Ladesäulenregisters: ${release.slice(8, 10)}.${release.slice(5, 7)}.${release.slice(0, 4)}`;
+    return `${head} — von den Betreibern an die Bundesnetzagentur gemeldete Ladepunkte, ohne Live-Belegung und ohne Gewähr für Richtigkeit und Vollständigkeit.`;
+  }
+  const head = release === null ? "Charging point register" : `Charging point register as of ${release}`;
+  return `${head} — chargers as reported by their operators to the Bundesnetzagentur, with no live occupancy and no warranty of accuracy or completeness.`;
+}
+
+/** Today's OSM_PARKING_LABEL and, beside a list of held car parks, OSM_PARKING_ALSO_LABEL. */
+const OSM_PARKING = {
+  de: { alone: "Parkplätze laut OpenStreetMap (ODbL, ohne Platzzahl und Belegung; Parkhaus- oder P+R-Daten eines Betreibers oder einer Stadt führen wir hier nicht)", also: "weitere Parkplätze laut OpenStreetMap (ODbL, ohne Platzzahl und Belegung)" },
+  en: { alone: "car parks per OpenStreetMap (ODbL, no capacity or occupancy; we hold no car park or P+R data from an operator or a city here)", also: "more car parks per OpenStreetMap (ODbL, no capacity or occupancy)" },
+} as const;
+
 /** A junction on a motorway: its road is an "A" number. */
 const onMotorway = (j: T.NearbyJunction): boolean => j.road !== null && /^A\s?\d/u.test(j.road);
 const junctionName = (j: T.NearbyJunction): string => (j.road === null || j.name.includes(j.road) ? j.name : `${j.name} (${j.road})`);
@@ -100,19 +117,27 @@ export const findNearby: Handler = async (args, ctx): Promise<CallToolResult> =>
         // The area's state, in the sentence find_cheapest_fuel uses (#517, fuel-area.ts), for the E5 line.
         const area = readOnlyAreaWording(await fuelCoverage(ctx, pos.at, Math.round(radiusKm * 1000), "e5"), radiusKm);
         lines.push(`- ${label}: ${area === undefined ? c.noPrice : `${c.noPrice} — ${fuelAreaText(language, area)}`}`);
+        const osmAlone = osmFuelInline(language, d.osmFuel ?? []);
+        if (osmAlone !== null) lines.push(`- ${osmAlone}`);
         continue;
       }
+      const osmLine = osmFuelInline(language, d.osmFuel ?? []);
       lines.push(`- ${label}, Super E5: ${list(rows, (s) => {
         const p = s.prices[0];
         const age = p === undefined || now.getTime() - new Date(p.reportedAt).getTime() <= HOUR_MS ? "" : c.priceFrom(clock(p.reportedAt, language, now), p.current);
         return `${s.brand?.trim() || s.name?.trim() || "Tankstelle"}${p === undefined ? "" : `, ${priceText(p.priceEur, language)}`} (${kmText(s.distanceM, language)}${age})`;
       })}`);
+      if (osmLine !== null) lines.push(`- ${osmLine}`);
     } else if (cat === "charging") {
       const rows = d.charging ?? [];
       lines.push(`- ${label}: ${rows.length === 0 ? c.none : list(rows, (s) => `${s.name ?? s.operator ?? "Ladestation"} (${kmText(s.distanceM ?? 0, language)})`)}`);
+      const register = d.chargingRegister ?? null;
+      if (rows.length > 0 && register !== null) lines.push(`  ${registerCaveat(language, register.releasedOn)}`);
     } else if (cat === "parking") {
       const rows = d.parking ?? [];
-      lines.push(`- ${label}: ${rows.length === 0 ? c.none : list(rows, (s) => `${s.name?.trim() || (language === "de" ? "Parkplatz" : "parking")} (${kmText(s.distanceM ?? 0, language)})`)}`);
+      const osm = d.osmParking ?? [];
+      if (rows.length > 0 || osm.length === 0) lines.push(`- ${label}: ${rows.length === 0 ? c.none : list(rows, (s) => `${s.name?.trim() || (language === "de" ? "Parkplatz" : "parking")} (${kmText(s.distanceM ?? 0, language)})`)}`);
+      if (osm.length > 0) lines.push(`- ${OSM_PARKING[language][rows.length > 0 ? "also" : "alone"]}: ${list(osm, (s) => `${s.name.trim()} (${kmText(s.distanceM, language)})`)}`);
     } else if (cat === "station") {
       const rows = d.stations ?? [];
       lines.push(`- ${label}: ${rows.length === 0 ? c.none : list(rows, (s) => `${s.name} (${kmText(s.distanceM ?? 0, language)})`)}`);

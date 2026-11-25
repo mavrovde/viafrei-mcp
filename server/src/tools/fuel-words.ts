@@ -51,6 +51,12 @@ export function osmFuelLines(language: Language, stations: readonly T.OsmFuelSta
   return [OSM_FUEL_HEADING[language], ...stations.map((s, i) => `${i + 1}. ${osmLabel(s)} — ${kmText(s.distanceM, language)}`)];
 }
 
+/** find_nearby's one-line form (today's osmFuelInline): the heading, then the stations numbered on the same line. */
+export function osmFuelInline(language: Language, stations: readonly T.OsmFuelStation[]): string | null {
+  if (stations.length === 0) return null;
+  return `${OSM_FUEL_HEADING[language]} ${stations.map((s, i) => `${String(i + 1)}) ${osmLabel(s)} (${kmText(s.distanceM, language)})`).join("; ")}`;
+}
+
 /**
  * A station open around the clock by its read hours (today's cheapest-fuel priceText): "open 24 h (opening hours
  * from …)", the schedule's date beside it. Undefined otherwise, or while the API does not say when hours were read.

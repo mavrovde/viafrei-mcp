@@ -82,6 +82,12 @@ export type NearbyPartStatus = { part: NearbyPart; status: "ok" | "timeout" | "n
 /** Every category is optional: a category that is not ok (or not asked) is absent, and named in meta.parts. */
 export type NearbyData = {
   fuel?: NearbyFuelStation[]; charging?: ChargingSite[]; parking?: ParkingSite[]; stations?: Station[]; junctions?: NearbyJunction[];
+  /** Proposed (today's): the filling stations OpenStreetMap maps near the point that the price feed does not hold. */
+  osmFuel?: OsmFuelStation[];
+  /** Proposed (today's): the charging point register's release where a register row is among the charging rows shown. */
+  chargingRegister?: { releasedOn: string | null } | null;
+  /** Proposed (today's PARKING_OSM_NEAR): car parks OpenStreetMap maps near the point (ODbL, no capacity or occupancy). */
+  osmParking?: { id: string; name: string; distanceM: number }[];
   needs?: { need: string; radiusM: number; widened: boolean; places: NeedPlace[] }[];
 };
 /** SharingData */
