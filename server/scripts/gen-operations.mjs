@@ -16,6 +16,8 @@ for (const [path, item] of Object.entries(spec.paths)) {
       pathParams: all.filter((p) => p.in === "path").map((p) => p.name),
       query: all.filter((p) => p.in === "query").map((p) => p.name),
       required: all.filter((p) => p.required === true).map((p) => p.name),
+      // A proposed operation (x-proposed): no released API has it yet; the client reads its 404 as "not offered".
+      ...(op["x-proposed"] === true ? { proposed: true } : {}),
     };
   }
 }

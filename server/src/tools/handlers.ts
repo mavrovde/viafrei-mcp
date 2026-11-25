@@ -13,7 +13,7 @@ import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, placeUnknown, position, radiusM, str, strs, townCentre, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
-import { findPlace } from "./find-place.js";
+import { findPlace, LAENDER } from "./find-place.js";
 import { findCheapestFuel, findFuelStation } from "./fuel.js";
 import { findChargingStation } from "./charging.js";
 import { findHydrogenStation } from "./hydrogen.js";
@@ -505,6 +505,7 @@ const POI_WORDS = {
     page: (total: number, a: number, b: number): string => `${total} Treffer, hier ${a}–${b}.`,
     pageNext: (total: number, a: number, b: number): string => `${total} Treffer, hier ${a}–${b} — die nächsten auf der nächsten Seite.`,
     stand: (d: string): string => `Stand der OpenStreetMap-Daten: ${d}`,
+    nearest: (a: string, m: number): string => `nächste Adresse ${a} (${m} m)`,
   },
   en: {
     head: (name: string, where: string): string => `"${name}"${where}:`,
@@ -514,23 +515,29 @@ const POI_WORDS = {
     page: (total: number, a: number, b: number): string => `${total} matches, ${a}–${b} shown.`,
     pageNext: (total: number, a: number, b: number): string => `${total} matches, ${a}–${b} shown — the next on the next page.`,
     stand: (d: string): string => `OpenStreetMap data as of ${d}`,
+    nearest: (a: string, m: number): string => `nearest address ${a} (${m} m)`,
   },
 } as const;
 
 /**
  * One object, as today's line says where it is: what it is (never the OSM tag), its address, its distance from the
- * place it is measured from, and its point. The nearest address of an object without one and its Land are today's
- * and not in the contract, so they are not said.
+ * place it is measured from, and its point. The nearest address of an object without one (named as the nearest,
+ * with its distance) and its Land (not where the address already ends with it) come from the proposed fields.
  */
 export function poiLine(p: T.Poi, i: number, from: string | null, language: Language): string {
   const what = poiCategoryWord(p.category, p.kind ?? "", language);
-  const address = [[p.street, p.number].filter((x) => x !== null && x !== "").join(" "), [p.postcode, p.place].filter((x) => x !== null && x !== "").join(" ")].filter((x) => x !== "").join(", ");
+  const addressOf = (a: Pick<T.Poi, "street" | "number" | "postcode" | "place">): string => [[a.street, a.number].filter((x) => x !== null && x !== "").join(" "), [a.postcode, a.place].filter((x) => x !== null && x !== "").join(" ")].filter((x) => x !== "").join(", ");
+  const own = addressOf(p);
+  const near = p.nearestAddress ?? null;
+  const address = own !== "" || near === null ? own : POI_WORDS[language].nearest(addressOf(near), Math.round(near.distanceM));
+  const land = p.landCode === undefined || p.landCode === null ? null : LAENDER[p.landCode]?.[language] ?? null;
+  const landShown = land !== null && address.endsWith(` ${land}`) ? null : land;
   const kmShown = p.distanceM === null ? null : kmText(p.distanceM, language);
   const distance = kmShown === null ? null : from === null ? kmShown : POI_WORDS[language].from(kmShown, from);
   const brand = p.brand === null || p.brand === undefined || p.brand === p.name ? "" : ` (${p.brand})`;
   const point = `${p.location.lat.toFixed(5)}, ${p.location.lon.toFixed(5)}`;
   // A nameless object is headed by what it is, which is then not said twice.
-  return `${i + 1}. ${p.name ?? what}${brand} — ${[p.name === null ? null : what, address === "" ? null : address, distance, point].filter((x): x is string => x !== null).join(", ")}`;
+  return `${i + 1}. ${p.name ?? what}${brand} — ${[p.name === null ? null : what, address === "" ? null : address, landShown, distance, point].filter((x): x is string => x !== null).join(", ")}`;
 }
 
 const findPoi: Handler = async (args, ctx) => {

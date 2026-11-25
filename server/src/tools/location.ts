@@ -27,6 +27,14 @@ export const LOCATION_WORDS = {
     city: "Ort",
     district: "Kreis",
     land: "Bundesland",
+    gemeinde: "Gemeinde",
+    nearestGemeinde: (name: string): string => `Gemeinde (nächster Gemeindepunkt): ${name}`,
+    bezirk: "Regierungsbezirk",
+    kreisfrei: "kreisfreie Stadt",
+    junction: "Anschlussstelle",
+    interchange: "Autobahnkreuz/-dreieck",
+    junctionFar: "Das Verzeichnis kennt nur Anschlussstellen, die in aktuellen Verkehrsmeldungen genannt wurden — eine nähere kann fehlen.",
+    unverified: (doubt: string): string => `nicht bestätigt: ${doubt} — bitte an der Quelle nachlesen`,
   },
   en: {
     head: (lat: number, lon: number): string => `Description of ${lat.toFixed(4)}, ${lon.toFixed(4)}:`,
@@ -40,6 +48,14 @@ export const LOCATION_WORDS = {
     city: "Settlement",
     district: "District",
     land: "State (Land)",
+    gemeinde: "Municipality",
+    nearestGemeinde: (name: string): string => `Municipality (nearest municipality point): ${name}`,
+    bezirk: "Government region",
+    kreisfrei: "independent city",
+    junction: "Junction",
+    interchange: "Interchange",
+    junctionFar: "The index holds only junctions named in recent traffic reports — a closer one may be missing.",
+    unverified: (doubt: string): string => `not confirmed: ${doubt} — check the source`,
   },
 } as const;
 
@@ -95,6 +111,37 @@ const PLAQUE = {
   },
 } as const;
 
+/** Today's lezZoneSentence source part: " (source; not confirmed: doubt — check the source)", nothing without the proposed source. */
+export function plaqueSource(p: T.ZonePlaque, language: Language): string {
+  const source = p.sourceName ?? null;
+  if (source === null) return "";
+  return ` (${p.toVerify === undefined || p.toVerify === null ? source : `${source}; ${LOCATION_WORDS[language].unverified(p.toVerify)}`})`;
+}
+
+/** Today's JUNCTION_HONEST_M: past this a junction from the traffic reports' index is said to be a floor. */
+const JUNCTION_HONEST_M = 15_000;
+/** Today's INTERCHANGE_NAME. */
+const INTERCHANGE_NAME = /^(autobahn)?(kreuz|dreieck)\b|^a[kd]\s/iu;
+
+/** Today's junction line: the label (an interchange said as one), the name with its road, the distance; the floor note for a far index row. */
+export function junctionLines(j: NonNullable<T.LocationData["junction"]>, lat: number, lon: number, language: Language): string[] {
+  const c = LOCATION_WORDS[language];
+  const m = haversineM(lat, lon, j.location.lat, j.location.lon);
+  const name = j.road === null || j.name.includes(j.road) ? j.name : `${j.name} (${j.road})`;
+  const out = [`- ${INTERCHANGE_NAME.test(j.name) ? c.interchange : c.junction}: ${name} (${kmText(m, language)})`];
+  if (j.from === "gazetteer" && m > JUNCTION_HONEST_M) out.push(`  ${c.junctionFar}`);
+  return out;
+}
+
+/** Today's areas for a point with its Gemeinde by key: the Gemeinde (no distance), its Kreis (a kreisfreie Stadt said so; a city-state none), the Regierungsbezirk. */
+export function gemeindeLines(g: NonNullable<T.LocationData["gemeinde"]>, language: Language): string[] {
+  const c = LOCATION_WORDS[language];
+  const out = [`- ${g.inside ? `${c.gemeinde}: ${g.name}` : c.nearestGemeinde(g.name)}`];
+  if (g.code.slice(2) !== "000000" && g.kreis !== null) out.push(`- ${c.district}: ${g.code.endsWith("000") ? `${g.kreis} (${c.kreisfrei})` : g.kreis}`);
+  if (g.bezirk !== null) out.push(`- ${c.bezirk}: ${g.bezirk}`);
+  return out;
+}
+
 /** A calendar day in Berlin: "2026-11-18" / "18.11.2026" (lez-answer-text.ts lezDay). */
 function zoneDay(iso: string, language: Language): string {
   const day = /^\d{4}-\d{2}-\d{2}$/u.test(iso) ? iso : new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
@@ -119,7 +166,7 @@ export function zoneDetail(z: T.LowEmissionZone, language: Language): string[] {
   const p = z.plaque ?? null;
   if (p !== null) {
     if (p.from === "national_fact") out.push(PLAQUE.national[language]);
-    else if (p.plakette === "green") out.push(PLAQUE.green[language]);
+    else if (p.plakette === "green") out.push(`${PLAQUE.green[language]}${plaqueSource(p, language)}`);
   }
   if (z.dataDate) out.push(de ? `Stand der Zonendaten: ${zoneDay(z.dataDate, language)} (Angabe des Herausgebers).` : `Zone data as of ${zoneDay(z.dataDate, language)} (the publisher's date).`);
   else if (z.boundaryReadAt) out.push(de ? `Zonengrenze zuletzt abgerufen am ${zoneDay(z.boundaryReadAt, language)}.` : `Zone boundary last read on ${zoneDay(z.boundaryReadAt, language)}.`);
@@ -153,9 +200,12 @@ export const describeLocation: Handler = async (args, ctx): Promise<CallToolResu
   else lines.push(`- ${loaded ? c.addressNone : c.addressNotLoaded}`);
   const away = (p: T.LocationPlace): string => kmText(haversineM(lat, lon, p.location.lat, p.location.lon), language);
   if (d.municipality !== null) lines.push(`- ${c.city}: ${d.municipality.name} (${away(d.municipality)})`);
-  if (d.district !== null) lines.push(`- ${c.district}: ${d.district.name} (${away(d.district)})`);
+  const g = d.gemeinde ?? null;
+  if (g !== null) lines.push(...gemeindeLines(g, language));
+  else if (d.district !== null) lines.push(`- ${c.district}: ${d.district.name} (${away(d.district)})`);
   const land = landName(d, language);
   if (land !== null) lines.push(`- ${c.land}: ${land}`);
+  if (d.junction !== undefined && d.junction !== null) lines.push(...junctionLines(d.junction, lat, lon, language));
   if (d.lowEmissionZone !== null && !abroad) lines.push(`- ${c.zone}: ${zoneHead(d.lowEmissionZone, language)}`, ...zoneDetail(d.lowEmissionZone, language).map((l) => `  ${l}`));
   if (d.address !== null && d.address.dataAsOf !== null) lines.push("", c.stand(d.address.dataAsOf));
   return toolResult(lines.join("\n"), [r.meta], language);

@@ -5,7 +5,12 @@
 import type { LatLon } from "./client.js";
 
 /** PlaceItem */
-export type PlaceItem = { id: string; name: string; kind: string; location: LatLon; distanceM?: number; districtCode?: string | null; sourceFamily: string };
+export type PlaceItem = { id: string; name: string; kind: string; location: LatLon; distanceM?: number; districtCode?: string | null; sourceFamily: string;
+  /** Proposed: the Kreis the row lies in, by name (BKG), with districtCode its eight-digit Gemeinde key. */
+  districtName?: string | null;
+};
+/** Proposed resolvePlace: the one place a text names, as today's resolver says it (label), with its alternatives. */
+export type ResolvedPlace = { name: string; label: string; kind: string; location: LatLon; districtCode?: string | null; alternatives?: { name: string; kind: string }[] } | null;
 /** Address */
 export type Address = {
   street: string | null; number: string | null; postcode: string | null; place: string | null; land: string | null; location: LatLon; dataAsOf?: string | null;
@@ -49,7 +54,12 @@ export type ParkingSite = {
 export type SpeedCamera = { id: string; kind: string; enforces: string | null; street: string | null; locationLabel: string | null; municipality: string | null; direction: string | null; limitKmh: number | null; lorryLimitKmh: number | null; firstDay: string | null; lastDay: string | null; dataAsOf: string | null; staleYear: number | null; location: LatLon | null; sourceFamily: string };
 export type SpeedData = { official: SpeedCamera[]; officialTotal: number; osm: SpeedCamera[]; osmTotal: number };
 /** Poi, PoiPage */
-export type Poi = { name: string | null; brand?: string | null; location: LatLon; dataAsOf?: string | null; category: string; kind: string | null; street: string | null; number: string | null; postcode: string | null; place: string | null; distanceM: number | null };
+export type Poi = {
+  name: string | null; brand?: string | null; location: LatLon; dataAsOf?: string | null; category: string; kind: string | null; street: string | null; number: string | null; postcode: string | null; place: string | null; distanceM: number | null;
+  /** Proposed (today's): the nearest address of an object without one (another OSM object's, said as such), and the Land of its extract (AGS key) where it vouches for it. */
+  nearestAddress?: { street: string | null; number: string | null; postcode: string | null; place: string | null; distanceM: number } | null;
+  landCode?: string | null;
+};
 /** NearbyData */
 export type NeedPlace = { name: string; kind: string; street: string | null; houseNo: string | null; distanceM: number };
 export type NearbyFuelStation = { name: string | null; brand: string | null; distanceM: number; prices: FuelPrice[] };
@@ -124,7 +134,11 @@ export type WeatherRiskData = { warnings: WeatherWarning[]; roadForecast?: RoadF
 /** LocationData's places: the nearest municipality, the nearest district, the district's Land. */
 export type LocationPlace = { id: string; name: string; code?: string | null; location: { lat: number; lon: number }; distanceM: number | null; sourceFamily: string };
 /** LocationData.lowEmissionZone: the verdict, and the zone it is in (inside, transfer) or the nearest (outside). */
-export type ZonePlaque = { from: "curated_entry" | "national_fact"; entry: string | null; plakette: string | null; covered: boolean | null };
+export type ZonePlaque = {
+  from: "curated_entry" | "national_fact"; entry: string | null; plakette: string | null; covered: boolean | null;
+  /** Proposed (today's curated entry): the source it was read from and its open doubt, in the answer's language. */
+  sourceName?: string | null; toVerify?: string | null;
+};
 export type LowEmissionZone = {
   verdict: "inside" | "transfer" | "outside" | "unknown"; zone: string | null; distanceM: number | null; liftedOn?: string | null;
   exemptRoad?: string | null; releasedArea?: string | null; plaque?: ZonePlaque | null; dataDate?: string | null; boundaryReadAt?: string | null;
@@ -133,6 +147,10 @@ export type LocationAddress = { street: string | null; number: string | null; po
 export type LocationData = {
   address: LocationAddress | null; municipality: LocationPlace | null; district: LocationPlace | null; state: LocationPlace | null;
   lowEmissionZone: LowEmissionZone | null; mayLieOutsideGermany: boolean;
+  /** Proposed (today's): the Gemeinde the point lies in (inside) or the nearest Gemeinde point, by its key, with its Kreis and Regierungsbezirk. */
+  gemeinde?: { name: string; code: string; inside: boolean; kreis: string | null; bezirk: string | null } | null;
+  /** Proposed (today's): the nearest motorway junction, from OpenStreetMap or the traffic reports' index (gazetteer). */
+  junction?: { name: string; road: string | null; location: LatLon; from: "osm" | "gazetteer" } | null;
 };
 /** Station */
 export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; eva: string | null; evaNumbers: string[]; distanceM?: number | null; districtCode?: string | null };

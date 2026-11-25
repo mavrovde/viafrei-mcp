@@ -1,7 +1,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { ApiClient, Attribution, LatLon } from "../api/client.js";
-import { atParam } from "../api/client.js";
-import type { PlaceItem, PlacesCoverageData } from "../api/types.js";
+import { ApiError, atParam } from "../api/client.js";
+import type { PlaceItem, PlacesCoverageData, ResolvedPlace } from "../api/types.js";
 import { creditPlace, toolError, type Language } from "../presentation.js";
 import type { ConsentOutcome } from "../sid-consent.js";
 import { PLACE_WORDS } from "./place-words.js";
@@ -113,6 +113,23 @@ export function pickPlace(q: string, found: { data: readonly PlaceItem[]; meta: 
   return pick;
 }
 
+/**
+ * The proposed resolvePlace: the API says which one place the text names and how the answer calls it (today's
+ * resolver, which is the API's job, not the MCP's). Undefined, and the place search read as before, when the API
+ * does not offer the operation (404) or names no place for the text.
+ */
+export async function resolvePlace(q: string, ctx: ToolContext): Promise<Position | undefined> {
+  try {
+    const r = await ctx.api.get<ResolvedPlace>("resolvePlace", { q });
+    if (r.data === null) return undefined;
+    creditPlace(r.meta.attribution ?? []);
+    return { at: r.data.location, label: r.data.label };
+  } catch (err) {
+    if (err instanceof ApiError && err.kind === "not_found") return undefined;
+    throw err;
+  }
+}
+
 /** The position a tool asks about: lat/lon as given, else the place name resolved through the API's place search. */
 export async function position(args: Args, ctx: ToolContext, placeKey = "place", unknown?: (q: string) => CallToolResult): Promise<Position | CallToolResult> {
   const lat = num(args["lat"]);
@@ -125,6 +142,8 @@ export async function position(args: Args, ctx: ToolContext, placeKey = "place",
   if (looksLikeHouseNumber(q) && (await ctx.api.get<PlacesCoverageData>("getPlacesCoverage", {})).data.addresses.length === 0) {
     return toolError(HOUSE_NUMBER_COPY[ctx.language]);
   }
+  const resolved = await resolvePlace(q, ctx);
+  if (resolved !== undefined) return resolved;
   const first = pickPlace(q, await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: PLACE_CANDIDATES }));
   if (first === undefined) return (await townCentre(q, ctx)) ?? (unknown === undefined ? placeUnknown(ctx, q) : unknown(q));
   return { at: first.location, label: first.name };

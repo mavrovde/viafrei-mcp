@@ -294,7 +294,7 @@ describe("find_roadworks_ahead", () => {
   for (const key of ["place"]) {
     it(`a place (${key}): the roadworks around the resolved place`, async () => {
       const r = await call("find_roadworks_ahead", { [key]: "Köln", language: "en" });
-      expect(ops()).toEqual(["listPlaces", "listRoadConditions"]);
+      expect(ops()).toEqual(["resolvePlace", "listPlaces", "listRoadConditions"]);
       expect(query("listPlaces")).toEqual([{ q: "Köln", limit: "10", lang: "en" }]);
       expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", horizon_days: "14", lang: "en" }]);
       expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m");
@@ -842,14 +842,14 @@ describe("find_place, find_poi, find_address", () => {
 
   it("find_poi near a named place resolves it", async () => {
     await call("find_poi", { name: "Apotheke", near: "Köln", language: "en" });
-    expect(ops()).toEqual(["listPlaces", "listPois"]);
+    expect(ops()).toEqual(["resolvePlace", "listPlaces", "listPois"]);
     expect(query("listPois")[0]!["at"]).toBe("48.24375,7.01625");
   });
 
   it("find_poi near an unknown place says so", async () => {
     serve("listPlaces", []);
     expect((await call("find_poi", { name: "Apotheke", near: "Nirgendwo", language: "en" })).isError).toBe(true);
-    expect(ops()).toEqual(["listPlaces"]);
+    expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
   });
 
   it("find_address: street and number, postcode and town, coordinate", async () => {
@@ -1195,7 +1195,7 @@ describe("get_driving_rules", () => {
         content: [{ type: "text", text: language === "de" ? "„Nirgendwo“ habe ich als Ort nicht gefunden." : 'I could not find "Nirgendwo" as a place.' }],
         isError: true,
       });
-      expect(ops()).toEqual(["listPlaces"]);
+      expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
     });
   }
 
@@ -2310,7 +2310,7 @@ describe("a place given as a street and house number", () => {
       serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [{ land: "Hessen", dataAsOf: "2026-11-01" }] });
       serve("listPlaces", []);
       await call("find_parking", { place: "Hauptstraße 12, Fulda", language });
-      expect(ops().slice(0, 2)).toEqual(["getPlacesCoverage", "listPlaces"]);
+      expect(ops().slice(0, 3)).toEqual(["getPlacesCoverage", "resolvePlace", "listPlaces"]);
     });
   }
 });

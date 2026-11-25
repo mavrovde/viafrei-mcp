@@ -11,7 +11,7 @@ import { setupServer } from "msw/node";
 
 export const API_BASE = "http://127.0.0.1";
 
-type Op = { operationId: string; method: string; path: string; status: number; example: unknown; responses: Record<string, unknown>; query: readonly string[] };
+type Op = { operationId: string; method: string; path: string; status: number; example: unknown; responses: Record<string, unknown>; query: readonly string[]; proposed: boolean };
 type Param = { name?: string; in?: string; $ref?: string };
 
 export const SPEC = JSON.parse(readFileSync(new URL("./fixtures/api-openapi.json", import.meta.url), "utf8")) as {
@@ -30,7 +30,7 @@ export const OPS: Op[] = Object.entries(SPEC.paths).flatMap(([path, item]) =>
       const content = op.responses?.[String(status)]?.content?.["application/json"];
       const example = content?.example ?? (content?.examples === undefined ? undefined : Object.values(content.examples)[0]?.value);
       const shared = (item as { parameters?: Param[] }).parameters;
-      return { operationId: op.operationId!, method, path, status, example, responses: op.responses ?? {}, query: queryOf(shared, op.parameters) };
+      return { operationId: op.operationId!, method, path, status, example, responses: op.responses ?? {}, query: queryOf(shared, op.parameters), proposed: (op as { "x-proposed"?: boolean })["x-proposed"] === true };
     }),
 );
 
@@ -41,6 +41,9 @@ export const opById = (id: string): Op => {
 };
 
 export const mswPath = (p: string): string => `${API_BASE}${p.replace(/\{([^}]+)\}/g, ":$1")}`;
+
+/** Today's API on a path it does not offer: 404, a problem body. */
+export const notOffered = (path: string) => HttpResponse.json({ type: "about:blank", status: 404, title: "Not Found", detail: `no operation at ${path}` }, { status: 404, headers: { "content-type": "application/problem+json" } });
 
 /** The example body of an operation, deep-copied so a test may change it. */
 export const exampleOf = <T = { data: unknown; meta: Record<string, unknown> }>(id: string): T => {
@@ -60,6 +63,8 @@ export function handlerFor(id: string, respond?: (url: URL) => Response | Promis
     const unknown = [...new Set(url.searchParams.keys())].filter((k) => !op.query.includes(k));
     if (unknown.length > 0) return unknownParameters(url.pathname, unknown);
     if (respond !== undefined) return respond(url);
+    // A proposed operation is answered as today's API answers it: not offered (404).
+    if (op.proposed) return notOffered(op.path);
     if (op.example === undefined) return HttpResponse.json({ status: 500, title: "no example" }, { status: 500 });
     return HttpResponse.json(structuredClone(op.example) as Record<string, unknown>, { status: op.status });
   });

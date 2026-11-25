@@ -32,7 +32,7 @@ export type Attribution = {
   readonly publisher?: string;
   readonly text: string;
   readonly licence?: string;
-  readonly licenceUrl?: string;
+  readonly licenceUrl?: string | null;
   readonly shareAlike?: boolean;
   readonly shareAlikeOffer?: string | null;
   readonly termsUrl?: string | null;

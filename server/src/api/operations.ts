@@ -600,6 +600,19 @@ export const OPERATIONS = {
     "required": [
       "at"
     ]
+  },
+  "resolvePlace": {
+    "method": "GET",
+    "path": "/v1/places/resolve",
+    "pathParams": [],
+    "query": [
+      "q",
+      "lang"
+    ],
+    "required": [
+      "q"
+    ],
+    "proposed": true
   }
 } as const;
 export type OperationId = keyof typeof OPERATIONS;
