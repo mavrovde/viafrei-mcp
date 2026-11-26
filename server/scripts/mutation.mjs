@@ -42,6 +42,8 @@ export const SHARDS = 18;
  * The static mutants a file may carry (Stryker's `static`: hit outside any test, so each runs the whole suite
  * with a fresh module; osm-words.ts's 1,000 of them held shard 6 of the 2.7.4 and 2.7.5 publishes past its
  * limit). Over the bound the gather refuses the run and names the file: build its table in a function.
+ * Its limit: it reads only the reports of shards that finished. A table big enough to cancel its shard leaves
+ * no report, so the gather cannot see it; test/static-tables.test.ts refuses such a table before any run.
  * STATIC_CEILING holds the files over it today, each at today's count: the 2.7.5 run (run 45792986175) and,
  * for its cancelled shard 6, a local Stryker run of that shard's other pieces. It is a ratchet: lower a ceiling
  * when a file sheds static mutants, never raise one to pass.
