@@ -5,6 +5,10 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.5] - 2026-11-26
+
+**The server runs on API 1.2.1.** The server's tools, prompts and resources are those of 2.7.4; what changes is where three answers come from: the place resolver, the stop boards around a point and the station page are the API's released operations.
+
 ### Changed
 - **The server runs against ViaFrei API 1.2.1** (`server/api.pin`), where the place resolver, the stop boards around a point and the station page are released operations. A place name is resolved by the API (`resolvePlace`) before the place search; `get_departures` around a place resolves the place first and asks the stop boards for its point; `describe_station` reads the released station page.
 
@@ -4600,6 +4604,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.5]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.5
 [2.7.4]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.4
 [2.7.3]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.3
 [2.7.2]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.2
