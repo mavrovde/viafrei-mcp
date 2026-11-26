@@ -28,9 +28,11 @@ export const FLOOR = 70;
 /**
  * The shards of the release run (mutation.yml's matrix). 18: the pieces are dealt by the seconds they cost
  * (scripts/mutation-weights.json, fitted to runs 45157220742 and 45160742243 on worker threads by tests
- * run, timeouts and mutants), ~146 minutes in all. The two heaviest pieces (src/tools/place-words.ts:17-168,
- * ~9.7 minutes, and src/tools/facilities.ts:61-71, a static table whose mutants time out, ~9) get a shard
- * each; the other 16 get ~8. 18 shards beside the npm run's Snyk and end-to-end jobs stay within GitHub's
+ * run, timeouts and mutants), ~132 minutes in all, ~7.4 a shard. A word or pattern table is built inside a
+ * function, never held at module level: Stryker mutates a module-level table statically, each mutant against
+ * the whole suite (place-words.ts, facilities.ts and osm-words.ts cost 10 minutes to 2 hours that way, and
+ * held shard 6 of the 2.7.4 and 2.7.5 publishes past its limit); in a function only the tests that read it run.
+ * 18 shards beside the npm run's Snyk and end-to-end jobs stay within GitHub's
  * 20 concurrent jobs; a pull request's CI running at the same time still holds runners (shards waited up
  * to 6.5 minutes in run 45157220742).
  */
