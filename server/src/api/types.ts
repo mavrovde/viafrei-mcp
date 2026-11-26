@@ -15,7 +15,7 @@ export type ResolvedPlace = { name: string; label: string; kind: string; locatio
 export type StopBoards = {
   location: LatLon; window: { from: string; until: string };
   stops: { id: string; name: string; stopId: string; distanceM: number; departures: Departure[] }[];
-  /** Today's FlixBus/FlixTrain block near the point (its own feed, not DELFI's twins); null where none is near. Not in StopBoardsData of API 1.2.1. */
+  /** Today's FlixBus/FlixTrain block near the point (its own feed, not DELFI's twins); null where none is near. Not in StopBoardsData of API 1.2.2. */
   longDistance?: LongDistance | null;
 } | null;
 export type LongDistanceDeparture = {
@@ -306,7 +306,7 @@ export type StationPageSection = {
 };
 export type StationPage = { station: { name: string }; pageUrl: string; sections: StationPageSection[] } | null;
 
-/** StationPageEnvelope.data, as API 1.2.1 sends it: each section's content under its own key (PageSection, PageLift, PlatformAccess). */
+/** StationPageEnvelope.data, as API 1.2.2 sends it: each section's content under its own key (PageSection, PageLift, PlatformAccess). */
 type Access = "yes" | "partial" | "no" | "unknown";
 export type ApiPagePlatform = { tracks: string[]; name: string | null; lift: "ok" | "out" | "unknown" | "none" };
 export type ApiPageSection = {
