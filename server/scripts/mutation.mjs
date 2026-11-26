@@ -17,7 +17,8 @@
 //                                                 mutation.json, mutation.html and scope.txt
 //   node scripts/mutation.mjs gather DIR OUT.md   score the shard directories under DIR as
 //                                                 one run: exit 1 below 70 %, exit 2 when a
-//                                                 piece has no shard or two, or a mutant strays
+//                                                 piece has no shard or two, a mutant strays, or a
+//                                                 file has more static mutants than STATIC_MAX
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
@@ -37,6 +38,19 @@ export const FLOOR = 70;
  * to 6.5 minutes in run 45157220742).
  */
 export const SHARDS = 18;
+/**
+ * The static mutants a file may carry (Stryker's `static`: hit outside any test, so each runs the whole suite
+ * with a fresh module; osm-words.ts's 1,000 of them held shard 6 of the 2.7.4 and 2.7.5 publishes past its
+ * limit). Over the bound the gather refuses the run and names the file: build its table in a function.
+ * STATIC_CEILING holds the files over it today, each at today's count: the 2.7.5 run (run 45792986175) and,
+ * for its cancelled shard 6, a local Stryker run of that shard's other pieces. It is a ratchet: lower a ceiling
+ * when a file sheds static mutants, never raise one to pass.
+ */
+export const STATIC_MAX = 40;
+export const STATIC_CEILING = Object.freeze({
+  "src/app.ts": 385, "src/tools/handlers.ts": 220, "src/client-ip.ts": 92, "src/usage-names.ts": 83, "src/prompts/travel.ts": 70,
+  "src/prompts/types.ts": 48, "src/server-card.ts": 45, "src/tools/nearby.ts": 45, "src/tools/fuel.ts": 41,
+});
 /** A piece holds consecutive top-level statements up to this weight; one heavier statement is a piece alone. */
 export const PIECE_WEIGHT = 200;
 const SERVER = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -149,7 +163,8 @@ class Refusal extends Error {}
  * pieces) and mutation.json (Stryker's report). Throws a Refusal (exit 2) when a
  * piece of the scope is in no shard or in two, a shard has no report, a report
  * names a file none of its pieces is in or a mutant outside its pieces, or a
- * mutant has a status Stryker does not finish with. A file's mutants from several
+ * mutant has a status Stryker does not finish with, or a file has more static mutants than STATIC_MAX (its
+ * STATIC_CEILING). A file's mutants from several
  * shards are scored as one file.
  */
 export function gather(dir, scope, root = SERVER) {
@@ -180,6 +195,11 @@ export function gather(dir, scope, root = SERVER) {
     }
   }
   for (const id of expected) if (!owner.has(id)) throw new Refusal(`${id} has no report: no shard mutated it`);
+  for (const f of Object.keys(files).sort()) {
+    const n = (files[f].mutants ?? []).filter((m) => m.static === true).length;
+    const max = STATIC_CEILING[f] ?? STATIC_MAX;
+    if (n > max) throw new Refusal(`${f} has ${n} static mutants, over its bound of ${max}: a module-level table (or a call outside a test) makes Stryker run the whole suite for each; build it in a function (STATIC_MAX, scripts/mutation.mjs)`);
+  }
   for (const id of owner.keys()) if (!expected.includes(id)) throw new Refusal(`${id} is in a shard but not in the scope`);
 
   const rows = [];
