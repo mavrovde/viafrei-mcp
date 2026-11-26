@@ -1,0 +1,16 @@
+10: Saarland / Saarland
+11: Berlin / Berlin
+12: Brandenburg / Brandenburg
+13: Mecklenburg-Vorpommern / Mecklenburg-Western Pomerania
+14: Sachsen / Saxony
+15: Sachsen-Anhalt / Saxony-Anhalt
+16: Thüringen / Thuringia
+01: Schleswig-Holstein / Schleswig-Holstein
+02: Hamburg / Hamburg
+03: Niedersachsen / Lower Saxony
+04: Bremen / Bremen
+05: Nordrhein-Westfalen / North Rhine-Westphalia
+06: Hessen / Hesse
+07: Rheinland-Pfalz / Rhineland-Palatinate
+08: Baden-Württemberg / Baden-Württemberg
+09: Bayern / Bavaria

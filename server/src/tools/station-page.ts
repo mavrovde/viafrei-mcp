@@ -33,14 +33,16 @@ const W = {
 /** At most this many lifts are listed (today's LIST_SHOWN). */
 const LIST_SHOWN = 20;
 
-/** The Land by the first two digits of the official district code (main AGS_LAENDER). */
-const LAENDER: Readonly<Record<string, readonly [string, string]>> = {
-  "01": ["Schleswig-Holstein", "Schleswig-Holstein"], "02": ["Hamburg", "Hamburg"], "03": ["Niedersachsen", "Lower Saxony"], "04": ["Bremen", "Bremen"],
-  "05": ["Nordrhein-Westfalen", "North Rhine-Westphalia"], "06": ["Hessen", "Hesse"], "07": ["Rheinland-Pfalz", "Rhineland-Palatinate"],
-  "08": ["Baden-Württemberg", "Baden-Württemberg"], "09": ["Bayern", "Bavaria"], "10": ["Saarland", "Saarland"], "11": ["Berlin", "Berlin"],
-  "12": ["Brandenburg", "Brandenburg"], "13": ["Mecklenburg-Vorpommern", "Mecklenburg-Western Pomerania"], "14": ["Sachsen", "Saxony"],
-  "15": ["Sachsen-Anhalt", "Saxony-Anhalt"], "16": ["Thüringen", "Thuringia"],
-};
+/** The Land by the first two digits of the official district code (main AGS_LAENDER); built per call, so Stryker mutates it per test. */
+export function LAENDER(): Readonly<Record<string, readonly [string, string]>> {
+  return {
+    "01": ["Schleswig-Holstein", "Schleswig-Holstein"], "02": ["Hamburg", "Hamburg"], "03": ["Niedersachsen", "Lower Saxony"], "04": ["Bremen", "Bremen"],
+    "05": ["Nordrhein-Westfalen", "North Rhine-Westphalia"], "06": ["Hessen", "Hesse"], "07": ["Rheinland-Pfalz", "Rhineland-Palatinate"],
+    "08": ["Baden-Württemberg", "Baden-Württemberg"], "09": ["Bayern", "Bavaria"], "10": ["Saarland", "Saarland"], "11": ["Berlin", "Berlin"],
+    "12": ["Brandenburg", "Brandenburg"], "13": ["Mecklenburg-Vorpommern", "Mecklenburg-Western Pomerania"], "14": ["Sachsen", "Saxony"],
+    "15": ["Sachsen-Anhalt", "Saxony-Anhalt"], "16": ["Thüringen", "Thuringia"],
+  };
+}
 
 /** The tracks a unit's description names ("zu Gleis 4/5" → ["4", "5"], "Gleis 1-3" → ["1", "2", "3"]; main unitTracksOf). */
 export function unitTracksOf(description: string | null): string[] {
@@ -61,10 +63,15 @@ export function unitTracksOf(description: string | null): string[] {
 }
 
 type Unit = T.StationFacilitiesData["facilities"][number] & { tracks: string[] };
-const KINDS = ["elevator", "escalator", "travelator", "other"];
+function KINDS() {
+  return ["elevator", "escalator", "travelator", "other"];
+}
 const rank = (u: Unit): number => (u.state === "inactive" ? 0 : u.state === "active" ? 2 : 1);
 const firstTrack = (u: Unit): number => (u.tracks.length === 0 ? Number.POSITIVE_INFINITY : Number.parseInt(u.tracks[0]!, 10));
-const kindIndex = (k: string): number => (KINDS.includes(k) ? KINDS.indexOf(k) : KINDS.length - 1);
+const kindIndex = (k: string): number => {
+  const kinds = KINDS();
+  return kinds.includes(k) ? kinds.indexOf(k) : kinds.length - 1;
+};
 /** Out of service first, then by kind, first track and name (main liftOrder). */
 const liftOrder = (a: Unit, b: Unit): number => rank(a) - rank(b) || kindIndex(a.kind) - kindIndex(b.kind) || firstTrack(a) - firstTrack(b)
   || (a.position ?? "").localeCompare(b.position ?? "", "de", { numeric: true }) || a.id.localeCompare(b.id);
@@ -93,7 +100,7 @@ export function stationPageText(language: Language, station: T.Station & { distr
   fac: { data: T.StationFacilitiesData; meta: DataMeta } | null, board: { data: T.Board; meta: DataMeta } | null, now: Date = new Date()): string {
   const w = W[language];
   const text: string[] = [station.name];
-  const land = station.districtCode === null || station.districtCode === undefined ? undefined : LAENDER[station.districtCode.slice(0, 2)];
+  const land = station.districtCode === null || station.districtCode === undefined ? undefined : LAENDER()[station.districtCode.slice(0, 2)];
   const facts = [land === undefined ? null : land[language === "de" ? 0 : 1], station.eva === null ? null : `EVA ${station.eva}`].filter((x): x is string => x !== null);
   if (facts.length > 0) text.push(facts.join(" · "));
   const units = (fac?.data.facilities ?? []).map((f) => ({ ...f, tracks: unitTracksOf(f.position) })).sort(liftOrder);
