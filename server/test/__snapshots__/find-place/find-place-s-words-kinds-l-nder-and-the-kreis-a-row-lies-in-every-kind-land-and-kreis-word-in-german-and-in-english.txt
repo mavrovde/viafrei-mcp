@@ -1,0 +1,119 @@
+kind municipality: Stadt/Gemeinde / town
+kind district: Kreis / district
+kind region: Verwaltungseinheit / administrative area
+kind station_area: Bahnhof / station
+kind stop: Haltestelle / stop
+kind motorway: Autobahn / motorway
+kind junction: Anschlussstelle / junction
+kind island: Insel / island
+land 10: Saarland / Saarland
+land 11: Berlin / Berlin
+land 12: Brandenburg / Brandenburg
+land 13: Mecklenburg-Vorpommern / Mecklenburg-Western Pomerania
+land 14: Sachsen / Saxony
+land 15: Sachsen-Anhalt / Saxony-Anhalt
+land 16: Thüringen / Thuringia
+land 01: Schleswig-Holstein / Schleswig-Holstein
+land 02: Hamburg / Hamburg
+land 03: Niedersachsen / Lower Saxony
+land 04: Bremen / Bremen
+land 05: Nordrhein-Westfalen / North Rhine-Westphalia
+land 06: Hessen / Hesse
+land 07: Rheinland-Pfalz / Rhineland-Palatinate
+land 08: Baden-Württemberg / Baden-Württemberg
+land 09: Bayern / Bavaria
+asked city: municipality
+asked district: district
+asked admin: region
+asked station: station_area
+asked stop: station_area
+asked motorway: motorway
+asked junction: junction
+kreis municipality 09162123 Ebersberg: Kreis Ebersberg / district Ebersberg
+kreis municipality 09162123 Vogtlandkreis: Vogtlandkreis / district Vogtlandkreis
+kreis municipality 09162123 Region Hannover: Region Hannover / district Region Hannover
+kreis municipality 09162123 Stadtverband Saarbrücken: Stadtverband Saarbrücken / district Stadtverband Saarbrücken
+kreis municipality 09162123 Stadtregion Aachen: Stadtregion Aachen / district Stadtregion Aachen
+kreis municipality 09162123 Städteregion Aachen: Kreis Städteregion Aachen / district Städteregion Aachen
+kreis municipality 09162123 STADTEREGION X: STADTEREGION X / district STADTEREGION X
+kreis municipality 05113000 Essen: kreisfreie Stadt / independent city
+kreis municipality 11000000 Berlin: null / null
+kreis municipality 0916212 kurz: null / null
+kreis municipality 09162123 null: null / null
+kreis district 09162123 Ebersberg: null / null
+kreis district 09162123 Vogtlandkreis: null / null
+kreis district 09162123 Region Hannover: null / null
+kreis district 09162123 Stadtverband Saarbrücken: null / null
+kreis district 09162123 Stadtregion Aachen: null / null
+kreis district 09162123 Städteregion Aachen: null / null
+kreis district 09162123 STADTEREGION X: null / null
+kreis district 05113000 Essen: null / null
+kreis district 11000000 Berlin: null / null
+kreis district 0916212 kurz: null / null
+kreis district 09162123 null: null / null
+kreis region 09162123 Ebersberg: null / null
+kreis region 09162123 Vogtlandkreis: null / null
+kreis region 09162123 Region Hannover: null / null
+kreis region 09162123 Stadtverband Saarbrücken: null / null
+kreis region 09162123 Stadtregion Aachen: null / null
+kreis region 09162123 Städteregion Aachen: null / null
+kreis region 09162123 STADTEREGION X: null / null
+kreis region 05113000 Essen: null / null
+kreis region 11000000 Berlin: null / null
+kreis region 0916212 kurz: null / null
+kreis region 09162123 null: null / null
+kreis station_area 09162123 Ebersberg: Kreis Ebersberg / district Ebersberg
+kreis station_area 09162123 Vogtlandkreis: Vogtlandkreis / district Vogtlandkreis
+kreis station_area 09162123 Region Hannover: Region Hannover / district Region Hannover
+kreis station_area 09162123 Stadtverband Saarbrücken: Stadtverband Saarbrücken / district Stadtverband Saarbrücken
+kreis station_area 09162123 Stadtregion Aachen: Stadtregion Aachen / district Stadtregion Aachen
+kreis station_area 09162123 Städteregion Aachen: Kreis Städteregion Aachen / district Städteregion Aachen
+kreis station_area 09162123 STADTEREGION X: STADTEREGION X / district STADTEREGION X
+kreis station_area 05113000 Essen: kreisfreie Stadt Essen / independent city Essen
+kreis station_area 11000000 Berlin: null / null
+kreis station_area 0916212 kurz: null / null
+kreis station_area 09162123 null: null / null
+kreis stop 09162123 Ebersberg: Kreis Ebersberg / district Ebersberg
+kreis stop 09162123 Vogtlandkreis: Vogtlandkreis / district Vogtlandkreis
+kreis stop 09162123 Region Hannover: Region Hannover / district Region Hannover
+kreis stop 09162123 Stadtverband Saarbrücken: Stadtverband Saarbrücken / district Stadtverband Saarbrücken
+kreis stop 09162123 Stadtregion Aachen: Stadtregion Aachen / district Stadtregion Aachen
+kreis stop 09162123 Städteregion Aachen: Kreis Städteregion Aachen / district Städteregion Aachen
+kreis stop 09162123 STADTEREGION X: STADTEREGION X / district STADTEREGION X
+kreis stop 05113000 Essen: kreisfreie Stadt Essen / independent city Essen
+kreis stop 11000000 Berlin: null / null
+kreis stop 0916212 kurz: null / null
+kreis stop 09162123 null: null / null
+kreis motorway 09162123 Ebersberg: null / null
+kreis motorway 09162123 Vogtlandkreis: null / null
+kreis motorway 09162123 Region Hannover: null / null
+kreis motorway 09162123 Stadtverband Saarbrücken: null / null
+kreis motorway 09162123 Stadtregion Aachen: null / null
+kreis motorway 09162123 Städteregion Aachen: null / null
+kreis motorway 09162123 STADTEREGION X: null / null
+kreis motorway 05113000 Essen: null / null
+kreis motorway 11000000 Berlin: null / null
+kreis motorway 0916212 kurz: null / null
+kreis motorway 09162123 null: null / null
+kreis junction 09162123 Ebersberg: Kreis Ebersberg / district Ebersberg
+kreis junction 09162123 Vogtlandkreis: Vogtlandkreis / district Vogtlandkreis
+kreis junction 09162123 Region Hannover: Region Hannover / district Region Hannover
+kreis junction 09162123 Stadtverband Saarbrücken: Stadtverband Saarbrücken / district Stadtverband Saarbrücken
+kreis junction 09162123 Stadtregion Aachen: Stadtregion Aachen / district Stadtregion Aachen
+kreis junction 09162123 Städteregion Aachen: Kreis Städteregion Aachen / district Städteregion Aachen
+kreis junction 09162123 STADTEREGION X: STADTEREGION X / district STADTEREGION X
+kreis junction 05113000 Essen: kreisfreie Stadt Essen / independent city Essen
+kreis junction 11000000 Berlin: null / null
+kreis junction 0916212 kurz: null / null
+kreis junction 09162123 null: null / null
+kreis island 09162123 Ebersberg: Kreis Ebersberg / district Ebersberg
+kreis island 09162123 Vogtlandkreis: Vogtlandkreis / district Vogtlandkreis
+kreis island 09162123 Region Hannover: Region Hannover / district Region Hannover
+kreis island 09162123 Stadtverband Saarbrücken: Stadtverband Saarbrücken / district Stadtverband Saarbrücken
+kreis island 09162123 Stadtregion Aachen: Stadtregion Aachen / district Stadtregion Aachen
+kreis island 09162123 Städteregion Aachen: Kreis Städteregion Aachen / district Städteregion Aachen
+kreis island 09162123 STADTEREGION X: STADTEREGION X / district STADTEREGION X
+kreis island 05113000 Essen: kreisfreie Stadt Essen / independent city Essen
+kreis island 11000000 Berlin: null / null
+kreis island 0916212 kurz: null / null
+kreis island 09162123 null: null / null

@@ -695,7 +695,7 @@ export function poiLine(p: T.Poi, i: number, from: string | null, language: Lang
   const own = addressOf(p);
   const near = p.nearestAddress ?? null;
   const address = own !== "" || near === null ? own : POI_WORDS[language].nearest(addressOf(near), Math.round(near.distanceM));
-  const land = p.landCode === undefined || p.landCode === null ? null : LAENDER[p.landCode]?.[language] ?? null;
+  const land = p.landCode === undefined || p.landCode === null ? null : LAENDER()[p.landCode]?.[language] ?? null;
   const landShown = land !== null && address.endsWith(` ${land}`) ? null : land;
   const kmShown = p.distanceM === null ? null : kmText(p.distanceM, language);
   const distance = kmShown === null ? null : from === null ? kmShown : POI_WORDS[language].from(kmShown, from);
