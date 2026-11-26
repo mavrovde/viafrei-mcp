@@ -32,38 +32,48 @@ const COPY = {
 const MAX_RESULTS = 10;
 
 /** The API's place kinds in today's words (geo/distinguish.ts KIND_WORD, by the kind each maps from). */
-const KIND_WORD: Readonly<Record<string, Readonly<Record<Language, string>>>> = {
-  municipality: { de: "Stadt/Gemeinde", en: "town" },
-  district: { de: "Kreis", en: "district" },
-  region: { de: "Verwaltungseinheit", en: "administrative area" },
-  station_area: { de: "Bahnhof", en: "station" },
-  stop: { de: "Haltestelle", en: "stop" },
-  motorway: { de: "Autobahn", en: "motorway" },
-  junction: { de: "Anschlussstelle", en: "junction" },
-  island: { de: "Insel", en: "island" },
-};
+export function KIND_WORD(): Readonly<Record<string, Readonly<Record<Language, string>>>> {
+  return {
+    municipality: { de: "Stadt/Gemeinde", en: "town" },
+    district: { de: "Kreis", en: "district" },
+    region: { de: "Verwaltungseinheit", en: "administrative area" },
+    station_area: { de: "Bahnhof", en: "station" },
+    stop: { de: "Haltestelle", en: "stop" },
+    motorway: { de: "Autobahn", en: "motorway" },
+    junction: { de: "Anschlussstelle", en: "junction" },
+    island: { de: "Insel", en: "island" },
+  };
+}
 
 /** The Länder by their AGS key (Statistisches Bundesamt; main packages/ingest/src/platform/ags.ts). */
-export const LAENDER: Readonly<Record<string, Readonly<Record<Language, string>>>> = {
-  "01": { de: "Schleswig-Holstein", en: "Schleswig-Holstein" }, "02": { de: "Hamburg", en: "Hamburg" },
-  "03": { de: "Niedersachsen", en: "Lower Saxony" }, "04": { de: "Bremen", en: "Bremen" },
-  "05": { de: "Nordrhein-Westfalen", en: "North Rhine-Westphalia" }, "06": { de: "Hessen", en: "Hesse" },
-  "07": { de: "Rheinland-Pfalz", en: "Rhineland-Palatinate" }, "08": { de: "Baden-Württemberg", en: "Baden-Württemberg" },
-  "09": { de: "Bayern", en: "Bavaria" }, "10": { de: "Saarland", en: "Saarland" }, "11": { de: "Berlin", en: "Berlin" },
-  "12": { de: "Brandenburg", en: "Brandenburg" }, "13": { de: "Mecklenburg-Vorpommern", en: "Mecklenburg-Western Pomerania" },
-  "14": { de: "Sachsen", en: "Saxony" }, "15": { de: "Sachsen-Anhalt", en: "Saxony-Anhalt" }, "16": { de: "Thüringen", en: "Thuringia" },
-};
+export function LAENDER(): Readonly<Record<string, Readonly<Record<Language, string>>>> {
+  return {
+    "01": { de: "Schleswig-Holstein", en: "Schleswig-Holstein" }, "02": { de: "Hamburg", en: "Hamburg" },
+    "03": { de: "Niedersachsen", en: "Lower Saxony" }, "04": { de: "Bremen", en: "Bremen" },
+    "05": { de: "Nordrhein-Westfalen", en: "North Rhine-Westphalia" }, "06": { de: "Hessen", en: "Hesse" },
+    "07": { de: "Rheinland-Pfalz", en: "Rhineland-Palatinate" }, "08": { de: "Baden-Württemberg", en: "Baden-Württemberg" },
+    "09": { de: "Bayern", en: "Bavaria" }, "10": { de: "Saarland", en: "Saarland" }, "11": { de: "Berlin", en: "Berlin" },
+    "12": { de: "Brandenburg", en: "Brandenburg" }, "13": { de: "Mecklenburg-Vorpommern", en: "Mecklenburg-Western Pomerania" },
+    "14": { de: "Sachsen", en: "Saxony" }, "15": { de: "Sachsen-Anhalt", en: "Saxony-Anhalt" }, "16": { de: "Thüringen", en: "Thuringia" },
+  };
+}
 
-const PLACE_KIND: Readonly<Record<string, string>> = { city: "municipality", district: "district", admin: "region", station: "station_area", stop: "station_area", motorway: "motorway", junction: "junction" };
+export function PLACE_KIND(): Readonly<Record<string, string>> {
+  return { city: "municipality", district: "district", admin: "region", station: "station_area", stop: "station_area", motorway: "motorway", junction: "junction" };
+}
 
 /** The kinds that lie in a Kreis (today's IN_A_KREIS). */
-const IN_A_KREIS: ReadonlySet<string> = new Set(["municipality", "island", "station_area", "stop", "junction"]);
+function IN_A_KREIS(): ReadonlySet<string> {
+  return new Set(["municipality", "island", "station_area", "stop", "junction"]);
+}
 
 /** Today's KREIS_WORD: a name that already says what it is ("Vogtlandkreis", "Region Hannover") is not prefixed. */
-const KREIS_WORD = {
-  de: { kreis: (n: string): string => (/kreis|^region |^stadtverband |^stadtregion |^stadteregion /iu.test(n.toLowerCase()) ? n : `Kreis ${n}`), free: "kreisfreie Stadt", freeNamed: (n: string): string => `kreisfreie Stadt ${n}` },
-  en: { kreis: (n: string): string => `district ${n}`, free: "independent city", freeNamed: (n: string): string => `independent city ${n}` },
-} as const;
+function KREIS_WORD() {
+  return {
+    de: { kreis: (n: string): string => (/kreis|^region |^stadtverband |^stadtregion |^stadteregion /iu.test(n.toLowerCase()) ? n : `Kreis ${n}`), free: "kreisfreie Stadt", freeNamed: (n: string): string => `kreisfreie Stadt ${n}` },
+    en: { kreis: (n: string): string => `district ${n}`, free: "independent city", freeNamed: (n: string): string => `independent city ${n}` },
+  } as const;
+}
 
 /**
  * Today's kreisWord: the Kreis a row lies in, from its own eight-digit Gemeinde key. A key ending in 000 is a
@@ -72,19 +82,19 @@ const KREIS_WORD = {
  */
 export function kreisWord(p: Pick<T.PlaceItem, "kind" | "districtCode" | "districtName">, language: Language): string | null {
   const key = p.districtCode ?? null;
-  if (!IN_A_KREIS.has(p.kind) || key === null || !/^\d{8}$/u.test(key) || key.slice(2) === "000000") return null;
-  if (key.endsWith("000") && p.kind === "municipality") return KREIS_WORD[language].free;
+  if (!IN_A_KREIS().has(p.kind) || key === null || !/^\d{8}$/u.test(key) || key.slice(2) === "000000") return null;
+  if (key.endsWith("000") && p.kind === "municipality") return KREIS_WORD()[language].free;
   const name = p.districtName ?? null;
   if (name === null) return null;
-  return key.endsWith("000") ? KREIS_WORD[language].freeNamed(name) : KREIS_WORD[language].kreis(name);
+  return key.endsWith("000") ? KREIS_WORD()[language].freeNamed(name) : KREIS_WORD()[language].kreis(name);
 }
 
 /** "Essen — Stadt/Gemeinde, Nordrhein-Westfalen, 306 km, 51.45560, 7.01160": kind, Land, distance, coordinate. */
 function line(p: T.PlaceItem, language: Language, near: boolean): string {
   const code = p.districtCode ?? null;
-  const land = code !== null && /^\d{2,12}$/u.test(code) && !(p.kind === "region" && code.length === 2) ? LAENDER[code.slice(0, 2)]?.[language] ?? null : null;
+  const land = code !== null && /^\d{2,12}$/u.test(code) && !(p.kind === "region" && code.length === 2) ? LAENDER()[code.slice(0, 2)]?.[language] ?? null : null;
   const parts = [
-    KIND_WORD[p.kind]?.[language] ?? p.kind,
+    KIND_WORD()[p.kind]?.[language] ?? p.kind,
     land,
     kreisWord(p, language),
     near && p.distanceM !== undefined ? `${(p.distanceM / 1000).toFixed(0)} km` : null,
@@ -104,7 +114,7 @@ export const findPlace: Handler = async (args, ctx) => {
     if (isResult(pos)) return pos;
     at = atParam(pos.at);
   }
-  const r = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: str(args["query"]), kind: kindArg === undefined ? undefined : PLACE_KIND[kindArg], at, radius_m: radiusM(args["radius_km"]), limit: num(args["limit"]) });
+  const r = await ctx.api.get<T.PlaceItem[]>("listPlaces", { q: str(args["query"]), kind: kindArg === undefined ? undefined : PLACE_KIND()[kindArg], at, radius_m: radiusM(args["radius_km"]), limit: num(args["limit"]) });
   if (r.data.length === 0) {
     // Today's server tells "this name is not in the index" from "no index is loaded" (placeGazetteerLoaded).
     const cov = await ctx.api.get<T.PlacesCoverageData>("getPlacesCoverage", {});
