@@ -29,21 +29,24 @@ const fold = (s: string): string => s.normalize("NFC").toLocaleLowerCase("de").r
 /**
  * The 16 Länder: the official two-digit key, the German name and the English one, as today's server holds
  * them (its region map, Destatis). Fixed by the constitution, not data that ages, and the API's gazetteer
- * does not hold the Länder as places (getPlacesCoverage lists only the Länder its places carry).
+ * does not hold the Länder as places (getPlacesCoverage lists only the Länder its places carry). Built per call,
+ * never held at module level, so Stryker mutates it per test rather than statically against the whole suite.
  */
-export const LANDS: readonly { readonly code: string; readonly de: string; readonly en: string }[] = [
-  { code: "01", de: "Schleswig-Holstein", en: "Schleswig-Holstein" }, { code: "02", de: "Hamburg", en: "Hamburg" },
-  { code: "03", de: "Niedersachsen", en: "Lower Saxony" }, { code: "04", de: "Bremen", en: "Bremen" },
-  { code: "05", de: "Nordrhein-Westfalen", en: "North Rhine-Westphalia" }, { code: "06", de: "Hessen", en: "Hesse" },
-  { code: "07", de: "Rheinland-Pfalz", en: "Rhineland-Palatinate" }, { code: "08", de: "Baden-Württemberg", en: "Baden-Württemberg" },
-  { code: "09", de: "Bayern", en: "Bavaria" }, { code: "10", de: "Saarland", en: "Saarland" }, { code: "11", de: "Berlin", en: "Berlin" },
-  { code: "12", de: "Brandenburg", en: "Brandenburg" }, { code: "13", de: "Mecklenburg-Vorpommern", en: "Mecklenburg-Western Pomerania" },
-  { code: "14", de: "Sachsen", en: "Saxony" }, { code: "15", de: "Sachsen-Anhalt", en: "Saxony-Anhalt" }, { code: "16", de: "Thüringen", en: "Thuringia" },
-];
+export function LANDS(): readonly { readonly code: string; readonly de: string; readonly en: string }[] {
+  return [
+    { code: "01", de: "Schleswig-Holstein", en: "Schleswig-Holstein" }, { code: "02", de: "Hamburg", en: "Hamburg" },
+    { code: "03", de: "Niedersachsen", en: "Lower Saxony" }, { code: "04", de: "Bremen", en: "Bremen" },
+    { code: "05", de: "Nordrhein-Westfalen", en: "North Rhine-Westphalia" }, { code: "06", de: "Hessen", en: "Hesse" },
+    { code: "07", de: "Rheinland-Pfalz", en: "Rhineland-Palatinate" }, { code: "08", de: "Baden-Württemberg", en: "Baden-Württemberg" },
+    { code: "09", de: "Bayern", en: "Bavaria" }, { code: "10", de: "Saarland", en: "Saarland" }, { code: "11", de: "Berlin", en: "Berlin" },
+    { code: "12", de: "Brandenburg", en: "Brandenburg" }, { code: "13", de: "Mecklenburg-Vorpommern", en: "Mecklenburg-Western Pomerania" },
+    { code: "14", de: "Sachsen", en: "Saxony" }, { code: "15", de: "Sachsen-Anhalt", en: "Saxony-Anhalt" }, { code: "16", de: "Thüringen", en: "Thuringia" },
+  ];
+}
 
 /** The Land a name is, in either language, named in the answer's language; undefined when it names none. */
 export function landOf(name: string, language: Language): { code: string; name: string } | undefined {
-  const land = LANDS.find((l) => fold(l.de) === fold(name) || fold(l.en) === fold(name));
+  const land = LANDS().find((l) => fold(l.de) === fold(name) || fold(l.en) === fold(name));
   return land === undefined ? undefined : { code: land.code, name: land[language] };
 }
 

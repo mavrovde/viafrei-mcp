@@ -176,7 +176,7 @@ export function zoneDetail(z: T.LowEmissionZone, language: Language): string[] {
 /** The Land of a district by its key's first two digits, in the answer's language; else the API's Land row. */
 function landName(d: T.LocationData, language: Language): string | null {
   const key = d.district?.code ?? d.state?.code ?? null;
-  const land = key === null ? undefined : LANDS.find((l) => l.code === key.slice(0, 2));
+  const land = key === null ? undefined : LANDS().find((l) => l.code === key.slice(0, 2));
   return land?.[language] ?? d.state?.name ?? null;
 }
 

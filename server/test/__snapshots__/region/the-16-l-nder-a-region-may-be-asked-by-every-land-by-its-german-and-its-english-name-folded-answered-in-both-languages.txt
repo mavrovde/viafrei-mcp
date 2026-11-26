@@ -1,0 +1,34 @@
+01 Schleswig-Holstein: {"code":"01","name":"Schleswig-Holstein"} / {"code":"01","name":"Schleswig-Holstein"}
+01 Schleswig-Holstein: {"code":"01","name":"Schleswig-Holstein"} / {"code":"01","name":"Schleswig-Holstein"}
+02 Hamburg: {"code":"02","name":"Hamburg"} / {"code":"02","name":"Hamburg"}
+02 Hamburg: {"code":"02","name":"Hamburg"} / {"code":"02","name":"Hamburg"}
+03 Niedersachsen: {"code":"03","name":"Niedersachsen"} / {"code":"03","name":"Lower Saxony"}
+03 Lower Saxony: {"code":"03","name":"Niedersachsen"} / {"code":"03","name":"Lower Saxony"}
+04 Bremen: {"code":"04","name":"Bremen"} / {"code":"04","name":"Bremen"}
+04 Bremen: {"code":"04","name":"Bremen"} / {"code":"04","name":"Bremen"}
+05 Nordrhein-Westfalen: {"code":"05","name":"Nordrhein-Westfalen"} / {"code":"05","name":"North Rhine-Westphalia"}
+05 North Rhine-Westphalia: {"code":"05","name":"Nordrhein-Westfalen"} / {"code":"05","name":"North Rhine-Westphalia"}
+06 Hessen: {"code":"06","name":"Hessen"} / {"code":"06","name":"Hesse"}
+06 Hesse: {"code":"06","name":"Hessen"} / {"code":"06","name":"Hesse"}
+07 Rheinland-Pfalz: {"code":"07","name":"Rheinland-Pfalz"} / {"code":"07","name":"Rhineland-Palatinate"}
+07 Rhineland-Palatinate: {"code":"07","name":"Rheinland-Pfalz"} / {"code":"07","name":"Rhineland-Palatinate"}
+08 Baden-Württemberg: {"code":"08","name":"Baden-Württemberg"} / {"code":"08","name":"Baden-Württemberg"}
+08 Baden-Württemberg: {"code":"08","name":"Baden-Württemberg"} / {"code":"08","name":"Baden-Württemberg"}
+09 Bayern: {"code":"09","name":"Bayern"} / {"code":"09","name":"Bavaria"}
+09 Bavaria: {"code":"09","name":"Bayern"} / {"code":"09","name":"Bavaria"}
+10 Saarland: {"code":"10","name":"Saarland"} / {"code":"10","name":"Saarland"}
+10 Saarland: {"code":"10","name":"Saarland"} / {"code":"10","name":"Saarland"}
+11 Berlin: {"code":"11","name":"Berlin"} / {"code":"11","name":"Berlin"}
+11 Berlin: {"code":"11","name":"Berlin"} / {"code":"11","name":"Berlin"}
+12 Brandenburg: {"code":"12","name":"Brandenburg"} / {"code":"12","name":"Brandenburg"}
+12 Brandenburg: {"code":"12","name":"Brandenburg"} / {"code":"12","name":"Brandenburg"}
+13 Mecklenburg-Vorpommern: {"code":"13","name":"Mecklenburg-Vorpommern"} / {"code":"13","name":"Mecklenburg-Western Pomerania"}
+13 Mecklenburg-Western Pomerania: {"code":"13","name":"Mecklenburg-Vorpommern"} / {"code":"13","name":"Mecklenburg-Western Pomerania"}
+14 Sachsen: {"code":"14","name":"Sachsen"} / {"code":"14","name":"Saxony"}
+14 Saxony: {"code":"14","name":"Sachsen"} / {"code":"14","name":"Saxony"}
+15 Sachsen-Anhalt: {"code":"15","name":"Sachsen-Anhalt"} / {"code":"15","name":"Saxony-Anhalt"}
+15 Saxony-Anhalt: {"code":"15","name":"Sachsen-Anhalt"} / {"code":"15","name":"Saxony-Anhalt"}
+16 Thüringen: {"code":"16","name":"Thüringen"} / {"code":"16","name":"Thuringia"}
+16 Thuringia: {"code":"16","name":"Thüringen"} / {"code":"16","name":"Thuringia"}
+folded: {"code":"08","name":"Baden-Württemberg"} / {"code":"08","name":"Baden-Württemberg"} | {"code":"05","name":"Nordrhein-Westfalen"} / {"code":"05","name":"North Rhine-Westphalia"} | {"code":"13","name":"Mecklenburg-Vorpommern"} / {"code":"13","name":"Mecklenburg-Western Pomerania"}
+none: undefined / undefined | undefined / undefined
