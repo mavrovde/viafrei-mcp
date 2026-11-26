@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "x-source": {
-    "comment": "Copied from the viafrei-api repository, api/openapi.json at the release tag v1.2.1 (its document is that of main at the commit named; everything after 1.2.0 changed tests only).",
+    "comment": "Copied from the viafrei-api repository, api/openapi.json at the release tag v1.2.2 (its document is that of main at the commit named; everything after 1.2.0 changed tests, CI and release tooling only, not the document).",
     "commit": "940726da977b1e8e421f4d547f3e5a83bafbb7d2"
   },
   "components": {

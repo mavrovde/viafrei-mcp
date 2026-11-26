@@ -7,12 +7,12 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [2.7.5] - 2026-11-26
 
-**The server runs on API 1.2.1.** The server's tools, prompts and resources are those of 2.7.4; what changes is where three answers come from: the place resolver, the stop boards around a point and the station page are the API's released operations.
+**The server runs on API 1.2.2.** The server's tools, prompts and resources are those of 2.7.4; what changes is where three answers come from: the place resolver, the stop boards around a point and the station page are the API's released operations.
 
 ### Changed
-- **The server runs against ViaFrei API 1.2.1** (`server/api.pin`), where the place resolver, the stop boards around a point and the station page are released operations. A place name is resolved by the API (`resolvePlace`) before the place search; `get_departures` around a place resolves the place first and asks the stop boards for its point; `describe_station` reads the released station page.
+- **The server runs against ViaFrei API 1.2.2** (`server/api.pin`), where the place resolver, the stop boards around a point and the station page are released operations. A place name is resolved by the API (`resolvePlace`) before the place search; `get_departures` around a place resolves the place first and asks the stop boards for its point; `describe_station` reads the released station page.
 
-### Not carried by API 1.2.1
+### Not carried by API 1.2.2
 What today's server said and the released API does not return; the answer leaves it out rather than guessing it:
 - the **FlixBus/FlixTrain block** after the stops around a place (`get_departures`): the released stop boards carry no long-distance departures;
 - on the station page (`describe_station`): a lift's **reason** and **expected return time**, its **tracks** (an English line gives DB's position words instead, or "no location given" only where DB gives none), and the **rail-replacement flag** of a departure;

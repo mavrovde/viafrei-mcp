@@ -118,7 +118,7 @@ describe("the board, the alerts, parking", () => {
   });
 });
 
-/** The page as API 1.2.1 sends it (StationPageEnvelope.data): each section's content under its own key. */
+/** The page as API 1.2.2 sends it (StationPageEnvelope.data): each section's content under its own key. */
 const apiPage = (sections: T.ApiPageSection[]): NonNullable<T.ApiStationPage> => ({ pageUrl: "https://alpha.example/en/station/koeln-hbf", sections });
 const apiSec = (id: T.ApiPageSection["id"], o: Partial<T.ApiPageSection> = {}): T.ApiPageSection => ({ id, asOf: "2026-03-30T09:58:00Z", sources: [], ...o });
 const apiDep = (o: Partial<NonNullable<T.ApiPageSection["departures"]>[number]> = {}) => ({ plannedAt: "2026-03-30T10:05:00Z", line: "S11", destination: "Dormagen", platform: "11 B-C", plannedPlatform: "11", platformChanged: false, delayMin: 0, cancelled: false, noForecast: false, ...o });
