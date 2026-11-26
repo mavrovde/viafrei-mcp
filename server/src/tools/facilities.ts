@@ -57,45 +57,59 @@ const COPY = {
   },
 } as const;
 
-/** Phrases first, then words (main presentation/facility-names.ts): DB's German unit names, in English. */
-const GLOSSARY: readonly (readonly [RegExp, string])[] = [
-  [/\bBahnsteig\s+Gleis\b/giu, "platform"], [/\bS-Bstg\.?\s*/giu, "S-Bahn platform "], [/\bBstg\.?\s*/giu, "platform "], [/\bBahnsteig\b/giu, "platform"],
-  [/\bGepäckbahnsteig\b/giu, "luggage platform"], [/\bLastenaufzug\b/giu, "goods lift"], [/\bAufzug\b/giu, "lift"], [/\bFahrtreppe\b/giu, "escalator"],
-  [/\bKein\s+Halt\b/giu, "no stop"], [/\bGleise\b/giu, "platforms"], [/\bGleis\b/giu, "platform"], [/\bGl\.\s*(?=\d|$)/giu, "platform "],
-  [/\b(?:zum|zur|zu|nach)\b/giu, "to"], [/\b(?:vom|von|ab)\b/giu, "from"], [/\baufwärts\b|\baufw\.(?=\s|$)/giu, "up"], [/\babwärts\b|\babw\.(?=\s|$)/giu, "down"],
-  [/\bAusgang\b/giu, "exit"], [/\bEingang\b/giu, "entrance"], [/\bund\b/giu, "and"], [/\bSüdsteg\b/giu, "south footbridge"], [/\bNordsteg\b/giu, "north footbridge"],
-  [/\bMittelsteg\b/giu, "middle footbridge"], [/\bSteg\b/giu, "footbridge"], [/\bSüd\b/giu, "south"], [/\bNord\b/giu, "north"], [/\bOst\b/giu, "east"], [/\bWest\b/giu, "west"],
-  [/\b(\d)\.\s?UG\b/gu, "basement $1"], [/\bUG\b/gu, "basement"], [/\bEG\b/gu, "ground floor"], [/\b(\d)\.\s?OG\b/gu, "floor $1"], [/\bOG\b/gu, "upper floor"],
-  [/\bUnterführung\b/giu, "underpass"], [/\bEmpfangsgebäude\b/giu, "station building"], [/\bVorplatz\b/giu, "forecourt"],
-];
-const ENGLISH = new Set(GLOSSARY.flatMap(([, to]) => to.toLowerCase().split(/\s+/u)).filter((w) => /^\p{Ll}+$/u.test(w)));
+/**
+ * Phrases first, then words (main presentation/facility-names.ts): DB's German unit names, in English. This
+ * table and EXPLANATION are built per call, never held at module level: Stryker mutated them statically, each
+ * mutant against the whole suite (63 timed out at ~9.5 s each); in a function only the tests that read them run.
+ */
+function GLOSSARY(): readonly (readonly [RegExp, string])[] {
+  return [
+    [/\bBahnsteig\s+Gleis\b/giu, "platform"], [/\bS-Bstg\.?\s*/giu, "S-Bahn platform "], [/\bBstg\.?\s*/giu, "platform "], [/\bBahnsteig\b/giu, "platform"],
+    [/\bGepäckbahnsteig\b/giu, "luggage platform"], [/\bLastenaufzug\b/giu, "goods lift"], [/\bAufzug\b/giu, "lift"], [/\bFahrtreppe\b/giu, "escalator"],
+    [/\bKein\s+Halt\b/giu, "no stop"], [/\bGleise\b/giu, "platforms"], [/\bGleis\b/giu, "platform"], [/\bGl\.\s*(?=\d|$)/giu, "platform "],
+    [/\b(?:zum|zur|zu|nach)\b/giu, "to"], [/\b(?:vom|von|ab)\b/giu, "from"], [/\baufwärts\b|\baufw\.(?=\s|$)/giu, "up"], [/\babwärts\b|\babw\.(?=\s|$)/giu, "down"],
+    [/\bAusgang\b/giu, "exit"], [/\bEingang\b/giu, "entrance"], [/\bund\b/giu, "and"], [/\bSüdsteg\b/giu, "south footbridge"], [/\bNordsteg\b/giu, "north footbridge"],
+    [/\bMittelsteg\b/giu, "middle footbridge"], [/\bSteg\b/giu, "footbridge"], [/\bSüd\b/giu, "south"], [/\bNord\b/giu, "north"], [/\bOst\b/giu, "east"], [/\bWest\b/giu, "west"],
+    [/\b(\d)\.\s?UG\b/gu, "basement $1"], [/\bUG\b/gu, "basement"], [/\bEG\b/gu, "ground floor"], [/\b(\d)\.\s?OG\b/gu, "floor $1"], [/\bOG\b/gu, "upper floor"],
+    [/\bUnterführung\b/giu, "underpass"], [/\bEmpfangsgebäude\b/giu, "station building"], [/\bVorplatz\b/giu, "forecourt"],
+  ];
+}
+/** The English words the glossary writes: a lower-case word outside them is German left over. */
+function englishOf(glossary: ReturnType<typeof GLOSSARY>): ReadonlySet<string> {
+  return new Set(glossary.flatMap(([, to]) => to.toLowerCase().split(/\s+/u)).filter((w) => /^\p{Ll}+$/u.test(w)));
+}
 
 /** A unit's name as an English answer may print it: translated where the glossary finishes it, else quoted as DB's German. */
 export function facilityNameIn(language: Language, name: string): string {
   const raw = name.replace(/\s+/gu, " ").trim();
   if (language === "de" || raw === "") return raw;
+  const glossary = GLOSSARY();
   let out = raw;
-  for (const [from, to] of GLOSSARY) out = out.replace(from, to);
+  for (const [from, to] of glossary) out = out.replace(from, to);
   out = out.replace(/\s+/gu, " ").trim();
-  const leftover = (out.match(/\p{L}+/gu) ?? []).some((w) => /^\p{Ll}{2,}$/u.test(w) && !ENGLISH.has(w));
+  const english = englishOf(glossary);
+  const leftover = (out.match(/\p{L}+/gu) ?? []).some((w) => /^\p{Ll}{2,}$/u.test(w) && !english.has(w));
   return leftover ? `Provider text (German): "${raw}"` : out;
 }
 
 /** Today's EXPLANATION: an operator's state word in the answer's language; null where it only repeats the state. */
-const EXPLANATION: Readonly<Record<string, { de: string; en: string } | null>> = {
-  "available": null,
-  "not available": null,
-  "under construction": { de: "im Umbau", en: "under construction" },
-  "under maintenance": { de: "in Wartung", en: "under maintenance" },
-  "not monitored": { de: "wird nicht überwacht", en: "not monitored" },
-  "monitoring disrupted": { de: "Überwachung gestört", en: "monitoring disrupted" },
-  "monitoring not available": { de: "Überwachung nicht verfügbar", en: "monitoring not available" },
-};
+function EXPLANATION(): Readonly<Record<string, { de: string; en: string } | null>> {
+  return {
+    "available": null,
+    "not available": null,
+    "under construction": { de: "im Umbau", en: "under construction" },
+    "under maintenance": { de: "in Wartung", en: "under maintenance" },
+    "not monitored": { de: "wird nicht überwacht", en: "not monitored" },
+    "monitoring disrupted": { de: "Überwachung gestört", en: "monitoring disrupted" },
+    "monitoring not available": { de: "Überwachung nicht verfügbar", en: "monitoring not available" },
+  };
+}
 
 /** Today's explanationIn: a known word translated, else the operator's own words quoted as theirs. */
 export function explanationIn(language: Language, raw: string): string | null {
   const key = raw.trim().toLowerCase();
-  if (key in EXPLANATION) return EXPLANATION[key]?.[language] ?? null;
+  const explanation = EXPLANATION();
+  if (key in explanation) return explanation[key]?.[language] ?? null;
   return language === "de" ? `Meldung der Bahn: „${raw}“` : `DB's report: "${raw}"`;
 }
 
