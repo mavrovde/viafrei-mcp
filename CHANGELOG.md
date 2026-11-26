@@ -5,6 +5,9 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+### Fixed
+- **The release's mutation run ends inside its 20-minute shards again.** `find_poi`'s OSM word tables (`server/src/tools/osm-words.ts`) were module-level, so Stryker treated their ~1,050 mutants as static and ran the whole suite for each one. That took about two hours against an estimate of 259 s, and shard 6 of the 2.7.4 and 2.7.5 publishes hit its limit, so the publish was skipped. The tables are now built inside functions, so each mutant runs only the tests that read it (about one). A new test pins every word in both languages, so the mutants are killed, not left alive. The file's pieces are measured (`server/scripts/mutation-weights.json`). `scripts/mutation-weights.mjs` now also reads the log of the reusable workflow, whose lines start with `Mutation / `.
+
 ## [2.7.5] - 2026-11-26
 
 **The server runs on API 1.2.2.** The server's tools, prompts and resources are those of 2.7.4; what changes is where three answers come from: the place resolver, the stop boards around a point and the station page are the API's released operations.
