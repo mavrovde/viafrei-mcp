@@ -9,13 +9,13 @@ export type PlaceItem = { id: string; name: string; kind: string; location: LatL
   /** Proposed: the Kreis the row lies in, by name (BKG), with districtCode its eight-digit Gemeinde key. */
   districtName?: string | null;
 };
-/** Proposed resolvePlace: the one place a text names, as today's resolver says it (label), with its alternatives. */
+/** resolvePlace: the one place a text names, as today's resolver says it (label), with its alternatives. */
 export type ResolvedPlace = { name: string; label: string; kind: string; location: LatLon; districtCode?: string | null; alternatives?: { name: string; kind: string }[] } | null;
-/** Proposed listStopBoards: the stops around a place, chosen as today's server chooses them, each with its next departures. */
+/** StopBoardsData (listStopBoards): the stops around the position asked, chosen as today's server chooses them, each with its next departures. */
 export type StopBoards = {
-  place: { label: string; location: LatLon }; window: { from: string; until: string };
+  location: LatLon; window: { from: string; until: string };
   stops: { id: string; name: string; stopId: string; distanceM: number; departures: Departure[] }[];
-  /** Today's FlixBus/FlixTrain block near the point (its own feed, not DELFI's twins); null where none is near. */
+  /** Today's FlixBus/FlixTrain block near the point (its own feed, not DELFI's twins); null where none is near. Not in StopBoardsData of API 1.2.1. */
   longDistance?: LongDistance | null;
 } | null;
 export type LongDistanceDeparture = {
@@ -287,7 +287,7 @@ export type ParkingBay = {
 export type ParkingBayCounts = { total: number; sensors: number; free: number; occupied: number; unknown: number; staticSites: number; staticSpaces: number };
 export type ParkingBaysData = { kind: string; counts: ParkingBayCounts; bays: ParkingBay[] };
 
-/** Proposed (getStationPage): today's station page, its sections built by the page's own rules, said by describe_station. */
+/** getStationPage, as describe_station says it (pageFromApi reads the API's StationPageEnvelope.data into it): today's station page, its sections built by the page's own rules. */
 export type RailLamp = "red" | "yellow" | "green" | "unknown";
 export type RailReason = { kind: "late" | "cancelled" | "median" | "platform" | "alert" | "sight" | "line"; n?: number; of?: number; side?: "dep" | "arr" | "both"; min?: number; line?: string; long?: boolean; lamp?: RailLamp };
 export type StationPageLift = { kind: string; description: string | null; tracks: string[]; state: "active" | "inactive" | "unknown"; reason: string | null; resumeAt: string | null };
@@ -296,7 +296,8 @@ export type StationPageAlert = { header: string; lines: string[]; atStation: boo
 export type StationPagePlatform = { tracks: string[]; name: string | null; lift?: "ok" | "unknown" | "none" | "out"; stepFree?: Limitation; heightCm?: { min: number; max: number } | null };
 export type StationPageSection = {
   id: "header" | "rail_ampel" | "step_free_now" | "lifts" | "platforms" | "departures" | "service_alerts" | "parking_charging";
-  asOf: string; sources: string[];
+  /** Null where the API gives the section no time of its own. */
+  asOf: string | null; sources: string[];
   name?: string; street?: string | null; zipcode?: string | null; city?: string | null; land?: string | null; category?: number | null; evaNo?: string | null;
   lamp?: RailLamp; reasons?: RailReason[]; lines?: { line: string; long: boolean; lamp: RailLamp }[];
   platforms?: StationPagePlatform[]; blocked?: StationPagePlatform[]; steplessAccess?: "yes" | "partial" | "no" | "unknown" | null;
@@ -304,3 +305,19 @@ export type StationPageSection = {
   facilities?: string[]; point?: LatLon | null;
 };
 export type StationPage = { station: { name: string }; pageUrl: string; sections: StationPageSection[] } | null;
+
+/** StationPageEnvelope.data, as API 1.2.1 sends it: each section's content under its own key (PageSection, PageLift, PlatformAccess). */
+type Access = "yes" | "partial" | "no" | "unknown";
+export type ApiPagePlatform = { tracks: string[]; name: string | null; lift: "ok" | "out" | "unknown" | "none" };
+export type ApiPageSection = {
+  id: StationPageSection["id"]; asOf: string | null; sources: string[];
+  header?: { name: string; stationNo: string; eva: string | null; evaNumbers: string[]; slug: string; street: string | null; zipcode: string | null; city: string | null; land: string | null; category: number | null };
+  railAmpel?: { lamp: RailLamp; trips: number; reasons: RailReason[]; lines: { line: string; long: boolean; lamp: RailLamp }[] };
+  stepFreeNow?: { platforms: ApiPagePlatform[]; blocked: ApiPagePlatform[]; steplessAccess: string | null };
+  lifts?: { id: string; kind: string; position: string | null; state: "active" | "inactive" | "unknown"; equipmentNo: string | null }[];
+  platforms?: { releasedOn: string | null; stations: { name: string | null; total: number; list: { name: string | null; tracks: string[]; stated: boolean; facts: { stepFree: Access }; heightCm: { min: number; max: number } | null }[] }[] };
+  departures?: { plannedAt: string; line: string | null; destination: string | null; platform: string | null; plannedPlatform: string | null; platformChanged: boolean; delayMin: number | null; cancelled: boolean; noForecast: boolean }[];
+  alerts?: StationPageAlert[];
+  facilities?: { flags: string[]; location: LatLon | null };
+};
+export type ApiStationPage = { pageUrl: string; sections: ApiPageSection[] } | null;

@@ -119,9 +119,9 @@ export function pickPlace(q: string, found: { data: readonly PlaceItem[]; meta: 
 }
 
 /**
- * The proposed resolvePlace: the API says which one place the text names and how the answer calls it (today's
- * resolver, which is the API's job, not the MCP's). Undefined, and the place search read as before, when the API
- * does not offer the operation (its document does not list it) or names no place for the text.
+ * resolvePlace: the API says which one place the text names and how the answer calls it (today's resolver, which
+ * is the API's job, not the MCP's). Undefined, and the place search read as before, when the API answers 404 or
+ * names no place for the text.
  */
 export async function resolvePlace(q: string, ctx: ToolContext): Promise<Position | undefined> {
   try {

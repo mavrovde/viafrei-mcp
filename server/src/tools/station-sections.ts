@@ -1,11 +1,12 @@
 /**
- * describe_station from the station page the API builds (the proposed getStationPage): today's server read the page's
+ * describe_station from the station page the API builds (getStationPage): today's server read the page's
  * sections from the database by the page's own rules (the rail lamp, step-free now, the lifts, the platforms, the
  * board, the alerts, parking) and said them in these words (describe_station). Here the API returns
  * those sections and the MCP only says them; the rules stay in one place, the API's, so the page and the tool agree.
  */
 import type * as T from "../api/types.js";
 import { standTime, type Language } from "../presentation.js";
+import { facilityNameIn } from "./facilities.js";
 
 /** Today's LIST_SHOWN: lines a list shows before it counts the rest. */
 export const LIST_SHOWN = 20;
@@ -136,18 +137,22 @@ const SUBJECT = {
 } as const;
 
 const stamp = (iso: string, language: Language, now: Date): string => `${W[language].asOf} ${standTime(iso, language, now)}`;
+/** A section's " (As of …)": nothing where the API gives the section no time of its own (never another time in its place). */
+const dated = (iso: string | null, language: Language, now: Date): string => (iso === null ? "" : ` (${stamp(iso, language, now)})`);
 
 /** Today's platformLabel: the tracks a platform serves ("Platform 4/5"), else the inventory's name. */
 export function platformLabel(p: { readonly tracks: readonly string[]; readonly name: string | null }, language: Language): string {
   return p.tracks.length > 0 ? `${W[language].track} ${p.tracks.join("/")}` : (p.name ?? W[language].track);
 }
 
-/** Today's liftLabel: DB's German words on a German answer, else the kind and tracks, else "no location given". */
+/** Today's liftLabel: DB's German words on a German answer, else the kind and tracks, else DB's words (in English where the glossary finishes them, else quoted), "no location given" only where DB gives none. */
 export function liftLabel(u: T.StationPageLift, language: Language): string {
   const kinds: Readonly<Record<string, string>> = W[language].kind;
   const kind = kinds[u.kind] ?? W[language].kind.other;
   if (language === "de" && u.description !== null && u.description !== "") return `${kind} ${u.description}`;
   if (u.tracks.length > 0) return `${kind} (${W[language].track} ${u.tracks.join("/")})`;
+  // No tracks, but DB's position words: those, in English where the glossary finishes them, else quoted.
+  if (u.description !== null && u.description !== "") return `${kind} ${facilityNameIn(language, u.description)}`;
   return `${kind} (${W[language].noLocation})`;
 }
 
@@ -191,6 +196,37 @@ export function shareAlikeSubjectOf(page: NonNullable<T.StationPage>, language: 
   return alerts ? `${b[language]} ${language === "de" ? "und" : "and"} ${SUBJECT.alerts[language]}` : b[language];
 }
 
+/**
+ * The page as the API sends it (StationPageEnvelope.data, each section's content under its own key) in the
+ * sections' words above. The API carries no lift reason, return time or tracks and no rail-replacement flag: those
+ * parts are left out, never guessed. A planned platform is said only where the API says the platform changed. A
+ * section without its own time (asOf null) keeps none: it is said undated, or left out where it holds nothing.
+ */
+export function pageFromApi(page: NonNullable<T.ApiStationPage>, stationName: string): NonNullable<T.StationPage> {
+  const sections = page.sections.map((s): T.StationPageSection => {
+    const base = { id: s.id, asOf: s.asOf, sources: s.sources };
+    switch (s.id) {
+      case "header": {
+        const h = s.header;
+        return h === undefined ? base : { ...base, name: h.name, street: h.street, zipcode: h.zipcode, city: h.city, land: h.land, category: h.category, evaNo: h.eva };
+      }
+      case "rail_ampel": return s.railAmpel === undefined ? base : { ...base, lamp: s.railAmpel.lamp, reasons: s.railAmpel.reasons, lines: s.railAmpel.lines };
+      case "step_free_now": {
+        const f = s.stepFreeNow;
+        const access = f?.steplessAccess;
+        return f === undefined ? base : { ...base, platforms: f.platforms, blocked: f.blocked, steplessAccess: access === "yes" || access === "partial" || access === "no" || access === "unknown" ? access : null };
+      }
+      case "lifts": return { ...base, units: (s.lifts ?? []).map((u) => ({ kind: u.kind, description: u.position, tracks: [], state: u.state, reason: null, resumeAt: null })) };
+      case "platforms": return { ...base, platforms: (s.platforms?.stations ?? []).flatMap((st) => st.list.map((p) => ({ tracks: p.tracks, name: p.name, stepFree: p.stated ? p.facts.stepFree : "unknown", heightCm: p.heightCm }))) };
+      case "departures": return { ...base, rows: (s.departures ?? []).map((d) => ({ planned: d.plannedAt, line: d.line, destination: d.destination, platform: d.platform, plannedPlatform: d.platformChanged ? d.plannedPlatform : null, delayMin: d.delayMin, cancelled: d.cancelled, noForecast: d.noForecast, replacementBus: false })) };
+      case "service_alerts": return { ...base, alerts: s.alerts ?? [] };
+      case "parking_charging": return { ...base, facilities: s.facilities?.flags ?? [], point: s.facilities?.location ?? null };
+      default: return base;
+    }
+  });
+  return { station: { name: sections.find((x) => x.id === "header")?.name ?? stationName }, pageUrl: page.pageUrl, sections };
+}
+
 /** The page's sections in today's words, in the page's order. */
 export function stationPageSectionsText(page: NonNullable<T.StationPage>, language: Language, now: Date): string {
   const w = W[language];
@@ -206,10 +242,12 @@ export function stationPageSectionsText(page: NonNullable<T.StationPage>, langua
         break;
       }
       case "rail_ampel": {
+        // No time and nothing held: no lamp was read, so none is said (never "too few trips").
+        if (s.asOf === null && (s.reasons ?? []).length === 0 && (s.lines ?? []).length === 0 && (s.lamp ?? "unknown") === "unknown") break;
         const reasons = (s.reasons ?? []).map((x) => railReasonLine(x, language));
         const lamp = s.lamp ?? "unknown";
         const sentence = reasons.length > 0 ? reasons.join(" · ") : lamp === "green" ? w.ampelWhy.green : w.ampelWhy.few;
-        out.push("", `${w.ampel}: ${w.lamp[lamp]} — ${sentence} (${stamp(s.asOf, language, now)})`);
+        out.push("", `${w.ampel}: ${w.lamp[lamp]} — ${sentence}${dated(s.asOf, language, now)}`);
         const lines = s.lines ?? [];
         if (lines.length > 0) out.push(`${w.ampelWhy.lines}: ${lines.map((l) => `${l.long ? w.ampelWhy.long : l.line} ${w.lamp[l.lamp]}`).join(", ")}`);
         break;
@@ -217,10 +255,11 @@ export function stationPageSectionsText(page: NonNullable<T.StationPage>, langua
       case "step_free_now": {
         const ok = s.platforms ?? [];
         const blocked = s.blocked ?? [];
+        if (s.asOf === null && ok.length === 0 && blocked.length === 0 && (s.steplessAccess ?? "unknown") === "unknown") break;
         const confirmed = ok.filter((p) => p.lift !== "unknown");
         const unknownLift = ok.filter((p) => p.lift === "unknown");
         const label = (p: T.StationPagePlatform): string => platformLabel(p, language);
-        out.push("", `${confirmed.length > 0 ? w.stepFree : w.stepFreeNeutral} (${stamp(s.asOf, language, now)}):`);
+        out.push("", `${confirmed.length > 0 ? w.stepFree : w.stepFreeNeutral}${dated(s.asOf, language, now)}:`);
         if (confirmed.length > 0) out.push(`- ${w.reachable}: ${confirmed.map(label).join(", ")}`);
         if (unknownLift.length > 0) out.push(`- ${w.reachableUnknown}: ${unknownLift.map(label).join(", ")}`);
         if (blocked.length > 0) out.push(`- ${w.blocked}: ${blocked.map(label).join(", ")}`);
@@ -235,20 +274,20 @@ export function stationPageSectionsText(page: NonNullable<T.StationPage>, langua
           const extra = [u.reason === null ? null : `${w.reason}: ${u.reason}`, u.resumeAt === null ? null : `${w.back} ${standTime(u.resumeAt, language, now)}`].filter((x): x is string => x !== null);
           return `- ${liftLabel(u, language)}: ${w.state[u.state]}${extra.length === 0 ? "" : ` (${extra.join("; ")})`}`;
         };
-        out.push("", `${w.lifts} (${stamp(s.asOf, language, now)}):`, ...listed(units, liftLine, language));
+        out.push("", `${w.lifts}${dated(s.asOf, language, now)}:`, ...listed(units, liftLine, language));
         break;
       }
       case "platforms": {
         const platforms = s.platforms ?? [];
         if (platforms.length === 0) break;
-        out.push("", `${w.platforms} (${stamp(s.asOf, language, now)}):`);
+        out.push("", `${w.platforms}${dated(s.asOf, language, now)}:`);
         out.push(...listed(platforms, (p) => `- ${platformLabel(p, language)}: ${w.facts[p.stepFree ?? "unknown"]}${p.heightCm === undefined || p.heightCm === null ? "" : `, ${w.height(p.heightCm)}`}`, language));
         break;
       }
       case "departures": {
         const rows = s.rows ?? [];
         if (rows.length === 0) break;
-        out.push("", `${w.departures} (${stamp(s.asOf, language, now)}):`, ...rows.map((r) => departureLine(r, now, language)));
+        out.push("", `${w.departures}${dated(s.asOf, language, now)}:`, ...rows.map((r) => departureLine(r, now, language)));
         break;
       }
       case "service_alerts": {
@@ -258,7 +297,7 @@ export function stationPageSectionsText(page: NonNullable<T.StationPage>, langua
           const where = m.atStation ? `${w.here}: ` : m.lines.length > 0 ? `${w.linesWord} ${m.lines.join(", ")}: ` : "";
           return `- ${where}${m.header}${m.until === null ? "" : ` (${w.until} ${standTime(m.until, language, now)})`}`;
         };
-        out.push("", `${w.alerts} (${stamp(s.asOf, language, now)}):`, ...listed(alerts, line, language));
+        out.push("", `${w.alerts}${dated(s.asOf, language, now)}:`, ...listed(alerts, line, language));
         break;
       }
       case "parking_charging": {

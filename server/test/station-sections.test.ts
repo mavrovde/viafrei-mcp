@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type * as T from "../src/api/types.js";
 import { ApiError } from "../src/api/client.js";
 import { HANDLERS } from "../src/tools/handlers.js";
-import { departureLine, liftLabel, platformLabel, railReasonLine, shareAlikeSubjectOf, stationPageSectionsText, LIST_SHOWN } from "../src/tools/station-sections.js";
+import { departureLine, liftLabel, pageFromApi, platformLabel, railReasonLine, shareAlikeSubjectOf, stationPageSectionsText, LIST_SHOWN } from "../src/tools/station-sections.js";
 
 const NOW = new Date("2026-03-30T10:00:00Z");
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(NOW); });
@@ -118,6 +118,66 @@ describe("the board, the alerts, parking", () => {
   });
 });
 
+/** The page as API 1.2.1 sends it (StationPageEnvelope.data): each section's content under its own key. */
+const apiPage = (sections: T.ApiPageSection[]): NonNullable<T.ApiStationPage> => ({ pageUrl: "https://alpha.example/en/station/koeln-hbf", sections });
+const apiSec = (id: T.ApiPageSection["id"], o: Partial<T.ApiPageSection> = {}): T.ApiPageSection => ({ id, asOf: "2026-03-30T09:58:00Z", sources: [], ...o });
+const apiDep = (o: Partial<NonNullable<T.ApiPageSection["departures"]>[number]> = {}) => ({ plannedAt: "2026-03-30T10:05:00Z", line: "S11", destination: "Dormagen", platform: "11 B-C", plannedPlatform: "11", platformChanged: false, delayMin: 0, cancelled: false, noForecast: false, ...o });
+
+describe("the page as the API sends it", () => {
+  it("each section's own key read into the words above; what the API does not carry left out, never guessed", () => {
+    const p = pageFromApi(apiPage([
+      apiSec("header", { header: { name: "Köln Hbf", stationNo: "1", eva: "8000207", evaNumbers: ["8000207"], slug: "k", street: "Trankgasse 11", zipcode: "50667", city: "Köln", land: "Nordrhein-Westfalen", category: 1 } }),
+      apiSec("rail_ampel", { railAmpel: { lamp: "yellow", trips: 9, reasons: [{ kind: "platform", n: 2 }], lines: [{ line: "S11", long: false, lamp: "green" }] } }),
+      apiSec("step_free_now", { stepFreeNow: { platforms: [{ tracks: ["1"], name: null, lift: "ok" }], blocked: [], steplessAccess: "odd" } }),
+      apiSec("lifts", { asOf: null, lifts: [{ id: "l", kind: "elevator", position: "zu Gleis 1", state: "inactive", equipmentNo: "10" }] }),
+      apiSec("platforms", { platforms: { releasedOn: null, stations: [{ name: null, total: 2, list: [{ name: null, tracks: ["1"], stated: true, facts: { stepFree: "yes" }, heightCm: { min: 76, max: 76 } }, { name: "B", tracks: [], stated: false, facts: { stepFree: "no" }, heightCm: null }] }] } }),
+      apiSec("departures", { departures: [apiDep(), apiDep({ platform: "12", plannedPlatform: "11", platformChanged: true, delayMin: null, noForecast: true })] }),
+      apiSec("service_alerts", { alerts: [{ header: "Bauarbeiten", lines: [], atStation: true, until: null }] }),
+      apiSec("parking_charging", { facilities: { flags: ["has_taxi_rank"], location: { lat: 50.9, lon: 6.9 } } }),
+    ]), "Köln");
+    expect(stationPageSectionsText(p, "en", NOW).split("\n")).toEqual([
+      "Köln Hbf — Station page: https://alpha.example/en/station/koeln-hbf",
+      "Trankgasse 11, 50667 Köln · Nordrhein-Westfalen · station category 1 (Bahnhofskategorie) · EVA 8000207",
+      "", "Rail lamp: Amber — Platform changes: 2 (As of 11:58)", "Lamp per line: S11 Green",
+      "", "Step-free now (As of 11:58):", "- step-free: Platform 1",
+      "", "Lifts and escalators:", "- Lift to platform 1: out of service",
+      "", "Platforms (As of 11:58):", "- Platform 1: step-free, platform height 76 cm", "- B: step-free access unknown",
+      "", "Departures (As of 11:58):", "- 12:05 S11 → Dormagen, Platform 11 B-C: on time", "- 12:05 S11 → Dormagen, Platform 12 (instead of 11): no delay figure",
+      "", "Service alerts (As of 11:58):", "- at the station: Bauarbeiten",
+      "", "Parking and charging:", "- per DB: taxi rank", "- Car parks and charging points nearby: find_parking or find_charging_station with lat 50.90000, lon 6.90000.",
+    ]);
+    expect(stationPageSectionsText(p, "de", NOW).split("\n")[10]).toBe("- Aufzug zu Gleis 1: außer Betrieb");
+    expect(p.sections.find((x) => x.id === "step_free_now")?.steplessAccess).toBeNull();
+    expect(pageFromApi(apiPage([apiSec("header")]), "Köln Hbf").station.name).toBe("Köln Hbf");
+  });
+  it("a section without its own time keeps none: said undated, and the lamp and step-free now left out where nothing is held (never \"too few trips\")", () => {
+    const said = (sections: T.ApiPageSection[]): string[] => stationPageSectionsText(pageFromApi(apiPage(sections), "Köln Hbf"), "en", NOW).split("\n");
+    const empty = [
+      apiSec("rail_ampel", { asOf: null, railAmpel: { lamp: "unknown", trips: 0, reasons: [], lines: [] } }),
+      apiSec("step_free_now", { asOf: null, stepFreeNow: { platforms: [], blocked: [], steplessAccess: null } }),
+      apiSec("rail_ampel", { asOf: null }), apiSec("step_free_now", { asOf: null }),
+    ];
+    expect(said(empty)).toEqual([""]);
+    expect(said(empty).join("\n")).not.toMatch(/Too few trips|As of/u);
+    expect(said([apiSec("rail_ampel", { asOf: null, railAmpel: { lamp: "red", trips: 9, reasons: [{ kind: "alert", n: 1 }], lines: [] } })]))
+      .toEqual(["", "Rail lamp: Red — Disruption notices: 1"]);
+    expect(said([apiSec("step_free_now", { asOf: null, stepFreeNow: { platforms: [{ tracks: ["2"], name: null, lift: "ok" }], blocked: [], steplessAccess: null } })]))
+      .toEqual(["", "Step-free now:", "- step-free: Platform 2"]);
+    expect(said([apiSec("departures", { asOf: null, departures: [apiDep()] })])).toEqual(["", "Departures:", "- 12:05 S11 → Dormagen, Platform 11 B-C: on time"]);
+    // With its own time, an empty lamp is still today's "too few trips", dated.
+    expect(said([apiSec("rail_ampel", { railAmpel: { lamp: "unknown", trips: 0, reasons: [], lines: [] } })])).toEqual(["", "Rail lamp: Grey — Too few trips to judge (As of 11:58)"]);
+  });
+  it("an English lift line says DB's position where no track is known; \"no location given\" only where DB gives none", () => {
+    const unit = (position: string | null) => ({ id: "l", kind: "elevator", position, state: "active" as const, equipmentNo: null });
+    const lines = (position: string | null, language: "de" | "en" = "en") => stationPageSectionsText(pageFromApi(apiPage([apiSec("lifts", { lifts: [unit(position)] })]), "K"), language, NOW).split("\n")[2];
+    expect(lines("zu Gleis 3/4 - Südsteg")).toBe("- Lift to platform 3/4 - south footbridge: working");
+    expect(lines("neben dem Kiosk")).toBe('- Lift Provider text (German): "neben dem Kiosk": working');
+    expect(lines(null)).toBe("- Lift (no location given): working");
+    expect(lines("")).toBe("- Lift (no location given): working");
+    expect(lines("zu Gleis 1", "de")).toBe("- Aufzug zu Gleis 1: in Betrieb");
+  });
+});
+
 describe("describe_station reads the page first", () => {
   const meta = { generatedAt: "2026-03-30T09:59:00Z", language: "en", asOf: "2026-03-30T09:58:00Z", freshness: [], attribution: [{ family: "db_stada", domain: "x", publisher: "Bahnhofsdaten", text: "Bahnhofsdaten", licence: "CC BY 4.0", licenceUrl: null, shareAlike: false, shareAlikeOffer: null, termsUrl: null, sourceUrl: null }] };
   const run = async (answer: (op: string, q: Record<string, unknown>) => unknown, args: Record<string, unknown> = {}) => {
@@ -131,7 +191,7 @@ describe("describe_station reads the page first", () => {
     return { text: (r.content[0] as { text: string }).text, seen, r };
   };
   it("the page's sections, credited by its meta, the board's default ten departures asked; nothing else read", async () => {
-    const { text: t, seen } = await run((op) => (op === "getStationPage" ? { data: page([sec("header", { name: "Köln Hbf" }), sec("departures", { sources: ["delfi_rt_tu"], rows: [dep()] })]), meta } : null));
+    const { text: t, seen } = await run((op) => (op === "getStationPage" ? { data: apiPage([apiSec("header", { header: { name: "Köln Hbf", stationNo: "1", eva: null, evaNumbers: [], slug: "k", street: null, zipcode: null, city: null, land: null, category: null } }), apiSec("departures", { sources: ["delfi_rt_tu"], departures: [apiDep()] })]), meta } : null));
     expect(seen.map(([op]) => op)).toEqual(["listStations", "getStationPage"]);
     expect(seen[1]![1]).toEqual({ stationId: "1:k", departures: 10 });
     expect(t.split("\n").slice(0, 4)).toEqual(["Köln Hbf — Station page: https://alpha.example/en/station/koeln-hbf", "", "Departures (As of 11:58):", "- 12:05 S11 → Dormagen, Platform 11 B-C: on time"]);
@@ -140,11 +200,11 @@ describe("describe_station reads the page first", () => {
   });
   it("the share-alike sentence names the board's live figures", async () => {
     const sa = { ...meta, attribution: [{ ...meta.attribution[0]!, family: "delfi_rt_tu", text: "Echtzeitdaten", licence: "CC BY-SA", shareAlike: true }] };
-    const { text: t } = await run((op) => (op === "getStationPage" ? { data: page([sec("departures", { sources: ["delfi_rt_tu"], rows: [dep()] })]), meta: sa } : null));
+    const { text: t } = await run((op) => (op === "getStationPage" ? { data: apiPage([apiSec("departures", { sources: ["delfi_rt_tu"], departures: [apiDep()] })]), meta: sa } : null));
     expect(t).toContain("The DELFI GTFS-RT realtime entries are licensed CC BY-SA");
   });
   it("departures asked are passed on", async () => {
-    const { seen } = await run((op) => (op === "getStationPage" ? { data: page([]), meta } : null), { departures: 3 });
+    const { seen } = await run((op) => (op === "getStationPage" ? { data: apiPage([]), meta } : null), { departures: 3 });
     expect(seen[1]![1]).toEqual({ stationId: "1:k", departures: 3 });
   });
   it("not offered (404) or no page (null): the facilities and board are read as before; another failure is the API's", async () => {

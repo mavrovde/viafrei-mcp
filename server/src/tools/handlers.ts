@@ -21,7 +21,7 @@ import { findChargingStation } from "./charging.js";
 import { findHydrogenStation } from "./hydrogen.js";
 import { facilitiesText } from "./facilities.js";
 import { stationPageText } from "./station-page.js";
-import { shareAlikeSubjectOf, stationPageSectionsText } from "./station-sections.js";
+import { pageFromApi, shareAlikeSubjectOf, stationPageSectionsText } from "./station-sections.js";
 import { stopWatchHandler } from "./stop-watch.js";
 import { MAX_WATCHES, watchKeyError, watchOpened, type Resolved } from "./watch-words.js";
 import { aroundText, asSummary, byLevel, DWD_SUMMARY_CREDIT, MIN_LEVEL, noWarning, warningsHead } from "./weather-words.js";
@@ -891,18 +891,15 @@ const inTown = (stop: T.Station, town: T.PlaceItem): boolean => (stop.districtCo
   : stop.name.toLocaleLowerCase("de").includes(town.name.toLocaleLowerCase("de")));
 
 /**
- * The proposed listStopBoards: the API chooses the stops around the place (today's choice, the API's job) and
- * reads their boards in one call. Undefined, and the stops read one by one as before, when the API does not
- * offer it (its document does not list it) or names no place for the text; any other failure is the API's failure.
+ * listStopBoards: the API chooses the stops around a position (today's choice, the API's job) and reads their
+ * boards in one call. It takes a position only (at), never a place name, so the place is resolved first, as the
+ * stops one by one are. Undefined, and the stops read one by one as before, when the API does not offer it (404)
+ * or holds no boards for the point (null); any other failure is the API's failure.
  */
-async function stopBoards(args: Args, ctx: ToolContext): Promise<Envelope<NonNullable<T.StopBoards>> | undefined> {
-  const lat = num(args["lat"]);
-  const lon = num(args["lon"]);
-  const q = lat === undefined || lon === undefined ? str(args["place"]) : undefined;
-  if (q === undefined && (lat === undefined || lon === undefined)) return undefined;
+async function stopBoards(at: LatLon, args: Args, ctx: ToolContext): Promise<Envelope<NonNullable<T.StopBoards>> | undefined> {
   try {
     const r = await ctx.api.get<T.StopBoards>("listStopBoards", {
-      q, at: q === undefined ? atParam({ lat: lat!, lon: lon! }) : undefined, radius_m: NEAR_RADIUS_M, limit: NEAR_STOPS, per_stop: NEAR_PER_STOP,
+      at: atParam(at), radius_m: NEAR_RADIUS_M, limit: NEAR_STOPS, per_stop: NEAR_PER_STOP,
       from: str(args["when"]), duration_min: num(args["duration_min"]) ?? NEAR_WINDOW_MIN, modes: strs(args["modes"]),
     });
     return r.data === null ? undefined : { ...r, data: r.data };
@@ -935,13 +932,13 @@ function nearAnswer(label: string, stops: readonly { name: string; stopId: strin
 /** With a place or a position: the nearest stops (one per stop code) with their next departures, as today's answer. */
 async function departuresNear(args: Args, ctx: ToolContext): Promise<CallToolResult> {
   const { language } = ctx;
-  const one = await stopBoards(args, ctx);
-  if (one !== undefined) {
-    if (one.data.stops.length === 0) return none(language, [one.meta], L(language, "Haltestellen", "stops"));
-    return nearAnswer(one.data.place.label, one.data.stops, [one.meta], language, one.data.longDistance);
-  }
   const pt = await nearPoint(args, ctx);
   if (isResult(pt)) return pt;
+  const one = await stopBoards(pt.at, args, ctx);
+  if (one !== undefined) {
+    if (one.data.stops.length === 0) return none(language, [...pt.metas, one.meta], L(language, "Haltestellen", "stops"));
+    return nearAnswer(pt.label, one.data.stops, [...pt.metas, one.meta], language, one.data.longDistance);
+  }
   const near = await ctx.api.get<T.Station[]>("listStations", { at: atParam(pt.at), radius_m: NEAR_RADIUS_M, limit: 40 });
   const seen = new Set<string>();
   const stops = near.data.filter((s) => { const k = s.stopCode ?? s.id; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, NEAR_STOPS);
@@ -1048,11 +1045,11 @@ const checkStationFacilities: Handler = async (args, ctx) => {
 /** Today's DEFAULT_STATION_DEPARTURES (BOARD_MIN_ROWS), the catalogue's default: as many as the station page shows. */
 const STATION_DEPARTURES = 10;
 
-/** The proposed getStationPage: the page's sections; undefined where the API does not offer it (its document does not list it) or holds no page. */
-async function stationPage(stationId: string, departures: number, ctx: ToolContext): Promise<{ data: NonNullable<T.StationPage>; meta: DataMeta } | undefined> {
+/** getStationPage: the page's sections; undefined where the API does not offer it (404) or holds no page (null). */
+async function stationPage(stationId: string, stationName: string, departures: number, ctx: ToolContext): Promise<{ data: NonNullable<T.StationPage>; meta: DataMeta } | undefined> {
   try {
-    const r = await ctx.api.get<T.StationPage>("getStationPage", { stationId, departures });
-    return r.data === null ? undefined : { data: r.data, meta: r.meta };
+    const r = await ctx.api.get<T.ApiStationPage>("getStationPage", { stationId, departures });
+    return r.data === null ? undefined : { data: pageFromApi(r.data, stationName), meta: r.meta };
   } catch (err) {
     if (err instanceof ApiError && err.kind === "not_found") return undefined;
     throw err;
@@ -1071,7 +1068,7 @@ const describeStation: Handler = async (args, ctx) => {
     return name === undefined ? none(language, [stations.meta], L(language, "Bahnhöfe", "stations")) : NOT_KNOWN.station(name, language);
   }
   const n = num(args["departures"]) ?? STATION_DEPARTURES;
-  const page = await stationPage(station.id, n, ctx);
+  const page = await stationPage(station.id, station.name, n, ctx);
   if (page !== undefined) {
     const subject = shareAlikeSubjectOf(page.data, language);
     return toolResult(stationPageSectionsText(page.data, language, new Date()), [page.meta], language, subject === undefined ? {} : { shareAlikeSubject: subject });

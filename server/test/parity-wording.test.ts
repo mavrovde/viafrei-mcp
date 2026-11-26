@@ -249,6 +249,8 @@ function chargingState(c: Case): void {
 
 /** describe_station: the station from the copied head, facts and parking lines, its units from the lift section, no board. */
 function stationPageState(c: Case): void {
+  // Today's answer was built from the station's pieces; the page is not held here (404), so those are read.
+  mockServer.use(handlerFor("getStationPage", () => HttpResponse.json({ type: "about:blank", status: 404, title: "Not Found" }, { status: 404, headers: { "content-type": "application/problem+json" } })));
   const lines = c.body.split("\n");
   const name = lines[0]!.split(" — ")[0]!;
   const lands: Record<string, string> = { Hamburg: "02000000", Hessen: "06412000", Hesse: "06412000", "Nordrhein-Westfalen": "05113000", "North Rhine-Westphalia": "05113000", Berlin: "11000000", Sachsen: "14713000", Saxony: "14713000" };

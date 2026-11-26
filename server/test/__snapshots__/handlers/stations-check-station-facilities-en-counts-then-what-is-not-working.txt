@@ -1,5 +1,5 @@
 1 of 4 reported facilities with a known status at Pienköckheim Nord is out of service. DB reports no status for 1 facility. Counted are the facilities DB reports for this station. Lifts at stops of the city's transport operator (tram, light rail, underground) are not included — I hold no live data on them for this station.
 Lift to platform 1: out of service
-Escalator: in service
+Escalator: status unknown
 Escalator to platform 1: in service
 … and 2 more.

@@ -9,6 +9,7 @@
 import { readFileSync } from "node:fs";
 import { http, HttpResponse, type RequestHandler } from "msw";
 import { setupServer } from "msw/node";
+import { getResponse } from "msw";
 
 export const API_BASE = "http://127.0.0.1";
 
@@ -117,4 +118,30 @@ export const DB_STATION = {
 };
 const stationsWorld = handlerFor("listStations", () => HttpResponse.json(exampleOf<Record<string, unknown>>("listStations")));
 
-export const mockServer = setupServer(offering(), ...OPS.map((o) => (o.operationId === "listStations" ? stationsWorld : handlerFor(o.operationId))));
+
+/**
+ * resolvePlace answers as the API resolves a name: over the place search's rows for it (listPlaces, the handler a
+ * test set or the contract's example), the official Gemeinde of exactly that name first, else the first row, its
+ * label the row's name, credited by that row's source (every credit where none names its family); null where the
+ * search holds none. So a test states its place once, in the place search, and both reads agree. The inner read
+ * is not counted in `calls`.
+ */
+const resolveWorld = http.get(mswPath("/v1/places/resolve"), async ({ request }) => {
+    const url = new URL(request.url);
+    calls.push({ operationId: "resolvePlace", url, headers: request.headers });
+    const unknown = [...new Set(url.searchParams.keys())].filter((k) => !opById("resolvePlace").query.includes(k));
+    if (unknown.length > 0) return unknownParameters(url.pathname, unknown);
+    const n = calls.length;
+    const q = url.searchParams.get("q") ?? "";
+    const res = await getResponse(mockServer.listHandlers() as RequestHandler[], new Request(`${API_BASE}/v1/places?q=${encodeURIComponent(q)}&limit=10${url.searchParams.has("lang") ? `&lang=${url.searchParams.get("lang")}` : ""}`));
+    calls.splice(n);
+    if (res === undefined || !res.ok) return res ?? notOffered("/v1/places/resolve");
+    const body = (await res.json()) as { data: { name: string; kind: string; sourceFamily: string; location: unknown; districtCode?: string | null }[]; meta: { attribution?: { family: string }[] } };
+    const fold = (x: string) => x.normalize("NFC").toLocaleLowerCase("de");
+    const pick = body.data.find((p) => p.kind === "municipality" && p.sourceFamily === "bkg_gvisys" && fold(p.name) === fold(q.trim())) ?? body.data[0];
+    const all = body.meta.attribution ?? [];
+    const own = pick === undefined ? [] : all.filter((a) => a.family === pick.sourceFamily);
+    return HttpResponse.json({ data: pick === undefined ? null : { name: pick.name, label: pick.name, kind: pick.kind, location: pick.location, districtCode: pick.districtCode ?? null, alternatives: [] }, meta: { ...body.meta, attribution: own.length > 0 ? own : all } });
+  });
+
+export const mockServer = setupServer(offering(), ...OPS.map((o) => (o.operationId === "listStations" ? stationsWorld : o.operationId === "resolvePlace" ? resolveWorld : handlerFor(o.operationId))));

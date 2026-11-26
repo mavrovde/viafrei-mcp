@@ -295,8 +295,8 @@ describe("find_roadworks_ahead", () => {
   for (const key of ["place"]) {
     it(`a place (${key}): the roadworks around the resolved place`, async () => {
       const r = await call("find_roadworks_ahead", { [key]: "Köln", language: "en" });
-      expect(ops()).toEqual(["listPlaces", "listRoadConditions"]);
-      expect(query("listPlaces")).toEqual([{ q: "Köln", limit: "10", lang: "en" }]);
+      expect(ops()).toEqual(["resolvePlace", "listRoadConditions"]);
+      expect(query("resolvePlace")).toEqual([{ q: "Köln", lang: "en" }]);
       expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", horizon_days: "14", lang: "en" }]);
       expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m");
     });
@@ -710,8 +710,9 @@ describe("find_speed_cameras", () => {
         .toEqual({ place: "Matfienland", radiusKm: 2.5, total: 4, osmTotal: 3, planningOnly: true, noticeDe: SPEED_NOTICE_DE });
       expect((sc["locations"] as Record<string, unknown>[])[0]).toEqual({
         kind: "fixed", kindLabel: language === "de" ? "Feste Anlagen" : "Fixed cameras", enforces: "speed_red_light", enforcesLabel: language === "de" ? "Geschwindigkeit und Rotlicht" : "speed and red light",
-        street: "Ringstraße", locationText: "Blitzer Kansilkamp", municipality: "Köln", direction: "Nord", maxSpeedKmh: 50, maxSpeedHgvKmh: 40,
-        validFrom: null, validTo: null, dataAsOf: "2026-03-01", staleYear: null, lat: 47.655653, lon: 7.799556, source: "city_x_speed",
+        // The row's label and point are the contract example's (cam), not set by this case.
+        street: "Ringstraße", locationText: cam({}).locationLabel, municipality: "Köln", direction: "Nord", maxSpeedKmh: 50, maxSpeedHgvKmh: 40,
+        validFrom: null, validTo: null, dataAsOf: "2026-03-01", staleYear: null, lat: (cam({}).location as { lat: number }).lat, lon: (cam({}).location as { lon: number }).lon, source: "city_x_speed",
       });
     });
   }
@@ -752,7 +753,8 @@ describe("find_place, find_poi, find_address", () => {
 
   it("find_place near a named place resolves it first; near a position passes it", async () => {
     await call("find_place", { query: "Neustadt", near: "Hamburg", language: "en" });
-    expect(query("listPlaces")).toEqual([{ q: "Hamburg", limit: "10", lang: "en" }, { q: "Neustadt", at: "48.24375,7.01625", lang: "en" }]);
+    expect(query("resolvePlace")).toEqual([{ q: "Hamburg", lang: "en" }]);
+    expect(query("listPlaces")).toEqual([{ q: "Neustadt", at: "48.24375,7.01625", lang: "en" }]);
     calls.length = 0;
     await call("find_place", { query: "Neustadt", ...at, language: "en" });
     expect(query("listPlaces")).toEqual([{ q: "Neustadt", at: "52.52,13.405", lang: "en" }]);
@@ -843,14 +845,14 @@ describe("find_place, find_poi, find_address", () => {
 
   it("find_poi near a named place resolves it", async () => {
     await call("find_poi", { name: "Apotheke", near: "Köln", language: "en" });
-    expect(ops()).toEqual(["listPlaces", "listPois"]);
+    expect(ops()).toEqual(["resolvePlace", "listPois"]);
     expect(query("listPois")[0]!["at"]).toBe("48.24375,7.01625");
   });
 
   it("find_poi near an unknown place says so", async () => {
     serve("listPlaces", []);
     expect((await call("find_poi", { name: "Apotheke", near: "Nirgendwo", language: "en" })).isError).toBe(true);
-    expect(ops()).toEqual(["listPlaces"]);
+    expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
   });
 
   it("find_address: street and number, postcode and town, coordinate", async () => {
@@ -1196,7 +1198,7 @@ describe("get_driving_rules", () => {
         content: [{ type: "text", text: language === "de" ? "„Nirgendwo“ habe ich als Ort nicht gefunden." : 'I could not find "Nirgendwo" as a place.' }],
         isError: true,
       });
-      expect(ops()).toEqual(["listPlaces"]);
+      expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
     });
   }
 
@@ -1414,8 +1416,12 @@ describe("parity of four answers with today's server", () => {
     const st = (id: string, code: string, name: string, d: number, districtCode = "11000") => ({ id, name, location: { lat: 52.52, lon: 13.41 }, stopCode: code, eva: null, evaNumbers: [], distanceM: d, districtCode });
     const d = (o: Record<string, unknown>) => ({ line: "S9", category: "S", mode: "sbahn", destination: "Flughafen BER", plannedAt: "2026-11-24T18:42:00Z", expectedAt: null, delayMin: null, platform: "3", plannedPlatform: null, platformChanged: false, cancelled: false, realtime: false, noForecast: false, ...o });
     const window = { from: "2026-11-24T18:40:00Z", until: "2026-11-24T19:40:00Z" };
-    /** The gazetteer knows Berlin (and its centre) only; the stop search answers `named` by name, `near` by position. */
+    /**
+     * The gazetteer knows Berlin (and its centre) only; the stop search answers `named` by name, `near` by position.
+     * listStopBoards answers 404 here, so the stops are read one by one (the path these cases hold to today's answer).
+     */
     function world(named: unknown[], near: unknown[], boards: (path: string) => unknown[] | "fail"): void {
+      mockServer.use(handlerFor("listStopBoards", () => problem(404, "not_found")));
       mockServer.use(handlerFor("listPlaces", (url) => HttpResponse.json({ ...exampleOf<Body>("listPlaces"), data: url.searchParams.get("q") === "Berlin"
         ? [{ id: "1", name: "Berlin", kind: "municipality", location: { lat: 52.52, lon: 13.405 }, districtCode: "11000", sourceFamily: "bkg_gvisys" }] : [] })));
       mockServer.use(handlerFor("listStations", (url) => HttpResponse.json({ ...exampleOf<Body>("listStations"), data: url.searchParams.get("q") !== null ? named : near })));
@@ -1777,6 +1783,7 @@ describe("stations", () => {
   }
 
   it("get_departures with only a place or a position: no empty station search (the API refuses one), the stop nearest it", async () => {
+    mockServer.use(handlerFor("listStopBoards", () => problem(404, "not_found")));
     const r = await call("get_departures", { place: "Leipzig", language: "de" });
     expect(r.isError).not.toBe(true);
     expect(query("listStations")).toEqual([{ at: expect.stringMatching(/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/u) as string, radius_m: "5000", limit: "40", lang: "de" }]);
@@ -1800,6 +1807,7 @@ describe("stations", () => {
       expect(await call("describe_station", { eva_no: "8000207", language })).toEqual({ content: [{ type: "text", text: language === "de" ? "Zu EVA 8000207 halten wir keinen Bahnhofseintrag. Aufzüge: check_station_facilities; Abfahrten: get_train_departures." : "We hold no station record for EVA 8000207. Lifts: check_station_facilities; departures: get_train_departures." }], isError: true });
     });
     it(`describe_station (${language}): position, lifts and escalators, the next departures`, async () => {
+      mockServer.use(handlerFor("getStationPage", () => problem(404, "not_found"))); // no page: the facilities and the board are read
       serve("listStationDepartures", board(deps.slice(0, 2)));
       const r = await call("describe_station", { station: "Schömpingbach Hbf", language });
       expect(query("listStationDepartures")).toEqual([{ limit: "10", lang: language }]);
@@ -1852,6 +1860,7 @@ describe("stations", () => {
   });
 
   it("describe_station lists the lifts out of service first, then by kind and track, a unit without a place said so", async () => {
+    mockServer.use(handlerFor("getStationPage", () => problem(404, "not_found"))); // no page: the facilities and the board are read
     const f = (id: string, kind: string, position: string | null, state: string) => ({ id, kind, position, state, sourceFamily: "fasta" });
     serve("listStationFacilities", { station: { name: "Schömpingbach Hbf" }, counts: { active: 2, inactive: 1, unknown: 1 },
       facilities: [f("1", "elevator", "zu Gleis 2", "active"), f("2", "escalator", "Westseite", "unknown"), f("3", "elevator", "zu Gleis 1", "active"), f("4", "escalator", "zu Gleis 9", "inactive")] });
@@ -1860,14 +1869,16 @@ describe("stations", () => {
   });
 
   it("describe_station with no departures asked reads no board", async () => {
+    mockServer.use(handlerFor("getStationPage", () => problem(404, "not_found"))); // no page: the facilities and the board are read
     const r = await call("describe_station", { station: "Schömpingbach Hbf", departures: 0, language: "en" });
-    expect(ops().sort()).toEqual(["listStationFacilities", "listStations"]);
+    expect(ops().sort()).toEqual(["getStationPage", "listStationFacilities", "listStations"]);
     expect(body(r)).toBe([
       "Schömpingbach Hbf", "Schleswig-Holstein · EVA 8001001", "",
-      "Lifts and escalators (As of 2026-03-29 14:00):", "- Escalator (Platform 1): in service", "- Escalator (Platform 2): in service", "",
+      "Lifts and escalators (As of 2026-03-29 14:00):", "- Escalator (Platform 1): state unknown", "- Escalator (Platform 2): state unknown", "",
       "Parking and charging:", "- Car parks and charging points nearby: find_parking or find_charging_station with lat 48.38815, lon 7.51821.",
     ].join("\n"));
     calls.length = 0;
+    mockServer.use(handlerFor("getStationPage", () => problem(404, "not_found")));
     await call("describe_station", { station: "Schömpingbach Hbf", departures: 2, language: "en" });
     expect(query("listStationDepartures")).toEqual([{ limit: "2", lang: "en" }]);
   });
@@ -2178,7 +2189,7 @@ describe("watch_situation: the target is the platform's key, resolved from the p
   it("a road as its number; a place and a weather watch on the place's position; a position as given", async () => {
     expect(await target("road", "a 8")).toBe("A8");
     expect(await target("place", "Leipzig")).toBe("48.24375,7.01625");
-    expect(query("listPlaces")).toEqual([{ q: "Leipzig", limit: "10", lang: "de" }]);
+    expect(query("resolvePlace")).toEqual([{ q: "Leipzig", lang: "de" }]);
     expect(await target("weather", "Dresden")).toBe("48.24375,7.01625");
     expect(await target("place", "51.34, 12.37")).toBe("51.34,12.37");
     expect(query("listPlaces")).toEqual([]);
@@ -2313,7 +2324,7 @@ describe("a place given as a street and house number", () => {
       serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [{ land: "Hessen", dataAsOf: "2026-11-01" }] });
       serve("listPlaces", []);
       await call("find_parking", { place: "Hauptstraße 12, Fulda", language });
-      expect(ops().slice(0, 2)).toEqual(["getPlacesCoverage", "listPlaces"]);
+      expect(ops().slice(0, 3)).toEqual(["getPlacesCoverage", "resolvePlace", "listPlaces"]);
     });
   }
 });

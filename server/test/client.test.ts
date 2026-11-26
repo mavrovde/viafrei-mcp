@@ -76,7 +76,7 @@ describe("ApiClient", () => {
   it("the contract fixture is api/openapi.json of the release api.pin names, or of a named API pull request head", () => {
     const pin = /^api_version=(\d+\.\d+\.\d+)$/m.exec(readFileSync(new URL("../api.pin", import.meta.url), "utf8"))?.[1];
     const spec = JSON.parse(readFileSync(new URL("./fixtures/api-openapi.json", import.meta.url), "utf8")) as { "x-source": { comment: string; commit: string } };
-    expect(pin).toBe("0.3.2");
+    expect(pin).toBe("1.2.1");
     const { comment, commit } = spec["x-source"];
     expect(comment.includes(`at the release tag v${pin ?? ""}`) || (/at the head of its pull request \d+/u.test(comment) && /^[0-9a-f]{40}$/u.test(commit))).toBe(true);
   });

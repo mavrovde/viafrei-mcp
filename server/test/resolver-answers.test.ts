@@ -1,12 +1,12 @@
 /**
- * The answers built from the proposed place resolver and the fields it brings (scratch spec §17, §18): the one
- * place the API names (resolvePlace, read before the place search and skipped where the API does not offer it),
+ * The answers built from the API's place resolver and the fields it brings (scratch spec §17, §18): the one
+ * place the API names (resolvePlace, read before the place search, which answers where it names none),
  * a place's Kreis by name, a POI's nearest address and Land, a coordinate's Gemeinde, junction and plaque source.
  */
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { calls, documentReads, exampleOf, handlerFor, mockServer, offering, problem } from "./api-mock.js";
+import { calls, documentReads, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
 import { connect, textOf } from "./harness.js";
 import { OPERATIONS } from "../src/api/operations.js";
 import { log } from "../src/log.js";
@@ -35,12 +35,14 @@ async function call(tool: string, args: Record<string, unknown>): Promise<CallTo
 }
 const ops = (): string[] => calls.map((c) => c.operationId);
 const geonames = { family: "geonames_x", domain: "places", publisher: "Ortsdaten X", text: "Ortsdaten: X", licence: "CC BY 4.0", licenceUrl: "https://creativecommons.org/licenses/by/4.0/", termsUrl: "https://alpha.example/x" };
-const resolved = (data: T.ResolvedPlace, status = 200) => mockServer.use(offering(["resolvePlace"]), handlerFor("resolvePlace", () => HttpResponse.json({ data, meta: { ...exampleOf<{ meta: Record<string, unknown> }>("listPlaces").meta, attribution: [geonames] } }, { status })));
+const resolved = (data: T.ResolvedPlace, status = 200) => mockServer.use(handlerFor("resolvePlace", () => HttpResponse.json({ data, meta: { ...exampleOf<{ meta: Record<string, unknown> }>("listPlaces").meta, attribution: [geonames] } }, { status })));
 
 describe("resolvePlace", () => {
-  it("is a proposed operation: generated with its flag, not in the API's own document", () => {
-    expect(OPERATIONS.resolvePlace).toMatchObject({ method: "GET", path: "/v1/places/resolve", query: ["q", "lang"], proposed: true });
-    expect("proposed" in OPERATIONS.listPlaces).toBe(false);
+  it("is a released operation: generated without the proposed flag, asked with no read of the API's document", async () => {
+    expect(OPERATIONS.resolvePlace).toEqual({ method: "GET", path: "/v1/places/resolve", pathParams: [], query: ["q", "lang"], required: ["q"] });
+    resolved({ name: "Sylt", label: "Sylt", kind: "municipality", location: { lat: 54.9, lon: 8.3 } });
+    await call("find_hydrogen_station", { place: "Sylt", language: "en" });
+    expect(documentReads).toEqual([]);
   });
   it("names the place: its label and point are the answer's, its sources credited, the place search not read", async () => {
     resolved({ name: "Sylt", label: "Sylt (town), also: Sylt (island)", kind: "municipality", location: { lat: 54.9, lon: 8.3 }, alternatives: [{ name: "Sylt", kind: "island" }] });
@@ -51,45 +53,17 @@ describe("resolvePlace", () => {
     expect(textOf(r)).toContain("near Sylt (town), also: Sylt (island) (within");
     expect(textOf(r)).toContain("Ortsdaten: X (https://alpha.example/x; Lizenz: CC BY 4.0");
   });
-  it("names no place (null) or is not offered (not in its document, so not asked): the place search is read as before", async () => {
+  it("names no place (null) or answers 404: the place search is read as before", async () => {
     resolved(null);
     await call("find_hydrogen_station", { place: "Köln", language: "en" });
     expect(ops()).toEqual(["resolvePlace", "listPlaces", "listHydrogenOptions"]);
     calls.length = 0;
-    mockServer.resetHandlers();
+    mockServer.use(handlerFor("resolvePlace", () => problem(404, "not_found")));
     await call("find_hydrogen_station", { place: "Köln", language: "en" });
-    expect(ops()).toEqual(["listPlaces", "listHydrogenOptions"]);
-  });
-  it("two place calls on one server against an API without it: one read of its document, no request for it", async () => {
-    const { client, close } = await connect();
-    try {
-      for (const place of ["Köln", "Bonn"]) await client.callTool({ name: "find_hydrogen_station", arguments: { place, language: "en" } });
-    } finally {
-      await close();
-    }
-    expect(documentReads.map((u) => u.pathname)).toEqual(["/v1/openapi.json"]);
-    expect(ops()).toEqual(["listPlaces", "listHydrogenOptions", "listPlaces", "listHydrogenOptions"]);
-  });
-  it("a 429 on that read: the place tool answers from the released operations, one warn line, no request for the proposed one", async () => {
-    mockServer.use(offering([], () => problem(429, "rate_limited")));
-    const warn = vi.spyOn(log, "warn").mockImplementation(() => undefined);
-    const { client, close } = await connect();
-    try {
-      for (let i = 0; i < 2; i++) {
-        const r = (await client.callTool({ name: "find_hydrogen_station", arguments: { place: "Köln", language: "en" } })) as CallToolResult;
-        expect(r.isError, textOf(r)).not.toBe(true);
-      }
-    } finally {
-      await close();
-    }
-    const warned = warn.mock.calls.map(([fields]) => fields);
-    warn.mockRestore();
-    expect(documentReads).toHaveLength(1);
-    expect(ops()).toEqual(["listPlaces", "listHydrogenOptions", "listPlaces", "listHydrogenOptions"]);
-    expect(warned).toEqual([{ kind: "rate_limited", status: 429, document: "/v1/openapi.json" }]);
+    expect(ops()).toEqual(["resolvePlace", "listPlaces", "listHydrogenOptions"]);
   });
   it("any other failure is the API's failure, not a quiet fallback", async () => {
-    mockServer.use(offering(["resolvePlace"]), handlerFor("resolvePlace", () => problem(503, "unavailable")));
+    mockServer.use(handlerFor("resolvePlace", () => problem(503, "unavailable")));
     const r = await call("find_hydrogen_station", { place: "Köln", language: "en" });
     expect(r.isError).toBe(true);
     expect(ops()).toEqual(["resolvePlace"]);
@@ -176,13 +150,16 @@ describe("listStopBoards: the stops around a place in one read", () => {
     id: "d", journeyId: "j", line: "RB30", mode: "rail", routeType: 2, trainNumber: null, category: null, destination: "Remagen", plannedAt: soon, plannedAtLocal: soon, platform: null, plannedPlatform: null,
     platformChanged: false, realtime: false, realtimeSource: null, cancelled: false, delayMin: null, expectedAt: null, noForecast: false, sourceFamily: "delfi_static", ...o,
   } as T.Departure);
-  const boards = (data: T.StopBoards) => mockServer.use(offering(["listStopBoards"]), handlerFor("listStopBoards", () => HttpResponse.json({ data, meta: { ...exampleOf<{ meta: Record<string, unknown> }>("listPlaces").meta, attribution: [geonames] } })));
-  const place = { label: "Köln", location: { lat: 50.9, lon: 6.9 } };
-  it("the API's stops, its stop_id as the timetable spells it, their departures; nothing else read", async () => {
-    boards({ place, window: { from: soon, until: soon }, stops: [{ id: "1:de:1:2", name: "Köln Hbf", stopId: "000009", distanceM: 552, departures: [dep({ plannedAt: soon, line: "RB30", destination: "Remagen" })] }, { id: "1:de:3", name: "Köln Rathaus", stopId: "de:3_G", distanceM: 200, departures: [] }] });
+  const boards = (data: T.StopBoards) => mockServer.use(handlerFor("listStopBoards", () => HttpResponse.json({ data, meta: { ...exampleOf<{ meta: Record<string, unknown> }>("listPlaces").meta, attribution: [geonames] } })));
+  const location = { lat: 50.9, lon: 6.9 };
+  /** The place search holds Köln at that point (get_departures' own place rule reads its first row). */
+  const koeln = () => mockServer.use(handlerFor("listPlaces", () => HttpResponse.json({ ...exampleOf<Record<string, unknown>>("listPlaces"), data: [{ id: "p", name: "Köln", kind: "municipality", location, sourceFamily: "geonames", districtCode: "05315000" }] })));
+  it("the place resolved first, then the API's stops around its point: its stop_id as the timetable spells it, their departures; nothing else read", async () => {
+    koeln();
+    boards({ location, window: { from: soon, until: soon }, stops: [{ id: "1:de:1:2", name: "Köln Hbf", stopId: "000009", distanceM: 552, departures: [dep({ plannedAt: soon, line: "RB30", destination: "Remagen" })] }, { id: "1:de:3", name: "Köln Rathaus", stopId: "de:3_G", distanceM: 200, departures: [] }] });
     const r = await call("get_departures", { place: "Köln", language: "en" });
-    expect(ops()).toEqual(["listStopBoards"]);
-    expect(Object.fromEntries(calls[0]!.url.searchParams)).toEqual({ q: "Köln", radius_m: "5000", limit: "8", per_stop: "4", duration_min: "60", lang: "en" });
+    expect(ops()).toEqual(["listPlaces", "listStopBoards"]);
+    expect(Object.fromEntries(calls[1]!.url.searchParams)).toEqual({ at: "50.9,6.9", radius_m: "5000", limit: "8", per_stop: "4", duration_min: "60", lang: "en" });
     const t = textOf(r);
     expect(t).toMatch(/^The nearest stops around Köln \(within 5 km\)/u);
     expect(t).toContain("Köln Hbf (0.6 km) — stop_id 000009:\n  ");
@@ -191,8 +168,20 @@ describe("listStopBoards: the stops around a place in one read", () => {
     expect(t).toContain("More departures of one stop: get_departures with its stop_id.");
     expect(t).toContain("Ortsdaten: X");
   });
+  it("never a place name: the API refuses q on listStopBoards (400), so a place is sent as its point", async () => {
+    const refused = await fetch("http://127.0.0.1/v1/stop-boards?q=K%C3%B6ln&at=50.9,6.9");
+    expect(refused.status).toBe(400);
+    expect(((await refused.json()) as { errors: { parameter: string }[] }).errors.map((e) => e.parameter)).toEqual(["query.q"]);
+    calls.length = 0;
+    koeln();
+    const r = await call("get_departures", { place: "Köln", language: "en" });
+    expect(r.isError, textOf(r)).not.toBe(true);
+    const asked = calls.find((c) => c.operationId === "listStopBoards")!;
+    expect(asked.url.searchParams.has("q")).toBe(false);
+    expect(asked.url.searchParams.get("at")).toBe("50.9,6.9");
+  });
   it("a position is sent as at; no stop near is said as none", async () => {
-    boards({ place, window: { from: soon, until: soon }, stops: [] });
+    boards({ location, window: { from: soon, until: soon }, stops: [] });
     const r = await call("get_departures", { lat: 50.9, lon: 6.9, limit: 10, language: "en" });
     expect(calls[0]!.url.searchParams.get("at")).toBe("50.9,6.9");
     expect(calls[0]!.url.searchParams.get("q")).toBeNull();
@@ -201,28 +190,29 @@ describe("listStopBoards: the stops around a place in one read", () => {
     expect(textOf(r)).not.toContain("stop_id");
   });
   it("read one by one, each stop's board holds today's 4 departures whatever limit the client sends (its default 10)", async () => {
+    boards(null);
     await call("get_departures", { place: "Köln", limit: 10, language: "en" });
-    const boards = calls.filter((c) => c.operationId === "listStationDepartures");
-    expect(boards.length).toBeGreaterThan(0);
-    expect(boards.map((c) => c.url.searchParams.get("limit"))).toEqual(boards.map(() => "4"));
+    const read = calls.filter((c) => c.operationId === "listStationDepartures");
+    expect(read.length).toBeGreaterThan(0);
+    expect(read.map((c) => c.url.searchParams.get("limit"))).toEqual(read.map(() => "4"));
   });
-  it("not offered (not asked) or no place named (null): the stops are read one by one as before; another failure is the API's", async () => {
+  it("not offered (404) or no boards for the point (null): the stops are read one by one as before; another failure is the API's", async () => {
+    mockServer.use(handlerFor("listStopBoards", () => problem(404, "not_found")));
     await call("get_departures", { place: "Köln", language: "en" });
-    expect(ops()[0]).toBe("listPlaces");
-    expect(ops()).not.toContain("listStopBoards");
+    expect(ops().slice(0, 3)).toEqual(["listPlaces", "listStopBoards", "listStations"]);
     calls.length = 0;
     boards(null);
     await call("get_departures", { place: "Köln", language: "en" });
-    expect(ops().slice(0, 2)).toEqual(["listStopBoards", "listPlaces"]);
+    expect(ops().slice(0, 3)).toEqual(["listPlaces", "listStopBoards", "listStations"]);
     calls.length = 0;
-    mockServer.use(offering(["listStopBoards"]), handlerFor("listStopBoards", () => problem(503, "unavailable")));
+    mockServer.use(handlerFor("listStopBoards", () => problem(503, "unavailable")));
     const r = await call("get_departures", { place: "Köln", language: "en" });
     expect(r.isError).toBe(true);
-    expect(ops()).toEqual(["listStopBoards"]);
+    expect(ops()).toEqual(["listPlaces", "listStopBoards"]);
   });
   it("with the FlixBus/FlixTrain block after the stops", async () => {
     const flix: T.LongDistance = { operator: "FlixBus/FlixTrain", realtime: true, radiusM: 5000, departures: [{ at: soon, line: "FlixBus N86", mode: "coach", destination: null, operator: "x", stop: { id: "s", name: "Leipzig central", distanceM: 191 }, cancelled: false, delayMin: 0, expectedAt: soon }] };
-    boards({ place, window: { from: soon, until: soon }, stops: [{ id: "1:a", name: "A", stopId: "a", distanceM: 5, departures: [] }], longDistance: flix });
+    boards({ location, window: { from: soon, until: soon }, stops: [{ id: "1:a", name: "A", stopId: "a", distanceM: 5, departures: [] }], longDistance: flix });
     const lines = textOf(await call("get_departures", { place: "Leipzig", language: "de" })).split("\n");
     const i = lines.indexOf("Mehr Abfahrten einer Haltestelle: get_departures mit ihrer stop_id.");
     expect(lines[i + 1]).toBe("FlixBus/FlixTrain im Umkreis von 5 km (1):");

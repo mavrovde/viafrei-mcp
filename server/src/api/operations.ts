@@ -53,6 +53,7 @@ export const OPERATIONS = {
       "conditions",
       "only_available",
       "access",
+      "group",
       "lang"
     ],
     "required": [
@@ -247,6 +248,7 @@ export const OPERATIONS = {
       "at",
       "radius_m",
       "categories",
+      "charging_group",
       "lang"
     ],
     "required": [
@@ -311,6 +313,18 @@ export const OPERATIONS = {
       "lang"
     ],
     "required": []
+  },
+  "resolvePlace": {
+    "method": "GET",
+    "path": "/v1/places/resolve",
+    "pathParams": [],
+    "query": [
+      "q",
+      "lang"
+    ],
+    "required": [
+      "q"
+    ]
   },
   "getPlaceOverview": {
     "method": "GET",
@@ -544,6 +558,38 @@ export const OPERATIONS = {
       "stationId"
     ]
   },
+  "getStationPage": {
+    "method": "GET",
+    "path": "/v1/stations/{stationId}/page",
+    "pathParams": [
+      "stationId"
+    ],
+    "query": [
+      "departures",
+      "lang"
+    ],
+    "required": [
+      "stationId"
+    ]
+  },
+  "listStopBoards": {
+    "method": "GET",
+    "path": "/v1/stop-boards",
+    "pathParams": [],
+    "query": [
+      "at",
+      "radius_m",
+      "limit",
+      "per_stop",
+      "from",
+      "duration_min",
+      "modes",
+      "lang"
+    ],
+    "required": [
+      "at"
+    ]
+  },
   "getTrainBoard": {
     "method": "GET",
     "path": "/v1/train-boards/{eva}",
@@ -551,6 +597,8 @@ export const OPERATIONS = {
       "eva"
     ],
     "query": [
+      "limit",
+      "duration_min",
       "lang"
     ],
     "required": [
@@ -600,52 +648,6 @@ export const OPERATIONS = {
     "required": [
       "at"
     ]
-  },
-  "resolvePlace": {
-    "method": "GET",
-    "path": "/v1/places/resolve",
-    "pathParams": [],
-    "query": [
-      "q",
-      "lang"
-    ],
-    "required": [
-      "q"
-    ],
-    "proposed": true
-  },
-  "listStopBoards": {
-    "method": "GET",
-    "path": "/v1/stop-boards",
-    "pathParams": [],
-    "query": [
-      "q",
-      "at",
-      "radius_m",
-      "limit",
-      "per_stop",
-      "from",
-      "duration_min",
-      "modes",
-      "lang"
-    ],
-    "required": [],
-    "proposed": true
-  },
-  "getStationPage": {
-    "method": "GET",
-    "path": "/v1/stations/{stationId}/page",
-    "pathParams": [
-      "stationId"
-    ],
-    "query": [
-      "departures",
-      "lang"
-    ],
-    "required": [
-      "stationId"
-    ],
-    "proposed": true
   }
 } as const;
 export type OperationId = keyof typeof OPERATIONS;
