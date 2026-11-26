@@ -4,7 +4,7 @@ import { ApiError, atParam } from "../api/client.js";
 import type { PlaceItem, PlacesCoverageData, ResolvedPlace } from "../api/types.js";
 import { creditPlace, toolError, type Language } from "../presentation.js";
 import type { ConsentOutcome } from "../sid-consent.js";
-import { PLACE_WORDS } from "./place-words.js";
+import { placeWords } from "./place-words.js";
 import type { RefreshWait } from "./trains.js";
 
 /** The watches of one MCP session: the catalogue's integer ids mapped to the API's watch ids, in memory. */
@@ -72,13 +72,13 @@ const NO_PLACE: Record<Language, (q: string) => string> = {
 
 /** A missing place in the tool's own words, coded as today's server codes it. */
 export function placeMissing(ctx: ToolContext): CallToolResult {
-  const words = ctx.tool === undefined ? undefined : PLACE_WORDS[ctx.tool];
+  const words = ctx.tool === undefined ? undefined : placeWords()[ctx.tool];
   if (words === undefined) return toolError(NEED_PLACE[ctx.language]);
   return { ...toolError(words.missing[ctx.language]), _meta: { errorCode: "invalid_input", errorReason: "place_missing" } };
 }
 
 export function placeUnknown(ctx: ToolContext, q: string): CallToolResult {
-  const words = ctx.tool === undefined ? undefined : PLACE_WORDS[ctx.tool];
+  const words = ctx.tool === undefined ? undefined : placeWords()[ctx.tool];
   const unknown = words?.unknown;
   if (unknown === undefined) return toolError(NO_PLACE[ctx.language](q));
   if (words?.uncoded === true) return toolError(unknown[ctx.language](q));
@@ -140,7 +140,7 @@ export async function position(args: Args, ctx: ToolContext, placeKey = "place",
   const lat = num(args["lat"]);
   const lon = num(args["lon"]);
   if (lat !== undefined && lon !== undefined) return { at: { lat, lon }, label: null };
-  const q = ctx.tool !== undefined && PLACE_WORDS[ctx.tool]?.ignorePlace === true ? undefined : str(args[placeKey]);
+  const q = ctx.tool !== undefined && placeWords()[ctx.tool]?.ignorePlace === true ? undefined : str(args[placeKey]);
   if (q === undefined) return placeMissing(ctx);
   // Today's resolver (geo/place.ts looksLikeHouseNumber) refuses a street and house number in one sentence where
   // no address data is held, rather than calling the place unknown; where addresses are loaded, the search goes on.
