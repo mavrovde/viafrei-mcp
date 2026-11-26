@@ -29,7 +29,7 @@ const COPY = {
 } as const;
 
 /** Today's find_place limit cap (MAX_RESULTS). */
-const MAX_RESULTS = 25;
+const MAX_RESULTS = 10;
 
 /** The API's place kinds in today's words (geo/distinguish.ts KIND_WORD, by the kind each maps from). */
 const KIND_WORD: Readonly<Record<string, Readonly<Record<Language, string>>>> = {
@@ -44,7 +44,7 @@ const KIND_WORD: Readonly<Record<string, Readonly<Record<Language, string>>>> = 
 };
 
 /** The Länder by their AGS key (Statistisches Bundesamt; main packages/ingest/src/platform/ags.ts). */
-const LAENDER: Readonly<Record<string, Readonly<Record<Language, string>>>> = {
+export const LAENDER: Readonly<Record<string, Readonly<Record<Language, string>>>> = {
   "01": { de: "Schleswig-Holstein", en: "Schleswig-Holstein" }, "02": { de: "Hamburg", en: "Hamburg" },
   "03": { de: "Niedersachsen", en: "Lower Saxony" }, "04": { de: "Bremen", en: "Bremen" },
   "05": { de: "Nordrhein-Westfalen", en: "North Rhine-Westphalia" }, "06": { de: "Hessen", en: "Hesse" },
@@ -56,6 +56,29 @@ const LAENDER: Readonly<Record<string, Readonly<Record<Language, string>>>> = {
 
 const PLACE_KIND: Readonly<Record<string, string>> = { city: "municipality", district: "district", admin: "region", station: "station_area", stop: "station_area", motorway: "motorway", junction: "junction" };
 
+/** The kinds that lie in a Kreis (today's IN_A_KREIS). */
+const IN_A_KREIS: ReadonlySet<string> = new Set(["municipality", "island", "station_area", "stop", "junction"]);
+
+/** Today's KREIS_WORD: a name that already says what it is ("Vogtlandkreis", "Region Hannover") is not prefixed. */
+const KREIS_WORD = {
+  de: { kreis: (n: string): string => (/kreis|^region |^stadtverband |^stadtregion |^stadteregion /iu.test(n.toLowerCase()) ? n : `Kreis ${n}`), free: "kreisfreie Stadt", freeNamed: (n: string): string => `kreisfreie Stadt ${n}` },
+  en: { kreis: (n: string): string => `district ${n}`, free: "independent city", freeNamed: (n: string): string => `independent city ${n}` },
+} as const;
+
+/**
+ * Today's kreisWord: the Kreis a row lies in, from its own eight-digit Gemeinde key. A key ending in 000 is a
+ * kreisfreie Stadt (said bare of the town itself, with its name of a stop inside it); a city-state names none;
+ * without the proposed districtName nothing is said rather than a guess.
+ */
+export function kreisWord(p: Pick<T.PlaceItem, "kind" | "districtCode" | "districtName">, language: Language): string | null {
+  const key = p.districtCode ?? null;
+  if (!IN_A_KREIS.has(p.kind) || key === null || !/^\d{8}$/u.test(key) || key.slice(2) === "000000") return null;
+  if (key.endsWith("000") && p.kind === "municipality") return KREIS_WORD[language].free;
+  const name = p.districtName ?? null;
+  if (name === null) return null;
+  return key.endsWith("000") ? KREIS_WORD[language].freeNamed(name) : KREIS_WORD[language].kreis(name);
+}
+
 /** "Essen — Stadt/Gemeinde, Nordrhein-Westfalen, 306 km, 51.45560, 7.01160": kind, Land, distance, coordinate. */
 function line(p: T.PlaceItem, language: Language, near: boolean): string {
   const code = p.districtCode ?? null;
@@ -63,6 +86,7 @@ function line(p: T.PlaceItem, language: Language, near: boolean): string {
   const parts = [
     KIND_WORD[p.kind]?.[language] ?? p.kind,
     land,
+    kreisWord(p, language),
     near && p.distanceM !== undefined ? `${(p.distanceM / 1000).toFixed(0)} km` : null,
     `${p.location.lat.toFixed(5)}, ${p.location.lon.toFixed(5)}`,
   ];

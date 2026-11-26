@@ -10,6 +10,7 @@
  * station is held near the place (fuelDiscoverable). What the contract does not carry is not said
  * (scratchpad api-gap.md, lane A): the watch state of held stations, when a station's opening hours were read.
  */
+import { hoursOpenness, osmFuelLines, unrankedLine, wholeDayOpen } from "./fuel-words.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ApiError, type DataMeta, type Envelope, type LatLon } from "../api/client.js";
 import type * as T from "../api/types.js";
@@ -136,9 +137,14 @@ function stationLabel(s: T.FuelStation, a: T.FuelAddress | null): string {
  * error reads as "no address". The reads go when the list item carries the address (an API-side change).
  */
 async function addressesOf(ctx: ToolContext, rows: readonly T.FuelStation[]): Promise<(T.FuelAddress | null)[]> {
+  return (await detailsOf(ctx, rows)).map((d) => d?.address ?? null);
+}
+
+/** Each listed station's detail (getFuelStation), null on an API error. */
+async function detailsOf(ctx: ToolContext, rows: readonly T.FuelStation[]): Promise<(T.FuelStationData | null)[]> {
   return Promise.all(rows.map(async (s) => {
     try {
-      return (await ctx.api.get<T.FuelStationData>("getFuelStation", { fuelId: s.id })).data.address;
+      return (await ctx.api.get<T.FuelStationData>("getFuelStation", { fuelId: s.id })).data;
     } catch (err) {
       if (err instanceof ApiError) return null;
       throw err;
@@ -239,19 +245,28 @@ export const findCheapestFuel: Handler = async (args, ctx): Promise<CallToolResu
     }
   }
   const rows = r.data;
-  const addresses = await addressesOf(ctx, rows);
+  const details = await detailsOf(ctx, rows);
+  const addresses = details.map((d) => d?.address ?? null);
   const de = language === "de";
   const head = de ? `${grade} um ${around} (Umkreis ${radiusKm} km), günstigste zuerst:` : `${grade} around ${around} (within ${radiusKm} km), cheapest first:`;
   const lines = rows.map((s, i) => {
     const p = s.prices.find((x) => x.fuel === fuel);
-    return `${i + 1}. ${stationLabel(s, addresses[i] ?? null)} — ${p === undefined ? "–" : fmtPrice(p.priceEur, language)}, ${kmText(s.distanceM ?? 0, language)}, ${observedOpen(s, p, language)}`;
+    return `${i + 1}. ${stationLabel(s, addresses[i] ?? null)} — ${p === undefined ? "–" : fmtPrice(p.priceEur, language)}, ${kmText(s.distanceM ?? 0, language)}, ${wholeDayOpen(details[i] ?? null, s, language) ?? observedOpen(s, p, language)}`;
   });
   const short = rows.length >= limit
     ? ""
     : de
       ? `\nPreise liegen mir nur für ${rows.length === 1 ? "eine Tankstelle" : `${rows.length} Tankstellen`} im Umkreis von ${radiusKm} km vor (${grade}, gewünscht: ${limit})${radiusKm < FUEL_MAX_RADIUS_KM ? ` — ein größerer Umkreis (bis ${FUEL_MAX_RADIUS_KM} km) findet vielleicht mehr` : ""}.`
       : `\nI hold a ${grade} price for only ${rows.length === 1 ? "one station" : `${rows.length} stations`} within ${radiusKm} km (asked for: ${limit})${radiusKm < FUEL_MAX_RADIUS_KM ? ` — a wider radius (up to ${FUEL_MAX_RADIUS_KM} km) may find more` : ""}.`;
-  return toolResult(`${head}\n${lines.join("\n")}${short}`, [r.meta], language);
+  // Today's sentence on the held stations the ranking leaves out for want of a current price; then the
+  // unpriced OpenStreetMap stations, when the API lists them.
+  const q = ((r.meta as { query?: Record<string, unknown> }).query ?? {}) as { stationsWithoutCurrentPrice?: number; stationsInRadius?: number; osmUnpriced?: readonly T.OsmFuelStation[] };
+  const uncovered = unrankedLine(language, q.stationsWithoutCurrentPrice ?? 0, q.stationsInRadius ?? 0, grade);
+  const osm = osmFuelLines(language, q.osmUnpriced ?? []);
+  const observed = rows.flatMap((s) => s.prices.filter((p) => p.fuel === fuel).map((p) => p.reportedAt)).sort();
+  // Today's stamp: the oldest price observation ranked (oldestObservedAt), not the feed's last write.
+  const stamp = observed.length === 0 ? {} : { asOf: observed[0]! };
+  return toolResult(`${head}\n${lines.join("\n")}${short}${uncovered}${osm.length === 0 ? "" : `\n${osm.join("\n")}`}`, [r.meta], language, stamp);
 };
 
 /** "Diesel 2,509 €/l, Super E10 2,349 €/l, Super E5 2,409 €/l": the asked grade, else every grade held. */
@@ -334,8 +349,16 @@ export const findFuelStation: Handler = async (args, ctx): Promise<CallToolResul
       structured: { place: around, stations: [], radiusKm, fuel: fuel ?? null, sort: str(args["sort"]) ?? "distance", areaCoverage: cover.coverage, stationsInRadius: cover.stationsInRadius, areaState: area ?? null },
     });
   }
-  const addresses = await addressesOf(ctx, r.data);
+  const details = await detailsOf(ctx, r.data);
+  const now = new Date();
   const head = de ? `Tankstellen um ${around} (Umkreis ${radiusKm} km)${filters}:` : `Filling stations around ${around} (within ${radiusKm} km)${filters}:`;
-  const lines = r.data.map((s, i) => `${i + 1}. ${stationLabel(s, addresses[i] ?? null)} — ${[pricesText(s, fuel, language), kmText(s.distanceM ?? 0, language), openness(s, language)].join(", ")}`);
-  return toolResult([head, ...lines, ...notes].join("\n"), [r.meta], language);
+  const lines = r.data.map((s, i) => {
+    const d = details[i] ?? null;
+    return `${i + 1}. ${stationLabel(s, d?.address ?? null)} — ${[pricesText(s, fuel, language), kmText(s.distanceM ?? 0, language), hoursOpenness(d, language, now) ?? openness(s, language)].join(", ")}`;
+  });
+  // Today's block of the stations OpenStreetMap maps without a price, when the API lists them.
+  const osm = osmFuelLines(language, (q as { osmUnpriced?: readonly T.OsmFuelStation[] }).osmUnpriced ?? []);
+  // Today's stamp: the newest price observation among the stations shown, not the feed's last write.
+  const newest = r.data.flatMap((s) => s.prices.filter((p) => fuel === undefined || p.fuel === fuel).map((p) => p.reportedAt)).sort().at(-1);
+  return toolResult([head, ...lines, ...notes, ...osm].join("\n"), [r.meta], language, newest === undefined ? {} : { asOf: newest });
 };

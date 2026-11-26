@@ -1,0 +1,6 @@
+{
+  "x-source": {
+    "comment": "Proposed operations, not in a released API: the paths this branch asks the API for, each marked x-proposed. They are merged into the contract fixture (api-openapi.json, the API's own document) by scripts/gen-operations.mjs and test/api-mock.ts; the MCP sends a request to one only once the API's own OpenAPI document lists it."
+  },
+  "paths": {}
+}

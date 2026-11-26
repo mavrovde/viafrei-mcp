@@ -8,6 +8,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
+import { ApiError } from "../src/api/client.js";
 import { pinned } from "./pinned.js";
 import { haversineM } from "../src/tools/location.js";
 import { connect, textOf } from "./harness.js";
@@ -25,6 +26,9 @@ afterAll(() => mockServer.close());
 
 type Body = { data: unknown; meta: Record<string, unknown> };
 const LANGS = ["de", "en"] as const;
+/** The contract's warning without the issuer-text keys (an API release before them): the legacy block. */
+const legacyWarning = (w: Record<string, unknown>): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(w).filter(([k]) => !["description", "instruction", "urgency", "certainty", "english", "unaltered"].includes(k)));
 const at = { lat: 52.52, lon: 13.405 };
 
 async function call(tool: string, args: Record<string, unknown>, o: Parameters<typeof connect>[0] = {}): Promise<CallToolResult> {
@@ -96,7 +100,7 @@ describe("check_autobahn_traffic", () => {
     calls.length = 0;
     const one = await call("check_autobahn_traffic", { roads: ["A1"], language: "en" });
     expect(meta(one)["nextCursor"]).toBe("next-1");
-    expect(body(one)).toBe("A1 — traffic light yellow: roadworks narrowing the carriageway.");
+    expect(body(one)).toBe("A1 — traffic light yellow: roadworks narrowing the carriageway.\n… more entries on the next page.");
   });
 
   it("without a limit lists twenty situations", async () => {
@@ -264,7 +268,7 @@ describe("check_autobahn_traffic's lamp, as today's ampel says it", () => {
   for (const language of LANGS) {
     it(`names the first reason, and no count until the API folds the reasons as today's ampel does (${language})`, async () => {
       serve("getMotorwayConditions", { ...roads([]), lamp: "red", lampReason: "road_closed", lampReasons: [{ reason: "road_closed", lamp: "red", count: 5 }, { reason: "jam", lamp: "amber", count: 3 }] });
-      expect(body(await call("check_autobahn_traffic", { roads: ["A9"], language }))).toBe(language === "de" ? "A9 — Ampel Rot: Vollsperrung." : "A9 — traffic light red: full closure.");
+      expect(body(await call("check_autobahn_traffic", { roads: ["A9"], language })).split("\n")[0]).toBe(language === "de" ? "A9 — Ampel Rot: Vollsperrung." : "A9 — traffic light red: full closure.");
     });
   }
 
@@ -291,8 +295,8 @@ describe("find_roadworks_ahead", () => {
   for (const key of ["place"]) {
     it(`a place (${key}): the roadworks around the resolved place`, async () => {
       const r = await call("find_roadworks_ahead", { [key]: "Köln", language: "en" });
-      expect(ops()).toEqual(["listPlaces", "listRoadConditions"]);
-      expect(query("listPlaces")).toEqual([{ q: "Köln", limit: "1", lang: "en" }]);
+      expect(ops()).toEqual(["resolvePlace", "listRoadConditions"]);
+      expect(query("resolvePlace")).toEqual([{ q: "Köln", lang: "en" }]);
       expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", horizon_days: "14", lang: "en" }]);
       expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m");
     });
@@ -706,8 +710,9 @@ describe("find_speed_cameras", () => {
         .toEqual({ place: "Matfienland", radiusKm: 2.5, total: 4, osmTotal: 3, planningOnly: true, noticeDe: SPEED_NOTICE_DE });
       expect((sc["locations"] as Record<string, unknown>[])[0]).toEqual({
         kind: "fixed", kindLabel: language === "de" ? "Feste Anlagen" : "Fixed cameras", enforces: "speed_red_light", enforcesLabel: language === "de" ? "Geschwindigkeit und Rotlicht" : "speed and red light",
-        street: "Ringstraße", locationText: "Blitzer Kansilkamp", municipality: "Köln", direction: "Nord", maxSpeedKmh: 50, maxSpeedHgvKmh: 40,
-        validFrom: null, validTo: null, dataAsOf: "2026-03-01", staleYear: null, lat: 47.655653, lon: 7.799556, source: "city_x_speed",
+        // The row's label and point are the contract example's (cam), not set by this case.
+        street: "Ringstraße", locationText: cam({}).locationLabel, municipality: "Köln", direction: "Nord", maxSpeedKmh: 50, maxSpeedHgvKmh: 40,
+        validFrom: null, validTo: null, dataAsOf: "2026-03-01", staleYear: null, lat: (cam({}).location as { lat: number }).lat, lon: (cam({}).location as { lon: number }).lon, source: "city_x_speed",
       });
     });
   }
@@ -732,6 +737,13 @@ describe("find_place, find_poi, find_address", () => {
     expect(body(r)).toBe('"Köln" — one match:\n1. Köln — town, Schleswig-Holstein, 50.93751, 6.96028');
   });
 
+  it("find_place with more matches than shown names today's cap of 10, the catalogue's own", async () => {
+    const row = ex<object[]>("listPlaces")[0];
+    serve("listPlaces", [{ ...row, name: "Marienplatz" }, { ...row, name: "Marienplatz" }], { page: { limit: 2, hasMore: true, nextCursor: null } });
+    const r = await call("find_place", { query: "Marienplatz", limit: 2, language: "en" });
+    expect(body(r).split("\n")[0]).toBe('"Marienplatz" — the first 2 matches; more exist, so this is not a count of every place with that name (narrow with near or kind, limit up to 10):');
+  });
+
   for (const [kind, contract] of [["district", "district"], ["admin", "region"], ["station", "station_area"], ["stop", "station_area"]]) {
     it(`find_place kind=${kind} asks kind=${contract}`, async () => {
       await call("find_place", { query: "Xy", kind, language: "en" });
@@ -741,7 +753,8 @@ describe("find_place, find_poi, find_address", () => {
 
   it("find_place near a named place resolves it first; near a position passes it", async () => {
     await call("find_place", { query: "Neustadt", near: "Hamburg", language: "en" });
-    expect(query("listPlaces")).toEqual([{ q: "Hamburg", limit: "1", lang: "en" }, { q: "Neustadt", at: "48.24375,7.01625", lang: "en" }]);
+    expect(query("resolvePlace")).toEqual([{ q: "Hamburg", lang: "en" }]);
+    expect(query("listPlaces")).toEqual([{ q: "Neustadt", at: "48.24375,7.01625", lang: "en" }]);
     calls.length = 0;
     await call("find_place", { query: "Neustadt", ...at, language: "en" });
     expect(query("listPlaces")).toEqual([{ q: "Neustadt", at: "52.52,13.405", lang: "en" }]);
@@ -832,14 +845,14 @@ describe("find_place, find_poi, find_address", () => {
 
   it("find_poi near a named place resolves it", async () => {
     await call("find_poi", { name: "Apotheke", near: "Köln", language: "en" });
-    expect(ops()).toEqual(["listPlaces", "listPois"]);
+    expect(ops()).toEqual(["resolvePlace", "listPois"]);
     expect(query("listPois")[0]!["at"]).toBe("48.24375,7.01625");
   });
 
   it("find_poi near an unknown place says so", async () => {
     serve("listPlaces", []);
     expect((await call("find_poi", { name: "Apotheke", near: "Nirgendwo", language: "en" })).isError).toBe(true);
-    expect(ops()).toEqual(["listPlaces"]);
+    expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
   });
 
   it("find_address: street and number, postcode and town, coordinate", async () => {
@@ -1185,7 +1198,7 @@ describe("get_driving_rules", () => {
         content: [{ type: "text", text: language === "de" ? "„Nirgendwo“ habe ich als Ort nicht gefunden." : 'I could not find "Nirgendwo" as a place.' }],
         isError: true,
       });
-      expect(ops()).toEqual(["listPlaces"]);
+      expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
     });
   }
 
@@ -1357,7 +1370,7 @@ describe("parity of four answers with today's server", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-24T21:13:00Z"));
     try {
-      const w = ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!;
+      const w = legacyWarning(ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!);
       const frost = { ...w, headline: "Official WARNING of FROST", level: 1, levelName: "Minor", event: "FROST", inForce: true, area: { name: "Stadt Hannover", cellId: "803241001" }, validity: { from: "2026-11-24T15:00:00Z", until: "2026-11-25T11:00:00Z" } };
       const fog = { ...frost, headline: "Official WARNING of FOG", event: "NEBEL", validity: { from: "2026-11-24T17:08:00Z", until: "2026-11-25T06:00:00Z" } };
       serve("getWeatherRisk", { warnings: [frost, fog] });
@@ -1366,13 +1379,13 @@ describe("parity of four answers with today's server", () => {
         "",
         "1. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) — Frost (FROST)",
         "   Area: Stadt Hannover (warn cell 803241001)",
-        "   Valid: until 2026-11-25 12:00 (since 16:00)",
+        "   Valid: until 2026-11-25 12:00 (since 2026-11-24 16:00)",
         "   „Official WARNING of FROST“",
         "   For the drive: Follow the official advice and adapt your driving to the conditions.",
         "",
         "2. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) — Fog (NEBEL)",
         "   Area: Stadt Hannover (warn cell 803241001)",
-        "   Valid: until 2026-11-25 07:00 (since 18:08)",
+        "   Valid: until 2026-11-25 07:00 (since 2026-11-24 18:08)",
         "   „Official WARNING of FOG“",
         "   For the drive: With visibility below 50 m in fog, snow or rain the limit is 50 km/h (§ 3 (1) StVO); the rear fog light only in fog with visibility below 50 m (§ 17 (3) StVO).",
       ].join("\n"));
@@ -1380,7 +1393,7 @@ describe("parity of four answers with today's server", () => {
       expect(body(await call("check_weather_warnings", { ...at, language: "de" })).split("\n").slice(2)).toEqual([
         "1. Stufe 1 von 4 — Wetterwarnung — FROST",
         "   Gebiet: Stadt Hannover (Warnzelle 803241001)",
-        "   Gültig: bis 25.11. 12:00 (seit 16:00)",
+        "   Gültig: bis 25.11. 12:00 (seit 24.11. 16:00)",
         "   „Amtliche WARNUNG vor FROST“",
         "   Für die Fahrt: Auf die amtlichen Hinweise achten und die Fahrweise den Verhältnissen anpassen.",
       ]);
@@ -1389,7 +1402,7 @@ describe("parity of four answers with today's server", () => {
       expect(body(await call("check_weather_warnings", { ...at, language: "en" })).split("\n").slice(2)).toEqual([
         "1. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning)",
         "   Area: warn cell",
-        "   Valid: until 2026-11-25 12:00 (since 16:00)",
+        "   Valid: until 2026-11-25 12:00 (since 2026-11-24 16:00)",
         "   For the drive: Follow the official advice and adapt your driving to the conditions.",
       ]);
     } finally {
@@ -1398,11 +1411,17 @@ describe("parity of four answers with today's server", () => {
   });
 
   describe("get_departures around a place", () => {
+    beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-11-24T18:40:00Z")); });
+    afterEach(() => { vi.useRealTimers(); });
     const st = (id: string, code: string, name: string, d: number, districtCode = "11000") => ({ id, name, location: { lat: 52.52, lon: 13.41 }, stopCode: code, eva: null, evaNumbers: [], distanceM: d, districtCode });
     const d = (o: Record<string, unknown>) => ({ line: "S9", category: "S", mode: "sbahn", destination: "Flughafen BER", plannedAt: "2026-11-24T18:42:00Z", expectedAt: null, delayMin: null, platform: "3", plannedPlatform: null, platformChanged: false, cancelled: false, realtime: false, noForecast: false, ...o });
     const window = { from: "2026-11-24T18:40:00Z", until: "2026-11-24T19:40:00Z" };
-    /** The gazetteer knows Berlin (and its centre) only; the stop search answers `named` by name, `near` by position. */
+    /**
+     * The gazetteer knows Berlin (and its centre) only; the stop search answers `named` by name, `near` by position.
+     * listStopBoards answers 404 here, so the stops are read one by one (the path these cases hold to today's answer).
+     */
     function world(named: unknown[], near: unknown[], boards: (path: string) => unknown[] | "fail"): void {
+      mockServer.use(handlerFor("listStopBoards", () => problem(404, "not_found")));
       mockServer.use(handlerFor("listPlaces", (url) => HttpResponse.json({ ...exampleOf<Body>("listPlaces"), data: url.searchParams.get("q") === "Berlin"
         ? [{ id: "1", name: "Berlin", kind: "municipality", location: { lat: 52.52, lon: 13.405 }, districtCode: "11000", sourceFamily: "bkg_gvisys" }] : [] })));
       mockServer.use(handlerFor("listStations", (url) => HttpResponse.json({ ...exampleOf<Body>("listStations"), data: url.searchParams.get("q") !== null ? named : near })));
@@ -1419,18 +1438,20 @@ describe("parity of four answers with today's server", () => {
         : [d({ line: "U5", mode: "subway", destination: "U Hönow (Berlin)", platform: "2" })]));
       const r = await call("get_departures", { place: "Berlin Alexanderplatz", language: "en" });
       expect(query("listStations")).toEqual([{ q: "Berlin Alexanderplatz", limit: "1", lang: "en" }, { at: "52.52,13.41", radius_m: "5000", limit: "40", lang: "en" }]);
-      expect(body(r).split("\n\n").slice(0, 4)).toEqual([
-        "The nearest stops around Berlin Alexanderplatz (within 5.0 km) with their next departures:",
-        ["S+U Alexanderplatz Bhf (Berlin) (21 m) — stop_id 1:a:", "19:42 S9 → Flughafen BER, platform 3, +2 min (expected 19:44)", "19:42 S7 → Flughafen BER, platform 3, cancelled", "19:42 S3 → Flughafen BER, platform 3, on time", "19:42 tram M4 → destination not given, no forecast"].join("\n"),
-        ["U Rotes Rathaus (Berlin) (400 m) — stop_id 1:b:", "19:42 U5 → U Hönow (Berlin), platform 2, timetable"].join("\n"),
+      // Today's words around a place: the window's end in the head, one line per stop, each departure indented.
+      expect(body(r).split("\n")).toEqual([
+        "The nearest stops around Berlin Alexanderplatz (within 5 km) with their next departures until 20:40:",
+        "S+U Alexanderplatz Bhf (Berlin) (21 m) — stop_id 1:a:", "  19:42 S9 → Flughafen BER, platform 3, +2 min (expected 19:44)", "  19:42 S7 → Flughafen BER, platform 3, cancelled", "  19:42 S3 → Flughafen BER, platform 3, on time", "  19:42 tram M4 → destination not given, no forecast",
+        "U Rotes Rathaus (Berlin) (0.4 km) — stop_id 1:b:", "  19:42 U5 → U Hönow (Berlin), platform 2, timetable",
         "More departures of one stop: get_departures with its stop_id.",
       ]);
+      expect(textOf(r).split("\n").at(-1)).toBe("Timetable with delays and cancellations from the realtime data where held; \"timetable\" marks a planned time with no realtime figure. viafrei.de's place page shows the same stops and departures.");
     });
     it("the stop_id printed, passed back, goes straight to that stop's board with no lookup", async () => {
       world([], [], (path) => (path === "/v1/stations/1%3Ade%3A11000%3A900100024%3A%3A1/departures" ? [d({})] : []));
       const r = await call("get_departures", { stop_id: "1:de:11000:900100024::1", language: "en" });
       expect(ops()).toEqual(["listStationDepartures"]);
-      expect(body(r)).toBe("Board of x:\n- 19:42 S9 → Flughafen BER · pl. 3");
+      expect(body(r)).toBe("Departures from Board of x — timetable, 19:40 to 20:40:\n19:42 S9 → Flughafen BER, platform 3");
     });
     it("a station id no board holds: today's unknown-stop refusal", async () => {
       mockServer.use(handlerFor("listStationDepartures", () => problem(404, "not-found")));
@@ -1458,6 +1479,8 @@ describe("parity of four answers with today's server", () => {
       const fault = new TypeError("a fault in the server");
       const get = vi.fn(async (op: string, params: Record<string, unknown>) => {
         const meta = { attribution: [], freshness: [] };
+        // An API without the proposed one-read board around a place (listStopBoards).
+        if (op === "listStopBoards") throw new ApiError("not_found", "not offered", 404);
         if (op === "listStations") return { data: [station("1:a", 21), station("1:b", 400)], meta };
         if (op === "listStationDepartures") {
           if (params["stationId"] === "1:b") throw fault;
@@ -1471,10 +1494,15 @@ describe("parity of four answers with today's server", () => {
     it("one board that fails is said for its stop; an empty board says until when; the others still answer", async () => {
       world([alex], [st("1:a", "de:1:a", alex.name, 21), st("1:b", "de:1:b", "U Rotes Rathaus (Berlin)", 400), st("1:c", "de:1:c", "U Klosterstr. (Berlin)", 500)], (path) => (path.includes("1%3Ab") ? "fail" : path.includes("1%3Ac") ? [] : [d({})]));
       for (const language of LANGS) {
-        const blocks = body(await call("get_departures", { place: "Berlin Alexanderplatz", language })).split("\n\n");
-        expect(blocks[1]).toMatch(/^S\+U Alexanderplatz Bhf \(Berlin\) \(21 m\) — stop_id 1:a:\n19:42 S9/u);
-        expect(blocks[2]).toBe(language === "de" ? "U Rotes Rathaus (Berlin) (400 m) — stop_id 1:b: Abfahrten nicht gelesen." : "U Rotes Rathaus (Berlin) (400 m) — stop_id 1:b: departures not read.");
-        expect(blocks[3]).toBe(language === "de" ? "U Klosterstr. (Berlin) (500 m) — stop_id 1:c: keine Abfahrt bis 20:40." : "U Klosterstr. (Berlin) (500 m) — stop_id 1:c: no departure until 20:40.");
+        const lines = body(await call("get_departures", { place: "Berlin Alexanderplatz", language })).split("\n");
+        expect(lines.slice(1, 7)).toEqual([
+          "S+U Alexanderplatz Bhf (Berlin) (21 m) — stop_id 1:a:", language === "de" ? "  19:42 S9 → Flughafen BER, Gleis 3" : "  19:42 S9 → Flughafen BER, platform 3",
+          `U Rotes Rathaus (Berlin) (${language === "de" ? "0,4" : "0.4"} km) — stop_id 1:b:`, language === "de" ? "  Abfahrten nicht gelesen." : "  departures not read.",
+          `U Klosterstr. (Berlin) (${language === "de" ? "0,5" : "0.5"} km) — stop_id 1:c:`, language === "de" ? "  keine Abfahrt bis 20:40" : "  no departure until 20:40",
+        ]);
+        expect(textOf(await call("get_departures", { place: "Berlin Alexanderplatz", language })).split("\n").at(-1)).toBe(language === "de"
+          ? "Fahrplanzeiten (Plandaten). Dieselben Haltestellen und Abfahrten zeigt die Ortsseite auf viafrei.de."
+          : "Planned times (timetable). viafrei.de's place page shows the same stops and departures.");
       }
     });
     it("at most 8 stops, each board asked for 4 departures over 60 minutes", async () => {
@@ -1483,11 +1511,24 @@ describe("parity of four answers with today's server", () => {
       expect(paths("listStationDepartures")).toEqual(Array.from({ length: 8 }, (_, i) => `/v1/stations/1%3As${i}/departures`));
       expect(query("listStationDepartures")).toEqual(Array.from({ length: 8 }, () => ({ duration_min: "60", limit: "4", lang: "en" })));
     });
+    it("one way in, as today's server refuses it: lat with lon, one of stop/stop_id/place/position, no board option around a place", async () => {
+      const refusal = async (args: Record<string, unknown>) => { const r = await call("get_departures", args); expect(r.isError).toBe(true); return [textOf(r), (r._meta as { errorReason?: string } | undefined)?.errorReason]; };
+      expect(await refusal({ place: "Berlin Alexanderplatz", limit: 5, language: "en" })).toEqual(["limit apply to one named stop. Around a place the answer is the nearest stops now with their next departures, as viafrei.de's place page shows them — leave limit out, or ask about one stop with stop or stop_id.", undefined]);
+      expect((await refusal({ lat: 52.52, lon: 13.41, when: "2026-11-25T10:00:00+01:00", duration_min: 30, modes: ["bus"], language: "de" }))[0]).toMatch(/^when, duration_min, modes gelten für eine benannte Haltestelle\./u);
+      expect(await refusal({ lat: 52.52, language: "en" })).toEqual(["lat and lon go together: give both, or give place instead.", "half_coordinate"]);
+      expect((await refusal({ place: "Berlin", lat: 52.52, lon: 13.41, language: "en" }))[1]).toBe("place_and_coords");
+      expect((await refusal({ place: "Berlin", stop: "Alexanderplatz", language: "en" }))[1]).toBe("two_ways_in");
+      expect(await refusal({ stop: "Alexanderplatz", stop_id: "de:11000:900100003", language: "en" })).toEqual(["Give either stop or stop_id, not both — they can disagree.", "two_ways_in"]);
+      expect(calls).toEqual([]);
+      // The defaults a client fills in are not the caller's own.
+      world([], [st("1:a", "de:1:a", alex.name, 21)], () => [d({})]);
+      expect((await call("get_departures", { place: "Berlin Alexanderplatz", limit: 10, duration_min: 60, language: "en" })).isError).toBeFalsy();
+    });
     it("a place the search misses and no stop holds: the town centre without a second search of the same words", async () => {
       world([], [st("1:a", "de:1:a", alex.name, 21)], () => [d({})]);
       const r = await call("get_departures", { place: "Berlin Nirgendwo", language: "en" });
       expect(calls.filter((c) => c.operationId === "listPlaces").map((c) => c.url.searchParams.get("q"))).toEqual(["Berlin Nirgendwo", "Berlin"]);
-      expect(body(r).split("\n")[0]).toBe('The nearest stops around Berlin (measured from the town centre — I found no "Nirgendwo" there) (within 5.0 km) with their next departures:');
+      expect(body(r).split("\n")[0]).toBe('The nearest stops around Berlin (measured from the town centre — I found no "Nirgendwo" there) (within 5 km) with their next departures until 20:40:');
     });
     it("a stop of that name in another town than the place names is not taken: the town centre answers", async () => {
       world([st("1:z", "de:2:z", "Alexanderplatz (Elsewhere)", 0, "07134")], [st("1:a", "de:1:a", alex.name, 21)], () => [d({})]);
@@ -1498,15 +1539,15 @@ describe("parity of four answers with today's server", () => {
       world([st("1:a", "de:1:a", "Alexanderplatz (Berlin)", 0)], [st("1:a", "de:1:a", alex.name, 21)], () => [d({})]);
       for (const language of LANGS) {
         expect(body(await call("get_departures", { place: "Alexanderplatz", language })).split("\n")[0]).toBe(language === "de"
-          ? "Die nächsten Haltestellen um Alexanderplatz (Haltestelle Alexanderplatz (Berlin)) (im Umkreis von 5,0 km) mit ihren nächsten Abfahrten:"
-          : "The nearest stops around Alexanderplatz (the stop Alexanderplatz (Berlin)) (within 5.0 km) with their next departures:");
+          ? "Die nächsten Haltestellen um Alexanderplatz (Haltestelle Alexanderplatz (Berlin)) (Umkreis 5 km) mit ihren nächsten Abfahrten bis 20:40:"
+          : "The nearest stops around Alexanderplatz (the stop Alexanderplatz (Berlin)) (within 5 km) with their next departures until 20:40:");
       }
     });
   });
 });
 
 describe("check_weather_warnings", () => {
-  const w = () => ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!;
+  const w = () => legacyWarning(ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0]!);
   for (const language of LANGS) {
     it(`warnings (${language}): today's head with the count and the highest level, highest first; the level applied here, not asked of the API`, async () => {
       serve("getWeatherRisk", { warnings: [w(), { ...w(), headline: "Sturm", level: 3, levelName: "Stufe 3", validity: { from: null, until: null } }, { ...w(), headline: "Frost", level: 1 }] });
@@ -1573,7 +1614,123 @@ describe("check_weather_warnings", () => {
   });
 });
 
+describe("check_weather_warnings with the next API release's text, English and road forecast", () => {
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-11-24T21:13:00Z")); });
+  afterEach(() => { vi.useRealTimers(); });
+  const credit = (family: string, text: string) => ({ family, domain: "weather", publisher: text, text, licence: "GeoNutzV", licenceUrl: "https://licences.example/geonutzv", shareAlike: false, shareAlikeOffer: null, termsUrl: null });
+  const credits = [credit("dwd_warnings", "Quelle: Deutscher Wetterdienst"), credit("dwd_warnings_en", "Source: Deutscher Wetterdienst (English)"), credit("dwd_road", "Glättemeldeanlagen: DWD"), credit("dwd_road_forecast", "Straßenwetter: DWD")];
+  const frost = {
+    ...ex<{ warnings: Record<string, unknown>[] }>("getWeatherRisk").warnings[0], headline: "Amtliche WARNUNG vor FROST", level: 1, levelName: "Stufe 1", event: "FROST", inForce: true,
+    area: { name: "Stadt Hannover", cellId: "803241001" }, validity: { from: "2026-11-24T15:00:00Z", until: "2026-11-25T11:00:00Z" }, sourceFamily: "dwd_warnings",
+    description: "Es tritt leichter Frost um -3 °C auf.", instruction: null, urgency: "Immediate", certainty: "Likely", unaltered: true,
+    english: { headline: "Official WARNING of FROST", description: "There is a risk of frost (Level 1 of 4).", instruction: null, sourceFamily: "dwd_warnings_en", unaltered: true },
+  };
+  const hour = (validAt: string, roadCondition: number | null, surfaceTempC: number | null, runAt = "2026-11-24T18:00:00Z") => ({ validAt, validAtLocal: validAt, runAt, roadCondition, surfaceTempC });
+  const station = (o: Record<string, unknown> = {}) => ({
+    id: "10001", name: "Hannover-Süd", segmentType: 2, positionSource: null, location: { lat: 52.3, lon: 9.8 }, distanceM: 420, sourceFamily: "dwd_road", forecastFamily: "dwd_road_forecast",
+    hours: [hour("2026-11-24T20:00:00Z", 2, 1.2), hour("2026-11-24T22:00:00Z", 2, 0.4), hour("2026-11-25T03:00:00Z", 4, -1.5)], ...o,
+  });
+  const notes = { condition: ["Die Daten der Glättemeldeanlagen stellen ungeprüfte Punktmessungen dar."], purpose: [] };
+  const sources = (r: CallToolResult): unknown => meta(r)["sources"];
+
+  it("English: the DWD's own English quoted, the CAP fields, the road forecast block, the winter-tyre line through the slippery forecast, every source credited", async () => {
+    serve("getWeatherRisk", { lamp: "amber", warnings: [frost], truncated: false, roadWeather: [], roadForecast: [station()] }, { attribution: credits, notes });
+    const r = await call("check_weather_warnings", { ...at, language: "en" });
+    expect(body(r).split("\n")).toEqual([
+      "Die Daten der Glättemeldeanlagen stellen ungeprüfte Punktmessungen dar.",
+      "One official notice for 52.520, 13.405, highest level 1 of 4:",
+      "",
+      "1. Level 1 of 4 — Wetterwarnung (the DWD's own name; our translation: weather warning) — Frost (FROST)",
+      "   Area: Stadt Hannover (warn cell 803241001)",
+      "   Valid: until 2026-11-25 12:00 (since 2026-11-24 16:00)",
+      "   The DWD's own CAP fields: urgency=Immediate, certainty=Likely",
+      "   Official DWD wording in English (the DWD's own text), reproduced unaltered:",
+      "   „Official WARNING of FROST“",
+      "   „There is a risk of frost (Level 1 of 4).“",
+      expect.stringMatching(/^ {3}For the drive: .*winter tyres|^ {3}For the drive: .*§ 2 /u),
+      "",
+      "DWD road-surface forecast for the nearest road-weather stations (SWSMOS/METRo model forecast, run 19:00 — not a measurement and not an official warning):",
+      "- Station Hannover-Süd (bridge, 0.4 km) — forecast 23:00: damp, road surface 0.4 °C; forecast: slippery class from 2026-11-25 04:00 — hoar frost, road surface −1.5 °C.",
+      "A forecast slippery class is a model forecast for that point, not an official DWD ice warning.",
+      "Each line is for the station's own location, not for the whole road.",
+    ]);
+    expect(sources(r)).toEqual(["dwd_warnings", "dwd_warnings_en", "dwd_road", "dwd_road_forecast"]);
+    expect(meta(r)["conditionNote"]).toBe("Die Daten der Glättemeldeanlagen stellen ungeprüfte Punktmessungen dar.");
+    // The official credit, not the summary one: the text is shown unaltered.
+    expect(footer(r)).toMatch(/^Quelle: Deutscher Wetterdienst \(Lizenz: GeoNutzV, [^)]+\) · Source: Deutscher Wetterdienst \(English\) /u);
+  });
+
+  it("German: the official German text, the English source not credited; without a slippery forecast a FROST warning gets no winter-tyre line", async () => {
+    const dry = station({ hours: [hour("2026-11-24T22:00:00Z", 1, 3.5)] });
+    serve("getWeatherRisk", { lamp: "amber", warnings: [frost], truncated: false, roadWeather: [], roadForecast: [dry] }, { attribution: credits, notes });
+    const r = await call("check_weather_warnings", { ...at, language: "de" });
+    const lines = body(r).split("\n");
+    expect(lines.slice(6, 11)).toEqual([
+      "   CAP-Angaben des DWD: urgency=Immediate, certainty=Likely",
+      "   Amtlicher Wortlaut des DWD, unverändert:",
+      "   „Amtliche WARNUNG vor FROST“",
+      "   „Es tritt leichter Frost um -3 °C auf.“",
+      "   Für die Fahrt: Auf die amtlichen Hinweise achten und die Fahrweise den Verhältnissen anpassen.",
+    ]);
+    expect(lines).toContain("- Station Hannover-Süd (Brücke, 0,4 km) — Prognose 23:00: trocken, Fahrbahn 3,5 °C; bis 25.11. 22:13 keine Glätte-Klasse prognostiziert.");
+    expect(lines.some((l) => l.startsWith("Eine prognostizierte Glätte-Klasse"))).toBe(false);
+    expect(sources(r)).toEqual(["dwd_warnings", "dwd_road", "dwd_road_forecast"]);
+  });
+
+  it("English without the DWD's English: the German original under an English label, the English source not credited", async () => {
+    serve("getWeatherRisk", { lamp: "amber", warnings: [{ ...frost, english: null }], truncated: false, roadWeather: [], roadForecast: [] }, { attribution: credits });
+    const r = await call("check_weather_warnings", { ...at, language: "en" });
+    expect(body(r).split("\n").slice(6, 9)).toEqual(["   Official text of the DWD (German original, binding), reproduced unaltered:", "   „Amtliche WARNUNG vor FROST“", "   „Es tritt leichter Frost um -3 °C auf.“"]);
+    expect(sources(r)).toEqual(["dwd_warnings", "dwd_road", "dwd_road_forecast"]);
+  });
+
+  it("quoted only as the API vouches for it: English not unaltered falls back to the German original; German not unaltered makes the list a summary with today's reason", async () => {
+    serve("getWeatherRisk", { lamp: "amber", warnings: [{ ...frost, english: { ...frost.english, unaltered: false } }], truncated: false, roadWeather: [], roadForecast: [] }, { attribution: credits });
+    expect(body(await call("check_weather_warnings", { ...at, language: "en" })).split("\n")[6]).toBe("   Official text of the DWD (German original, binding), reproduced unaltered:");
+    for (const language of LANGS) {
+      serve("getWeatherRisk", { lamp: "amber", warnings: [{ ...frost, unaltered: false, english: { ...frost.english, unaltered: false } }], truncated: false, roadWeather: [], roadForecast: [] }, { attribution: credits });
+      const t = body(await call("check_weather_warnings", { ...at, language }));
+      expect(t).not.toContain("„Amtliche WARNUNG vor FROST“");
+      expect(t).toContain(language === "de" ? "Der amtliche Wortlaut wird hier nicht wiedergegeben (the stored wording no longer matches the text as published)." : "The official wording is not reproduced here (the stored wording no longer matches the text as published).");
+    }
+    // The English, vouched for, is quoted even when the German is not.
+    serve("getWeatherRisk", { lamp: "amber", warnings: [{ ...frost, unaltered: false }], truncated: false, roadWeather: [], roadForecast: [] }, { attribution: credits });
+    expect(body(await call("check_weather_warnings", { ...at, language: "en" }))).toContain("„Official WARNING of FROST“");
+  });
+
+  it("a list whose official text does not fit is a summary: no quotation, today's notice, the summary credit", async () => {
+    // The German original is what a German answer quotes, so its length decides; the English one is short.
+    const long = { ...frost, description: "x ".repeat(4000) };
+    serve("getWeatherRisk", { lamp: "amber", warnings: [long], truncated: false, roadWeather: [], roadForecast: [] }, { attribution: credits });
+    const en = await call("check_weather_warnings", { ...at, language: "en" });
+    expect(body(en)).toContain("   „There is a risk of frost (Level 1 of 4).“");
+    const r = await call("check_weather_warnings", { ...at, language: "de" });
+    const t = body(r);
+    expect(t).not.toContain("„");
+    expect(t).toContain("   CAP-Angaben des DWD: urgency=Immediate, certainty=Likely");
+    // Today's reason is its English phrase in both languages (renderWarnings), kept as today.
+    expect(t.split("\n").at(-1)).toBe("Der amtliche Wortlaut wird hier nicht wiedergegeben (the official wording does not fit in one answer). Eine veränderte amtliche Warnung darf den Quellenvermerk des DWD nicht tragen — die Warnungen im Wortlaut stehen unter https://www.dwd.de/warnungen.");
+    expect(footer(r)).toContain("Datenbasis: Deutscher Wetterdienst, zusammengefasst");
+    expect(sources(r)).toEqual(["dwd_warnings", "dwd_road", "dwd_road_forecast"]);
+  });
+
+  it("a forecast run older than 24 h: one sentence, no value, and the road sources not credited; older than 4 h: the caution first", async () => {
+    const old = station({ hours: [hour("2026-11-24T22:00:00Z", 1, 3.5, "2026-11-23T20:00:00Z")] });
+    serve("getWeatherRisk", { lamp: "green", warnings: [], truncated: false, roadWeather: [], roadForecast: [old] }, { attribution: credits });
+    const r = await call("check_weather_warnings", { ...at, language: "en" });
+    expect(body(r).split("\n").at(-1)).toBe("DWD road-surface forecast currently unavailable: the latest forecast run held is more than 24 hours old.");
+    // No warning shown: one summary credit for the DWD's warnings, none for the road forecast.
+    expect(sources(r)).toEqual(["dwd_warnings"]);
+    const stale = station({ hours: [hour("2026-11-24T22:00:00Z", 1, 3.5, "2026-11-24T16:00:00Z")] });
+    serve("getWeatherRisk", { lamp: "green", warnings: [], truncated: false, roadWeather: [], roadForecast: [stale] }, { attribution: credits });
+    const s2 = body(await call("check_weather_warnings", { ...at, language: "de" })).split("\n");
+    expect(s2).toContain("Achtung, nicht aktuell: Dieser Prognoselauf (17:00) ist älter als 4 Stunden. Straßenwetter-Prognose des DWD für die nächsten Straßenwetterstationen (Modellvorhersage SWSMOS/METRo, Lauf 17:00 — keine Messung und keine amtliche Warnung):");
+  });
+});
+
 describe("stations", () => {
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-03-30T00:30:00Z")); });
+  afterEach(() => { vi.useRealTimers(); });
   const dep = (o: Record<string, unknown>) => ({ line: "S1", category: "S", mode: "rail", destination: "Flughafen", plannedAt: "2026-03-30T06:05:00Z", delayMin: null, cancelled: false, platform: "3", platformChanged: false, ...o });
   const board = (departures: unknown[]) => ({ ...ex<object>("listStationDepartures"), departures });
   const deps = [
@@ -1593,9 +1750,16 @@ describe("stations", () => {
       await pinned("handlers", body(r));
       expect(meta(r)["sources"]).toEqual(["bkg_gvisys", "delfi_static"]);
     });
+    it(`a board with more departures in its window than shown says how many more (${language})`, async () => {
+      const b = ex<{ window: Record<string, unknown> }>("listStationDepartures");
+      serve("listStationDepartures", { ...b, window: { ...b.window, matched: 6 }, departures: deps.slice(0, 2) });
+      const lines = body(await call("get_departures", { stop: "Schömpingbach", limit: 2, language })).split("\n");
+      expect(lines.at(-2)).toBe(language === "de" ? "… und 4 weitere im Fenster." : "… and 4 more in the window.");
+    });
     it(`get_departures with an empty window (${language})`, async () => {
       const r = await call("get_departures", { stop: "Schömpingbach", language });
-      expect(body(r)).toBe(`Pienköckheim Nord: ${language === "de" ? "keine Abfahrten im Zeitfenster." : "no departures in the window."}`);
+      // Today's noneInWindow, with the board's window.
+      expect(body(r)).toBe(language === "de" ? "Ab Pienköckheim Nord fährt zwischen 02:00 und 03:00 planmäßig nichts ab." : "Nothing is scheduled to leave Pienköckheim Nord between 02:00 and 03:00.");
     });
     it(`get_departures, no such stop (${language})`, async () => {
       serve("listStations", []);
@@ -1604,7 +1768,7 @@ describe("stations", () => {
   }
 
   it("get_departures by stop id asks the code, not the name", async () => {
-    await call("get_departures", { stop_id: "8001001", stop: "Ignored", language: "en" });
+    await call("get_departures", { stop_id: "8001001", language: "en" });
     expect(query("listStations")).toEqual([{ code: "8001001", limit: "1", lang: "en" }]);
   });
 
@@ -1619,6 +1783,7 @@ describe("stations", () => {
   }
 
   it("get_departures with only a place or a position: no empty station search (the API refuses one), the stop nearest it", async () => {
+    mockServer.use(handlerFor("listStopBoards", () => problem(404, "not_found")));
     const r = await call("get_departures", { place: "Leipzig", language: "de" });
     expect(r.isError).not.toBe(true);
     expect(query("listStations")).toEqual([{ at: expect.stringMatching(/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/u) as string, radius_m: "5000", limit: "40", lang: "de" }]);
@@ -1626,34 +1791,12 @@ describe("stations", () => {
     expect(query("listStations").slice(-1)).toEqual([{ at: "52.5,13.4", radius_m: "5000", limit: "40", lang: "en" }]);
   });
 
-  it("get_departures: no stop by name, but a place: the nearest stop to it", async () => {
-    let n = 0;
-    const list = exampleOf<Body>("listStations");
-    mockServer.use(handlerFor("listStations", () => HttpResponse.json({ ...list, data: n++ === 0 ? [] : list.data })));
-    await call("get_departures", { stop: "Nowhere", place: "Köln", language: "en" });
-    expect(ops().slice(0, 3)).toEqual(["listStations", "listPlaces", "listStations"]);
-    expect(new Set(ops().slice(3))).toEqual(new Set(["listStationDepartures"]));
-    expect(query("listStations")[1]).toEqual({ at: "48.24375,7.01625", radius_m: "5000", limit: "40", lang: "en" });
-    calls.length = 0;
-    n = 0;
-    await call("get_departures", { stop: "Nowhere", ...at, language: "en" });
-    expect(query("listStations")[1]).toEqual({ at: "52.52,13.405", radius_m: "5000", limit: "40", lang: "en" });
-  });
-
-  it("get_departures: no stop and a place nobody knows", async () => {
-    serve("listStations", []);
-    serve("listPlaces", []);
-    const r = await call("get_departures", { stop: "Nowhere", place: "Nirgendwo", language: "en" });
-    expect(r.isError).toBe(true);
-    expect(textOf(r)).toContain("Nirgendwo");
-  });
-
   for (const language of LANGS) {
     it(`check_station_facilities (${language}): counts, then what is not working`, async () => {
       const d = ex<{ facilities: Record<string, unknown>[] }>("listStationFacilities");
       serve("listStationFacilities", { ...d, counts: { active: 3, inactive: 1, unknown: 1 }, facilities: [{ ...d.facilities[0], state: "active" }, { ...d.facilities[0], kind: "elevator", state: "inactive" }, { ...d.facilities[1], position: null }] });
       const r = await call("check_station_facilities", { eva_no: "8001001", facility: "elevator", limit: 5, language });
-      expect(query("listStations")).toEqual([{ code: "8001001", limit: "1", lang: language }]);
+      expect(query("listStations")).toEqual([{ code: "8001001", limit: "1", railway: "true", lang: language }]);
       expect(query("listStationFacilities")).toEqual([{ kind: "elevator", limit: "5", lang: language }]);
       await pinned("handlers", body(r));
     });
@@ -1664,9 +1807,10 @@ describe("stations", () => {
       expect(await call("describe_station", { eva_no: "8000207", language })).toEqual({ content: [{ type: "text", text: language === "de" ? "Zu EVA 8000207 halten wir keinen Bahnhofseintrag. Aufzüge: check_station_facilities; Abfahrten: get_train_departures." : "We hold no station record for EVA 8000207. Lifts: check_station_facilities; departures: get_train_departures." }], isError: true });
     });
     it(`describe_station (${language}): position, lifts and escalators, the next departures`, async () => {
+      mockServer.use(handlerFor("getStationPage", () => problem(404, "not_found"))); // no page: the facilities and the board are read
       serve("listStationDepartures", board(deps.slice(0, 2)));
       const r = await call("describe_station", { station: "Schömpingbach Hbf", language });
-      expect(query("listStationDepartures")).toEqual([{ limit: "5", lang: language }]);
+      expect(query("listStationDepartures")).toEqual([{ limit: "10", lang: language }]);
       await pinned("handlers", body(r));
     });
   }
@@ -1681,8 +1825,8 @@ describe("stations", () => {
     const facilities = (list: ReturnType<typeof unit>[]) => ({ station: { name: "Schömpingbach Hbf" }, facilities: list,
       counts: { active: list.filter((f) => f.state === "active").length, inactive: list.filter((f) => f.state === "inactive").length, unknown: list.filter((f) => f.state !== "active" && f.state !== "inactive").length } });
     const text = async (args: Record<string, unknown>) => body(await call("check_station_facilities", { station: "Schömpingbach Hbf", ...args }));
-    it("every unit in service, one name twice told apart by its number, and a list cut at the limit", async () => {
-      serve("listStationFacilities", facilities([unit("10", "elevator", "zu Gleis 1", "active"), unit("11", "elevator", "zu Gleis 1", "active"), unit("12", "escalator", "Westseite", "active")]));
+    it("every unit in service, one name twice told apart by its number (the equipment number, without the API's id prefix), and a list cut at the limit", async () => {
+      serve("listStationFacilities", facilities([unit("fasta:10", "elevator", "zu Gleis 1", "active"), unit("equipment:11", "elevator", "zu Gleis 1", "active"), unit("12", "escalator", "Westseite", "active")]));
       expect(await text({ limit: 2, language: "de" })).toBe([
         "In Schömpingbach Hbf sind alle 3 gemeldeten Anlagen in Betrieb. Gezählt sind die Anlagen, die die Bahn für diesen Bahnhof meldet. Aufzüge an Haltestellen städtischer Verkehrsbetriebe (Straßenbahn, Stadtbahn, U-Bahn) sind darin nicht enthalten — dazu liegen mir für diesen Bahnhof keine Live-Daten vor.",
         "Fahrtreppe Westseite: in Betrieb", "Aufzug zu Gleis 1 (Anlage 10): in Betrieb", "… und 1 weitere.",
@@ -1716,6 +1860,7 @@ describe("stations", () => {
   });
 
   it("describe_station lists the lifts out of service first, then by kind and track, a unit without a place said so", async () => {
+    mockServer.use(handlerFor("getStationPage", () => problem(404, "not_found"))); // no page: the facilities and the board are read
     const f = (id: string, kind: string, position: string | null, state: string) => ({ id, kind, position, state, sourceFamily: "fasta" });
     serve("listStationFacilities", { station: { name: "Schömpingbach Hbf" }, counts: { active: 2, inactive: 1, unknown: 1 },
       facilities: [f("1", "elevator", "zu Gleis 2", "active"), f("2", "escalator", "Westseite", "unknown"), f("3", "elevator", "zu Gleis 1", "active"), f("4", "escalator", "zu Gleis 9", "inactive")] });
@@ -1724,14 +1869,16 @@ describe("stations", () => {
   });
 
   it("describe_station with no departures asked reads no board", async () => {
+    mockServer.use(handlerFor("getStationPage", () => problem(404, "not_found"))); // no page: the facilities and the board are read
     const r = await call("describe_station", { station: "Schömpingbach Hbf", departures: 0, language: "en" });
-    expect(ops().sort()).toEqual(["listStationFacilities", "listStations"]);
+    expect(ops().sort()).toEqual(["getStationPage", "listStationFacilities", "listStations"]);
     expect(body(r)).toBe([
       "Schömpingbach Hbf", "Schleswig-Holstein · EVA 8001001", "",
       "Lifts and escalators (As of 2026-03-29 14:00):", "- Escalator (Platform 1): state unknown", "- Escalator (Platform 2): state unknown", "",
       "Parking and charging:", "- Car parks and charging points nearby: find_parking or find_charging_station with lat 48.38815, lon 7.51821.",
     ].join("\n"));
     calls.length = 0;
+    mockServer.use(handlerFor("getStationPage", () => problem(404, "not_found")));
     await call("describe_station", { station: "Schömpingbach Hbf", departures: 2, language: "en" });
     expect(query("listStationDepartures")).toEqual([{ limit: "2", lang: "en" }]);
   });
@@ -1751,6 +1898,21 @@ describe("watch_situation and stop_watch", () => {
       expect(credit).toMatch(new RegExp(`^${language === "de" ? "Quelle" : "Source"}: Beobachtung: ViaFrei, eigener Dienst`, "u"));
       expect(r.structuredContent).toMatchObject({ uri: "viafrei://watch/1", watchId: 1, kind: "road", key: "A1", condition: { event: "any", events: ["restrictions", "jams"] }, expiresAt: "2026-03-30T03:00:00.000Z", openWatches: 1, maxWatches: 10, scope: "session", externalChannels: false });
       expect((r._meta as Record<string, unknown>)["conditionNote"]).toBeUndefined();
+    });
+    it(`a road watch on a word with no digit, or a condition key the kind does not take, is refused before anything is read (${language})`, async () => {
+      const r = await call("watch_situation", { kind: "road", key: "Leipzig", language });
+      expect(r.isError).toBe(true);
+      expect(textOf(r)).toBe(language === "de"
+        ? "„Leipzig“ ist keine Straßennummer — eine road-Beobachtung braucht eine wie „A7“ oder „B5“. Für einen Ort: kind „place“ mit key „Leipzig“. Keine Beobachtung geöffnet."
+        : '"Leipzig" is not a road number — a road watch needs one such as "A7" or "B5". For a town use kind "place" with key "Leipzig". No watch was opened.');
+      const c = await call("watch_situation", { kind: "place", key: "Leipzig", condition: { delay_min: 5, radius_km: 3 }, language });
+      expect(textOf(c)).toBe(language === "de"
+        ? "condition „delay_min“ passt nicht zu einer Beobachtung der Art „place“ — diese Art nimmt: radius_km. Keine Beobachtung geöffnet."
+        : 'condition "delay_min" does not fit a "place" watch — that kind takes: radius_km. No watch was opened.');
+      expect(calls).toEqual([]);
+      // A road number has a digit, and a key the kind takes is no error.
+      serve("getWatch", { ...ex<Record<string, unknown>>("getWatch"), kind: "road", key: "B5" });
+      expect((await call("watch_situation", { kind: "road", key: "B 5", condition: { event: "reopen" }, language })).isError).toBeFalsy();
     });
     it(`a watch without kind or key (${language}) is refused by the schema before the API is asked`, async () => {
       for (const [args, issue] of [
@@ -1812,13 +1974,14 @@ describe("watch_situation and stop_watch", () => {
 describe("the credit footer and _meta of a tool answer", () => {
   it("names the sources, the licence and the data time in Berlin", async () => {
     const r = await call("find_cheapest_fuel", { ...at, language: "de" });
-    expect(footer(r)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 01:57");
+    // The data time is today's: the oldest price observation ranked (oldestObservedAt), not the feed's last write.
+    expect(footer(r)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 02:00");
     expect(meta(r)).toEqual({
       attribution: "Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0)",
       license: "CC BY 4.0",
       licenses: { tankerkoenig_gamma: "CC BY 4.0" },
-      asOf: "2026-03-29T23:57:30Z",
-      asOfLocal: "30.03.2026, 01:57",
+      asOf: "2026-03-30T00:00:00Z",
+      asOfLocal: "30.03.2026, 02:00",
       sources: ["tankerkoenig_gamma"],
       purposeNote: "For consumer information only (synthetic).",
     });
@@ -1826,12 +1989,15 @@ describe("the credit footer and _meta of a tool answer", () => {
 
   it("a place found by name credits the place search's row after the answer's own, and never moves the data time; coordinates credit nothing more", async () => {
     const place = { family: "gazetteer_x", text: "Ortsdaten: Gazetteer X", licence: "CC BY 4.0", shareAlike: false };
-    serve("listPlaces", ex<unknown[]>("listPlaces"), { attribution: [place], asOf: "2020-01-01T00:00:00Z" });
+    // Of the candidates' credits only the picked row's family is said: the other candidate's source is not.
+    const other = { family: "gazetteer_y", text: "Ortsdaten: Gazetteer Y", licence: "CC BY 4.0", shareAlike: false };
+    const rows = ex<{ sourceFamily: string }[]>("listPlaces");
+    serve("listPlaces", [{ ...rows[0], sourceFamily: "gazetteer_x" }, { ...rows[0], name: "Kölnhausen", sourceFamily: "gazetteer_y" }], { attribution: [place, other], asOf: "2020-01-01T00:00:00Z" });
     const named = await call("find_cheapest_fuel", { place: "Köln", language: "de" });
-    expect(footer(named)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Ortsdaten: Gazetteer X · Stand 30.03. 01:57");
+    expect(footer(named)).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Ortsdaten: Gazetteer X · Stand 30.03. 02:00");
     expect(meta(named)["sources"]).toEqual(["tankerkoenig_gamma", "gazetteer_x"]);
-    expect(meta(named)["asOf"]).toBe("2026-03-29T23:57:30Z");
-    expect(footer(await call("find_cheapest_fuel", { ...at, language: "de" }))).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 01:57");
+    expect(meta(named)["asOf"]).toBe("2026-03-30T00:00:00Z");
+    expect(footer(await call("find_cheapest_fuel", { ...at, language: "de" }))).toBe("Quelle: Synthetic data from family gamma, licence CC BY 4.0. (https://gamma.example/terms/tankerkoenig_gamma; Lizenz: CC BY 4.0, https://licences.example/cc-by-4-0) · Stand 30.03. 02:00");
   });
 
   it("the gap list names a tool, a case and the operation it needs, for each gap", () => {
@@ -2023,7 +2189,7 @@ describe("watch_situation: the target is the platform's key, resolved from the p
   it("a road as its number; a place and a weather watch on the place's position; a position as given", async () => {
     expect(await target("road", "a 8")).toBe("A8");
     expect(await target("place", "Leipzig")).toBe("48.24375,7.01625");
-    expect(query("listPlaces")).toEqual([{ q: "Leipzig", limit: "1", lang: "de" }]);
+    expect(query("resolvePlace")).toEqual([{ q: "Leipzig", lang: "de" }]);
     expect(await target("weather", "Dresden")).toBe("48.24375,7.01625");
     expect(await target("place", "51.34, 12.37")).toBe("51.34,12.37");
     expect(query("listPlaces")).toEqual([]);
@@ -2158,7 +2324,7 @@ describe("a place given as a street and house number", () => {
       serve("getPlacesCoverage", { kinds: [], lands: [], addresses: [{ land: "Hessen", dataAsOf: "2026-11-01" }] });
       serve("listPlaces", []);
       await call("find_parking", { place: "Hauptstraße 12, Fulda", language });
-      expect(ops().slice(0, 2)).toEqual(["getPlacesCoverage", "listPlaces"]);
+      expect(ops().slice(0, 3)).toEqual(["getPlacesCoverage", "resolvePlace", "listPlaces"]);
     });
   }
 });

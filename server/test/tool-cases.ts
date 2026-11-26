@@ -23,6 +23,6 @@ export const TOOL_CASES: readonly { tool: string; args: Record<string, unknown>;
   { tool: "get_train_departures", args: { station: "Köln Hbf", language: "en" }, ops: ["listStations", "createRefresh", "getTrainBoard"] },
   { tool: "get_departures", args: { stop: "Köln Hbf", language: "en" }, ops: ["listStations", "listStationDepartures"] },
   { tool: "check_station_facilities", args: { station: "Köln Hbf", language: "en" }, ops: ["listStations", "listStationFacilities"] },
-  { tool: "describe_station", args: { station: "Köln Hbf", language: "en" }, ops: ["listStations", "listStationFacilities", "listStationDepartures"] },
+  { tool: "describe_station", args: { station: "Köln Hbf", language: "en" }, ops: ["listStations", "getStationPage"] },
   { tool: "watch_situation", args: { kind: "road", key: "A1", language: "en" }, ops: ["getWatch"] },
 ];

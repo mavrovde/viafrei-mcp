@@ -165,6 +165,9 @@ describe("get_train_departures with a station name", () => {
     const r = await ask({ station: "Schömpingbach Mitte" });
     expect(r.isError, textOf(r)).not.toBe(true);
     expect(ops()).toEqual(["listStations", "listStationDepartures"]);
+    // A name asks the DB stations only (railway), as today's server resolves a train station.
+    expect(calls[0]!.url.searchParams.get("q")).toBe("Schömpingbach Mitte");
+    expect(calls[0]!.url.searchParams.get("railway")).toBe("true");
   });
 });
 

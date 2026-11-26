@@ -2,7 +2,8 @@
  * End to end over Streamable HTTP: the built server (dist/http.js) against an API.
  *
  * - `npm run test:e2e:mock`: the API is Prism mocking test/fixtures/api-openapi.json with --errors, so a
- *   request the contract does not allow fails the call.
+ *   request the contract does not allow fails the call. Prism serves no /v1/openapi.json of its own, so the mocked
+ *   contract declares it, answering the contract's operation ids (no proposed one, as today's API).
  * - The pre-release job sets E2E_API_URL (and E2E_API_KEY) to a real API built from the pinned image, and
  *   E2E_FACTS=1 to also check the answers' key facts against that API's own answers.
  *
@@ -15,7 +16,9 @@
  * name the API does not know is refused, as today's server refuses it.
  */
 import { spawn, type ChildProcess } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createServer } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { normaliseLikeCapture } from "../../src/catalogue.js";
@@ -106,11 +109,23 @@ async function rpc(method: string, params: unknown, notify = false): Promise<{ r
   return { raw: data, body: JSON.parse(data) };
 }
 
+/** The contract Prism mocks: the API's document, with the /v1/openapi.json the API itself serves declared, its example the operation ids. */
+function mockedContract(): string {
+  const spec = JSON.parse(readFileSync(`${root}test/fixtures/api-openapi.json`, "utf8")) as { openapi: string; paths: Record<string, Record<string, unknown>> };
+  const ids = Object.fromEntries(Object.entries(spec.paths).map(([path, item]) => [path, Object.fromEntries(Object.entries(item)
+    .filter(([, op]) => typeof op === "object" && op !== null && "operationId" in op).map(([m, op]) => [m, { operationId: (op as { operationId: string }).operationId }]))]));
+  const document = { description: "The API's own OpenAPI document.", content: { "application/json": { example: { openapi: spec.openapi, paths: ids } } } };
+  const served = { ...spec, paths: { ...spec.paths, "/v1/openapi.json": { get: { operationId: "getOpenApiDocument", responses: { "200": document } } } } };
+  const file = join(mkdtempSync(join(tmpdir(), "vf-e2e-")), "contract.json");
+  writeFileSync(file, JSON.stringify(served));
+  return file;
+}
+
 beforeAll(async () => {
   let apiUrl = process.env["E2E_API_URL"] ?? "";
   if (apiUrl === "") {
     const apiPort = await freePort();
-    start(`${root}node_modules/.bin/prism`, ["mock", "--errors", "-h", "127.0.0.1", "-p", String(apiPort), "test/fixtures/api-openapi.json"], {});
+    start(`${root}node_modules/.bin/prism`, ["mock", "--errors", "-h", "127.0.0.1", "-p", String(apiPort), mockedContract()], {});
     apiUrl = `http://127.0.0.1:${apiPort}`;
     await waitFor(`${apiUrl}/healthz`, 60_000);
   } else {

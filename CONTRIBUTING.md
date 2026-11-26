@@ -35,8 +35,12 @@ npm run test:e2e:mock    # MCP over Streamable HTTP against Prism mocking the sa
 ```
 
 `server/test/fixtures/api-openapi.json` is a byte copy of the API's OpenAPI
-contract, pinned by commit; `npm run check:operations` fails when the generated
-operation table is stale. The pre-release job in `publish.yml` runs the same
+contract, pinned by commit, and is never edited here. The operations this
+repository proposes to the API live apart, in
+`server/test/fixtures/api-proposed.json` (each marked `x-proposed`), merged in by
+`scripts/gen-operations.mjs` and `test/api-mock.ts`; the server asks a proposed
+operation only once the API's own `/v1/openapi.json` lists it.
+`npm run check:operations` fails when the generated operation table is stale. The pre-release job in `publish.yml` runs the same
 end-to-end checks against the real API release `server/api.pin` names.
 
 #### Mutation testing: once per release, never per pull request
