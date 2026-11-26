@@ -26,7 +26,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -327,6 +327,14 @@ console.log('each planted fault in the workflows is reported');
     check('a piece heavier than the mean shard has a shard of its own', crowded.length === 0, crowded.map((x) => x.ids.join(' ')).join(' | '));
     const stale = Object.keys(WEIGHTS).filter((id) => !ids.includes(id));
     check('the weights name no piece the scope does not have', stale.length === 0, stale.slice(0, 5).join(' '));
+}
+
+// Stryker mutates the sources in place, so a test that reads them (test/static-tables.test.ts) would see the
+// instrumented code and fail Stryker's dry run: Stryker's vitest config leaves it out, the defaults kept.
+{
+    const cfg = readFileSync(join(ROOT, 'server', 'vitest.stryker.config.ts'), 'utf8');
+    check("Stryker's vitest leaves out the source-reading table test, keeping vitest's default excludes",
+        /exclude:\s*\[\s*\.\.\.configDefaults\.exclude,\s*"test\/static-tables\.test\.ts"\s*\]/u.test(cfg) && existsSync(join(ROOT, 'server', 'test', 'static-tables.test.ts')));
 }
 
 console.log(`\nmutation-workflow self-test: ${passed()} passed, ${failures.length} failed`);
