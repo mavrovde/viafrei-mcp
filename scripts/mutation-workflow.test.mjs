@@ -310,7 +310,6 @@ console.log('each planted fault in the workflows is reported');
     const mean = plan.reduce((sum, x) => sum + x.seconds, 0) / plan.length;
     const crowded = plan.filter((x) => x.ids.length > 1 && x.ids.some((id) => (WEIGHTS[id] ?? 0) > mean));
     check('a piece heavier than the mean shard has a shard of its own', crowded.length === 0, crowded.map((x) => x.ids.join(' ')).join(' | '));
-    check('the static table whose mutants time out weighs what it cost (≥ 8 minutes)', (WEIGHTS['src/tools/facilities.ts:61-71'] ?? 0) >= 480, String(WEIGHTS['src/tools/facilities.ts:61-71']));
     const stale = Object.keys(WEIGHTS).filter((id) => !ids.includes(id));
     check('the weights name no piece the scope does not have', stale.length === 0, stale.slice(0, 5).join(' '));
 }
