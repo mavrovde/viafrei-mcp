@@ -5,6 +5,10 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.6] - 2026-11-27
+
+**The server runs on API 2.0.4 and its answers say what the API gives.** The server's tools, prompts and resources are those of 2.7.5; no tool name or input schema changes, and the reason codes and fields below are additive.
+
 ### Fixed
 - **The release's mutation run ends inside its 20-minute shards again.** `find_poi`'s OSM word tables (`server/src/tools/osm-words.ts`) were module-level, so Stryker treated their ~1,050 mutants as static and ran the whole suite for each one. That took about two hours against an estimate of 259 s, and shard 6 of the 2.7.4 and 2.7.5 publishes hit its limit, so the publish was skipped. The tables are now built inside functions, so each mutant runs only the tests that read it (about one). A new test pins every word in both languages, so the mutants are killed, not left alive. The file's pieces are measured (`server/scripts/mutation-weights.json`). `scripts/mutation-weights.mjs` now also reads the log of the reusable workflow, whose lines start with `Mutation / `.
 - **An empty list is never sent as an empty query value.** The API client left out `undefined`, `null` and `""` but sent an empty array as `name=`, which API 2.0.4 refuses with 400 "empty value". It now leaves out any parameter whose value is empty once joined. The API mock refuses empty values as the API does, so every tool test also checks this (#281).
@@ -4639,6 +4643,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.6]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.6
 [2.7.5]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.5
 [2.7.4]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.4
 [2.7.3]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.3
