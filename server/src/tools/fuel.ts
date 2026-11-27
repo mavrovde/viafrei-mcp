@@ -250,12 +250,18 @@ export const findCheapestFuel: Handler = async (args, ctx): Promise<CallToolResu
   const details = await detailsOf(ctx, rows);
   const addresses = details.map((d) => d?.address ?? null);
   const de = language === "de";
-  const noneCurrent = !rows.some((s) => s.prices.some((x) => x.fuel === fuel && x.current));
+  const isCurrent = (s: T.FuelStation): boolean => s.prices.some((x) => x.fuel === fuel && x.current);
+  const noneCurrent = !rows.some(isCurrent);
+  // Listed rows without a current price (stale or unpriced) stand below current ones, so a plain "cheapest first"
+  // would be false once one of them is cheaper (#299).
+  const listedNotCurrent = rows.filter((s) => !isCurrent(s)).length;
   const head = noneCurrent
     ? de
       ? `${grade} um ${around} (Umkreis ${radiusKm} km): Keine Tankstelle hat einen aktuellen ${grade}-Preis. Hier die zuletzt gemeldeten Preise, günstigste zuerst; sie können sich seitdem geändert haben:`
       : `${grade} around ${around} (within ${radiusKm} km): no station has a current ${grade} price. These are the last prices reported, cheapest first; they may have changed since:`
-    : de ? `${grade} um ${around} (Umkreis ${radiusKm} km), günstigste zuerst:` : `${grade} around ${around} (within ${radiusKm} km), cheapest first:`;
+    : listedNotCurrent > 0
+      ? de ? `${grade} um ${around} (Umkreis ${radiusKm} km), aktuelle Preise günstigste zuerst, danach ältere:` : `${grade} around ${around} (within ${radiusKm} km), current prices cheapest first, then older prices:`
+      : de ? `${grade} um ${around} (Umkreis ${radiusKm} km), günstigste zuerst:` : `${grade} around ${around} (within ${radiusKm} km), cheapest first:`;
   const lines = rows.map((s, i) => {
     const p = s.prices.find((x) => x.fuel === fuel);
     const stale = p !== undefined && !p.current ? (de ? " (nicht aktuell)" : " (not current)") : "";
@@ -270,7 +276,9 @@ export const findCheapestFuel: Handler = async (args, ctx): Promise<CallToolResu
   // unpriced OpenStreetMap stations, when the API lists them.
   const q = ((r.meta as { query?: Record<string, unknown> }).query ?? {}) as { stationsWithoutCurrentPrice?: number; stationsInRadius?: number; osmUnpriced?: readonly T.OsmFuelStation[] };
   // With no current price at all the head says so; "not in the ranking" would contradict the list below it.
-  const uncovered = noneCurrent ? "" : unrankedLine(language, q.stationsWithoutCurrentPrice ?? 0, q.stationsInRadius ?? 0, grade);
+  // The API counts every held station without a current price, the listed ones too: those are shown, marked, so
+  // only the rest are "not in the ranking" (#299).
+  const uncovered = noneCurrent ? "" : unrankedLine(language, Math.max(0, (q.stationsWithoutCurrentPrice ?? 0) - listedNotCurrent), q.stationsInRadius ?? 0, grade);
   const osm = osmFuelLines(language, q.osmUnpriced ?? []);
   const observed = rows.flatMap((s) => s.prices.filter((p) => p.fuel === fuel).map((p) => p.reportedAt)).sort();
   // Today's stamp: the oldest price observation ranked (oldestObservedAt), not the feed's last write.

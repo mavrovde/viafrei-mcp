@@ -1,5 +1,5 @@
 For consumer information only (synthetic).
-Super E10 around 52.520, 13.405 (within 5 km), cheapest first:
+Super E10 around 52.520, 13.405 (within 5 km), current prices cheapest first, then older prices:
 1. Aral, Marktweg 1, 10001 Kansilkamp — 1.699 €/l, 1.2 km, open when last seen (as of 2026-03-30 02:00)
 2. Freie Tankstelle, Marktweg 1, 10001 Kansilkamp — –, 0.6 km, closed when last seen
 I hold a Super E10 price for only 2 stations within 5 km (asked for: 5) — a wider radius (up to 25 km) may find more.
