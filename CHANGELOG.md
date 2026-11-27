@@ -8,9 +8,10 @@ release-please writes each release's block from the Conventional Commits merged 
 ## [2.7.12](https://github.com/mavrovde/viafrei-mcp/compare/v2.7.11...v2.7.12) (2026-11-27)
 
 
+**2.7.11 was not published: its mutation gate timed out in shard 7, twice, so npm has no 2.7.11; 2.7.12 is the first release to carry its changes.**
+
 ### Fixed
 
-* **mutation:** static mutants are weighed as such, and the run is cut into 20 shards ([4f33fb1](https://github.com/mavrovde/viafrei-mcp/commit/4f33fb1e111c8e0ea013f087a4f842bd309105a6))
 * **mutation:** weigh static mutants by their cost and split the run into 20 shards ([ffbdd6e](https://github.com/mavrovde/viafrei-mcp/commit/ffbdd6e68d5819c0ddd170dbcc9230801737cc64))
 
 ## [2.7.11](https://github.com/mavrovde/viafrei-mcp/compare/v2.7.10...v2.7.11) (2026-11-27)
