@@ -5,6 +5,18 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.10] - 2026-11-27
+
+**Roadworks lines say where the site is, and a publish-gate hang now shows where it stopped.** No tool name, input schema or annotation changes.
+
+### Fixed
+- **A roadworks line says where the site is on its road (#290).** On prod, every 2.7.9 `find_roadworks_ahead` line said "Ort nicht angegeben". The API's roadworks rows carry no subtitle and no description, only the chainage (`position.fromKm`, junctions where named) and a point; the 2.7.9 tests had used hand-made rows that all carried a text. A line now says between which junctions the site lies, else its kilometre, else its point; "place not given" remains only for a row with none of them. The test is built from the API's own A7 answer, trimmed (`server/test/fixtures/roadworks-a7.json`).
+- **A publish-gate run killed after its verdict now says how far it got (#288).** On the publish runner a gate run was killed at the 120 s deadline after printing its full verdict, four times in about five runs, each time in a different case. The hang is not reproduced: each case takes about 0.6 s locally, and about 750 gate runs in a linux/amd64 `node:24.22.3` container (1 GB, 2 CPUs) did not hang. So its cause is not fixed here. The gate now prints each step after its verdict (removing the workspace, workspace removed, exiting), each with its elapsed milliseconds. The next kill's partial output then names the phase that held it: the removal, the process exit, or, with all three lines printed, the parent still waiting on the pipe. The self-test checks these lines on every run.
+
+### Still open
+- #290: criteria B5, D7 and D8 (city jam questions), and the production re-run (E9).
+- #288: the root cause, which the next occurrence's partial output will name.
+
 ## [2.7.9] - 2026-11-27
 
 **The answers the 2.7.8 question round found wrong or guessed are fixed, and the server runs on API 2.0.7.** No tool name, input schema or annotation changes. A place tool asked for a name that several towns share now answers with the candidates (structured `{ambiguous, query, candidates}`) instead of guessing one.
@@ -4708,6 +4720,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.10]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.10
 [2.7.9]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.9
 [2.7.8]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.8
 [2.7.7]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.7
