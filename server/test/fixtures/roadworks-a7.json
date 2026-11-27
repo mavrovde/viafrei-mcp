@@ -1,0 +1,143 @@
+{
+  "_about": "Trimmed from the API 2.0.7 answer of getMotorwayConditions for A7, kinds=roadworks (2026-11-27): its lamp and three of its roadworks rows as sent (the answer's meta is the contract example's), no subtitle and no description, only the chainage and a point.",
+  "data": {
+    "lamp": "amber",
+    "lampReason": "narrowing",
+    "lampReasons": [
+      {
+        "reason": "narrowing",
+        "lamp": "amber",
+        "count": 3
+      },
+      {
+        "reason": "limited_sight",
+        "lamp": "amber",
+        "count": 8
+      }
+    ],
+    "counts": [
+      {
+        "sourceFamily": "ald_14d",
+        "situations": 31
+      },
+      {
+        "sourceFamily": "roadworks_akd",
+        "situations": 27
+      },
+      {
+        "sourceFamily": "roadworks_bast",
+        "situations": 34
+      }
+    ],
+    "situations": [
+      {
+        "id": "datex:DE-MIA/ald_14d:2023-001180#1",
+        "kind": "roadworks",
+        "severity": "lane_closed",
+        "road": "A7",
+        "roadType": "motorway",
+        "direction": "unknown",
+        "directionText": null,
+        "location": {
+          "lat": 50.333642,
+          "lon": 9.774691
+        },
+        "validity": {
+          "from": "2023-03-22T23:00:00Z",
+          "fromLocal": "2023-03-23T00:00:00+01:00",
+          "until": "2029-07-26T22:00:00Z",
+          "untilLocal": "2029-07-27T00:00:00+02:00"
+        },
+        "lanes": null,
+        "delayMin": null,
+        "lengthM": null,
+        "headline": "constructionWorks",
+        "description": null,
+        "textLanguage": "de",
+        "subtitle": null,
+        "blocked": false,
+        "updatedAt": "2026-11-11T16:42:13.005Z",
+        "updatedAtLocal": "2026-11-11T17:42:13+01:00",
+        "position": {
+          "fromKm": 346.2,
+          "toKm": null,
+          "junctionFrom": null,
+          "junctionTo": null
+        },
+        "sourceFamily": "ald_14d"
+      },
+      {
+        "id": "datex:DE-MIA/ald_14d:2023-001187#1",
+        "kind": "roadworks",
+        "severity": "lane_closed",
+        "road": "A7",
+        "roadType": "motorway",
+        "direction": "unknown",
+        "directionText": null,
+        "location": {
+          "lat": 50.186121,
+          "lon": 9.947746
+        },
+        "validity": {
+          "from": "2023-10-27T22:00:00Z",
+          "fromLocal": "2023-10-28T00:00:00+02:00",
+          "until": "2027-09-30T21:45:00Z",
+          "untilLocal": "2027-09-30T23:45:00+02:00"
+        },
+        "lanes": null,
+        "delayMin": null,
+        "lengthM": null,
+        "headline": "constructionWorks",
+        "description": null,
+        "textLanguage": "de",
+        "subtitle": null,
+        "blocked": false,
+        "updatedAt": "2026-11-11T16:42:13.005Z",
+        "updatedAtLocal": "2026-11-11T17:42:13+01:00",
+        "position": {
+          "fromKm": 321.5,
+          "toKm": null,
+          "junctionFrom": null,
+          "junctionTo": null
+        },
+        "sourceFamily": "ald_14d"
+      },
+      {
+        "id": "datex:DE-MIA:2024-018478#1",
+        "kind": "roadworks",
+        "severity": "lane_closed",
+        "road": "A7",
+        "roadType": "motorway",
+        "direction": "unknown",
+        "directionText": null,
+        "location": {
+          "lat": 50.41875,
+          "lon": 9.73575
+        },
+        "validity": {
+          "from": "2024-09-16T06:00:00Z",
+          "fromLocal": "2024-09-16T08:00:00+02:00",
+          "until": "2030-04-17T22:00:00Z",
+          "untilLocal": "2030-04-18T00:00:00+02:00"
+        },
+        "lanes": null,
+        "delayMin": null,
+        "lengthM": null,
+        "headline": "constructionWorks",
+        "description": null,
+        "textLanguage": "de",
+        "subtitle": null,
+        "blocked": false,
+        "updatedAt": "2026-11-11T21:47:23.634Z",
+        "updatedAtLocal": "2026-11-11T22:47:23+01:00",
+        "position": {
+          "fromKm": 356.2,
+          "toKm": null,
+          "junctionFrom": null,
+          "junctionTo": null
+        },
+        "sourceFamily": "roadworks_bast"
+      }
+    ]
+  }
+}

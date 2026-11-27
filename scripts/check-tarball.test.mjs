@@ -957,6 +957,25 @@ function hung(name, result, token = undefined) {
     return true;
 }
 
+/**
+ * Whether a finished gate run said each step of its tail: the verdict, the workspace removed, the exit, with the
+ * exit code it returned (a refusal before any verdict: the exit alone). These lines are what a run killed after its verdict is read by (check-tarball.mjs,
+ * STARTED); a gate that stopped printing them would make the next kill unreadable again, so every run checks them.
+ */
+function saysItsTail(stdout, code) {
+    const lines = stdout.trimEnd().split('\n');
+    const exit = new RegExp(`^gate: exiting with ${code} at \\+\\d+ ms$`, 'u').test(lines.at(-1) ?? '');
+    // A refusal before any verdict (exit 2) has only its exit line to say.
+    if (!/^gate: (?:PASS|FAIL) - /mu.test(stdout)) {
+        return exit;
+    }
+    return (
+        exit &&
+        new RegExp(`^gate: verdict ${code} at \\+\\d+ ms; removing the workspace$`, 'u').test(lines.at(-3) ?? '') &&
+        /^gate: workspace removed at \+\d+ ms$/u.test(lines.at(-2) ?? '')
+    );
+}
+
 function runGate(tarball, env = process.env) {
     try {
         const stdout = runTool(process.execPath, [GATE, tarball], { encoding: 'utf8', cwd: ROOT, env });
@@ -1110,7 +1129,7 @@ try {
     const cleanResult = runGate(clean);
     if (hung('the real tarball', cleanResult)) {
         // reported as unfinished
-    } else if (cleanResult.code === 0) {
+    } else if (cleanResult.code === 0 && saysItsTail(cleanResult.stdout, 0)) {
         log('  PASS  the gate accepted the real tarball');
     } else {
         failures += 1;
@@ -1124,7 +1143,7 @@ try {
         if (hung(entry.name, result, entry.token)) {
             continue;
         }
-        const caught = entry.codes.includes(result.code) && new RegExp(entry.expectation, 'u').test(result.stdout);
+        const caught = entry.codes.includes(result.code) && new RegExp(entry.expectation, 'u').test(result.stdout) && saysItsTail(result.stdout, result.code);
         const leaked = entry.token !== undefined && printsStandIn(result.stdout, entry.token);
         if (caught && !leaked) {
             log(`  PASS  rejected "${entry.name}" (${entry.kind})`);

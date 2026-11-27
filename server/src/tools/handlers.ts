@@ -358,7 +358,8 @@ export function roadworksLine(s: T.RoadSituation, language: Language): string {
   const road = [s.road ?? "", s.directionText ?? ""].filter((x) => x.trim() !== "").join(" ");
   const what = isCode(s.headline) ? KIND[language][s.kind] ?? s.kind : s.headline;
   const text = [s.subtitle ?? "", (s.descriptionShown ?? s.description ?? "").split("\n")[0] ?? ""].map((x) => x.trim()).find((x) => x !== "" && x !== s.headline);
-  const where = text ?? L(language, "Ort nicht angegeben", "place not given");
+  const on = roadPlace(s, language);
+  const where = [text, on].filter((x) => x !== undefined && x !== null).join(", ") || L(language, "Ort nicht angegeben", "place not given");
   const from = s.validity.from === null ? null : berlinDateTime(s.validity.from, language);
   const until = s.validity.until === null ? null : berlinDateTime(s.validity.until, language);
   const when = from !== null && until !== null ? `${from} – ${until}`
@@ -366,6 +367,20 @@ export function roadworksLine(s: T.RoadSituation, language: Language): string {
     : until !== null ? L(language, `Beginn nicht angegeben, bis ${until}`, `start not given, until ${until}`)
     : L(language, "ohne Zeitangabe", "no dates given");
   return `- ${road === "" ? "" : `${road}: `}${what} · ${where} · ${when}${s.distanceM === undefined ? "" : ` · ${km(s.distanceM, language)}`}`;
+}
+
+/**
+ * Where a site lies on its road when its publisher gives no text (round 2.7.9 Q13, Q14: the API's roadworks rows
+ * carry no subtitle and no description, only the chainage and a point): between its junctions, else at its
+ * kilometre, else at its point. Null where the row has none of them.
+ */
+export function roadPlace(s: T.RoadSituation, language: Language): string | null {
+  const p = s.position;
+  const n = (x: number): string => (language === "de" ? x.toFixed(1).replace(".", ",") : x.toFixed(1));
+  if (p?.junctionFrom && p.junctionTo) return L(language, `zwischen ${p.junctionFrom} und ${p.junctionTo}`, `between ${p.junctionFrom} and ${p.junctionTo}`);
+  if (typeof p?.fromKm === "number") return typeof p.toKm === "number" && p.toKm !== p.fromKm ? `km ${n(p.fromKm)}–${n(p.toKm)}` : `km ${n(p.fromKm)}`;
+  if (s.location) return L(language, `bei ${s.location.lat.toFixed(3)}, ${s.location.lon.toFixed(3)}`, `at ${s.location.lat.toFixed(3)}, ${s.location.lon.toFixed(3)}`);
+  return null;
 }
 
 /** A Berlin calendar day (YYYY-MM-DD) as the answer says it: "01.12.2026" / "2026-12-01". */

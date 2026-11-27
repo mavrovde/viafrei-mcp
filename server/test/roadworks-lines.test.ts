@@ -9,7 +9,8 @@ import { HttpResponse } from "msw";
 import { calls, exampleOf, handlerFor, mockServer } from "./api-mock.js";
 import { connect, textOf } from "./harness.js";
 import type * as T from "../src/api/types.js";
-import { roadworksLine } from "../src/tools/handlers.js";
+import { readFileSync } from "node:fs";
+import { roadPlace, roadworksLine } from "../src/tools/handlers.js";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "bypass" }));
 afterEach(() => {
@@ -78,5 +79,37 @@ describe("the answer: the window's count, the listed, nearest first for a place"
     world([site({ id: "a", distanceM: 2_400, subtitle: "far" }), site({ id: "b", distanceM: 300, subtitle: "near" }), site({ id: "c", distanceM: 300, subtitle: "near too" })], {}, "listRoadConditions");
     const t = body(await call({ place: "Hamburg-Altona", language: "en" })).split("\n").slice(2);
     expect(t.map((l) => l.split(" · ")[1])).toEqual(["near", "near too", "far"]);
+  });
+});
+
+// The API's real roadworks rows (2.7.9 round Q13, Q14: every line said "Ort nicht angegeben"): no subtitle, no
+// description, only the chainage and a point. The hand-made rows above all carried a text, which is why the
+// 2.7.9 tests passed while prod did not.
+describe("roadworks rows as the API sends them", () => {
+  const real = JSON.parse(readFileSync(new URL("./fixtures/roadworks-a7.json", import.meta.url), "utf8")) as { data: T.RoadConditionsData };
+  for (const language of ["de", "en"] as const) {
+    it(`each line says its kilometre, never "place not given" (${language})`, async () => {
+      mockServer.use(handlerFor("getMotorwayConditions", () => HttpResponse.json({ data: real.data, meta: exampleOf<{ meta: Record<string, unknown> }>("getMotorwayConditions").meta })));
+      const lines = body(await call({ road: "A7", language })).split("\n").filter((l) => l.startsWith("- "));
+      expect(lines).toHaveLength(3);
+      expect(lines.some((l) => /Ort nicht angegeben|place not given/u.test(l))).toBe(false);
+      expect(lines[0]).toBe(language === "de"
+        ? "- A7: Baustelle · km 346,2 · 23.03.2023, 00:00 – 27.07.2029, 00:00"
+        : "- A7: Roadworks (Baustelle) · km 346.2 · 23/03/2023, 00:00 – 27/07/2029, 00:00");
+    });
+  }
+  for (const language of ["de", "en"] as const) {
+    it(`a publisher text and a kilometre: both, the text first (${language})`, () => {
+      const row = { ...real.data.situations[0]!, subtitle: "AS Seesen (Harz) (aus Richtung Harz) nach A7" };
+      expect(roadworksLine(row, language)).toContain(` · AS Seesen (Harz) (aus Richtung Harz) nach A7, km ${language === "de" ? "346,2" : "346.2"} · `);
+    });
+  }
+  it("between junctions where named, a point where no kilometre, nothing where neither", () => {
+    const row = real.data.situations[0]!;
+    expect(roadPlace({ ...row, position: { fromKm: 1, toKm: 2, junctionFrom: "AS Seesen", junctionTo: "AS Echte" } }, "de")).toBe("zwischen AS Seesen und AS Echte");
+    expect(roadPlace({ ...row, position: { fromKm: 346.2, toKm: 350, junctionFrom: null, junctionTo: null } }, "en")).toBe("km 346.2–350.0");
+    expect(roadPlace({ ...row, position: { fromKm: 346.2, toKm: null, junctionFrom: "AS Seesen", junctionTo: null } }, "de")).toBe("km 346,2");
+    expect(roadPlace({ ...row, position: null }, "en")).toBe("at 50.334, 9.775");
+    expect(roadPlace({ ...row, position: null, location: null }, "de")).toBeNull();
   });
 });
