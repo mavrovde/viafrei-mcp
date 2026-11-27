@@ -18,7 +18,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createChecker } from './check-harness.mjs';
-import { resolveTool, runTool } from './tools.mjs';
+import { exitOrHang, resolveTool, runTool } from './tools.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -57,8 +57,8 @@ function runGuard(script, ref, gitRef) {
     try {
         runTool(resolveTool('bash'), ['--noprofile', '--norc', '-eo', 'pipefail', '-c', script], { env: { PATH: process.env.PATH ?? '', REF_IN: ref, GITHUB_REF: gitRef }, stdio: 'ignore' });
         return 0;
-    } catch (e) {
-        return e.status ?? -1;
+    } catch (error) {
+        return exitOrHang(error, 'snyk-workflow self-test').code;
     }
 }
 

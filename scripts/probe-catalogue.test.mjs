@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 import { createChecker } from './check-harness.mjs';
 import { liveAnswers as stubAnswers, startStub } from './mcp-stub.mjs';
-import { nodePath, runToolAsync } from './tools.mjs';
+import { exitOrHang, nodePath, runToolAsync } from './tools.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -80,7 +80,8 @@ async function run(root, extra = []) {
         });
         return { status: 0, out };
     } catch (error) {
-        return { status: error.status ?? -1, out: `${error.stdout ?? ''}${error.stderr ?? ''}` };
+        const { code, stdout } = exitOrHang(error, 'probe self-test');
+        return { status: code, out: stdout };
     }
 }
 

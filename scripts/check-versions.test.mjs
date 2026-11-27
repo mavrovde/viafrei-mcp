@@ -21,7 +21,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { nodePath, runTool } from './tools.mjs';
+import { exitOrHang, nodePath, runTool } from './tools.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -54,7 +54,8 @@ function run(root) {
         });
         return { status: 0, out };
     } catch (error) {
-        return { status: error.status ?? -1, out: `${error.stdout ?? ''}${error.stderr ?? ''}` };
+        const { code, stdout } = exitOrHang(error, 'check-versions self-test');
+        return { status: code, out: stdout };
     }
 }
 
@@ -109,8 +110,7 @@ function fixture(mutate) {
     try {
         out = runTool(nodePath(), [GATE], { encoding: 'utf8', cwd: ROOT, env: clean });
     } catch (error) {
-        status = error.status ?? -1;
-        out = `${error.stdout ?? ''}${error.stderr ?? ''}`;
+        ({ code: status, stdout: out } = exitOrHang(error, 'check-versions self-test'));
     }
     check('with no VF_VERSIONS_ROOT it reads this repository and passes',
         status === 0 && /PASS - all three agree at /u.test(out),

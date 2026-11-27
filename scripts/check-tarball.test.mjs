@@ -59,7 +59,7 @@ import { AUTO_RUN_SCRIPTS, FORBIDDEN_NAMES, relativeMarkdownLinks, REQUIRED } fr
 import { missingFixtureImports } from './fixture-root.mjs';
 import { PackJsonError, soleTarballFilename } from './npm-pack-json.mjs';
 import { hashToken, loadRules } from './rules.mjs';
-import { nodePath, npmCliPath, resolveTool, runTool } from './tools.mjs';
+import { exitOf, nodePath, npmCliPath, resolveTool, runTool } from './tools.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const GATE = join(ROOT, 'scripts/check-tarball.mjs');
@@ -917,9 +917,11 @@ function buildSweepRepo(workspace) {
 function runNode(script, args, env = process.env) {
     try {
         const stdout = runTool(process.execPath, [script, ...args], { encoding: 'utf8', env });
-        return { code: 0, stdout };
+        return { code: 0, timedOut: false, stdout };
     } catch (error) {
-        return { code: error.status ?? -1, stdout: `${error.stdout ?? ''}${error.stderr ?? ''}` };
+        // exitOf, not `error.status ?? -1`: a run killed at the deadline has no exit
+        // code, and as -1 it was judged like one (see `unfinished`).
+        return exitOf(error);
     }
 }
 
@@ -930,13 +932,37 @@ function runNode(script, args, env = process.env) {
 const workspace = mkdtempSync(join(tmpdir(), 'viafrei-gate-test-'));
 let failures = 0;
 let ran = 0;
+/**
+ * The cases whose program was killed at the deadline. A hang is no verdict: before
+ * this, its missing exit code was judged as one, and a poisoned tarball whose gate run
+ * hung was reported as "ACCEPTED - it would have shipped" (twice in the 2.7.8 pull
+ * request's CI, each after exactly the 120 s deadline, while every other case took
+ * about a second). Such a case is reported as CANNOT RUN, by name, with what the
+ * program printed before it stopped, and the self-test exits 2.
+ */
+const unfinished = [];
+
+/** True when `result` is a hang: it is recorded and reported, and the caller judges nothing. */
+function hung(name, result, token = undefined) {
+    if (!result.timedOut) {
+        return false;
+    }
+    unfinished.push(name);
+    log(`  CANNOT RUN  "${name}" - ${result.reason}`);
+    if (token === undefined || !printsStandIn(result.stdout, token)) {
+        log(`  what it printed before it was killed:\n${result.stdout}`);
+    } else {
+        log(`  (its output is withheld: it holds the ${token.length}-character stand-in)`);
+    }
+    return true;
+}
 
 function runGate(tarball, env = process.env) {
     try {
         const stdout = runTool(process.execPath, [GATE, tarball], { encoding: 'utf8', cwd: ROOT, env });
-        return { code: 0, stdout };
+        return { code: 0, timedOut: false, stdout };
     } catch (error) {
-        return { code: error.status ?? -1, stdout: `${error.stdout ?? ''}${error.stderr ?? ''}` };
+        return exitOf(error);
     }
 }
 
@@ -1082,7 +1108,9 @@ try {
 
     ran += 1;
     const cleanResult = runGate(clean);
-    if (cleanResult.code === 0) {
+    if (hung('the real tarball', cleanResult)) {
+        // reported as unfinished
+    } else if (cleanResult.code === 0) {
         log('  PASS  the gate accepted the real tarball');
     } else {
         failures += 1;
@@ -1093,6 +1121,9 @@ try {
     for (const entry of plan) {
         ran += 1;
         const result = runGate(poisonedTarball(entry.name, entry.poison), entry.env);
+        if (hung(entry.name, result, entry.token)) {
+            continue;
+        }
         const caught = entry.codes.includes(result.code) && new RegExp(entry.expectation, 'u').test(result.stdout);
         const leaked = entry.token !== undefined && printsStandIn(result.stdout, entry.token);
         if (caught && !leaked) {
@@ -1181,7 +1212,9 @@ try {
         ran += 1;
         writeRuleset(leg.root, leg.control);
         const control = leg.run(leg.root);
-        if (control.code === 0) {
+        if (hung(`control: ${leg.label}`, control)) {
+            // reported as unfinished
+        } else if (control.code === 0) {
             log(`  PASS  control: "${leg.label}" accepts the real ruleset in the throwaway root (exit 0)`);
         } else {
             failures += 1;
@@ -1208,6 +1241,9 @@ try {
             // and the case says which - a shared runner that assumed "2" would
             // have had the residue case silently renamed into the wrong class
             // to keep it passing.
+            if (hung(`${leg.label}: ${entry.name}`, result, entry.token)) {
+                continue;
+            }
             const codes = entry.codes ?? [2];
             const verdict = entry.verdict ?? 'refused';
             const caught = codes.includes(result.code) && new RegExp(entry.expectation, 'u').test(result.stdout);
@@ -1232,15 +1268,19 @@ try {
     if (ran !== PLANNED) {
         refuse(`${PLANNED} cases were planned and ${ran} ran`);
     }
-    if (failures === 0) {
+    if (unfinished.length > 0) {
+        log(`gate self-test: CANNOT RUN - ${unfinished.length} of ${ran} case(s) were killed at the deadline, so they have no verdict: ${unfinished.map(name => `"${name}"`).join(', ')}`);
+        log('gate self-test: a hang is not a pass and not a rejection; the output above shows where each one stopped');
+    }
+    if (failures === 0 && unfinished.length === 0) {
         log(
             `gate self-test: PASS - ${ran} cases (${plan.length} poisoned tarballs, 1 clean tarball, ${RULESET_RUNS} ruleset-mutation runs, ${LEG_COUNT} controls, ${PACK_JSON_CASES.length} pack --json shapes)`
         );
-    } else {
+    } else if (failures > 0) {
         log(`gate self-test: FAIL - ${failures} of ${ran} case(s)`);
     }
 } finally {
     rmSync(workspace, { recursive: true, force: true });
 }
 
-process.exit(failures === 0 ? 0 : 1);
+process.exit(unfinished.length > 0 ? 2 : failures === 0 ? 0 : 1);

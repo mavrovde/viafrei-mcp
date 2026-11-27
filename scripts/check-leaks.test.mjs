@@ -20,7 +20,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { missingFixtureImports } from './fixture-root.mjs';
-import { nodePath, resolveTool, runTool } from './tools.mjs';
+import { exitOrHang, nodePath, resolveTool, runTool } from './tools.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const cases = [];
@@ -48,7 +48,8 @@ function sweep(cwd, args) {
         });
         return { code: 0, out: stdout };
     } catch (error) {
-        return { code: error.status ?? -1, out: `${error.stdout ?? ''}${error.stderr ?? ''}` };
+        const { code, stdout } = exitOrHang(error, 'sweep scope self-test');
+        return { code, out: stdout };
     }
 }
 

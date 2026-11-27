@@ -5,6 +5,14 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.8] - 2026-11-27
+
+**2.7.7 was published as an image only: its npm publish stopped in the mutation gate, so npm has no 2.7.7.** This release carries 2.7.7 with its answers unchanged, plus the fix that lets the mutation run pass.
+
+### Fixed
+- **The release mutation run passes its static-mutant bound again.** The npm publish of 2.7.7 stopped in the mutation gather: `src/tools/handlers.ts` had 247 static mutants, over its bound of 220. 2.7.7 added two module-level word tables for lorry rules (26 static mutants) and a module-level arrow for an address with no town (1). Stryker runs the whole suite for each static mutant. All three are now built in function declarations, with the same words and the same behaviour. The older module-level lamp-colour table (9 static mutants) is built in a function too, so the file ends at 211, below its bound of 220 rather than at it; the bound is not raised. The tests now pin every lorry layer and kind word and every lamp colour word, in both languages. Before, the static run marked these words killed or timed out; scored per test, ten of them would have survived.
+- **A hung gate run is reported as a hang, never as "ACCEPTED".** In the publish-hygiene gate self-test, a gate run killed at the 120 s deadline has no exit code, and it was read as exit -1. The poisoned tarball was then reported as "ACCEPTED - it would have shipped". That happened twice on this release's pull request, on Node 24; a re-run passed. A killed run is now `CANNOT RUN`, named by its case. The output shows what the gate printed before the kill, and the self-test exits 2. `scripts/tools.mjs` marks a timeout's `ToolError` as `timedOut`, keeps the partial output, and gives callers `exitOf` to tell a hang from an exit code. The eight other self-tests that read `error.status ?? -1` now use `exitOrHang`: a hang stops the suite with `<suite>: CANNOT RUN`, what the program printed, and exit 2. Their verdicts are otherwise unchanged. Those suites are check-leaks, check-sources, check-versions, probe-catalogue, propose-release, release-notes, mutation-workflow and snyk-workflow. No case is slow: each gate run takes about a second, on Node 22 and on Node 24.
+
 ## [2.7.7] - 2026-11-27
 
 **The answers the 2.7.6 prod round found wrong are right on API 2.0.4.** `check_road_status` no longer answers "internal" for a motorway asked by number. Four other answers no longer refuse or misname what the user asked: `describe_station` with no departures, `find_address` with a street alone, `check_station_facilities` on a stop that is no DB station, and `describe_station` on a main station. Lorry rules and situation lines no longer read out provider codes. Tool names and input schemas are those of 2.7.6.
@@ -4664,6 +4672,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.8]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.8
 [2.7.7]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.7
 [2.7.6]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.6
 [2.7.5]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.5

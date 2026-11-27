@@ -220,12 +220,17 @@ describe("check_road_status", () => {
     const de = body(await call("check_road_status", { place: "Haan", vehicle: "lorry", language: "de" })).split("Lkw-Regeln:\n")[1]!.split("\n\n")[0];
     expect(de).toBe(["- Kaiserstraße, Haan: Lkw-Vorrangroute", "- Bahnstraße, Haan: Beschränkung: Höhe 3,8 m (Richtung Hilden)", "- Lkw-Zone"].join("\n"));
     expect(lorryLine(rule({ layer: "restriction", kind: "weight", value: 7.5, unit: "t" }) as never, "en")).toBe("- restriction: weight limit 7.5 t");
-    // Every kind the contract names is said in words, in German with no English code word left.
-    for (const kind of ["height", "weight", "width", "length", "axle_load", "ban"]) {
-      const line = lorryLine(rule({ layer: "restriction", kind }) as never, "de");
-      expect(line).not.toMatch(/height|weight|width|length|axle|ban\b|_/u);
-      expect(lorryLine(rule({ layer: "restriction", kind }) as never, "en")).not.toMatch(new RegExp(`: ${kind}$`, "u"));
-    }
+    // Every kind and layer the contract names is said in its words, in both languages, never as the code.
+    const kinds = ["height", "weight", "width", "length", "axle_load", "ban"];
+    expect(kinds.map((kind) => lorryLine(rule({ layer: "restriction", kind }) as never, "de"))).toEqual(
+      ["Höhe", "Gewicht", "Breite", "Länge", "Achslast", "Durchfahrtverbot"].map((w) => `- Beschränkung: ${w}`));
+    expect(kinds.map((kind) => lorryLine(rule({ layer: "restriction", kind }) as never, "en"))).toEqual(
+      ["height limit", "weight limit", "width limit", "length limit", "axle-load limit", "no through traffic"].map((w) => `- restriction: ${w}`));
+    const layers = ["long_lorry", "restriction", "priority_route", "zone"];
+    expect(layers.map((layer) => lorryLine(rule({ layer }) as never, "de"))).toEqual(
+      ["Lang-Lkw-Positivnetz", "Beschränkung", "Lkw-Vorrangroute", "Lkw-Zone"].map((w) => `- ${w}`));
+    expect(layers.map((layer) => lorryLine(rule({ layer }) as never, "en"))).toEqual(
+      ["long-lorry positive network (Lang-Lkw-Positivnetz)", "restriction", "lorry priority route (Lkw-Vorrangroute)", "lorry zone"].map((w) => `- ${w}`));
     // A kind the API adds later is said as published (open enumeration).
     expect(lorryLine(rule({ layer: "restriction", kind: "Gefahrgut" }) as never, "de")).toBe("- Beschränkung: Gefahrgut");
     expect(lorryLine(rule({ layer: "priority_route", street: "Kaiserstraße", municipality: "Haan", direction: " " }) as never, "en")).toBe("- Kaiserstraße, Haan: lorry priority route (Lkw-Vorrangroute)");
@@ -2441,6 +2446,12 @@ describe("motorway numbers no register knows, and the lamp in words", () => {
     expect(lampText({ lamp: "amber", lampReason: "limited_sight" }, "en")).toEqual("traffic light yellow: limited sight — a source is not current or could not be read");
     expect(lampText({ lamp: "green", lampReason: null }, "en")).toEqual("traffic light green: nothing reported by the Autobahn GmbH, the police/Länder or the DWD — no guarantee the road is clear");
     expect(lampText({ lamp: "red", lampReason: "road_closed" }, "de")).toEqual("Ampel Rot: Vollsperrung");
+  });
+
+  it("every lamp colour is said in its word, in both languages", () => {
+    const said = (language: "de" | "en") => ["red", "amber", "green"].map((lamp) => lampText({ lamp, lampReason: "jam" } as never, language).split(":")[0]);
+    expect(said("de")).toEqual(["Ampel Rot", "Ampel Gelb", "Ampel Grün"]);
+    expect(said("en")).toEqual(["traffic light red", "traffic light yellow", "traffic light green"]);
   });
 });
 

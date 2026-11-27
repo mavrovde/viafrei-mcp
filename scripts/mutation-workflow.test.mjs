@@ -31,7 +31,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createChecker } from './check-harness.mjs';
-import { resolveTool, runTool } from './tools.mjs';
+import { exitOrHang, resolveTool, runTool } from './tools.mjs';
 import { FLOOR, GENERATED, PIECE_WEIGHT, SHARDS, STATIC_CEILING, STATIC_MAX, WEIGHTS, gather, inScope, parsePiece, piecesOf, piecesOfScope, planOf, shardOf } from '../server/scripts/mutation.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -72,8 +72,8 @@ function runGuard(script, result) {
     try {
         runTool(resolveTool('bash'), ['--noprofile', '--norc', '-eo', 'pipefail', '-c', script], { env: { PATH: process.env.PATH ?? '', SHARDS: result }, stdio: 'ignore' });
         return 0;
-    } catch (e) {
-        return e.status ?? -1;
+    } catch (error) {
+        return exitOrHang(error, 'mutation-workflow self-test').code;
     }
 }
 

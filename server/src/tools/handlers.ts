@@ -76,33 +76,47 @@ function situationLine(s: T.RoadSituation, language: Language): string {
   return `- ${where === "" ? "" : `${where}: `}${what}${delay}${until}${s.distanceM === undefined ? "" : ` · ${km(s.distanceM, language)}`}`;
 }
 
-/** A lorry rule's layer in words: the code is never read out. */
-const LORRY_LAYER: Record<Language, Record<string, string>> = {
-  de: { long_lorry: "Lang-Lkw-Positivnetz", restriction: "Beschränkung", priority_route: "Lkw-Vorrangroute", zone: "Lkw-Zone" },
-  en: { long_lorry: "long-lorry positive network (Lang-Lkw-Positivnetz)", restriction: "restriction", priority_route: "lorry priority route (Lkw-Vorrangroute)", zone: "lorry zone" },
-};
+/**
+ * A lorry rule's layer in words: the code is never read out. Built per call in a function declaration: a
+ * module-level table (or arrow) is mutated statically, each mutant against the whole suite (STATIC_MAX in
+ * scripts/mutation.mjs); in a function only the tests that read it run.
+ */
+function lorryLayer(language: Language): Record<string, string> {
+  const words: Record<Language, Record<string, string>> = {
+    de: { long_lorry: "Lang-Lkw-Positivnetz", restriction: "Beschränkung", priority_route: "Lkw-Vorrangroute", zone: "Lkw-Zone" },
+    en: { long_lorry: "long-lorry positive network (Lang-Lkw-Positivnetz)", restriction: "restriction", priority_route: "lorry priority route (Lkw-Vorrangroute)", zone: "lorry zone" },
+  };
+  return words[language];
+}
 
-/** What a lorry restriction limits, in words; a kind not listed is said as published (open enumeration). */
-const LORRY_KIND: Record<Language, Record<string, string>> = {
-  de: { height: "Höhe", weight: "Gewicht", width: "Breite", length: "Länge", axle_load: "Achslast", ban: "Durchfahrtverbot" },
-  en: { height: "height limit", weight: "weight limit", width: "width limit", length: "length limit", axle_load: "axle-load limit", ban: "no through traffic" },
-};
+/** What a lorry restriction limits, in words; a kind not listed is said as published (open enumeration). Built per call, as lorryLayer. */
+function lorryKind(language: Language): Record<string, string> {
+  const words: Record<Language, Record<string, string>> = {
+    de: { height: "Höhe", weight: "Gewicht", width: "Breite", length: "Länge", axle_load: "Achslast", ban: "Durchfahrtverbot" },
+    en: { height: "height limit", weight: "weight limit", width: "width limit", length: "length limit", axle_load: "axle-load limit", ban: "no through traffic" },
+  };
+  return words[language];
+}
 
 /** One lorry rule: where, its layer, the publisher's words (else the figure as published), the direction it applies in. */
 export function lorryLine(x: T.LorryRule, language: Language): string {
   const where = [x.road, x.street, x.municipality].filter((p): p is string => p !== null && p.trim() !== "").join(", ");
   const figure = x.value === null ? null : `${String(x.value).replace(".", language === "de" ? "," : ".")}${x.unit === null ? "" : ` ${x.unit}`}`;
-  const kind = x.kind === null ? null : LORRY_KIND[language][x.kind] ?? x.kind;
+  const kind = x.kind === null ? null : lorryKind(language)[x.kind] ?? x.kind;
   const words = x.publishedText ?? ([kind, figure].filter((p) => p !== null).join(" ") || null);
   const dir = x.direction === undefined || x.direction === null || x.direction.trim() === "" ? "" : ` (${x.direction})`;
-  return `- ${where === "" ? "" : `${where}: `}${LORRY_LAYER[language][x.layer] ?? x.layer}${words === null ? "" : `: ${words}`}${dir}`;
+  return `- ${where === "" ? "" : `${where}: `}${lorryLayer(language)[x.layer] ?? x.layer}${words === null ? "" : `: ${words}`}${dir}`;
 }
 
 /** The lamp's colour and its reason in words, as today's server says them (autobahn-ampel.ts); the code is never read out. */
-const LAMP: Record<Language, Record<string, string>> = {
-  de: { red: "Rot", amber: "Gelb", green: "Grün" },
-  en: { red: "red", amber: "yellow", green: "green" },
-};
+function lampWords(language: Language): Record<string, string> {
+  // Built per call, as lorryLayer: at module level each of its mutants is static and runs the whole suite.
+  const words: Record<Language, Record<string, string>> = {
+    de: { red: "Rot", amber: "Gelb", green: "Grün" },
+    en: { red: "red", amber: "yellow", green: "green" },
+  };
+  return words[language];
+}
 const REASON: Record<Language, Record<string, string>> = {
   de: {
     road_closed: "Vollsperrung", ramp_closed: "Anschlussstelle gesperrt", safety: "Gefahr auf der Fahrbahn", bridge_closed: "Brücke gesperrt",
@@ -117,7 +131,7 @@ const REASON: Record<Language, Record<string, string>> = {
 };
 
 export function lampText(d: Pick<T.RoadConditionsData, "lamp" | "lampReason" | "lampReasonsTotal">, language: Language): string {
-  const lamp = LAMP[language][d.lamp] ?? d.lamp;
+  const lamp = lampWords(language)[d.lamp] ?? d.lamp;
   if (d.lampReason === null || d.lamp === "green") {
     return L(language, `Ampel ${lamp}: von Autobahn GmbH, Polizei/Ländern und DWD nichts gemeldet — keine Garantie für freie Fahrt`, `traffic light ${lamp}: nothing reported by the Autobahn GmbH, the police/Länder or the DWD — no guarantee the road is clear`);
   }
@@ -789,14 +803,16 @@ const ADDRESS_WORDS = {
 } as const;
 
 /** A typed address with no town part: no comma before a town and no postcode (the API's q is street and number, then a postcode or a town). */
-const NO_TOWN = (q: string): boolean => looksLikeHouseNumber(q) && !q.includes(",") && !/\b\d{5}\b/u.test(q);
+function noTown(q: string): boolean {
+  return looksLikeHouseNumber(q) && !q.includes(",") && !/\b\d{5}\b/u.test(q);
+}
 
 const findAddress: Handler = async (args, ctx) => {
   const { language } = ctx;
   const q = str(args["query"]);
   const r = await ctx.api.get<T.AddressData>("listAddresses", { q, limit: num(args["limit"]) }).catch((err: unknown) => {
     // The API refuses a street and number alone (400): said in the person's words, asking for the town, never its generic sentence.
-    if (err instanceof ApiError && err.kind === "invalid" && q !== undefined && NO_TOWN(q)) return null;
+    if (err instanceof ApiError && err.kind === "invalid" && q !== undefined && noTown(q)) return null;
     throw err;
   });
   if (r === null) {

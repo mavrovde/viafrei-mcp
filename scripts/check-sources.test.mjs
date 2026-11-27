@@ -27,7 +27,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { nodePath, runTool } from './tools.mjs';
+import { exitOrHang, nodePath, runTool } from './tools.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -60,7 +60,8 @@ function run(root) {
         });
         return { status: 0, out };
     } catch (error) {
-        return { status: error.status ?? -1, out: `${error.stdout ?? ''}${error.stderr ?? ''}` };
+        const { code, stdout } = exitOrHang(error, 'check-sources self-test');
+        return { status: code, out: stdout };
     }
 }
 
@@ -305,8 +306,7 @@ for (const [label, mutate, needle] of [
             env: { ...process.env, SOURCES_LINT_ROOT: root }
         });
     } catch (error) {
-        status = error.status ?? -1;
-        out = `${error.stdout ?? ''}${error.stderr ?? ''}`;
+        ({ code: status, stdout: out } = exitOrHang(error, 'check-sources self-test'));
     }
     check(
         'a fuel rule gone inert REFUSES rather than reporting an empty excluded set',
@@ -392,8 +392,7 @@ for (const [label, mutate, needle] of [
     try {
         out = runTool(nodePath(), [CHECK], { encoding: 'utf8', cwd: ROOT, env: clean });
     } catch (error) {
-        status = error.status ?? -1;
-        out = `${error.stdout ?? ''}${error.stderr ?? ''}`;
+        ({ code: status, stdout: out } = exitOrHang(error, 'check-sources self-test'));
     }
     check(
         'with no SOURCES_LINT_ROOT it reads this repository and passes',
