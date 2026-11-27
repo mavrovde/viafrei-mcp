@@ -760,6 +760,17 @@ export function createMcpApp(o: McpAppOptions): McpApp {
     } catch { /* a log line never fails a request */ }
   };
 
+  /**
+   * A request naming a session this server does not hold — ended by a restart (every deploy), the idle TTL or an
+   * eviction — is answered with the spec's 404, and said here, one line per refusal: a burst after a deploy is
+   * the clients that held sessions, a steady stream is a client that keeps the dead id instead of re-initialising.
+   * Never the id itself: it was the client's credential to that session.
+   */
+  const noteEndedSession = (req: Request, sid: string): void => {
+    if (sid === "") return;
+    o.warn?.({ kind: "session_not_found", method: req.method, path: req.path }, "an MCP request named a session this server does not hold (ended by a restart, the idle limit or an eviction); answered 404 so the client re-initialises");
+  };
+
   if (o.health) {
     const health = o.health;
     // No await, no I/O: see `health` in the options. The body is the same two
@@ -784,7 +795,8 @@ export function createMcpApp(o: McpAppOptions): McpApp {
 
   // ---- Streamable HTTP (2025-03-26 and later) ----------------------------
 
-  app.post("/mcp", async (req, res) => {
+  // The three handlers are named because `/sse` serves them too (below).
+  const postMcp = async (req: Request, res: Response): Promise<void> => {
     // An EMPTY `Mcp-Session-Id: ""` is no id, deliberately: it
     // names no session, so it is read exactly like an absent header — a bare
     // `tools/list` with it is answered statelessly, an `initialize` with it
@@ -850,7 +862,7 @@ export function createMcpApp(o: McpAppOptions): McpApp {
       answers.set(rpcId, line.outcome);
       res.on("close", () => { if (answers.get(rpcId) === line.outcome) answers.delete(rpcId); });
     };
-    if (!s) {
+    if (!s || s.transportKind !== "streamable") {
       // A session id we do not hold is a session that ENDED — a restart (every
       // deploy), the idle TTL or an eviction — and the spec's answer to it is
       // 404, the one status on which a client MUST open a new session
@@ -860,8 +872,11 @@ export function createMcpApp(o: McpAppOptions): McpApp {
       // connector after each deploy. An `initialize` that still carries
       // the dead id is that re-initialisation and opens a session; a request
       // with no id at all is still the no-session 400.
+      // A LEGACY session's id (`GET /sse` + `/messages`) names no Streamable HTTP
+      // session either, so it takes this same 404: its transport has no
+      // `handleRequest`, and handing it on was a 500.
       if (!isInitializeRequest(req.body)) {
-        if (sid !== "") { res.status(404).json(SESSION_NOT_FOUND); return; }
+        if (sid !== "") { noteEndedSession(req, sid); res.status(404).json(SESSION_NOT_FOUND); return; }
         res.status(400).json({ jsonrpc: "2.0", error: { code: -32000, message: "No valid session; send initialize first" }, id: null });
         return;
       }
@@ -895,9 +910,10 @@ export function createMcpApp(o: McpAppOptions): McpApp {
     s.touched = Date.now();
     register(s.answers);
     await (s.transport as StreamableHTTPServerTransport).handleRequest(req, res, req.body);
-  });
+  };
+  app.post("/mcp", postMcp);
 
-  app.get("/mcp", async (req, res) => {
+  const getMcp = async (req: Request, res: Response): Promise<void> => {
     if (admit(req, res, false) === null) return;
     // The Host/Origin rule first, for every GET and HEAD whatever session it names (2025-11-25, Security Warning
     // 1): a probe from an origin we refuse learns nothing more than a refusal.
@@ -910,7 +926,7 @@ export function createMcpApp(o: McpAppOptions): McpApp {
     const s = sessions.get(sid);
     // An id we do not hold is an ENDED session, and the spec's answer to any request naming one is 404 (Session
     // Management 3) — a HEAD included, so a client probing with it still learns to re-initialise.
-    if (!s || s.transportKind !== "streamable") { refuseSession(res, sid); return; }
+    if (!s || s.transportKind !== "streamable") { noteEndedSession(req, sid); refuseSession(res, sid); return; }
     // A HEAD that names a LIVE session is answered here, never handed to the transport. No
     // MCP revision defines HEAD; a HEAD of an event stream would describe a stream that is never sent; and the
     // transport answered it with its own 405 and its own `Allow` order AFTER the session had been touched and a
@@ -919,17 +935,20 @@ export function createMcpApp(o: McpAppOptions): McpApp {
     s.touched = Date.now();
     holdStream(res, s);
     await (s.transport as StreamableHTTPServerTransport).handleRequest(req, res);
-  });
+  };
+  app.get("/mcp", getMcp);
 
-  app.delete("/mcp", async (req, res) => {
+  const deleteMcp = async (req: Request, res: Response): Promise<void> => {
     const release = admit(req, res, true);
     if (release === null) return;
     res.on("close", release);
     if (refuseBadOrigin(req, res, allowedHosts, allowedOrigins)) return;
-    const s = sessions.get(req.header("mcp-session-id") ?? "");
-    if (!s || s.transportKind !== "streamable") { refuseSession(res, req.header("mcp-session-id") ?? ""); return; }
+    const sid = req.header("mcp-session-id") ?? "";
+    const s = sessions.get(sid);
+    if (!s || s.transportKind !== "streamable") { noteEndedSession(req, sid); refuseSession(res, sid); return; }
     await (s.transport as StreamableHTTPServerTransport).handleRequest(req, res);
-  });
+  };
+  app.delete("/mcp", deleteMcp);
 
   // Every other method on `/mcp` — PUT, PATCH and the rest (OPTIONS is the CORS preflight above, HEAD the GET
   // route's). The resource exists, so the answer is 405 with the methods it takes (RFC 9110 §15.5.6), not the
@@ -948,7 +967,18 @@ export function createMcpApp(o: McpAppOptions): McpApp {
   // resolved by the client against the URL it opened — and every request then
   // arrives on that POST while every answer leaves on the stream.
 
+  // `/sse` is ALSO a Streamable HTTP endpoint, for the client that was given the `/sse` URL and speaks the new
+  // transport. The 2025-03-26 "Backwards Compatibility" rule has such a client POST its `initialize` to the URL
+  // it holds and fall back to the legacy GET only on a 4xx; this route had no POST, so every such client and
+  // every liveness check that probes the way the spec says got the catch-all 404. Its POST and DELETE are the
+  // `/mcp` handlers, and its GET is `/mcp`'s for a request that names a session (a legacy client never sends
+  // `Mcp-Session-Id`: its session lives in the `/messages` query); a GET with no session id opens the legacy
+  // stream, as it always did.
+  app.post("/sse", postMcp);
+  app.delete("/sse", deleteMcp);
+
   app.get("/sse", async (req, res) => {
+    if ((req.header("mcp-session-id") ?? "") !== "") { await getMcp(req, res); return; }
     const refusal = originRefusal(req, allowedHosts, allowedOrigins);
     if (refusal) { res.status(403).send(refusal); return; }
     if (admit(req, res, false) === null) return;
