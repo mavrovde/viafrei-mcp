@@ -6,7 +6,7 @@ a Changelog and the versions follow Semantic Versioning.
 ## [Unreleased]
 
 ### Fixed
-- **The release mutation run passes its static-mutant bound again.** The npm publish of 2.7.7 stopped in the mutation gather: `src/tools/handlers.ts` had 247 static mutants, over its bound of 220. 2.7.7 added two module-level word tables for lorry rules (26 static mutants) and a module-level arrow for an address with no town (1). Stryker runs the whole suite for each static mutant. All three are now built in function declarations, with the same words and the same behaviour. The file is back at 220; the bound is not raised. The lorry test now pins every layer and kind word in both languages. Before, the static run marked these words killed or timed out; scored per test, ten of them would have survived.
+- **The release mutation run passes its static-mutant bound again.** The npm publish of 2.7.7 stopped in the mutation gather: `src/tools/handlers.ts` had 247 static mutants, over its bound of 220. 2.7.7 added two module-level word tables for lorry rules (26 static mutants) and a module-level arrow for an address with no town (1). Stryker runs the whole suite for each static mutant. All three are now built in function declarations, with the same words and the same behaviour. The older module-level lamp-colour table (9 static mutants) is built in a function too, so the file ends at 211, below its bound of 220 rather than at it; the bound is not raised. The tests now pin every lorry layer and kind word and every lamp colour word, in both languages. Before, the static run marked these words killed or timed out; scored per test, ten of them would have survived.
 
 ## [2.7.7] - 2026-11-27
 

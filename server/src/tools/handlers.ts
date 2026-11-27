@@ -109,10 +109,14 @@ export function lorryLine(x: T.LorryRule, language: Language): string {
 }
 
 /** The lamp's colour and its reason in words, as today's server says them (autobahn-ampel.ts); the code is never read out. */
-const LAMP: Record<Language, Record<string, string>> = {
-  de: { red: "Rot", amber: "Gelb", green: "Grün" },
-  en: { red: "red", amber: "yellow", green: "green" },
-};
+function lampWords(language: Language): Record<string, string> {
+  // Built per call, as lorryLayer: at module level each of its mutants is static and runs the whole suite.
+  const words: Record<Language, Record<string, string>> = {
+    de: { red: "Rot", amber: "Gelb", green: "Grün" },
+    en: { red: "red", amber: "yellow", green: "green" },
+  };
+  return words[language];
+}
 const REASON: Record<Language, Record<string, string>> = {
   de: {
     road_closed: "Vollsperrung", ramp_closed: "Anschlussstelle gesperrt", safety: "Gefahr auf der Fahrbahn", bridge_closed: "Brücke gesperrt",
@@ -127,7 +131,7 @@ const REASON: Record<Language, Record<string, string>> = {
 };
 
 export function lampText(d: Pick<T.RoadConditionsData, "lamp" | "lampReason" | "lampReasonsTotal">, language: Language): string {
-  const lamp = LAMP[language][d.lamp] ?? d.lamp;
+  const lamp = lampWords(language)[d.lamp] ?? d.lamp;
   if (d.lampReason === null || d.lamp === "green") {
     return L(language, `Ampel ${lamp}: von Autobahn GmbH, Polizei/Ländern und DWD nichts gemeldet — keine Garantie für freie Fahrt`, `traffic light ${lamp}: nothing reported by the Autobahn GmbH, the police/Länder or the DWD — no guarantee the road is clear`);
   }

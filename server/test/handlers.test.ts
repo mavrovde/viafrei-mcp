@@ -2447,6 +2447,12 @@ describe("motorway numbers no register knows, and the lamp in words", () => {
     expect(lampText({ lamp: "green", lampReason: null }, "en")).toEqual("traffic light green: nothing reported by the Autobahn GmbH, the police/Länder or the DWD — no guarantee the road is clear");
     expect(lampText({ lamp: "red", lampReason: "road_closed" }, "de")).toEqual("Ampel Rot: Vollsperrung");
   });
+
+  it("every lamp colour is said in its word, in both languages", () => {
+    const said = (language: "de" | "en") => ["red", "amber", "green"].map((lamp) => lampText({ lamp, lampReason: "jam" } as never, language).split(":")[0]);
+    expect(said("de")).toEqual(["Ampel Rot", "Ampel Gelb", "Ampel Grün"]);
+    expect(said("en")).toEqual(["traffic light red", "traffic light yellow", "traffic light green"]);
+  });
 });
 
 describe("a place given as a street and house number", () => {
