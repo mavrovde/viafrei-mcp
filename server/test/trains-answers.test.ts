@@ -166,6 +166,20 @@ describe("a station of several parts", () => {
     expect((r.structuredContent as Record<string, unknown>)["asOf"]).toBe("2026-03-30T00:00:30Z");
   });
 
+  it("no part fresh, a day-old station register beside it: asOf is the newest board's fetchedAt", async () => {
+    const list = exampleOf<Body & { data: Record<string, unknown>[] }>("listStations");
+    list.meta = { ...list.meta, asOf: "2026-03-29T00:00:00Z" };
+    list.data[0] = { ...list.data[0], evaNumbers: ["1", "2"] };
+    mockServer.use(handlerFor("listStations", () => HttpResponse.json(list)), settled(), boards({
+      "1": { fresh: false, fetchedAt: "2026-03-29T22:00:00Z", ageSeconds: 7_200, departures: [] },
+      "2": { fresh: false, fetchedAt: "2026-03-29T23:30:00Z", ageSeconds: 1_800, departures: [] },
+    }));
+    const r = await ask({ station: "Schömpingbach Hbf" });
+    expect(r.isError).toBeUndefined();
+    expect((r._meta as { asOf: string }).asOf).toBe("2026-03-29T23:30:00Z");
+    expect((r.structuredContent as Record<string, unknown>)["asOf"]).toBe("2026-03-29T23:30:00Z");
+  });
+
   it("no part fresh: the newest board held is named, in German too", async () => {
     mockServer.use(settled(), boards({
       "8001001": { fresh: false, fetchedAt: "2026-03-29T22:00:00Z", ageSeconds: 7_200, departures: [] },
