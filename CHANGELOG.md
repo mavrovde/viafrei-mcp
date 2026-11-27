@@ -5,6 +5,42 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.9] - 2026-11-27
+
+**The answers the 2.7.8 question round found wrong or guessed are fixed, and the server runs on API 2.0.7.** No tool name, input schema or annotation changes. A place tool asked for a name that several towns share now answers with the candidates (structured `{ambiguous, query, candidates}`) instead of guessing one.
+
+**Contract note: two additive structured fields.** No field is removed or renamed.
+- A place tool's candidates answer is a normal result (not `isError`) with `structuredContent` `{ambiguous: true, query, candidates: [{name, kind, districtCode, kreis, lat, lon}]}`. find_speed_cameras' candidates answer also carries `planningOnly` and `noticeDe`.
+- `get_driving_rules` with a place and topic `lez` adds `zoneVerdict: {kind, text}` to its structured content when the API holds a verdict (`kind` is `inside`, `transfer` or `outside`; `text` is the answer's first line). Where no boundary is held, the field is absent and `conditionNote` carries the caveat, as before.
+
+### Added
+- **A home page for a browser at `GET /`.** A browser that asks for HTML gets one static page: what the server answers, its tools, resources and prompts, and how to connect. The page is a byte copy of the site's page and is generated into `src/content/home-page.ts`. It is sent with a hash-pinned Content-Security-Policy, `nosniff`, a referrer policy and `Vary: Accept`. An MCP client, `curl` or a request without `Accept: text/html` still gets the empty 404. `/mcp`, `/sse` and `/messages` are unchanged.
+
+### Changed
+- **API 2.0.7.** The pin, the contract fixture and the generated operations come from the release tag. The meaning changes come with it:
+  - the platform version is the API's own;
+  - `meta.asOf` counts only the live families;
+  - speed cameras no longer list webcams;
+  - Land and "abroad" are read from Land areas.
+- **Train boards are no longer cut at five.** The board is asked with `limit` 50, the minutes of the asked window (`duration_min`, 5 to 120) and the asked `categories`.
+
+### Fixed
+- **A town name that several towns share is asked, not guessed.** In the round, "Neustadt" took a Hamburg district. Every place tool now answers with up to five candidates, each with its Land, Kreis and coordinates, and asks for the Kreis, the Land or lat/lon (#291).
+  - One town held twice (two sources, under 2 km apart) is one place.
+  - `find_place` says such a place once and, with `near`, lists the nearest first.
+- **"Hauptbahnhof" alone is asked.** `get_train_departures` with only station words ("Hauptbahnhof", "Hbf", "main station") now asks which town is meant instead of answering for the first match (#291).
+- **Roadworks say where and when, for the asked days.** `find_roadworks_ahead` used to read a fixed fortnight; it now passes the asked `from`/`to` to the API (default: today and the seven days after). The answer opens with how many sites the window holds. Each line gives the road, what it is, where on the road, its start and end, and the distance; a place's sites come nearest first (#290).
+- **`get_driving_rules` opens with the zone verdict of an asked place.** The API sent whether the place lies inside or outside, but the answer listed only the rules (round Q56, Alexanderplatz). The verdict now leads, with the zone's published name. Where no boundary is held, the existing caveat still leads and never says "outside" (#293).
+- **A speed-camera list with no announced mobile check says so.** It adds that mobile checks are still possible anywhere (round Q49) (#291).
+- **Every `find_speed_cameras` answer carries the § 23 notice.** The candidates of a shared town name and the no-place refusal came without it. They now open with it, and the candidates' structured content carries `planningOnly` and `noticeDe` (#291).
+  - The raw JSON a client showed for this tool (#291 B4) is not a server render path: the server's `content[0].text` is prose in every outcome (tested); the cause is most likely the client presenting `structuredContent`, not reproduced. A test over the four outcomes (a list, none, a refusal, candidates) checks that the text is not JSON and holds the notice. The result shape is unchanged.
+- **The roadworks count cannot lie.** `find_roadworks_ahead` sends the API the limit it lists by (`limit`, default 20), so the count read from the API's page matches the lines shown (#290).
+
+### Still open
+- **#290:** criteria A7 and A8.
+- **#291:** B4 (cause not reproduced, see above) and A3, "one match far larger".
+- **Not in this release:** #289 (the server-side wording of the road verdict and the jam-first headline), #292 (watch_situation for the chargers find_charging_station shows) and #295 (find_parking for lorries says which sources it searched).
+
 ## [2.7.8] - 2026-11-27
 
 **2.7.7 was published as an image only: its npm publish stopped in the mutation gate, so npm has no 2.7.7.** This release carries 2.7.7 with its answers unchanged, plus the fix that lets the mutation run pass.
@@ -4672,6 +4708,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.9]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.9
 [2.7.8]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.8
 [2.7.7]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.7
 [2.7.6]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.6
