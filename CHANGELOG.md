@@ -3,7 +3,7 @@
 All notable changes to this package are documented here. The format follows Keep
 a Changelog and the versions follow Semantic Versioning.
 
-## [Unreleased]
+release-please writes each release's block from the Conventional Commits merged since the last release; there is no hand-kept Unreleased section.
 
 ## [2.7.10] - 2026-11-27
 
