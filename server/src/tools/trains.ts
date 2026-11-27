@@ -73,9 +73,25 @@ async function refresh(ctx: ToolContext, eva: string): Promise<Outcome> {
 
 type Part = { eva: string; outcome: Outcome; board: Envelope<T.TrainBoardData> };
 
-async function part(ctx: ToolContext, eva: string): Promise<Part> {
+/** The most departures one board read asks (the API's own maximum); the answer still shows `limit` of them. */
+export const BOARD_ASK = 50;
+
+/** What one board read asks the API: its window from now to the asked window's end, and the asked train types. */
+export type BoardAsk = { readonly durationMin: number; readonly categories: readonly string[] | undefined };
+
+/**
+ * The board's window as the API takes it (5 to 120 minutes ahead of now): long enough to reach the end of the
+ * asked window, so a `when` later than now still gets the trains of its window. Without this the API's own
+ * defaults (5 departures, 60 minutes) cut every board (a busy station's sixth train was never seen).
+ */
+export function boardMinutes(untilMs: number, nowMs: number): number {
+  return Math.min(120, Math.max(5, Math.ceil((untilMs - nowMs) / 60_000)));
+}
+
+async function part(ctx: ToolContext, eva: string, ask: BoardAsk): Promise<Part> {
   const outcome = await refresh(ctx, eva);
-  const board = await ctx.api.get<T.TrainBoardData>("getTrainBoard", { eva });
+  // The asked types go to the API too, so its limit counts only them; the window filter below still holds.
+  const board = await ctx.api.get<T.TrainBoardData>("getTrainBoard", { eva, limit: BOARD_ASK, duration_min: ask.durationMin, categories: ask.categories });
   return { eva, outcome, board };
 }
 
@@ -195,7 +211,8 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
 
   let parts: Part[];
   try {
-    parts = await Promise.all(asked.map((eva) => part(ctx, eva)));
+    const ask: BoardAsk = { durationMin: boardMinutes(until, Date.now()), categories };
+    parts = await Promise.all(asked.map((eva) => part(ctx, eva, ask)));
   } catch (err) {
     if (err instanceof ApiError && err.kind === "invalid") {
       return toolError(L(language, `Die DB-Fahrplanschnittstelle kennt keinen Bahnhof mit der Nummer ${asked.join(", ")}. Bitte den Bahnhofsnamen nennen.`, `The DB timetable interface knows no station with the number ${asked.join(", ")}. Please give the station's name.`), "not_found");
@@ -253,11 +270,24 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
   });
 }
 
+/**
+ * A station name of station words alone ("Hauptbahnhof", "Hbf", "main station"): every town has one, so it names
+ * no station, and the search's first answer (round Q87: Stuttgart Hbf) would be a guess.
+ */
+export function onlyStationWords(name: string): boolean {
+  return /^(?:(?:haupt)?bahnhof|hbf|bhf|bf|(?:main|central|train|railway) station|station)$/iu.test(name.trim().replace(/\s+/gu, " "));
+}
+
 export const getTrainDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
   const eva = str(args["eva_no"]);
   const name = str(args["station"]);
   if (eva === undefined && name === undefined) return toolError(COPY[language].needStation, "invalid_input");
+  if (eva === undefined && name !== undefined && onlyStationWords(name)) {
+    return toolError(L(language,
+      `„${name}“ nennt keine Stadt, und fast jede Stadt hat einen. Welcher Bahnhof ist gemeint? Bitte die Person fragen und mit der Stadt erneut aufrufen, zum Beispiel {"station": "Köln Hbf"}.`,
+      `"${name}" names no town, and almost every town has one. Which station is meant? Please ask the person and call again with the town, for example {"station": "Köln Hbf"}.`), "invalid_input");
+  }
   // Only the DB stations of a name, as today's server resolves a train station (the API's railway).
   const stations = await ctx.api.get<T.Station[]>("listStations", { code: eva, q: eva === undefined ? name : undefined, limit: 1, railway: "true" });
   const station = stations.data[0];

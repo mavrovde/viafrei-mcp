@@ -599,6 +599,7 @@ export const OPERATIONS = {
     "query": [
       "limit",
       "duration_min",
+      "categories",
       "lang"
     ],
     "required": [

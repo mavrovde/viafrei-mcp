@@ -9,6 +9,20 @@ import type { DataMeta } from "../api/client.js";
 import type * as T from "../api/types.js";
 import { toolResult, type Language } from "../presentation.js";
 import { atParam, isResult, num, position, str, type Handler } from "./context.js";
+import { zoneHead } from "./location.js";
+
+/**
+ * The zone verdict of an asked place, in describe_location's words with the place's name (round Q56: the rules
+ * were listed with no inside or outside, though the API sent the verdict). The zone is named by its published
+ * row (the verdict carries its key), else by the word alone. Null where no boundary is held near it: that case
+ * has its own caveat (lezNoBoundaryCaveat), which never says "outside".
+ */
+export function placeZoneVerdict(v: T.ZoneVerdict | undefined, zones: readonly T.RulesZone[] | undefined, place: string, language: Language): string | null {
+  if (v === undefined || v.kind === "unknown") return null;
+  const row = zones?.find((z) => z.key === v.zone) ?? (v.kind === "outside" ? undefined : zones?.find((z) => z.inside));
+  const name = row === undefined ? null : row.name.trim() !== "" ? row.name : row.city.trim() === "" ? null : L(language, `Umweltzone ${row.city}`, `low-emission zone ${row.city}`);
+  return zoneHead({ verdict: v.kind, zone: name, distanceM: v.distanceM, liftedOn: v.liftedOn ?? null }, language, place);
+}
 
 /** The nine topics, in the order the overview names them. */
 export const RULE_TOPICS = ["lez", "speed", "winter", "alcohol", "toll", "truck_ban", "equipment", "emergency", "ev"] as const;
@@ -125,6 +139,7 @@ export const getDrivingRules: Handler = async (args, ctx): Promise<CallToolResul
   let head: string;
   let zoneCity: T.ZoneCity | undefined;
   let zoneVerdict: T.ZoneVerdict | undefined;
+  let zoneRows: T.RulesZone[] | undefined;
   if (topic === undefined) {
     // The overview: the first rule of every topic, under the topic's title.
     const reads = await Promise.all(RULE_TOPICS.map((t) => ctx.api.get<T.DrivingRulesData>("getDrivingRules", { topic: t, city: t === "lez" ? city : undefined })));
@@ -145,6 +160,7 @@ export const getDrivingRules: Handler = async (args, ctx): Promise<CallToolResul
     const d = r.data;
     zoneCity = d.zoneCity;
     zoneVerdict = d.zoneVerdict;
+    zoneRows = d.zones;
     const z = topic === "lez" && city !== undefined && zoneCity !== undefined ? zoneCityLines(zoneCity, language) : null;
     if (z !== null) lines.push(z.line);
     lines.push(...d.rules.map((x) => ruleLine(x, language)));
@@ -179,7 +195,9 @@ export const getDrivingRules: Handler = async (args, ctx): Promise<CallToolResul
   const verdict = zoneVerdict;
   const caveat = placeLabel !== null && verdict?.kind === "unknown" ? lezNoBoundaryCaveat(placeLabel, language) : null;
   const zoneLines = placeLabel === null ? [] : [""];
-  const text = [head, ...(pointNote === null ? [] : [pointNote]), ...zoneLines, ...kept.map((l) => l.text), ...(more === null ? [] : [more])].join("\n");
+  // A held verdict opens the answer, as the caveat does where none is held: inside or outside is the question.
+  const said = placeLabel === null ? null : placeZoneVerdict(verdict, zoneRows, placeLabel, language);
+  const text = [...(said === null ? [] : [said]), head, ...(pointNote === null ? [] : [pointNote]), ...zoneLines, ...kept.map((l) => l.text), ...(more === null ? [] : [more])].join("\n");
   const structured: Record<string, unknown> = {
     topic: topic ?? null,
     city: city ?? null,
@@ -192,6 +210,7 @@ export const getDrivingRules: Handler = async (args, ctx): Promise<CallToolResul
       ? { lezCity: { name: zoneCity.name, ...(zoneCity.zone === null ? {} : { zone: zoneCity.zone }), ...(zoneCity.plakette === null ? {} : { plakette: zoneCity.plakette }), covered: zoneCity.covered } }
       : {}),
     ...(pointNote === null ? {} : { pointNote }),
+    ...(said === null ? {} : { zoneVerdict: { kind: verdict!.kind, text: said } }),
     toVerify: usedFacts.flatMap((u) => (u.rule.unconfirmed === null ? [] : [{ key: u.rule.id, note: u.rule.unconfirmed }])),
     disclaimer: disclaimer(reviewedAt, language),
   };

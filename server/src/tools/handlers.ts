@@ -349,10 +349,55 @@ function roadEventLine(s: T.RoadSituation, language: Language): string {
   return `• ${kind}${s.road ? ` ${s.road}` : ""}:${quoted}${dir}${delay}${when}${s.distanceM === undefined ? "" : ` · ${km(s.distanceM, language)}`}`;
 }
 
-function situationsBody(d: T.RoadConditionsData, language: Language, limit: number | undefined): string {
+/**
+ * One roadworks site of a window (round Q13, Q14: "A7: Baustelle bis 27.07.2029" said neither where nor from when):
+ * the road and carriageway, what it is, where on the road (the publisher's subtitle, else the first line of its
+ * text; "place not given" where it has neither), its start and its end, and the distance from an asked place.
+ */
+export function roadworksLine(s: T.RoadSituation, language: Language): string {
+  const road = [s.road ?? "", s.directionText ?? ""].filter((x) => x.trim() !== "").join(" ");
+  const what = isCode(s.headline) ? KIND[language][s.kind] ?? s.kind : s.headline;
+  const text = [s.subtitle ?? "", (s.descriptionShown ?? s.description ?? "").split("\n")[0] ?? ""].map((x) => x.trim()).find((x) => x !== "" && x !== s.headline);
+  const where = text ?? L(language, "Ort nicht angegeben", "place not given");
+  const from = s.validity.from === null ? null : berlinDateTime(s.validity.from, language);
+  const until = s.validity.until === null ? null : berlinDateTime(s.validity.until, language);
+  const when = from !== null && until !== null ? `${from} – ${until}`
+    : from !== null ? L(language, `ab ${from}, Ende nicht angegeben`, `from ${from}, end not given`)
+    : until !== null ? L(language, `Beginn nicht angegeben, bis ${until}`, `start not given, until ${until}`)
+    : L(language, "ohne Zeitangabe", "no dates given");
+  return `- ${road === "" ? "" : `${road}: `}${what} · ${where} · ${when}${s.distanceM === undefined ? "" : ` · ${km(s.distanceM, language)}`}`;
+}
+
+/** A Berlin calendar day (YYYY-MM-DD) as the answer says it: "01.12.2026" / "2026-12-01". */
+function dayText(day: string, language: Language): string {
+  return language === "de" ? `${day.slice(8, 10)}.${day.slice(5, 7)}.${day.slice(0, 4)}` : day;
+}
+
+/** The roadworks window's days: as asked, else today (Berlin) and, as the API defaults it, seven days after `from`. */
+export function roadworksWindow(from: string | undefined, to: string | undefined, now: Date): { from: string; to: string } {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  const start = from ?? today;
+  return { from: start, to: to ?? new Date(Date.parse(`${start}T12:00:00Z`) + 7 * 86_400_000).toISOString().slice(0, 10) };
+}
+
+/**
+ * find_roadworks_ahead's answer: the lamp, then how many sites the window holds and how many are listed, then one
+ * line per site with where and when (roadworksLine). The total is the API's page total where it sends one, else
+ * "at least" the listed where more exist.
+ */
+function situationsBody(d: T.RoadConditionsData, language: Language, limit: number | undefined, page: DataMeta["page"], window: { from: string; to: string }): string {
   const rows = d.situations.slice(0, limit ?? 20);
   const head = `${lampText(d, language)}.`;
-  return rows.length === 0 ? head : [head, ...rows.map((s) => situationLine(s, language))].join("\n");
+  const span = `${dayText(window.from, language)}–${dayText(window.to, language)}`;
+  const total = page?.total ?? (page?.hasMore === true ? null : rows.length);
+  const count = rows.length === 0
+    ? L(language, `Im Zeitraum ${span} ist keine Baustelle gemeldet.`, `No roadworks are reported for ${span}.`)
+    : total === null
+      ? L(language, `Im Zeitraum ${span} mindestens ${rows.length + 1} Baustellen; hier die ersten ${rows.length}:`, `At least ${rows.length + 1} roadworks sites for ${span}; the first ${rows.length}:`)
+      : total === rows.length
+        ? L(language, `Im Zeitraum ${span} ${total === 1 ? "eine Baustelle" : `${total} Baustellen`}:`, `${total === 1 ? "One roadworks site" : `${total} roadworks sites`} for ${span}:`)
+        : L(language, `Im Zeitraum ${span} ${total} Baustellen; hier die ersten ${rows.length}:`, `${total} roadworks sites for ${span}; the first ${rows.length}:`);
+  return [head, count, ...rows.map((s) => roadworksLine(s, language))].join("\n");
 }
 
 /** Today's stampText: the Berlin day in full, and its time unless midnight ("2026-12-11 12:00", "11.12.2026"). */
@@ -584,22 +629,27 @@ const findRoadworksAhead: Handler = async (args, ctx) => {
   const { language } = ctx;
   const road = str(args["road"]);
   const limit = num(args["limit"]);
+  // The asked window goes to the API, which keeps a site when its validity overlaps it (round Q13: a fixed
+  // fortnight from now was read whatever days were asked).
+  const window = roadworksWindow(str(args["from"]), str(args["to"]), new Date());
   if (road !== undefined) {
     const code = road.replace(/\s/g, "").toUpperCase();
-    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: code, kinds: ["roadworks"], horizon_days: 14, limit })
+    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: code, kinds: ["roadworks"], from: window.from, to: window.to, limit: limit ?? 20 })
       .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; });
     // A number no register knows: today's refusal, with the nearest real numbers (as check_road_status).
     if (r === null) {
       const registered = (await ctx.api.get<{ road: string }[]>("listMotorways", {})).data.map((m) => m.road);
       return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)), "not_found");
     }
-    return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
+    return toolResult(situationsBody(r.data, language, limit, r.meta.page, window), [r.meta], language);
   }
   // `from` and `to` are the window's days (YYYY-MM-DD, the schema's pattern), never a place.
   const pos = await position({ place: args["place"] }, ctx);
   if (isResult(pos)) return pos;
-  const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at: atParam(pos.at), kinds: ["roadworks"], horizon_days: 14, limit });
-  return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
+  const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at: atParam(pos.at), kinds: ["roadworks"], from: window.from, to: window.to, limit: limit ?? 20 });
+  // A place's sites nearest first, the same distance in the API's order.
+  const near = r.data.situations.map((s, i) => ({ s, i })).sort((a, b) => (a.s.distanceM ?? Infinity) - (b.s.distanceM ?? Infinity) || a.i - b.i).map((x) => x.s);
+  return toolResult(situationsBody({ ...r.data, situations: near }, language, limit, r.meta.page, window), [r.meta], language);
 };
 
 async function parkingRead(ctx: ToolContext, op: "listParkingOptions" | "listMotorwayParking", params: Record<string, unknown>): Promise<{ r: Envelope<T.ParkingSite[]>; conditionNote?: string }> {

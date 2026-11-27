@@ -12,8 +12,9 @@ import { ApiError } from "../src/api/client.js";
 import { pinned } from "./pinned.js";
 import { haversineM } from "../src/tools/location.js";
 import { connect, textOf } from "./harness.js";
-import { GAPS, HANDLERS, lampText, lorryLine, nearestMotorways } from "../src/tools/handlers.js";
-import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
+import { placeZoneVerdict } from "../src/tools/driving-rules.js";
+import { GAPS, HANDLERS, lampText, lorryLine, nearestMotorways, roadworksWindow } from "../src/tools/handlers.js";
+import { noMobileLine, SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
 import { kmText } from "../src/tools/nearby.js";
 import { conditionSentence } from "../src/tools/watch-words.js";
 
@@ -321,11 +322,19 @@ describe("check_autobahn_traffic's lamp, as today's ampel says it", () => {
 });
 
 describe("find_roadworks_ahead", () => {
-  it("a road: the roadworks of the next fortnight on it", async () => {
+  it("a road: the roadworks of today and the seven days after on it, the window the API's", async () => {
+    const w = roadworksWindow(undefined, undefined, new Date());
     const r = await call("find_roadworks_ahead", { road: "a 3", limit: 4, language: "en" });
     expect(paths("getMotorwayConditions")).toEqual(["/v1/motorways/A3/conditions"]);
-    expect(query("getMotorwayConditions")).toEqual([{ kinds: "roadworks", horizon_days: "14", limit: "4", lang: "en" }]);
-    expect(body(r)).toBe("traffic light yellow: DWD warning.\n- A101: Hazard (Gefahr)\n- A101: Hazard (Gefahr)");
+    expect(query("getMotorwayConditions")).toEqual([{ kinds: "roadworks", from: w.from, to: w.to, limit: "4", lang: "en" }]);
+    expect(body(r).split("\n").slice(0, 2)).toEqual(["traffic light yellow: DWD warning.", `At least 3 roadworks sites for ${w.from}–${w.to}; the first 2:`]);
+  });
+
+  it("the asked days are the window (round Q13 'next week' read a fixed fortnight)", async () => {
+    await call("find_roadworks_ahead", { road: "A7", from: "2026-11-30", to: "2026-12-06", language: "de" });
+    expect(query("getMotorwayConditions")).toEqual([{ kinds: "roadworks", from: "2026-11-30", to: "2026-12-06", limit: "20", lang: "de" }]);
+    expect(roadworksWindow("2026-11-30", undefined, new Date())).toEqual({ from: "2026-11-30", to: "2026-12-07" });
+    expect(roadworksWindow(undefined, undefined, new Date("2026-03-28T23:30:00Z"))).toEqual({ from: "2026-03-29", to: "2026-04-05" });
   });
 
   for (const key of ["place"]) {
@@ -333,8 +342,10 @@ describe("find_roadworks_ahead", () => {
       const r = await call("find_roadworks_ahead", { [key]: "Köln", language: "en" });
       expect(ops()).toEqual(["resolvePlace", "listRoadConditions"]);
       expect(query("resolvePlace")).toEqual([{ q: "Köln", lang: "en" }]);
-      expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", horizon_days: "14", lang: "en" }]);
-      expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: Roadworks (Baustelle) · 500 m");
+      const w = roadworksWindow(undefined, undefined, new Date());
+      expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", from: w.from, to: w.to, limit: "20", lang: "en" }]);
+      expect(body(r).split("\n").slice(0, 2)).toEqual(["traffic light yellow: roadworks narrowing the carriageway.", `One roadworks site for ${w.from}–${w.to}:`]);
+      expect(body(r).split("\n")[2]).toMatch(/^- A103: Roadworks \(Baustelle\) · .+ · .+ · 500 m$/u);
     });
   }
 
@@ -752,6 +763,25 @@ describe("find_speed_cameras", () => {
       });
     });
   }
+  // Round Q49 "mobile Blitzer in Bielefeld": fixed OpenStreetMap cameras only, and no word of mobile checks.
+  for (const language of LANGS) {
+    it(`a list with no announced mobile check says that no source announces one (${language})`, async () => {
+      serve("listSpeedCameras", { official: [], officialTotal: 0, osm: [cam({ locationLabel: null, location: { lat: 52.03211, lon: 8.53319 }, limitKmh: 60 })], osmTotal: 1 });
+      const lines = body(await call("find_speed_cameras", { place: "Bielefeld", language })).split("\n");
+      const i = lines.indexOf(noMobileLine(language));
+      expect(i).toBeGreaterThan(lines.findIndex((l) => l.startsWith("- 52.03211, 8.53319")));
+      expect(lines[i + 1]).toMatch(/^Stand Blitzer/u);
+      expect(noMobileLine(language)).toBe(language === "de"
+        ? "Angekündigte mobile Kontrollen: Für dieses Gebiet kündigt keine unserer Quellen eine an. Mobile Kontrollen sind trotzdem jederzeit und überall möglich."
+        : "Announced mobile checks: none of our sources announces one for this area. Mobile checks are still possible anywhere at any time.");
+    });
+  }
+  it("a list with an announced mobile check, or none at all, does not say it", async () => {
+    serve("listSpeedCameras", { official: [cam({ id: "x:2", kind: "mobile_announced", street: "Allee", firstDay: null, lastDay: null, sourceFamily: "osm_speed_cameras" })], officialTotal: 1, osm: [], osmTotal: 0 });
+    expect(body(await call("find_speed_cameras", { place: "Köln", language: "en" }))).not.toContain(noMobileLine("en"));
+    serve("listSpeedCameras", { official: [], officialTotal: 0, osm: [], osmTotal: 0 });
+    expect(body(await call("find_speed_cameras", { place: "Köln", language: "de" }))).not.toContain(noMobileLine("de"));
+  });
   for (const language of LANGS) {
     it(`none: nothing published is not no checks; coordinates name the point; the Stand is the time we looked (${language})`, async () => {
       serve("listSpeedCameras", { official: [], officialTotal: 0, osm: [], osmTotal: 0 });
@@ -775,7 +805,8 @@ describe("find_place, find_poi, find_address", () => {
 
   it("find_place with more matches than shown names today's cap of 10, the catalogue's own", async () => {
     const row = ex<object[]>("listPlaces")[0];
-    serve("listPlaces", [{ ...row, name: "Marienplatz" }, { ...row, name: "Marienplatz" }], { page: { limit: 2, hasMore: true, nextCursor: null } });
+    // Two places of one name far apart (one place held twice would be said once: onePerPlace).
+    serve("listPlaces", [{ ...row, name: "Marienplatz" }, { ...row, name: "Marienplatz", location: { lat: 51.0, lon: 9.0 } }], { page: { limit: 2, hasMore: true, nextCursor: null } });
     const r = await call("find_place", { query: "Marienplatz", limit: 2, language: "en" });
     expect(body(r).split("\n")[0]).toBe('"Marienplatz" — the first 2 matches; more exist, so this is not a count of every place with that name (narrow with near or kind, limit up to 10):');
   });
@@ -1304,9 +1335,30 @@ describe("get_driving_rules", () => {
     expect(body(r).split("\n").slice(0, 4)).toEqual([caveat, "Umweltzone und Plakette — 50.941, 6.958:", "", "• Text lez.1. (§ lez.1 StVO)"]);
     expect(meta(r)["conditionNote"]).toBe(caveat);
     serve("getDrivingRules", rulesOf("lez", [rule("lez.1")], { zoneVerdict: { kind: "outside", distanceM: 4000 } }), { notes: { purpose: [], condition: [] } });
-    const inside = await call("get_driving_rules", { lat: 50.9413, lon: 6.9583, language: "en" });
-    expect(body(inside).split("\n")[0]).toBe("Low-emission zone and plaque — 50.941, 6.958:");
-    expect(meta(inside)["conditionNote"]).toBeUndefined();
+    const outside = await call("get_driving_rules", { lat: 50.9413, lon: 6.9583, language: "en" });
+    expect(body(outside).split("\n").slice(0, 2)).toEqual(["50.941, 6.958 lies outside the low-emission zone; its boundary is 4.0 km away.", "Low-emission zone and plaque — 50.941, 6.958:"]);
+    expect(meta(outside)["conditionNote"]).toBeUndefined();
+  });
+
+  // Round Q56 "Alexanderplatz in der Umweltzone?" listed the rules with no verdict (mcp #293).
+  for (const language of LANGS) {
+    it(`a place inside a zone: the verdict with the zone's name opens the answer, then the rules (${language})`, async () => {
+      const zones = [{ key: "berlin/umweltzone", name: "Umweltzone Berlin", city: "Berlin", inside: true, distanceM: 0, role: "zone" }];
+      serve("getDrivingRules", rulesOf("lez", [rule("lez.1")], { zoneVerdict: { kind: "inside", zone: "berlin/umweltzone", distanceM: null }, zones }), { notes: { purpose: [], condition: [] } });
+      const r = await call("get_driving_rules", { topic: "lez", lat: 52.5219, lon: 13.4132, language });
+      const lines = body(r).split("\n");
+      expect(lines[0]).toBe(language === "de" ? "52.522, 13.413 liegt in der Umweltzone Berlin." : "52.522, 13.413 lies inside the Umweltzone Berlin (Umweltzone).");
+      expect(lines[1]).toBe(language === "de" ? "Umweltzone und Plakette — 52.522, 13.413:" : "Low-emission zone and plaque — 52.522, 13.413:");
+      expect((r.structuredContent as Record<string, unknown>)["zoneVerdict"]).toEqual({ kind: "inside", text: lines[0] });
+    });
+  }
+
+  it("the zone named by its city where its row has no name; the verdict's key no row carries: the word alone", () => {
+    const v = { kind: "outside" as const, zone: "k", distanceM: 1_200 };
+    expect(placeZoneVerdict(v, [{ key: "k", name: " ", city: "Köln", inside: false, distanceM: 1_200 }], "Ehrenfeld", "de")).toBe("Ehrenfeld liegt außerhalb der Umweltzone Köln; ihre Grenze ist 1,2 km entfernt.");
+    expect(placeZoneVerdict(v, [], "Ehrenfeld", "en")).toBe("Ehrenfeld lies outside the low-emission zone; its boundary is 1.2 km away.");
+    expect(placeZoneVerdict({ kind: "unknown", distanceM: null }, [], "X", "de")).toBeNull();
+    expect(placeZoneVerdict(undefined, [], "X", "de")).toBeNull();
   });
 
   it("a list entry that carries no description yet is still an entry: green plaque, not 'no entry'", async () => {

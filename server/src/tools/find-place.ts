@@ -7,9 +7,12 @@
  * The Kreis is the API's own text (kreis), the English name beside the name in English (nameEn). What the contract
  * does not carry is not said: a place's population, the merge of one place's rows from several publishers.
  */
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { DataMeta } from "../api/client.js";
 import type * as T from "../api/types.js";
 import { asOfDayLabel, toolResult, type Language } from "../presentation.js";
 import { atParam, isResult, num, position, radiusM, str, type Handler } from "./context.js";
+import { haversineM } from "./location.js";
 
 const COPY = {
   de: {
@@ -76,10 +79,78 @@ export function kreisWord(kreis: string | null | undefined, language: Language):
   return `district ${/^Kreis (.+)$/u.exec(k)?.[1] ?? k}`;
 }
 
+/** Two rows of one name and kind this close are one place held twice (a GeoNames point beside the BKG Gemeinde). */
+export const SAME_PLACE_M = 2_000;
+
+function foldName(x: string): string {
+  return x.normalize("NFC").toLocaleLowerCase("de").trim();
+}
+
+/** The names a row answers to: its own, its English one, and its own before a comma ("München, Landeshauptstadt"). */
+function namesOf(p: T.PlaceItem): string[] {
+  return [p.name, p.name.split(",")[0] ?? p.name, p.nameEn ?? ""].map(foldName).filter((n) => n !== "");
+}
+
+/** How much a row says of where it lies: its Land key and its Kreis. */
+function adminContext(p: T.PlaceItem): number {
+  return (p.districtCode == null ? 0 : 1) + (p.kreis === undefined || p.kreis.trim() === "" ? 0 : 1);
+}
+
+/**
+ * The rows of a place search with a place held twice said once (round Q64 "Munich" twice, Q65 one Halle twice):
+ * the same kind, a shared name, within SAME_PLACE_M. The first row's slot is kept, with the row that says more of
+ * where it lies (its Land and Kreis), so the two Halle are told apart where either row can tell them.
+ */
+export function onePerPlace(rows: readonly T.PlaceItem[]): T.PlaceItem[] {
+  const out: T.PlaceItem[] = [];
+  for (const p of rows) {
+    const names = namesOf(p);
+    const i = out.findIndex((o) => o.kind === p.kind && namesOf(o).some((n) => names.includes(n))
+      && haversineM(o.location.lat, o.location.lon, p.location.lat, p.location.lon) < SAME_PLACE_M);
+    if (i < 0) out.push(p);
+    else if (adminContext(p) > adminContext(out[i]!)) out[i] = { ...p, ...(out[i]!.distanceM === undefined ? {} : { distanceM: out[i]!.distanceM }) };
+  }
+  return out;
+}
+
+/** The answer's lines for an ambiguous name: at most this many candidates. */
+export const NAMESAKES_SHOWN = 5;
+
+/**
+ * The towns (municipality, locality) of exactly the asked name, a place held twice said once (onePerPlace). Two or more: the name names no
+ * one place, and the question must say which.
+ */
+export function namesakes(q: string, rows: readonly T.PlaceItem[]): T.PlaceItem[] {
+  const asked = foldName(q);
+  return onePerPlace(rows.filter((p) => (p.kind === "municipality" || p.kind === "locality") && namesOf(p).includes(asked)));
+}
+
+/**
+ * The candidates answer for a name several towns share (round Q50 "Neustadt": the API's resolver names no one
+ * place, and the tool took the search's first, a Hamburg district, without asking). The towns are listed with
+ * Land, Kreis and coordinate, credited by the place search, and the assistant is told how to ask again.
+ */
+export function namesakeAnswer(q: string, towns: readonly T.PlaceItem[], meta: DataMeta, language: Language): CallToolResult {
+  const shown = towns.slice(0, NAMESAKES_SHOWN);
+  const head = language === "de"
+    ? `„${q}“ heißen ${towns.length} Orte, ich rate nicht. Welcher ist gemeint? Bitte erneut fragen, mit dem Ort und seinem Kreis oder Land (z. B. „${q}, ${landOf(shown[0]!, language) ?? "Kreis"}“) oder mit lat und lon des gemeinten Orts:`
+    : `${towns.length} places are called "${q}", so I do not guess. Which one is meant? Please ask again with the place and its Kreis or Land (for example "${q}, ${landOf(shown[0]!, language) ?? "district"}") or with the lat and lon of the one meant:`;
+  const more = towns.length > shown.length ? [language === "de" ? `… und ${towns.length - shown.length} weitere (find_place listet sie).` : `… and ${towns.length - shown.length} more (find_place lists them).`] : [];
+  return toolResult([head, ...shown.map((p, i) => `${i + 1}. ${line(p, language, false)}`), ...more].join("\n"), [meta], language, {
+    asOf: null,
+    structured: { ambiguous: true, query: q, candidates: shown.map((p) => ({ name: p.name, kind: p.kind, districtCode: p.districtCode ?? null, kreis: p.kreis ?? null, lat: p.location.lat, lon: p.location.lon })) },
+  });
+}
+
+/** A row's Land, from the first two digits of its official key; null where the row has none. */
+function landOf(p: T.PlaceItem, language: Language): string | null {
+  const code = p.districtCode ?? null;
+  return code !== null && /^\d{2,12}$/u.test(code) && !(p.kind === "region" && code.length === 2) ? LAENDER()[code.slice(0, 2)]?.[language] ?? null : null;
+}
+
 /** "Essen — Stadt/Gemeinde, Nordrhein-Westfalen, 306 km, 51.45560, 7.01160": kind, Land, distance, coordinate. */
 function line(p: T.PlaceItem, language: Language, near: boolean): string {
-  const code = p.districtCode ?? null;
-  const land = code !== null && /^\d{2,12}$/u.test(code) && !(p.kind === "region" && code.length === 2) ? LAENDER()[code.slice(0, 2)]?.[language] ?? null : null;
+  const land = landOf(p, language);
   const parts = [
     KIND_WORD()[p.kind]?.[language] ?? p.kind,
     land,
@@ -109,10 +180,13 @@ export const findPlace: Handler = async (args, ctx) => {
     const cov = await ctx.api.get<T.PlacesCoverageData>("getPlacesCoverage", {});
     return toolResult(cov.data.kinds.length === 0 ? c.empty : c.none(query), [r.meta], language, { structured: { found: 0, query } });
   }
-  const n = r.data.length;
+  // A place held twice is said once; with near, nearest first (round Q61 listed 1, 234, 49, 96, 105 km).
+  const once = onePerPlace(r.data);
+  const rows = at === undefined ? once : once.map((p, i) => ({ p, i })).sort((a, b) => (a.p.distanceM ?? Infinity) - (b.p.distanceM ?? Infinity) || a.i - b.i).map((x) => x.p);
+  const n = rows.length;
   const head = r.meta.page?.hasMore === true ? c.more(query, n, MAX_RESULTS) : n === 1 ? c.one(query) : c.head(query, n);
   // The place index is reference data: its day, never the clock time of its load or of this read; no day known,
   // none said or sent (no _meta.asOf, asOfLocal or structured asOf, rather than the time of this read).
   const asOf = typeof r.meta.asOf === "string" ? r.meta.asOf : undefined;
-  return toolResult([head, ...r.data.map((p, i) => `${i + 1}. ${line(p, language, at !== undefined)}`)].join("\n"), [r.meta], language, asOf === undefined ? { asOf: null } : { asOfLabel: asOfDayLabel(asOf, language) });
+  return toolResult([head, ...rows.map((p, i) => `${i + 1}. ${line(p, language, at !== undefined)}`)].join("\n"), [r.meta], language, asOf === undefined ? { asOf: null } : { asOfLabel: asOfDayLabel(asOf, language) });
 };

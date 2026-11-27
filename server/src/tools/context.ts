@@ -4,6 +4,7 @@ import { ApiError, atParam } from "../api/client.js";
 import type { PlaceItem, PlacesCoverageData, ResolvedPlace } from "../api/types.js";
 import { creditPlace, toolError, type Language } from "../presentation.js";
 import type { ConsentOutcome } from "../sid-consent.js";
+import { namesakeAnswer, namesakes } from "./find-place.js";
 import { placeWords } from "./place-words.js";
 import type { RefreshWait } from "./trains.js";
 
@@ -148,7 +149,11 @@ export async function position(args: Args, ctx: ToolContext, placeKey = "place",
   }
   const resolved = await resolvePlace(q, ctx);
   if (resolved !== undefined) return resolved;
-  const first = pickPlace(q, await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: PLACE_CANDIDATES }));
+  const found = await ctx.api.get<PlaceItem[]>("listPlaces", { q, limit: PLACE_CANDIDATES });
+  // The resolver named no one place: where several towns carry exactly this name, the question must say which.
+  const towns = namesakes(q, found.data);
+  if (towns.length > 1) return namesakeAnswer(q, towns, found.meta, ctx.language);
+  const first = pickPlace(q, found);
   if (first === undefined) return (await townCentre(q, ctx)) ?? (unknown === undefined ? placeUnknown(ctx, q) : unknown(q));
   return { at: first.location, label: first.name };
 }

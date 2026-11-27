@@ -77,9 +77,9 @@ const lezDistance = (m: number, language: Language): string => {
 };
 
 /** The zone's head line, as today's lezAnswerLines opens it for "the point". */
-export function zoneHead(z: T.LowEmissionZone, language: Language): string {
+export function zoneHead(z: T.LowEmissionZone, language: Language, place?: string): string {
   const de = language === "de";
-  const where = LOCATION_WORDS[language].here;
+  const where = place ?? LOCATION_WORDS[language].here;
   if (z.liftedOn !== null && z.liftedOn !== undefined) {
     return de
       ? `${where}: Die ${z.zone ?? "Umweltzone"} wurde laut Umweltbundesamt am ${z.liftedOn} aufgehoben; eine Plakette ist dort nicht mehr nötig — maßgeblich bleibt die Beschilderung vor Ort.`

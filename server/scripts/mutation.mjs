@@ -59,7 +59,7 @@ const SERVER = resolve(fileURLToPath(new URL("..", import.meta.url)));
 /** The measured seconds of every piece (scripts/mutation-weights.mjs); the shards are dealt by them. */
 export const WEIGHTS = JSON.parse(readFileSync(join(SERVER, "scripts", "mutation-weights.json"), "utf8")).seconds;
 /** Generated files: pinned by their generator's --check, not mutated. */
-export const GENERATED = ["src/api/operations.ts"];
+export const GENERATED = ["src/api/operations.ts", "src/content/home-page.ts"];
 
 /** Every in-scope file, relative to server/, sorted. */
 export function inScope(root = SERVER) {

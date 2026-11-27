@@ -73,11 +73,48 @@ const sourceName = (meta: DataMeta, family: string): string => {
 
 const coordText = (c: T.SpeedCamera): string | null => (c.location === null ? null : `${c.location.lat.toFixed(5)}, ${c.location.lon.toFixed(5)}`);
 
+/**
+ * The sentence a list without announced mobile checks ends with (round Q49 "mobile Blitzer in Bielefeld" listed
+ * fixed cameras and never said that no source announces a mobile check there). Built per call, so its words are
+ * no module-level table.
+ */
+export function noMobileLine(language: Language): string {
+  return language === "de"
+    ? "Angekündigte mobile Kontrollen: Für dieses Gebiet kündigt keine unserer Quellen eine an. Mobile Kontrollen sind trotzdem jederzeit und überall möglich."
+    : "Announced mobile checks: none of our sources announces one for this area. Mobile checks are still possible anywhere at any time.";
+}
+
+/** The notice in English, as the API's English condition note and place-words' unknown-place sentence say it. */
+export function speedNoticeEn(): string {
+  return "Note on use (§ 23 Abs. 1c StVO): a person driving a vehicle may not, while driving, operate or use any technical device or app function that shows or disrupts traffic enforcement. This also applies to a passenger's smartphone if the driver benefits from it (OLG Karlsruhe). A violation costs €75 and one point in Flensburg. This information is meant only for planning before setting off or during a stop. The locations come from official and open sources and may be incomplete or out of date; mobile checks are possible at any time and anywhere. Always keep to the speed limit in force. Not legal advice.";
+}
+
+/** The planning notice an answer opens with: German, or English followed by its German original. */
+export function speedNotice(language: Language): string {
+  return language === "de" ? SPEED_NOTICE_DE : `${speedNoticeEn()}\nThe notice in its original wording (German):\n${SPEED_NOTICE_DE}`;
+}
+
+/**
+ * A place answer that is not a camera list (the candidates of a shared town name, a refusal) still opens with the
+ * notice, in its text and, where it has structured content, as the list's planningOnly and noticeDe (mcp #291:
+ * the "Neustadt" candidates came without it). An answer that already says it (the unknown place) is left as is.
+ */
+export function withSpeedNotice(r: CallToolResult, language: Language): CallToolResult {
+  const [first, ...rest] = r.content;
+  const text = first?.type === "text" ? first.text : "";
+  if (text.includes("§ 23 Abs. 1c StVO")) return r;
+  return {
+    ...r,
+    content: [{ type: "text", text: `${speedNotice(language)}\n\n${text}` }, ...(first?.type === "text" ? rest : r.content)],
+    ...(r.structuredContent === undefined ? {} : { structuredContent: { ...r.structuredContent, planningOnly: true, noticeDe: SPEED_NOTICE_DE } }),
+  };
+}
+
 export const findSpeedCameras: Handler = async (args, ctx): Promise<CallToolResult> => {
   const { language } = ctx;
   const c = COPY[language];
   const pos = await position(args, ctx);
-  if (isResult(pos)) return pos;
+  if (isResult(pos)) return withSpeedNotice(pos, language);
   const radiusKm = num(args["radius_km"]) ?? DEFAULT_RADIUS_KM;
   const r = await ctx.api.get<T.SpeedData>("listSpeedCameras", { at: atParam(pos.at), radius_m: Math.round(radiusKm * 1000), limit: num(args["limit"]) });
   const where = pos.label ?? `${pos.at.lat.toFixed(3)}, ${pos.at.lon.toFixed(3)}`;
@@ -111,6 +148,7 @@ export const findSpeedCameras: Handler = async (args, ctx): Promise<CallToolResu
       for (const x of osm) text.push(line(x));
       if (r.data.osmTotal > osm.length) text.push(c.moreOsm(r.data.osmTotal - osm.length));
     }
+    if (!official.some((x) => x.kind === "mobile_announced")) text.push(noMobileLine(language));
   }
   // One Stand per source of the rows shown, in the order they first appear: when it was read, its newest own date.
   const rows = [...official, ...osm];
