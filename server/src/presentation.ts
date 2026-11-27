@@ -7,7 +7,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Attribution, DataMeta } from "./api/client.js";
-import { ApiError } from "./api/client.js";
+import { ApiError, problemCode } from "./api/client.js";
 
 export type Language = "de" | "en";
 
@@ -253,11 +253,26 @@ export function apiFailure(err: unknown, language: Language): CallToolResult {
     case "invalid":
       return toolError(de ? `Die Anfrage passt nicht: ${err.problem?.detail ?? err.message}` : `The request does not fit: ${err.problem?.detail ?? err.message}`);
     case "rate_limited":
-      return toolError(de ? "Gerade zu viele Anfragen – bitte in einer Minute noch einmal fragen." : "Too many requests right now – please ask again in a minute.");
+      if (problemCode(err.problem) === "quota-exceeded") {
+        return toolError(de ? `Das Anfragekontingent dieses ViaFrei-Zugangs ist aufgebraucht – bitte ${retryWhen(err, de) ?? "später"} noch einmal fragen.` : `This ViaFrei access has used up its request quota – please ask again ${retryWhen(err, de) ?? "later"}.`);
+      }
+      return toolError(de ? `Gerade zu viele Anfragen – bitte ${retryWhen(err, de) ?? "in einer Minute"} noch einmal fragen.` : `Too many requests right now – please ask again ${retryWhen(err, de) ?? "in a minute"}.`);
     case "not_configured":
     case "refused":
       return notAvailable(language);
     default:
+      if (problemCode(err.problem) === "overloaded") {
+        return toolError(de ? `Die ViaFrei-API ist gerade ausgelastet – bitte ${retryWhen(err, de) ?? "gleich"} noch einmal fragen.` : `The ViaFrei API is busy right now – please ask again ${retryWhen(err, de) ?? "shortly"}.`);
+      }
       return toolError(de ? "Die ViaFrei-API antwortet gerade nicht – bitte gleich noch einmal fragen." : "The ViaFrei API is not answering right now – please ask again shortly.");
   }
+}
+
+/** "in 30 seconds" / "in 5 minutes" from the problem's retryAfter (equal to Retry-After); undefined without one. */
+function retryWhen(err: ApiError, de: boolean): string | undefined {
+  const s = err.problem?.retryAfter;
+  if (typeof s !== "number" || !Number.isFinite(s) || s <= 0) return undefined;
+  if (s < 90) return de ? `in ${Math.ceil(s)} Sekunden` : `in ${Math.ceil(s)} seconds`;
+  if (s < 90 * 60) return de ? `in ${Math.round(s / 60)} Minuten` : `in ${Math.round(s / 60)} minutes`;
+  return de ? `in ${Math.round(s / 3600)} Stunden` : `in ${Math.round(s / 3600)} hours`;
 }

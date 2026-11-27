@@ -15,7 +15,7 @@ export type ResolvedPlace = { name: string; label: string; kind: string; locatio
 export type StopBoards = {
   location: LatLon; window: { from: string; until: string };
   stops: { id: string; name: string; stopId: string; distanceM: number; departures: Departure[] }[];
-  /** Today's FlixBus/FlixTrain block near the point (its own feed, not DELFI's twins); null where none is near. Not in StopBoardsData of API 1.2.2. */
+  /** Today's FlixBus/FlixTrain block near the point (its own feed, not DELFI's twins); null where none is near. Not in StopBoardsData of API 2.0.4. */
   longDistance?: LongDistance | null;
 } | null;
 export type LongDistanceDeparture = {
@@ -82,7 +82,7 @@ export type NearbyPartStatus = { part: NearbyPart; status: "ok" | "timeout" | "n
 /** Every category is optional: a category that is not ok (or not asked) is absent, and named in meta.parts. */
 export type NearbyData = {
   fuel?: NearbyFuelStation[]; charging?: ChargingSite[]; parking?: ParkingSite[]; stations?: Station[]; junctions?: NearbyJunction[];
-  /** Proposed (today's): the filling stations OpenStreetMap maps near the point that the price feed does not hold. */
+  /** With fuel (API 2.0.4): OpenStreetMap's filling stations (ODbL) in the radius with no priced station within 300 m, nearest first, three at most; credited in meta.attribution. */
   osmFuel?: OsmFuelStation[];
   /** Proposed (today's): the charging point register's release where a register row is among the charging rows shown. */
   chargingRegister?: { releasedOn: string | null } | null;
@@ -304,14 +304,15 @@ export type StationPageSection = {
   units?: StationPageLift[]; rows?: StationPageDeparture[]; alerts?: StationPageAlert[];
   facilities?: string[]; point?: LatLon | null;
 };
-export type StationPage = { station: { name: string }; pageUrl: string; sections: StationPageSection[] } | null;
+/** pageUrl: null for a stop DB's register does not hold that no station page lists (API 2.0.4). */
+export type StationPage = { station: { name: string }; pageUrl: string | null; sections: StationPageSection[] } | null;
 
-/** StationPageEnvelope.data, as API 1.2.2 sends it: each section's content under its own key (PageSection, PageLift, PlatformAccess). */
+/** StationPageEnvelope.data, as API 2.0.4 sends it: each section's content under its own key (PageSection, PageLift, PlatformAccess). */
 type Access = "yes" | "partial" | "no" | "unknown";
 export type ApiPagePlatform = { tracks: string[]; name: string | null; lift: "ok" | "out" | "unknown" | "none" };
 export type ApiPageSection = {
   id: StationPageSection["id"]; asOf: string | null; sources: string[];
-  header?: { name: string; stationNo: string; eva: string | null; evaNumbers: string[]; slug: string; street: string | null; zipcode: string | null; city: string | null; land: string | null; category: number | null };
+  header?: { name: string; stationNo: string | null; eva: string | null; evaNumbers: string[]; slug: string | null; street: string | null; zipcode: string | null; city: string | null; land: string | null; category: number | null };
   railAmpel?: { lamp: RailLamp; trips: number; reasons: RailReason[]; lines: { line: string; long: boolean; lamp: RailLamp }[] };
   stepFreeNow?: { platforms: ApiPagePlatform[]; blocked: ApiPagePlatform[]; steplessAccess: string | null };
   lifts?: { id: string; kind: string; position: string | null; state: "active" | "inactive" | "unknown"; equipmentNo: string | null }[];
@@ -320,4 +321,8 @@ export type ApiPageSection = {
   alerts?: StationPageAlert[];
   facilities?: { flags: string[]; location: LatLon | null };
 };
-export type ApiStationPage = { pageUrl: string; sections: ApiPageSection[] } | null;
+/**
+ * pageUrl: a register station's page; for a stop the register does not hold, its page under the nearest station page
+ * that lists it (…/station/<slug>/stop/<key>), or null where none lists it (API 2.0.4). An unknown id answers 404.
+ */
+export type ApiStationPage = { pageUrl: string | null; sections: ApiPageSection[] } | null;

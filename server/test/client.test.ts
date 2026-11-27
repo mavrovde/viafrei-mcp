@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { ApiClient, ApiError, apiConfigFromEnv, DEFAULT_API_URL } from "../src/api/client.js";
+import { ApiClient, ApiError, apiConfigFromEnv, DEFAULT_API_URL, problemCode } from "../src/api/client.js";
+import { HttpResponse } from "msw";
 import { OPERATIONS } from "../src/api/operations.js";
 import { API_BASE, calls, handlerFor, mockServer, problem } from "./api-mock.js";
 import { execFileSync } from "node:child_process";
@@ -42,6 +43,10 @@ describe("ApiClient", () => {
     expect(api.url("listChargingOptions", { at: "1,2", conditions: ["free", "24h"] })).toBe(`${API_BASE}/v1/charging-options?at=1%2C2&conditions=free%2C24h`);
    });
 
+  it("percent-encodes a path id with spaces and slashes, as API 2.0.4 takes a road situation's id exactly as listed", () => {
+    expect(api.url("getRoadSituation", { situationId: "BY/A9 Nord:1" })).toBe(`${API_BASE}/v1/road-situations/BY%2FA9%20Nord%3A1`);
+  });
+
   it("leaves out an empty list as it leaves out an empty string: the API answers `name=` 400 empty value", () => {
     expect(api.url("listChargingOptions", { at: "1,2", conditions: [] })).toBe(`${API_BASE}/v1/charging-options?at=1%2C2`);
     expect(api.url("listChargingOptions", { at: "1,2", conditions: [""] })).toBe(`${API_BASE}/v1/charging-options?at=1%2C2`);
@@ -68,6 +73,26 @@ describe("ApiClient", () => {
     }
   });
 
+  it("tells a refusal under load from the key's rate or quota by the problem type only, never by a header", async () => {
+    const refusal = (status: number, code: string, headers: Record<string, string>) => () =>
+      HttpResponse.json({ type: `https://api.viafrei.de/problems/${code}`, title: code, status, detail: code, retryable: true, retryAfter: 3 }, { status, headers: { "content-type": "application/problem+json", "retry-after": "3", ...headers } });
+    const policy = { "ratelimit-policy": '"burst";q=60;w=60' };
+    for (const [status, code, headers, kind] of [
+      [429, "overloaded", policy, "unavailable"],
+      [503, "overloaded", policy, "unavailable"],
+      // A quota refusal without its RateLimit field is still the quota: the type decides.
+      [429, "quota-exceeded", policy, "rate_limited"],
+      [429, "rate-limited", { ...policy, ratelimit: '"burst";r=0;t=3' }, "rate_limited"],
+      [503, "upstream-unavailable", {}, "unavailable"],
+    ] as const) {
+      mockServer.use(handlerFor("listPlaces", refusal(status, code, headers)));
+      const err = await api.get("listPlaces", { q: "x" }).catch((e: unknown) => e);
+      expect(err).toMatchObject({ kind, status });
+      expect(problemCode((err as ApiError).problem)).toBe(code);
+    }
+    expect([problemCode(null), problemCode({ type: "about:blank" }), problemCode({})]).toEqual(["", "", ""]);
+  });
+
   it("makes no request without a key", async () => {
     await expect(new ApiClient({ baseUrl: API_BASE, key: null }).get("listPlaces", { q: "x" })).rejects.toBeInstanceOf(ApiError);
     expect(calls).toHaveLength(0);
@@ -89,7 +114,7 @@ describe("ApiClient", () => {
   it("the contract fixture is api/openapi.json of the release api.pin names, or of a named API pull request head", () => {
     const pin = /^api_version=(\d+\.\d+\.\d+)$/m.exec(readFileSync(new URL("../api.pin", import.meta.url), "utf8"))?.[1];
     const spec = JSON.parse(readFileSync(new URL("./fixtures/api-openapi.json", import.meta.url), "utf8")) as { "x-source": { comment: string; commit: string } };
-    expect(pin).toBe("1.2.2");
+    expect(pin).toBe("2.0.4");
     const { comment, commit } = spec["x-source"];
     expect(comment.includes(`at the release tag v${pin ?? ""}`) || (/at the head of its pull request \d+/u.test(comment) && /^[0-9a-f]{40}$/u.test(commit))).toBe(true);
   });

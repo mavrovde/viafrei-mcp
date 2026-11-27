@@ -7,6 +7,15 @@ a Changelog and the versions follow Semantic Versioning.
 
 ### Fixed
 - **The release's mutation run ends inside its 20-minute shards again.** `find_poi`'s OSM word tables (`server/src/tools/osm-words.ts`) were module-level, so Stryker treated their ~1,050 mutants as static and ran the whole suite for each one. That took about two hours against an estimate of 259 s, and shard 6 of the 2.7.4 and 2.7.5 publishes hit its limit, so the publish was skipped. The tables are now built inside functions, so each mutant runs only the tests that read it (about one). A new test pins every word in both languages, so the mutants are killed, not left alive. The file's pieces are measured (`server/scripts/mutation-weights.json`). `scripts/mutation-weights.mjs` now also reads the log of the reusable workflow, whose lines start with `Mutation / `.
+- **An empty list is never sent as an empty query value.** The API client left out `undefined`, `null` and `""` but sent an empty array as `name=`, which API 2.0.4 refuses with 400 "empty value". It now leaves out any parameter whose value is empty once joined. The API mock refuses empty values as the API does, so every tool test also checks this (#281).
+- **`describe_station` on a stop that is not in DB's register.** API 2.0.4 builds a page for such a stop with no register number or slug. Its `pageUrl` is the stop's page under the nearest station page that lists it, or null. A null page address is left out, so the answer shows the stop's name alone and never the text "null" (#279).
+
+### Changed
+- **The server runs against ViaFrei API 2.0.4** (`server/api.pin`, the contract fixture copied from the release tag).
+  - A refusal under load (problem type `overloaded`, a 429 or a 503) is now told apart from the key's rate or quota by its problem type only. API 2.0.4 sends it RateLimit-Policy but no RateLimit field. It is answered as "the API is busy, ask again in N seconds" with error code `unavailable`, never as a limit reached.
+  - A spent quota (`quota-exceeded`) says that the access's quota is used up, not "ask again in a minute".
+  - Both answers name the API's own `retryAfter` when it gives one.
+  - `find_nearby`'s OpenStreetMap filling stations without a price (`data.osmFuel`) are the released field, credited by the ODbL line the answer carries.
 
 ## [2.7.5] - 2026-11-26
 

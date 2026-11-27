@@ -4,8 +4,8 @@
  * (`test/fixtures/api-openapi.json`, through the generated `operations.ts`), so no path is spelled by hand.
  * A proposed operation (`test/fixtures/api-proposed.json`, in no released API yet) is asked only once the API's own
  * OpenAPI document lists it: that document is read once per process and API, kept for DISCOVERY_TTL_MS, and while it
- * does not list the operation no request for it is sent (today's API counts every unknown path against the client's
- * address, so a probe on every call would run the server into 429s). While the document cannot be read, a tool takes
+ * does not list the operation no request for it is sent (the API counts every unknown path, a 404 or 405, against the
+ * key from API 2.0.4, so a probe on every call would run the server into 429s). While the document cannot be read, a tool takes
  * the released operations, as the server did before the proposals; the failed read is logged at warn, once per read.
  */
 import { log } from "../log.js";
@@ -265,13 +265,29 @@ export class ApiClient {
   }
 }
 
-/** The API's failure as its kind: the status read, the problem body's detail said. */
+/**
+ * A problem's type as its code: the last path segment of its type URI (`…/problems/quota-exceeded` →
+ * `quota-exceeded`); "" for a problem without a type, or `about:blank`.
+ */
+export function problemCode(problem: Problem | null): string {
+  const type = typeof problem?.type === "string" ? problem.type : "";
+  return type === "" || type === "about:blank" ? "" : (type.split("/").pop() ?? "");
+}
+
+/**
+ * The API's failure as its kind: the status read, the problem body's detail said. A refusal under load
+ * (`overloaded`, a 429 or a 503) is the API being unavailable for a moment, not the key's budget: it is told by
+ * the problem type only (API 2.0.4 sends it RateLimit-Policy but no RateLimit field; a header is never read).
+ * A 429 of any other type, also on a path the API answers 404 or 405 for (API 2.0.4 counts those against the
+ * key), is the key's rate or quota (rate_limited).
+ */
 function failureOf(what: string, status: number, json: unknown, ok: boolean): ApiError {
   if (ok) return new ApiError("unavailable", `${what} answered ${status} without a body`, status);
   const problem = json !== null && typeof json === "object" ? (json as Problem) : null;
   const detail = problem?.detail ?? problem?.title ?? `HTTP ${status}`;
   const kind: ApiFailure =
-    status === 401 ? "not_configured"
+    problemCode(problem) === "overloaded" ? "unavailable"
+    : status === 401 ? "not_configured"
     : status === 403 ? "refused"
     : status === 404 ? "not_found"
     : status === 400 || status === 422 ? "invalid"

@@ -172,6 +172,15 @@ describe("the result envelope", () => {
     expect(say("not_configured", "en")).toBe("This answer is not available through the ViaFrei API yet.");
     expect(say("unavailable", "de")).toBe("Die ViaFrei-API antwortet gerade nicht – bitte gleich noch einmal fragen.");
     expect(say("unavailable", "en")).toBe("The ViaFrei API is not answering right now – please ask again shortly.");
+    const type = (code: string, retryAfter?: number) => ({ type: `https://api.viafrei.de/problems/${code}`, ...(retryAfter === undefined ? {} : { retryAfter }) });
+    expect(say("rate_limited", "en", type("rate-limited", 12))).toBe("Too many requests right now – please ask again in 12 seconds.");
+    expect(say("rate_limited", "de", type("rate-limited"))).toBe("Gerade zu viele Anfragen – bitte in einer Minute noch einmal fragen.");
+    expect(say("rate_limited", "en", type("quota-exceeded", 10_800))).toBe("This ViaFrei access has used up its request quota – please ask again in 3 hours.");
+    expect(say("rate_limited", "de", type("quota-exceeded", 600))).toBe("Das Anfragekontingent dieses ViaFrei-Zugangs ist aufgebraucht – bitte in 10 Minuten noch einmal fragen.");
+    expect(say("rate_limited", "en", type("quota-exceeded"))).toBe("This ViaFrei access has used up its request quota – please ask again later.");
+    expect(say("unavailable", "en", type("overloaded", 5))).toBe("The ViaFrei API is busy right now – please ask again in 5 seconds.");
+    expect(say("unavailable", "de", type("overloaded"))).toBe("Die ViaFrei-API ist gerade ausgelastet – bitte gleich noch einmal fragen.");
+    expect(say("unavailable", "en", type("upstream-unavailable", 5))).toBe("The ViaFrei API is not answering right now – please ask again shortly.");
     expect(apiFailure(new ApiError("unavailable", "x"), "en").isError).toBe(true);
     const bug = new TypeError("not an API failure");
     expect(() => apiFailure(bug, "en")).toThrow(bug);
