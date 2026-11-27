@@ -102,7 +102,7 @@ describe("API 2.0.4's roadStatus, as prod sent it for the A7", () => {
     expect(isError).toBe(false);
     const lines = text.split("\n");
     // The tally names who counted (the publisher), not the dataset's "title: holder" line.
-    expect(lines).toContain("A7: 20 closures, 137 restrictions, 22 planned roadworks sites, 38 current roadworks sites per Die Autobahn GmbH des Bundes and Bundesanstalt für Straßen- und Verkehrswesen (BASt) — window until 2026-11-28.");
+    expect(lines).toContain("A7: 20 closures, 137 restrictions, 22 planned roadworks sites, 38 current roadworks sites per Autobahn GmbH des Bundes and Bundesanstalt für Straßen- und Verkehrswesen (BASt) — window until 2026-11-28.");
     // The road operator's entry: title · junction — description; another publisher's: its message, the road named.
     expect(lines).toContain('• Closure (Sperrung): Provider text (German): "Via Erhalt A7 von Harz (Raststaette) nach Schwalenberg (Parkplatz) Fahrbahninstandsetzung · AS Seesen (Harz) (aus Richtung Harz) nach A7 — Die Baustelle ist zu…" (2026-11-28, whole measure until 2026-11-28)');
     expect(lines.some((l) => l.startsWith('• Closure (Sperrung) A7: Provider text (German): "A7 Hamburg Richtung Flensburg Einfahrt Neumünster-Mitte gesperrt,'))).toBe(true);
@@ -116,9 +116,12 @@ describe("API 2.0.4's roadStatus, as prod sent it for the A7", () => {
     expect(s.sourcesAnswered[0]!.label).toBe("„autobahn“");
     // Two datasets of one publisher are one name in the tally.
     const both = roadStatusOf({ ...a7.data.roadStatus, counts: { ...a7.data.roadStatus.counts, currentFamilies: ["ald_14d", "autobahn", "x"] } }, a7.meta, "en");
-    expect(both.counts.currentBy).toEqual(["Die Autobahn GmbH des Bundes", "Autobahn GmbH des Bundes", "x"]);
-    expect(roadStatusOf({ ...a7.data.roadStatus, counts: { ...a7.data.roadStatus.counts, currentFamilies: ["ald_14d", "ald_14d"] } }, a7.meta, "en").counts.currentBy).toEqual(["Die Autobahn GmbH des Bundes"]);
+    expect(both.counts.currentBy).toEqual(["Autobahn GmbH des Bundes", "x"]);
+    expect(roadStatusOf({ ...a7.data.roadStatus, counts: { ...a7.data.roadStatus.counts, currentFamilies: ["ald_14d", "ald_14d"] } }, a7.meta, "en").counts.currentBy).toEqual(["Autobahn GmbH des Bundes"]);
     expect(publisherOf("Nur ein Name")).toBe("Nur ein Name");
+    expect(publisherOf("Daten: Der Kreis Alpha")).toBe("Kreis Alpha");
+    expect(publisherOf("Das Amt")).toBe("Amt");
+    expect(publisherOf("Dieselwerk")).toBe("Dieselwerk");
     expect(s.items[0]!.label).toBe("Geplante Arbeitsstelle");
     expect(s.items[0]!.namedRoad).toBe(false);
     expect(sourceName("x", { ...a7.meta, attribution: [{ family: "x", text: "Nur ein Name" }] })).toBe("Nur ein Name");

@@ -110,7 +110,8 @@ export function sourceName(family: string, meta: DataMeta): string {
 /** The publisher a source's name holds ("Arbeitsstellen: Bundesanstalt … (BASt)" → "Bundesanstalt … (BASt)"): the tally names who counted, not the dataset. */
 export function publisherOf(name: string): string {
   const colon = name.indexOf(": ");
-  return colon < 0 ? name : name.slice(colon + 2).trim();
+  // "Die Autobahn GmbH des Bundes" and "Autobahn GmbH des Bundes" are one publisher: a leading article is not its name.
+  return (colon < 0 ? name : name.slice(colon + 2)).trim().replace(/^(?:Die|Der|Das)\s+/u, "");
 }
 
 /** A source named in the "answered" line, quoted: its name carries a colon of its own. */
