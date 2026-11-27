@@ -142,11 +142,13 @@ const wrappedOnly = `${MIRROR} The probe reported the surface\n**unchanged** —
 check('title: a mirror-only block whose wrapped line starts with bold is still titled MIRROR_TITLE',
     titleFor(wrappedOnly, '1.0.0') === `viafrei v1.0.0 — ${MIRROR_TITLE}`, titleFor(wrappedOnly, '1.0.0'));
 
-// One copy of the boilerplate: the proposer must open its blocks with exactly MIRROR_LEAD.
-const proposer = readFileSync(join(HERE, 'propose-release.mjs'), 'utf8');
-const proposerLeads = [...proposer.matchAll(/`\*\*([^*`]+)\*\* The bridge is versioned/g)].map((m) => m[1]);
-check('the proposer opens its blocks with MIRROR_LEAD, word for word',
-    proposerLeads.length === 1 && proposerLeads[0] === MIRROR_LEAD, JSON.stringify(proposerLeads));
+// The proposer that wrote mirror blocks is retired (2.7.11: releases come from release-please),
+// but its blocks stay in CHANGELOG.md, and a page for one of them may be written again by hand.
+// Every one of them must still open with exactly MIRROR_LEAD.
+const changelog = readFileSync(join(HERE, '..', 'CHANGELOG.md'), 'utf8');
+const mirrorLeads = [...changelog.matchAll(/^\*\*([^*]+)\*\* The bridge is versioned/gmu)].map((m) => m[1]);
+check('the mirror blocks in CHANGELOG.md open with MIRROR_LEAD, word for word',
+    mirrorLeads.length > 0 && mirrorLeads.every((l) => l === MIRROR_LEAD), JSON.stringify([...new Set(mirrorLeads)]));
 
 // --- Latest ----------------------------------------------------------------------------
 
@@ -291,6 +293,19 @@ try {
     check(`CLI: the repository CHANGELOG backs a page for ${version}`, real.status === 0 && real.out.startsWith(`title=viafrei v${version} — `), real.out);
 } finally {
     rmSync(dir, { recursive: true, force: true });
+}
+
+// A block release-please wrote (2.7.11 on): its entries are `* **scope:** subject ([sha](…/commit/…))`.
+{
+    const rp = [
+        '### Added', '', '* **trains:** a departure board says the board\'s time ([#301](https://github.com/o/r/issues/301)) ([abc1234](https://github.com/o/r/commit/abc1234def))',
+        '', '### Fixed', '', '* the gate case records what held it ([def5678](https://github.com/o/r/commit/def5678abc))',
+    ].join('\n');
+    check('release-please block: titled by its first entry, without scope or links', titleFor(rp, '2.7.11') === "viafrei v2.7.11 — a departure board says the board's time", titleFor(rp, '2.7.11'));
+    check('release-please block: a scope is not a bold lead', boldLeads(rp).length === 0, boldLeads(rp).join('|'));
+    check('release-please block: a person\'s bold lead still wins', titleFor(`**Trains tell their own time.**\n\n${rp}`, '2.7.11') === 'viafrei v2.7.11 — Trains tell their own time');
+    check('a hand-written bold list item with no commit link is still a lead', boldLeads('- **Fixed:** a thing').length === 1);
+    check('a block with neither a lead nor an entry is still refused', refusal(() => titleFor('### Fixed\n\n- a plain item', '2.7.11')) !== null);
 }
 
 console.log(`\nrelease-notes self-test: ${passed()} passed, ${failures.length} failed`);

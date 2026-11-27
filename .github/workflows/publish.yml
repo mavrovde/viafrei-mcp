@@ -1,9 +1,19 @@
-name: npm
+name: Release
 
-# Named "npm" rather than "Publish" (owner, 2026-10-04): the Smithery workflow
-# publishes too, so the name says WHERE this one publishes. The FILE stays
-# publish.yml, because npm's trusted publisher is configured against the
-# workflow's file name and a renamed file would be refused.
+# THE RELEASE of one tag vX.Y.Z, in viafrei-api's order (its release.yml):
+# the checks that can fail run first, on the tagged commit, before anything is
+# packed - Snyk, the full mutation run, the e2e against the real API - then
+# the npm publish (CI passed on the commit, the publish-hygiene gate on the
+# tarball, the upload, the read-back), then the image (image.yml, dispatched
+# on the tag) and the release page (release-page.yml, called: release-please's
+# draft is filled from the CHANGELOG and published). The MCP Registry and
+# Smithery come later and not from here: they list the LIVE server, which
+# serves the version only after the deploy outside this repository, so the
+# daily Version sync dispatches them once it does.
+#
+# The FILE stays publish.yml (viafrei-api's is release.yml), because npm's
+# trusted publisher is configured against the workflow's file name and a
+# renamed file would be refused.
 
 # Tag-driven publish to npm with provenance, via npm Trusted Publishing.
 #
@@ -16,10 +26,11 @@ name: npm
 # that is about to be uploaded. The order is the point - a gate that runs after
 # the upload is a report, not a gate, and npm versions are immutable.
 #
-# Triggered by a tag push, or - for a pure-mirror release - dispatched on the
-# tag ref by the Version sync workflow, because a tag pushed with GITHUB_TOKEN
-# starts no workflow run. Either way the ref is the tag and every gate below
-# runs. Nothing here publishes from a branch.
+# Started by release-please.yml's tag job, dispatched ON THE TAG with
+# dry_run=false (a tag pushed with GITHUB_TOKEN starts no workflow run), or by
+# a vX.Y.Z tag a maintainer pushes. Either way the ref is the tag and every
+# gate below runs. A dispatch on a branch is the dry-run rehearsal and
+# publishes nothing. Nothing here publishes from a branch.
 #
 # Snyk (snyk.yml, called by the snyk job below) tests the dependencies of the
 # same commit first; the publish job needs it, so a high or critical advisory
@@ -40,6 +51,7 @@ on:
 
 permissions:
   contents: read
+  actions: read # the CI gate reads the workflow runs of the tagged commit
   id-token: write # required for provenance and Trusted Publishing
 
 env:
@@ -334,6 +346,19 @@ jobs:
       - name: Manifest and lockfile versions agree
         run: npm run check:versions
 
+      # CI passed on exactly this commit (viafrei-api REL-015). release-please's
+      # tag job checked it before tagging; a tag a maintainer pushed was checked
+      # by nothing until here. A run still going is red: re-run this job once CI
+      # on the commit has finished.
+      - name: CI passed on the tagged commit
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh api --paginate --slurp "repos/$GH_REPO/actions/runs?head_sha=$GITHUB_SHA&per_page=100" > "$RUNNER_TEMP/runs.json"
+          node scripts/ci-gate.mjs "$GITHUB_SHA" "$GH_REPO" < "$RUNNER_TEMP/runs.json"
+
       # A tag alone decides what gets published, so a tag pushed from ANY branch would
       # publish from it. This requires the tagged commit to be one `main` contains.
       # `fetch-depth: 0` above is what makes the ancestry answerable; without it this
@@ -430,3 +455,36 @@ jobs:
       - name: Dry run only
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: npm publish --provenance --access public --dry-run "${{ steps.pack.outputs.tarball }}"
+
+  # The image of the same tag, after npm: image.yml is DISPATCHED on the tag,
+  # not called, so its cosign identity stays image.yml@refs/tags/vX.Y.Z, which
+  # the deploy verifies. It runs its own gate (annotated tag, both versions, on
+  # main, CI passed) and the server tests before it builds.
+  image:
+    name: Start the image (image.yml on the tag)
+    needs: publish
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || inputs.dry_run == false) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write # dispatches image.yml
+    steps:
+      - name: Dispatch image.yml on the tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh workflow run image.yml --ref "$GITHUB_REF_NAME" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "image.yml dispatched on $GITHUB_REF_NAME: $GITHUB_SERVER_URL/$GH_REPO/actions/workflows/image.yml" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  # The release page once npm serves the version: release-please's draft for
+  # the tag, filled from the CHANGELOG block and published.
+  release-page:
+    name: Release page
+    needs: publish
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || inputs.dry_run == false) }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-page.yml
+    with:
+      tag: ${{ github.ref_name }}

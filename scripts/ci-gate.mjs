@@ -32,6 +32,9 @@ export function runsOf(json) {
     return out;
 }
 
+/** How to re-run the job this gate is in, when it runs in Actions. */
+const rerun = () => (process.env.GITHUB_RUN_ID === undefined ? '' : `: gh run rerun ${process.env.GITHUB_RUN_ID} --failed`);
+
 const trusted = (r) => (r.event === 'push' && r.head_branch === 'main') || r.event === 'workflow_dispatch';
 
 export function judgeCi(runs, sha, repo, required = REQUIRED_WORKFLOWS) {
@@ -48,10 +51,10 @@ export function judgeCi(runs, sha, repo, required = REQUIRED_WORKFLOWS) {
             lines.push(`✗ ${path}: no push-to-main or dispatched run of ${repo} on ${sha.slice(0, 12)}`);
         } else if (newest.status !== 'completed') {
             ok = false;
-            lines.push(`✗ ${path}: run ${newest.id} is ${newest.status}, not completed; a release never waits on a running check`);
+            lines.push(`✗ ${path}: run ${newest.id} is ${newest.status}, not completed; a release never waits on a running check. Recover: once that run has finished green, re-run this job${rerun()}`);
         } else if (newest.conclusion !== 'success') {
             ok = false;
-            lines.push(`✗ ${path}: run ${newest.id} concluded ${newest.conclusion ?? 'nothing'}`);
+            lines.push(`✗ ${path}: run ${newest.id} concluded ${newest.conclusion ?? 'nothing'}; the commit is not releasable until CI passes on it (re-run CI if the failure was not the commit's, then re-run this job${rerun()})`);
         } else {
             lines.push(`✓ ${path}: run ${newest.id} concluded success`);
         }

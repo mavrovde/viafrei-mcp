@@ -1,0 +1,215 @@
+# Releases from the Conventional Commits on main, in five jobs, each a step of
+# its own in the run (the shape of viafrei-api's release-please.yml):
+#   release       when a release pull request was merged, release-please
+#                 writes a DRAFT release (a draft creates no tag); otherwise
+#                 it does nothing.
+#   tag           scripts/ci-gate.mjs checks the release commit's CI result
+#                 again, the annotated tag vX.Y.Z is created on the release
+#                 commit and pushed, and publish.yml is started on that tag
+#                 as a run of its own (workflow_dispatch, --ref vX.Y.Z,
+#                 dry_run=false). That run is the release: Snyk, the full
+#                 mutation run and the e2e against the real API before
+#                 anything is packed, then npm, then the image and the
+#                 release page.
+#   pull-request  release-please opens or updates the next release pull
+#                 request. It runs after tag, so the version it proposes is
+#                 computed from the tag just pushed; after a failed tag job it
+#                 does not run.
+#   docs          regenerates API.md and the README catalogue on the release
+#                 branch, because both print the version release-please has
+#                 just written into catalogue.json; CI's check:docs and
+#                 check:readme would refuse the pull request otherwise.
+#   approve       approves the pull_request runs held for that pull request
+#                 (scripts/approve-release-runs.sh).
+# Every job uses the built-in GITHUB_TOKEN and nothing else, and none holds a
+# publishing grant: only publish.yml publishes (npm Trusted Publishing is
+# bound to that file name). A tag pushed with GITHUB_TOKEN starts no
+# workflow, but a workflow_dispatch sent with it does, so the tag job
+# dispatches publish.yml. It is dispatched ON THE TAG, unlike viafrei-api's
+# dispatch on main: npm provenance and the image's cosign identity
+# (image.yml@refs/tags/vX.Y.Z) both name the ref the run is on, so a run on the
+# tag attests exactly what a tag push would.
+#
+# It runs after CI has passed on a push to main, or by hand. The release pull
+# request is opened with GITHUB_TOKEN (the repository allows GitHub Actions to
+# create pull requests). GitHub holds the pull_request runs for that pull
+# request as "action_required", and branch protection reads only pull_request
+# runs, so the approve job approves them.
+name: Release Please
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release (draft)
+    # A CI run on a push to this repository's main that succeeded, or a
+    # maintainer by hand. The event and repository checks keep out a fork's
+    # pull request from a branch named main.
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      created: ${{ steps.rp.outputs.release_created }}
+      tag: ${{ steps.rp.outputs.tag_name }}
+      sha: ${{ steps.rp.outputs.sha }}
+    steps:
+      - id: rp
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          skip-github-pull-request: true
+
+  tag:
+    name: Annotated tag and start the release
+    needs: release
+    if: needs.release.outputs.created == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write # the gate reads workflow runs; the last step dispatches publish.yml
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: CI passed on the release commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ needs.release.outputs.sha }}
+        run: |
+          gh api --paginate --slurp "repos/$GH_REPO/actions/runs?head_sha=$SHA&per_page=100" > "$RUNNER_TEMP/runs.json"
+          node scripts/ci-gate.mjs "$SHA" "$GH_REPO" < "$RUNNER_TEMP/runs.json"
+      - name: Create and push the annotated tag
+        env:
+          TAG: ${{ needs.release.outputs.tag }}
+          SHA: ${{ needs.release.outputs.sha }}
+        run: |
+          [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::release-please produced tag '$TAG', not vX.Y.Z"; exit 1; }
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::error::tag $TAG exists already; tags are never moved. If it is on $SHA, start the release by hand: gh workflow run publish.yml --ref $TAG -f dry_run=false"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" "$SHA" -m "Release $TAG"
+          git push origin "refs/tags/$TAG"
+      # GITHUB_TOKEN may send a workflow_dispatch (the one event of its own
+      # that starts a workflow). On the tag, so the run is what a tag push
+      # would have started; dry_run=false, because its default is a rehearsal.
+      - name: Start publish.yml on the tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          gh workflow run publish.yml --ref "$TAG" -f dry_run=false | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "publish.yml dispatched on $TAG: $GITHUB_SERVER_URL/$GH_REPO/actions/workflows/publish.yml" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  pull-request:
+    name: Release pull request
+    needs: [release, tag]
+    # After the tag job, or when no release was cut (tag skipped); never after
+    # a failed tag job, whose next version would be computed without the tag.
+    if: always() && needs.release.result == 'success' && (needs.tag.result == 'success' || needs.tag.result == 'skipped')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      pr: ${{ steps.rp.outputs.pr }}
+    steps:
+      - id: rp
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          skip-github-release: true
+
+  docs:
+    name: API.md and the README catalogue on the release branch
+    needs: pull-request
+    if: always() && needs.pull-request.result == 'success' && needs.pull-request.outputs.pr != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # one commit on the release-please branch, nothing else
+    steps:
+      - name: The release branch
+        id: branch
+        env:
+          PR: ${{ needs.pull-request.outputs.pr }}
+        run: |
+          branch=$(jq -r '.headBranchName // empty' <<<"$PR")
+          [[ $branch == release-please--* ]] || { echo "::error::'$branch' is not a release-please branch"; exit 1; }
+          echo "name=$branch" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.branch.outputs.name }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Regenerate, and commit only when something changed
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          npm run docs:api
+          npm run docs:readme
+          npm run check:versions
+          if git diff --quiet -- API.md README.md; then
+            echo "API.md and README.md already carry the release's version"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(release): API.md and the README catalogue carry the version" -- API.md README.md
+          git push origin "HEAD:refs/heads/$BRANCH"
+
+  approve:
+    name: Approve the held runs on the release pull request
+    needs: [pull-request, docs]
+    # always(): without it the implicit success() also asks the tag job, which
+    # is skipped on every merge that cuts no release (viafrei-api 2.0.3).
+    if: always() && needs.pull-request.result == 'success' && needs.pull-request.outputs.pr != '' && needs.docs.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: write # approves the pull_request runs on the release pull request
+    steps:
+      # The approval script is read from main's checkout, not the release branch.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Approve CI on the release pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ needs.pull-request.outputs.pr }}
+        run: |
+          branch=$(jq -r '.headBranchName // empty' <<<"$PR")
+          scripts/approve-release-runs.sh "$branch"

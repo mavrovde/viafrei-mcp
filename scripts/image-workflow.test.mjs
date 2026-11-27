@@ -94,7 +94,11 @@ console.log('image.yml: the order, the bounds');
 console.log('image.yml: the gate');
 {
     const gate = jobOf('gate');
-    check('starts on a tag push or a dispatch only', /\non:\n {2}push:\n {4}tags: \['v\*'\]\n {2}workflow_dispatch:\n/u.test(yml) && !/pull_request|schedule/u.test(yml));
+    // Dispatched on the tag by publish.yml after its checks; a tag push would build beside them.
+    check('starts on a dispatch only (publish.yml dispatches it after its checks)', /\non:\n {2}workflow_dispatch:\n/u.test(yml) && !/\n {2}push:|pull_request|schedule|workflow_run/u.test(yml));
+    const pub = readFileSync(join(WF, 'publish.yml'), 'utf8');
+    const imageJob = pub.slice(pub.indexOf('\n  image:\n'), pub.indexOf('\n  release-page:\n'));
+    check('publish.yml dispatches image.yml on the tag, after its npm job', /\n {4}needs: publish\n/u.test(imageJob) && imageJob.includes('gh workflow run image.yml --ref "$GITHUB_REF_NAME"'));
     check('the run must be on its tag, first', gate.indexOf('[[ $GITHUB_REF == "refs/tags/$TAG" ]]') > 0 && gate.indexOf('[[ $GITHUB_REF == "refs/tags/$TAG" ]]') < gate.indexOf('actions/checkout@'));
     check('a final vX.Y.Z only', gate.includes('[[ $TAG =~ ^v([0-9]+)\\.([0-9]+)\\.([0-9]+)$ ]] ||'));
     check('an annotated tag only', gate.includes('--jq .object.type) == tag ]]'));
@@ -124,6 +128,9 @@ console.log('ci-gate.mjs: green only on a completed success of a trusted run on 
         ['the first attempt passed, the re-run failed', [run({ id: 1, run_attempt: 1 }), run({ id: 1, run_attempt: 2, conclusion: 'failure' })]],
     ]) check(`red on ${label}`, !judgeCi(runs, sha, repo).ok);
     check('red on a sha that is not 40-hex', !judgeCi([run()], 'v2.7.0', repo).ok);
+    // Item 4 of the 2.7.11 round: an image run refused while CI was still going said only that.
+    const going = judgeCi([run({ status: 'in_progress', conclusion: null })], sha, repo).lines.join('\n');
+    check('a run still going says how to recover: re-run this job once it finished', going.includes('Recover: once that run has finished green, re-run this job'), going);
     let threw = false;
     try { runsOf({ message: 'Bad credentials' }); } catch { threw = true; }
     check('a listing without workflow_runs is an error, never green', threw);
