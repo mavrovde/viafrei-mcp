@@ -40,6 +40,19 @@ describe("ApiClient", () => {
   it("fills path parameters and keeps only contract query parameters", () => {
     expect(api.url("listStationDepartures", { stationId: "a b", limit: 3, bogus: "x" })).toBe(`${API_BASE}/v1/stations/a%20b/departures?limit=3`);
     expect(api.url("listChargingOptions", { at: "1,2", conditions: ["free", "24h"] })).toBe(`${API_BASE}/v1/charging-options?at=1%2C2&conditions=free%2C24h`);
+   });
+
+  it("leaves out an empty list as it leaves out an empty string: the API answers `name=` 400 empty value", () => {
+    expect(api.url("listChargingOptions", { at: "1,2", conditions: [] })).toBe(`${API_BASE}/v1/charging-options?at=1%2C2`);
+    expect(api.url("listChargingOptions", { at: "1,2", conditions: [""] })).toBe(`${API_BASE}/v1/charging-options?at=1%2C2`);
+    expect(api.url("listChargingOptions", { at: "1,2", conditions: "" })).toBe(`${API_BASE}/v1/charging-options?at=1%2C2`);
+  });
+
+  it("the mock answers an empty query value 400 empty value, as API 2.0.4 does, and a call with an empty list reaches it without one", async () => {
+    const bad = await fetch(`${API_BASE}/v1/places?q=`);
+    expect(bad.status).toBe(400);
+    expect(((await bad.json()) as { errors: unknown[] }).errors).toEqual([{ parameter: "query.q", code: "invalid", detail: "empty value" }]);
+    await expect(api.get("listChargingOptions", { at: "52.52,13.405", conditions: [] })).resolves.toHaveProperty("data");
   });
 
   it("sends the key and returns the envelope", async () => {

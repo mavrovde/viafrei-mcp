@@ -156,8 +156,11 @@ export class ApiClient {
     const q = new URLSearchParams();
     for (const name of spec.query as readonly string[]) {
       const v = name === "lang" ? (params[name] ?? this.lang) : params[name];
-      if (v === undefined || v === null || v === "") continue;
-      q.set(name, Array.isArray(v) ? v.join(",") : String(v));
+      if (v === undefined || v === null) continue;
+      // An empty list is skipped as "" is: the API answers an empty query value (`name=`) 400 "empty value".
+      const value = Array.isArray(v) ? v.join(",") : String(v);
+      if (value === "") continue;
+      q.set(name, value);
     }
     const qs = q.toString();
     return `${this.config.baseUrl}${path}${qs === "" ? "" : `?${qs}`}`;
