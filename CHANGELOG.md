@@ -5,6 +5,10 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.7] - 2026-11-27
+
+**The answers the 2.7.6 prod round found wrong are right on API 2.0.4.** `check_road_status` no longer answers "internal" for a motorway asked by number. Four other answers no longer refuse or misname what the user asked: `describe_station` with no departures, `find_address` with a street alone, `check_station_facilities` on a stop that is no DB station, and `describe_station` on a main station. Lorry rules and situation lines no longer read out provider codes. Tool names and input schemas are those of 2.7.6.
+
 ### Fixed
 - **`check_road_status` answers a motorway asked by number again.** On API 2.0.4 `{road: "A7"}`, `{road: "A1", place: "Bremen"}` and `{road: "A7", vehicle: "long_lorry"}` answered "internal". The words were written for a proposed `roadStatus` shape. API 2.0.4 sends a different one (`counts.currentFamilies`, `sourcesAnswered[].sourceFamily`, entries with `term`, `title`, `subtitle`, `description`, `detail`), and reading `currentBy.length` threw a TypeError. The contract's example sends `roadStatus: null`, so no test met the real shape. The answer now reads API 2.0.4's `roadStatus` (`roadStatusOf`):
   - the tally names the publishers that counted, each once (the holder part of its attribution line);
@@ -4660,6 +4664,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.7]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.7
 [2.7.6]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.6
 [2.7.5]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.5
 [2.7.4]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.4
