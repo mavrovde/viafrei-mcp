@@ -41,7 +41,7 @@ describe("ApiClient", () => {
   it("fills path parameters and keeps only contract query parameters", () => {
     expect(api.url("listStationDepartures", { stationId: "a b", limit: 3, bogus: "x" })).toBe(`${API_BASE}/v1/stations/a%20b/departures?limit=3`);
     expect(api.url("listChargingOptions", { at: "1,2", conditions: ["free", "24h"] })).toBe(`${API_BASE}/v1/charging-options?at=1%2C2&conditions=free%2C24h`);
-   });
+  });
 
   it("percent-encodes a path id with spaces and slashes, as API 2.0.4 takes a road situation's id exactly as listed", () => {
     expect(api.url("getRoadSituation", { situationId: "BY/A9 Nord:1" })).toBe(`${API_BASE}/v1/road-situations/BY%2FA9%20Nord%3A1`);

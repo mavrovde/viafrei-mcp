@@ -38,6 +38,7 @@ a Changelog and the versions follow Semantic Versioning.
   - A spent quota (`quota-exceeded`) says that the access's quota is used up, not "ask again in a minute".
   - Both answers name the API's own `retryAfter` when it gives one.
   - `find_nearby`'s OpenStreetMap filling stations without a price (`data.osmFuel`) are the released field, credited by the ODbL line the answer carries.
+  - A road situation's id goes into the `getRoadSituation` path percent-encoded, slashes, spaces and colons included, because API 2.0.4 takes the id exactly as it lists it. No tool reads one yet; a client test pins the encoding.
 
 ## [2.7.5] - 2026-11-26
 
