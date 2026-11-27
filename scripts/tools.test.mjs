@@ -655,7 +655,8 @@ check('a child gone, its pipe held by a grandchild: the witness names the holder
     let planted;
     try {
         planted = Number(readFileSync(pidFile, 'utf8'));
-        process.kill(planted, 'SIGKILL');
+        // 0 or less would signal the test's own process group
+        if (Number.isInteger(planted) && planted > 0) process.kill(planted, 'SIGKILL');
     } catch {
         // never written, or already gone
     }
