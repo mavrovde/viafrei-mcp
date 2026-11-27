@@ -73,7 +73,7 @@ export function judge({ live, npmLatest, npmVersions, tags, registry, smithery }
     const out = (state, exit, more, dispatch = []) => ({ state, exit, lines: [...lines, ...more], dispatch });
     if (!published.has(newest)) {
         return out('stuck', 1, [
-            `STUCK - v${newest} is tagged but npm does not serve ${newest}. The Release run on that tag stopped or never ran.`,
+            `STUCK - v${newest} is tagged but npm does not serve ${newest}. The Release run on that tag stopped, never ran, or is still running (a run between the tag and the npm publish reads as this too).`,
             `Recover: read the Release run on v${newest} and re-run its failed jobs once the cause is fixed, or start it: gh workflow run publish.yml --ref v${newest} -f dry_run=false`,
         ]);
     }

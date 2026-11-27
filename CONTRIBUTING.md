@@ -179,7 +179,9 @@ shape of viafrei-api's pipeline; where this repository differs, the step says wh
    straight after npm, always met the older live server, and refused.
 
 A **maintainer's tag push** (`git tag -a vX.Y.Z <sha>`, pushed on its own)
-starts step 4 the same way; release-please then finds the tag at its next run.
+starts step 4 the same way. The tag alone does not move release-please: bump
+`.release-please-manifest.json` to that version in a commit on main as well, or
+release-please proposes the same version again at its next run.
 
 **Abandoned versions.** A tag npm never served that is older than the newest
 tag (2.7.9, after 2.7.10 was cut) is abandoned: it stays a tag (tags are never

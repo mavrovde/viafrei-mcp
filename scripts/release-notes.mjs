@@ -103,12 +103,6 @@ export function normaliseLead(text) {
 }
 
 /**
- * Every bold lead of the block, normalised, in order. A lead OPENS a paragraph (the
- * line before it is blank, a heading, or the start of the block) or a list item. A
- * line that merely starts with bold because the paragraph above it wrapped there —
- * the proposer's `**unchanged**` does exactly that — is not a lead.
- */
-/**
  * One entry release-please writes from a Conventional Commit:
  * `* **scope:** subject ([#12](…)) ([abc1234](…/commit/…))`, or without the scope. The links
  * at the end (at least the commit's) are what tells it from a hand-written list item.
@@ -120,6 +114,12 @@ export function entrySubjects(block) {
     return block.split('\n').map((line) => ENTRY.exec(line)).filter((m) => m !== null && /\/commit\//u.test(m[2])).map((m) => normaliseLead(m[1]));
 }
 
+/**
+ * Every bold lead of the block, normalised, in order. A lead OPENS a paragraph (the
+ * line before it is blank, a heading, or the start of the block) or a list item. A
+ * line that merely starts with bold because the paragraph above it wrapped there —
+ * the proposer's `**unchanged**` does exactly that — is not a lead.
+ */
 export function boldLeads(block) {
     const leads = [];
     let previous = '';

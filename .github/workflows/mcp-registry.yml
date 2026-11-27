@@ -20,7 +20,7 @@ name: MCP Registry
 # Idempotent: a version the registry already holds is reported and the job
 # succeeds without publishing, so a re-run after a later failure is safe.
 
-# Dispatched, never chained to npm (#2 of the 2.7.11 pipeline round): the live
+# Dispatched, never chained to npm (item 2 of the 2.7.11 pipeline round): the live
 # server serves a release only after the deploy outside this repository, so a
 # run straight after npm always met an older live version and refused - no
 # listing from 2.7.6 to 2.7.10. The daily Version sync dispatches this once the
@@ -52,7 +52,7 @@ env:
 
 jobs:
   publish:
-    # Only after a SUCCESSFUL npm run that was started by a tag push, or by hand.
+    # Dispatched by Version sync once the live server serves the release, or by hand.
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: mcp-registry

@@ -16,7 +16,7 @@ name: Smithery
 # reaches Smithery. A dispatch by hand (e.g. after a Smithery outage) is held
 # to the same version assertion.
 
-# Dispatched, never chained to npm (#2 of the 2.7.11 pipeline round): the live
+# Dispatched, never chained to npm (item 2 of the 2.7.11 pipeline round): the live
 # server serves a release only after the deploy outside this repository, so a
 # run straight after npm always met an older live version and refused - no
 # listing from 2.7.6 to 2.7.10. The daily Version sync dispatches this once the
