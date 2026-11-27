@@ -27,17 +27,18 @@ import ts from "typescript";
 
 export const FLOOR = 70;
 /**
- * The shards of the release run (mutation.yml's matrix). 18: the pieces are dealt by the seconds they cost
- * (scripts/mutation-weights.json, fitted to runs 45157220742 and 45160742243 on worker threads by tests
- * run, timeouts and mutants), ~132 minutes in all, ~7.4 a shard. A word or pattern table is built inside a
+ * The shards of the release run (mutation.yml's matrix). 20: the pieces are dealt by the seconds they cost
+ * (scripts/mutation-weights.json, measured in the 2.7.10 and 2.7.11 release runs, a static mutant weighed
+ * apart from the others), ~192 minutes in all, under 10 a shard as planned. 18 held shard 7 of the 2.7.11
+ * run past its 20 minutes: its static mutants were weighed like any other and dealt together. A word or pattern table is built inside a
  * function, never held at module level: Stryker mutates a module-level table statically, each mutant against
  * the whole suite (place-words.ts, facilities.ts and osm-words.ts cost 10 minutes to 2 hours that way, and
  * held shard 6 of the 2.7.4 and 2.7.5 publishes past its limit); in a function only the tests that read it run.
- * 18 shards beside the npm run's Snyk and end-to-end jobs stay within GitHub's
- * 20 concurrent jobs; a pull request's CI running at the same time still holds runners (shards waited up
- * to 6.5 minutes in run 45157220742).
+ * 20 shards beside the npm run's Snyk and end-to-end jobs exceed GitHub's 20 concurrent jobs while those
+ * two run, so up to two shards wait for them; a pull request's CI running at the same time still holds
+ * runners (shards waited up to 6.5 minutes in run 45157220742).
  */
-export const SHARDS = 18;
+export const SHARDS = 20;
 /**
  * The static mutants a file may carry (Stryker's `static`: hit outside any test, so each runs the whole suite
  * with a fresh module; osm-words.ts's 1,000 of them held shard 6 of the 2.7.4 and 2.7.5 publishes past its

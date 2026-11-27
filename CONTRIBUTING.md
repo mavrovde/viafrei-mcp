@@ -58,7 +58,7 @@ and reports every mutant they do not kill. The scope is every `.ts` file under
 
 No pull request and no push runs it. Every GitHub job ends within 15 minutes
 (`npm run check:timeouts` in CI; the one exception is the mutation shards at 20,
-so the whole run ends within the 30 minutes a viafrei-mcp pipeline may take), so the full run is cut into 18 parallel
+so the whole run ends within the 30 minutes a viafrei-mcp pipeline may take), so the full run is cut into 20 parallel
 shards of pieces: a piece is a run of one file's top-level statements, given to
 Stryker as a line range, so a large file is spread over several shards; the
 pieces are dealt by their measured seconds (`server/scripts/mutation-weights.json`), slowest first to the fastest shard. The **Mutation testing**
@@ -155,7 +155,7 @@ shape of viafrei-api's pipeline; where this repository differs, the step says wh
    going instead of waiting for it.
 4. **Release** (`publish.yml`, named `Release`; the file name stays because npm's
    trusted publisher is bound to it). Before anything is packed, on the tagged
-   commit: Snyk (`snyk.yml`), the full mutation run (`mutation.yml`, 18 shards,
+   commit: Snyk (`snyk.yml`), the full mutation run (`mutation.yml`, 20 shards,
    70 % floor) and the server e2e against the real API. Then the `npm` job: the
    tag equals the manifest, the versions agree, the commit is on `main`, CI passed
    on it, the build, the offline tests, the sources page, the leak sweep and its

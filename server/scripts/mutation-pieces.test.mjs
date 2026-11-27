@@ -48,12 +48,18 @@ check(`every mutant of the whole run is in a shard of ${SHARDS}`, lost.length ==
 check("no mutant is in two shards", twice.length === 0, twice.slice(0, 3).map(([k, ks]) => `${k} in ${ks.join(",")}`).join(" | "));
 check("no shard mutates what the whole run does not", extra.length === 0, extra.slice(0, 3).join(" | "));
 const counts = plan.map((_, i) => [...seen.values()].filter((ks) => ks[0] === i + 1).length);
-const mean = whole.length / SHARDS;
-// A shard over twice its share is one piece alone: a single top-level statement (createMcpApp) cannot be cut
-// by line range without losing the mutants that span it, so it is dealt a shard of its own.
-const heavy = counts.map((c, i) => [c, i]).filter(([c]) => c > 2 * mean);
-check(`no shard holds more than twice its share (${Math.round(mean)} of ${whole.length}) unless it is one piece alone`,
-  heavy.every(([, i]) => plan[i].ids.length === 1), `${counts.join(",")}; over: ${heavy.map(([c, i]) => `${i + 1} (${c}, ${plan[i].ids.length} pieces)`).join(" ")}`);
+// The mutant count is no measure of a shard's time (osm-words.ts's ~980 cheap mutants take about 4 minutes,
+// 153 static mutants took shard 7 of the 2.7.11 run past 20): the plan deals by measured seconds, so the
+// bound is on those. A shard over 1.25 times the mean is one piece alone (createMcpApp, a single top-level
+// statement, cannot be cut by line range); and no shard is planned past 12 minutes, so a shard the fit
+// misjudges by half again still ends inside its 20-minute job.
+const meanS = plan.reduce((a, s) => a + s.seconds, 0) / SHARDS;
+const heavy = plan.map((s, i) => [s, i]).filter(([s]) => s.seconds > 1.25 * meanS);
+check(`no shard is planned over 1.25 times the mean (${Math.round(meanS)} s) unless it is one piece alone`,
+  heavy.every(([s]) => s.ids.length === 1), heavy.map(([s, i]) => `${i + 1} (${s.seconds} s, ${s.ids.length} pieces)`).join(" "));
+const slowest = Math.max(...plan.map((s) => s.seconds));
+check("no shard is planned past 12 minutes", slowest <= 720, `${slowest} s`);
 console.log(`mutants per shard: ${counts.join(" ")}`);
+console.log(`planned seconds per shard: ${plan.map((s) => s.seconds).join(" ")}`);
 console.log(`\nmutation-pieces self-test: ${failed === 0 ? "pass" : `${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

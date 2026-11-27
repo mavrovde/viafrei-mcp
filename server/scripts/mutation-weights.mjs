@@ -8,15 +8,21 @@
 // SHARDS_DIR holds the run's mutation-shard-K artefacts (scope.txt and
 // mutation.json each; `gh run download RUN_ID`), RUN_LOG the run's log
 // (`gh run view RUN_ID --log`), whose "Done in" line gives each shard's
-// mutation time. A shard's time is split over its pieces by their cost: per
-// mutant 1, plus the tests that cover it, plus 200 when it timed out (the cost
-// that fitted the measured shard times best). Re-measure after a change that
+// mutation time. A shard's time is split over its pieces by their cost, in
+// seconds as fitted by least squares to the 35 measured shard times of the
+// 2.7.10 and 2.7.11 release runs: 0.22 per mutant, 1.52 per STATIC mutant
+// instead (Stryker runs the whole suite for each, with a fresh module), 0.0028
+// per test that covers a mutant, and 8.87 more when it timed out. The earlier
+// cost (1 a mutant, 1 a covering test, 200 a timeout) weighed a static mutant
+// like any other, which dealt app.ts's, catalogue.ts's, server-card.ts's and
+// watch-words.ts's static mutants into one shard (shard 7 of the 2.7.11 run,
+// past its 20 minutes twice). Re-measure after a change that
 // moves a piece boundary; the self-tests fail on a piece with no weight. The committed
 // file was then fitted to a second run as well (see its _about).
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const TIMEOUT_COST = 200;
+const COST = { mutant: 0.2216, staticMutant: 1.5188, coveringTest: 0.0028, timeout: 8.874 };
 const [dir, logFile, run] = process.argv.slice(2);
 if (!dir || !logFile || !run) {
   console.error("usage: node scripts/mutation-weights.mjs SHARDS_DIR RUN_LOG RUN_ID");
@@ -46,7 +52,7 @@ for (const name of readdirSync(dir).filter((n) => /^mutation-shard-\d+$/u.test(n
       const line = mu.location.start.line;
       const p = pieces.find((x) => x.file === rel && x.start <= line && line <= x.end);
       if (p === undefined) throw new Error(`shard ${k}: mutant ${mu.id} at ${rel}:${line} lies in none of its pieces`);
-      p.cost += 1 + (mu.coveredBy ?? []).length + (mu.status === "Timeout" ? TIMEOUT_COST : 0);
+      p.cost += (mu.static ? COST.staticMutant : COST.mutant) + COST.coveringTest * (mu.coveredBy ?? []).length + (mu.status === "Timeout" ? COST.timeout : 0);
     }
   }
   const total = pieces.reduce((s, p) => s + p.cost, 0);
