@@ -8,10 +8,12 @@
  */
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type * as T from "../api/types.js";
-import { toolResult, type Language } from "../presentation.js";
+import { toolError, toolResult, type Language } from "../presentation.js";
 import { atParam, num, type Handler } from "./context.js";
 import { kmText } from "./nearby.js";
 import { LANDS } from "./region.js";
+
+const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
 /** Verbatim from today's server (describe_location.ts COPY, KIND_LABEL, LAND_LABEL). */
 export const LOCATION_WORDS = {
@@ -186,8 +188,12 @@ const addressText = (a: T.LocationAddress): string =>
 export const describeLocation: Handler = async (args, ctx): Promise<CallToolResult> => {
   const { language } = ctx;
   const c = LOCATION_WORDS[language];
-  const lat = num(args["lat"])!;
-  const lon = num(args["lon"])!;
+  const lat = num(args["lat"]);
+  const lon = num(args["lon"]);
+  // The schema asks for both; a call that reaches the handler without them is refused here, never read as a point.
+  if (lat === undefined || lon === undefined) {
+    return toolError(L(language, "Bitte lat und lon angeben (eine Koordinate, z. B. lat 52.52, lon 13.405).", "Give lat and lon (a coordinate, e.g. lat 52.52, lon 13.405)."), "invalid_input", lat === undefined && lon === undefined ? "place_missing" : "half_coordinate");
+  }
   const r = await ctx.api.get<T.LocationData>("describeLocation", { at: atParam({ lat, lon }) });
   const d = r.data;
   // Today's server first asks whether any address is loaded at all (the contract's coverage names the Länder

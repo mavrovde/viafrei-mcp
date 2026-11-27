@@ -80,6 +80,8 @@ describe("each refusal's code and reason", () => {
     ["a watch without kind or key", "watch_situation", {}, ["invalid_input", null]],
     ["stop_watch with nothing to stop", "stop_watch", {}, ["invalid_input", null]],
     ["stop_watch with a uri no watch has", "stop_watch", { uri: "viafrei://watches/not-a-number" }, ["invalid_input", null]],
+    ["describe_location with no coordinate", "describe_location", {}, ["invalid_input", "place_missing"]],
+    ["describe_location with half a coordinate", "describe_location", { lat: 52.52 }, ["invalid_input", "half_coordinate"]],
   ];
   for (const [what, tool, args, want] of cases) {
     it(`${tool}: ${what}`, async () => {
