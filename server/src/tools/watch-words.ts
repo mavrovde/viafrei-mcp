@@ -3,67 +3,19 @@
  * watched, what the person's words became, the condition applied with its defaults said back, the end,
  * the slots in use, that it lives in this chat only, and how to end it. A watch shows no provider data,
  * so it credits the watch service alone (and the place search where a name was resolved).
- */function stryNS_9fa48() {
-  var g = typeof globalThis === 'object' && globalThis && globalThis.Math === Math && globalThis || new Function("return this")();
-  var ns = g.__stryker__ || (g.__stryker__ = {});
-  if (ns.activeMutant === undefined && g.process && g.process.env && g.process.env.__STRYKER_ACTIVE_MUTANT__) {
-    ns.activeMutant = g.process.env.__STRYKER_ACTIVE_MUTANT__;
-  }
-  function retrieveNS() {
-    return ns;
-  }
-  stryNS_9fa48 = retrieveNS;
-  return retrieveNS();
-}
-stryNS_9fa48();
-function stryCov_9fa48() {
-  var ns = stryNS_9fa48();
-  var cov = ns.mutantCoverage || (ns.mutantCoverage = {
-    static: {},
-    perTest: {}
-  });
-  function cover() {
-    var c = cov.static;
-    if (ns.currentTestId) {
-      c = cov.perTest[ns.currentTestId] = cov.perTest[ns.currentTestId] || {};
-    }
-    var a = arguments;
-    for (var i = 0; i < a.length; i++) {
-      c[a[i]] = (c[a[i]] || 0) + 1;
-    }
-  }
-  stryCov_9fa48 = cover;
-  cover.apply(null, arguments);
-}
-function stryMutAct_9fa48(id) {
-  var ns = stryNS_9fa48();
-  function isActive(id) {
-    if (ns.activeMutant === id) {
-      if (ns.hitCount !== void 0 && ++ns.hitCount > ns.hitLimit) {
-        throw new Error('Stryker: Hit count limit reached (' + ns.hitCount + ')');
-      }
-      return true;
-    }
-    return false;
-  }
-  stryMutAct_9fa48 = isActive;
-  return isActive(id);
-}
+ */
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { DataMeta } from "../api/client.js";
 import { standTime, toolResult, type Language } from "../presentation.js";
 import { KIND_LABEL, WATCH_CREDIT, watchUri } from "./stop-watch.js";
+
 export const MAX_WATCHES = 10;
 
 /** The condition keys each kind takes (today's WATCH_CONDITION_KEYS). */
-const CONDITION_KEYS: Record<string, readonly string[]> = stryMutAct_9fa48("877") ? {} : (stryCov_9fa48("877"), {
-  road: stryMutAct_9fa48("878") ? [] : (stryCov_9fa48("878"), [stryMutAct_9fa48("879") ? "" : (stryCov_9fa48("879"), "event"), stryMutAct_9fa48("880") ? "" : (stryCov_9fa48("880"), "events")]),
-  station: stryMutAct_9fa48("881") ? [] : (stryCov_9fa48("881"), [stryMutAct_9fa48("882") ? "" : (stryCov_9fa48("882"), "delay_min")]),
-  region: stryMutAct_9fa48("883") ? [] : (stryCov_9fa48("883"), [stryMutAct_9fa48("884") ? "" : (stryCov_9fa48("884"), "late_share"), stryMutAct_9fa48("885") ? "" : (stryCov_9fa48("885"), "delay_min"), stryMutAct_9fa48("886") ? "" : (stryCov_9fa48("886"), "min_trips")]),
-  place: stryMutAct_9fa48("887") ? [] : (stryCov_9fa48("887"), [stryMutAct_9fa48("888") ? "" : (stryCov_9fa48("888"), "radius_km")]),
-  weather: stryMutAct_9fa48("889") ? [] : (stryCov_9fa48("889"), [stryMutAct_9fa48("890") ? "" : (stryCov_9fa48("890"), "min_level")]),
-  charger: stryMutAct_9fa48("891") ? [] : (stryCov_9fa48("891"), [stryMutAct_9fa48("892") ? "" : (stryCov_9fa48("892"), "point_id")])
-});
+const CONDITION_KEYS: Record<string, readonly string[]> = {
+  road: ["event", "events"], station: ["delay_min"], region: ["late_share", "delay_min", "min_trips"],
+  place: ["radius_km"], weather: ["min_level"], charger: ["point_id"],
+};
 
 /**
  * A watch refused before anything is read, in today's words (conditionKeyError, roadKeyError):
@@ -74,73 +26,69 @@ export function watchKeyError(kind: string, key: string, condition: unknown, lan
   const de = language === "de";
   const allowed = CONDITION_KEYS[kind];
   const given = condition !== null && typeof condition === "object" ? Object.keys(condition) : [];
-  const wrong = allowed === undefined ? [] : given.filter(k => !allowed.includes(k));
+  const wrong = allowed === undefined ? [] : given.filter((k) => !allowed.includes(k));
   if (allowed !== undefined && wrong.length > 0) {
-    const list = allowed.length === 0 ? de ? "keine" : "none" : allowed.join(", ");
-    return de ? `condition ${wrong.map(w => `„${w}“`).join(", ")} passt nicht zu einer Beobachtung der Art „${kind}“ — diese Art nimmt: ${list}. Keine Beobachtung geöffnet.` : `condition ${wrong.map(w => `"${w}"`).join(", ")} does not fit a "${kind}" watch — that kind takes: ${list}. No watch was opened.`;
+    const list = allowed.length === 0 ? (de ? "keine" : "none") : allowed.join(", ");
+    return de
+      ? `condition ${wrong.map((w) => `„${w}“`).join(", ")} passt nicht zu einer Beobachtung der Art „${kind}“ — diese Art nimmt: ${list}. Keine Beobachtung geöffnet.`
+      : `condition ${wrong.map((w) => `"${w}"`).join(", ")} does not fit a "${kind}" watch — that kind takes: ${list}. No watch was opened.`;
   }
   if (kind !== "road" || /\d/u.test(key)) return null;
-  return de ? `„${key}“ ist keine Straßennummer — eine road-Beobachtung braucht eine wie „A7“ oder „B5“. Für einen Ort: kind „place“ mit key „${key}“. Keine Beobachtung geöffnet.` : `"${key}" is not a road number — a road watch needs one such as "A7" or "B5". For a town use kind "place" with key "${key}". No watch was opened.`;
+  return de
+    ? `„${key}“ ist keine Straßennummer — eine road-Beobachtung braucht eine wie „A7“ oder „B5“. Für einen Ort: kind „place“ mit key „${key}“. Keine Beobachtung geöffnet.`
+    : `"${key}" is not a road number — a road watch needs one such as "A7" or "B5". For a town use kind "place" with key "${key}". No watch was opened.`;
 }
 
 /** The condition the platform applies when the request sets none (getWatch's `condition`). */
 const DEFAULTS: Record<string, Record<string, unknown>> = {
-  road: {
-    event: "any",
-    events: ["restrictions"]
-  },
-  place: {
-    radius_km: 25
-  },
-  station: {
-    delay_min: 10
-  },
-  region: {
-    late_share: 0.25,
-    delay_min: 5,
-    min_trips: 10
-  },
-  weather: {
-    min_level: 2
-  },
-  charger: {}
+  road: { event: "any", events: ["restrictions"] },
+  place: { radius_km: 25 },
+  station: { delay_min: 10 },
+  region: { late_share: 0.25, delay_min: 5, min_trips: 10 },
+  weather: { min_level: 2 },
+  charger: {},
 };
 
 /** The condition the watch applies, said back with its defaults filled in, never a promise wider than it. */
 export function conditionSentence(kind: string, stored: Readonly<Record<string, unknown>> | null | undefined, language: Language): string {
-  const c: Record<string, unknown> = {
-    ...(DEFAULTS[kind] ?? {}),
-    ...(stored ?? {})
-  };
+  const c: Record<string, unknown> = { ...(DEFAULTS[kind] ?? {}), ...(stored ?? {}) };
   const de = language === "de";
-  const n = (v: unknown): string => de ? String(v).replace(".", ",") : String(v);
+  const n = (v: unknown): string => (de ? String(v).replace(".", ",") : String(v));
   const pct = (x: unknown): string => `${n(Math.round(Number(x) * 1000) / 10)} %`;
   switch (kind) {
-    case "road":
-      {
-        const reopen = c["event"] === "reopen";
-        const events = Array.isArray(c["events"]) ? c["events"] as unknown[] : [];
-        const restrictions = events.includes("restrictions");
-        const jams = events.includes("jams");
-        const what = de ? [restrictions ? "eine Sperrung oder Einschränkung" : null, jams ? "ein Stau (gemeldet von der Autobahn GmbH oder der Polizei)" : null].filter(x => x !== null).join(" oder ") : [restrictions ? "a closure or restriction" : null, jams ? "a jam (reported by the Autobahn GmbH or the police)" : null].filter(x => x !== null).join(" or ");
-        if (!jams) {
-          return reopen ? de ? "Bedingung: nur wenn eine Sperrung oder Einschränkung aufgehoben wird." : "Condition: only when a closure or restriction is lifted." : de ? "Bedingung: wenn eine Sperrung oder Einschränkung neu auftritt oder aufgehoben wird." : "Condition: when a closure or restriction appears or is lifted.";
-        }
-        if (reopen) return de ? `Bedingung: nur wenn ${what} aufgehoben wird oder sich auflöst.` : `Condition: only when ${what} is lifted or clears.`;
-        return de ? `Bedingung: wenn ${what} neu auftritt, aufgehoben wird oder sich auflöst.` : `Condition: when ${what} appears, is lifted or clears.`;
+    case "road": {
+      const reopen = c["event"] === "reopen";
+      const events = Array.isArray(c["events"]) ? (c["events"] as unknown[]) : [];
+      const restrictions = events.includes("restrictions");
+      const jams = events.includes("jams");
+      const what = de
+        ? [restrictions ? "eine Sperrung oder Einschränkung" : null, jams ? "ein Stau (gemeldet von der Autobahn GmbH oder der Polizei)" : null].filter((x) => x !== null).join(" oder ")
+        : [restrictions ? "a closure or restriction" : null, jams ? "a jam (reported by the Autobahn GmbH or the police)" : null].filter((x) => x !== null).join(" or ");
+      if (!jams) {
+        return reopen
+          ? de ? "Bedingung: nur wenn eine Sperrung oder Einschränkung aufgehoben wird." : "Condition: only when a closure or restriction is lifted."
+          : de ? "Bedingung: wenn eine Sperrung oder Einschränkung neu auftritt oder aufgehoben wird." : "Condition: when a closure or restriction appears or is lifted.";
       }
+      if (reopen) return de ? `Bedingung: nur wenn ${what} aufgehoben wird oder sich auflöst.` : `Condition: only when ${what} is lifted or clears.`;
+      return de ? `Bedingung: wenn ${what} neu auftritt, aufgehoben wird oder sich auflöst.` : `Condition: when ${what} appears, is lifted or clears.`;
+    }
     case "station":
       return de ? `Bedingung: Abfahrten mit ${n(c["delay_min"])} Minuten Verspätung oder mehr.` : `Condition: departures running ${n(c["delay_min"])} minutes late or more.`;
     case "region":
-      return de ? `Bedingung: mindestens ${pct(c["late_share"])} der beobachteten Fahrten mit ${n(c["delay_min"])} Minuten Verspätung oder mehr, bei mindestens ${n(c["min_trips"])} Fahrten.` : `Condition: at least ${pct(c["late_share"])} of observed trips running ${n(c["delay_min"])} minutes late or more, over at least ${n(c["min_trips"])} trips.`;
+      return de
+        ? `Bedingung: mindestens ${pct(c["late_share"])} der beobachteten Fahrten mit ${n(c["delay_min"])} Minuten Verspätung oder mehr, bei mindestens ${n(c["min_trips"])} Fahrten.`
+        : `Condition: at least ${pct(c["late_share"])} of observed trips running ${n(c["delay_min"])} minutes late or more, over at least ${n(c["min_trips"])} trips.`;
     case "place":
       return de ? `Bedingung: neue Sperrungen oder Einschränkungen im Umkreis von ${n(c["radius_km"])} km.` : `Condition: new closures or restrictions within ${n(c["radius_km"])} km.`;
     case "weather":
       return de ? `Bedingung: amtliche DWD-Warnungen ab Warnstufe ${n(c["min_level"])}.` : `Condition: official DWD warnings of level ${n(c["min_level"])} or higher.`;
     default:
-      return typeof c["point_id"] === "string" ? de ? `Bedingung: wenn der Ladepunkt ${c["point_id"]} frei wird.` : `Condition: when charge point ${c["point_id"]} becomes free.` : de ? "Bedingung: wenn ein Ladepunkt des Standorts frei wird." : "Condition: when a charge point of the site becomes free.";
+      return typeof c["point_id"] === "string"
+        ? de ? `Bedingung: wenn der Ladepunkt ${c["point_id"]} frei wird.` : `Condition: when charge point ${c["point_id"]} becomes free.`
+        : de ? "Bedingung: wenn ein Ladepunkt des Standorts frei wird." : "Condition: when a charge point of the site becomes free.";
   }
 }
+
 const COPY = {
   de: {
     head: (kind: string, key: string) => `Ich beobachte ${kind} ${key} und melde mich hier.`,
@@ -148,7 +96,7 @@ const COPY = {
     slots: (open: number) => `${open} von ${MAX_WATCHES} Beobachtungen dieser Sitzung belegt.`,
     scope: "Nur in diesem Chat: Ich kann keine E-Mail, keine Nachricht und keinen Alarm außerhalb dieses Gesprächs schicken. Wenn die Sitzung endet, endet die Beobachtung.",
     stop: (uri: string) => `Zum Beenden: stop_watch mit ${uri}.`,
-    resolved: (from: string, what: string) => `Aus "${from}" aufgelöst: ${what}.`
+    resolved: (from: string, what: string) => `Aus "${from}" aufgelöst: ${what}.`,
   },
   en: {
     head: (kind: string, key: string) => `I am watching ${kind} ${key} and will tell you here.`,
@@ -156,67 +104,42 @@ const COPY = {
     slots: (open: number) => `${open} of ${MAX_WATCHES} watches in use for this session.`,
     scope: "In this chat only: I cannot send an e-mail, a message or any alert outside this conversation. When the session ends, the watch ends with it.",
     stop: (uri: string) => `To end it: stop_watch with ${uri}.`,
-    resolved: (from: string, what: string) => `Resolved from "${from}": ${what}.`
-  }
+    resolved: (from: string, what: string) => `Resolved from "${from}": ${what}.`,
+  },
 } as const;
 
 /** What the person's words became, said as today's server says it; absent when they were the key. */
-export type Resolved = {
-  from: string;
-  label: string;
-  what: Record<Language, string>;
-};
+export type Resolved = { from: string; label: string; what: Record<Language, string> };
+
 export function watchOpened(o: {
-  language: Language;
-  id: number;
-  kind: string;
-  key: string;
-  condition: Readonly<Record<string, unknown>> | null | undefined;
-  until: string;
-  open: number;
-  resolved?: Resolved;
-  note: string | null;
+  language: Language; id: number; kind: string; key: string; condition: Readonly<Record<string, unknown>> | null | undefined;
+  until: string; open: number; resolved?: Resolved; note: string | null;
   /** How the head names what is watched when it is not the key (a station by its name); structuredContent.key stays the key. */
   label?: string;
 }): CallToolResult {
-  const {
-    language
-  } = o;
+  const { language } = o;
   const c = COPY[language];
   const uri = watchUri(o.id);
   const now = new Date();
-  const text = [o.note, c.head(KIND_LABEL[o.kind]?.[language] ?? o.kind, o.label ?? o.key), o.resolved === undefined ? null : c.resolved(o.resolved.from, o.resolved.what[language]), conditionSentence(o.kind, o.condition, language), c.until(standTime(o.until, language, now)), c.slots(o.open), c.scope, c.stop(uri)].filter((l): l is string => l !== null).join(" ");
-  const meta: DataMeta = {
-    requestId: "",
-    generatedAt: now.toISOString(),
-    language,
-    attribution: [WATCH_CREDIT]
-  };
+  const text = [
+    o.note,
+    c.head(KIND_LABEL[o.kind]?.[language] ?? o.kind, o.label ?? o.key),
+    o.resolved === undefined ? null : c.resolved(o.resolved.from, o.resolved.what[language]),
+    conditionSentence(o.kind, o.condition, language),
+    c.until(standTime(o.until, language, now)),
+    c.slots(o.open),
+    c.scope,
+    c.stop(uri),
+  ].filter((l): l is string => l !== null).join(" ");
+  const meta: DataMeta = { requestId: "", generatedAt: now.toISOString(), language, attribution: [WATCH_CREDIT] };
   const result = toolResult(text, [meta], language, {
     structured: {
-      uri,
-      watchId: o.id,
-      kind: o.kind,
-      key: o.key,
-      condition: {
-        ...(DEFAULTS[o.kind] ?? {}),
-        ...(o.condition ?? {})
-      },
-      expiresAt: new Date(o.until).toISOString(),
-      openWatches: o.open,
-      maxWatches: MAX_WATCHES,
-      scope: "session",
-      externalChannels: false,
-      ...(o.resolved === undefined ? {} : {
-        resolvedFrom: o.resolved.from,
-        resolvedLabel: o.resolved.label
-      })
-    }
+      uri, watchId: o.id, kind: o.kind, key: o.key, condition: { ...(DEFAULTS[o.kind] ?? {}), ...(o.condition ?? {}) },
+      expiresAt: new Date(o.until).toISOString(), openWatches: o.open, maxWatches: MAX_WATCHES, scope: "session", externalChannels: false,
+      ...(o.resolved === undefined ? {} : { resolvedFrom: o.resolved.from, resolvedLabel: o.resolved.label }),
+    },
   });
   // A thing asked for that this watch does not report is said first, inline, and carried as the condition note.
-  if (o.note !== null) result._meta = {
-    ...result._meta,
-    conditionNote: o.note
-  };
+  if (o.note !== null) result._meta = { ...result._meta, conditionNote: o.note };
   return result;
 }
