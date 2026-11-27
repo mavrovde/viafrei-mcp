@@ -26,7 +26,7 @@ release-please writes each release's block from the Conventional Commits merged 
 
 ### Build and CI
 
-* **release:** one chain from the release pull request to the listings, on release-please ([3b10c26](https://github.com/mavrovde/viafrei-mcp/commit/3b10c26eef37e3cdc9443f4839baf48682dbc300)), closes [#288](https://github.com/mavrovde/viafrei-mcp/issues/288)
+* **release:** one chain from the release pull request to the listings, on release-please ([3b10c26](https://github.com/mavrovde/viafrei-mcp/commit/3b10c26eef37e3cdc9443f4839baf48682dbc300))
 * **release:** release-please on the API model, mutation after the tag and before publish ([057cce2](https://github.com/mavrovde/viafrei-mcp/commit/057cce289245846c11d3ca080863331896d6a12b))
 * **versions:** check-versions reads the five fields release-please writes beside the root pair ([2b60dff](https://github.com/mavrovde/viafrei-mcp/commit/2b60dff9f787611fbdcb6173b8694176d2f3c036))
 
