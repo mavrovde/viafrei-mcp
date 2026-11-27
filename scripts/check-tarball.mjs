@@ -539,6 +539,20 @@ function report() {
     return 0;
 }
 
+/**
+ * When this run started, for the phase lines below.
+ *
+ * On the publish runner a gate run was killed at the 120 s deadline four times in
+ * five runs, each time AFTER it had printed its full verdict, and never on a
+ * laptop or in a Linux amd64 container (1,300 runs). The verdict line alone cannot
+ * say where those 120 s went, so the tail says each step it takes after the
+ * verdict: the workspace removed, then the exit. A future kill's partial output
+ * then names the phase that held it: the removal, the exit, or (both printed) the
+ * parent still waiting on the pipe.
+ */
+const STARTED = Date.now();
+const since = () => `+${Date.now() - STARTED} ms`;
+
 function main() {
     const reason = unrunnable();
     if (reason !== undefined) {
@@ -591,7 +605,9 @@ function main() {
 
         scanContents(unpacked, files);
 
-        return report();
+        const verdict = report();
+        note(`gate: verdict ${verdict} at ${since()}; removing the workspace`);
+        return verdict;
     } catch (error) {
         // Through the same door as every other uncontrolled string. This used
         // to print the message raw while the sweep refused to print git's at
@@ -600,6 +616,7 @@ function main() {
         return 2;
     } finally {
         rmSync(workspace, { recursive: true, force: true });
+        note(`gate: workspace removed at ${since()}`);
     }
 }
 
@@ -629,5 +646,7 @@ function invokedDirectly() {
 }
 
 if (invokedDirectly()) {
-    process.exit(main());
+    const code = main();
+    note(`gate: exiting with ${code} at ${since()}`);
+    process.exit(code);
 }
