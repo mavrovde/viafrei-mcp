@@ -8,7 +8,7 @@ import { calls, exampleOf, handlerFor, mockServer } from "./api-mock.js";
 import { connect, textOf } from "./harness.js";
 import { ApiError } from "../src/api/client.js";
 import { log } from "../src/log.js";
-import { crashOf } from "../src/server.js";
+import { CRASH_MESSAGE_MAX, crashOf } from "../src/server.js";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
@@ -44,10 +44,21 @@ describe("the tool call failed line", () => {
     expect(crashOf("text")).toEqual({});
     const e = new RangeError("Invalid time value");
     e.stack = "RangeError: Invalid time value\n    at Date.toISOString (<anonymous>)\n    at f (file:///opt/app/dist/tools/x.js:3:9)";
-    expect(crashOf(e)).toEqual({ message: "Invalid time value", frame: "at Date.toISOString (<anonymous>)" });
-    e.stack = "RangeError: x\n    at file:///opt/app/dist/tools/x.js:3:9";
+    // The package's own frame before a native one; a dependency's dist/ is not the package's own.
+    expect(crashOf(e)).toEqual({ message: "Invalid time value", frame: "at f (dist/tools/x.js:3:9)" });
+    e.stack = "RangeError: x\n    at g (/opt/app/node_modules/zod/dist/index.js:1:1)\n    at Date.toISOString (<anonymous>)";
+    expect(crashOf(e).frame).toBe("at g (/opt/app/node_modules/zod/dist/index.js:1:1)");
+    e.stack = "RangeError: x\n    at Date.toISOString (<anonymous>)\n    at g (/opt/app/node_modules/zod/dist/index.js:1:1)";
+    expect(crashOf(e).frame).toBe("at Date.toISOString (<anonymous>)");
+    // The path is cut at the last src/ or dist/: a checkout under a folder named src keeps only the package's part.
+    e.stack = "RangeError: x\n    at file:///home/src/app/dist/tools/x.js:3:9";
     expect(crashOf(e).frame).toBe("at dist/tools/x.js:3:9");
     e.stack = "RangeError: no frame";
     expect(crashOf(e)).toEqual({ message: "Invalid time value" });
+    // A long message is cut: a diagnosis, not a dump.
+    const long = crashOf(new TypeError("x".repeat(CRASH_MESSAGE_MAX + 50))).message!;
+    expect(long).toBe(`${"x".repeat(CRASH_MESSAGE_MAX)}…`);
+    expect(crashOf(new TypeError("y".repeat(CRASH_MESSAGE_MAX))).message).toBe("y".repeat(CRASH_MESSAGE_MAX));
+    expect(CRASH_MESSAGE_MAX).toBe(200);
   });
 });

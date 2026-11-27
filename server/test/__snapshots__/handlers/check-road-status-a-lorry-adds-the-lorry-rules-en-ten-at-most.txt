@@ -6,7 +6,7 @@ A1: 1× traffic report, 1× roadworks narrowing the carriageway.
 
 Lorry rules:
 - A1, Hauptstraße, Köln: long-lorry positive network (Lang-Lkw-Positivnetz): Durchfahrt verboten
-- long-lorry positive network (Lang-Lkw-Positivnetz): weight
+- long-lorry positive network (Lang-Lkw-Positivnetz): weight limit
 - A100: long-lorry positive network (Lang-Lkw-Positivnetz)
 - A10: long-lorry positive network (Lang-Lkw-Positivnetz)
 - A11: long-lorry positive network (Lang-Lkw-Positivnetz)

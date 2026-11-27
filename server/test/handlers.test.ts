@@ -218,8 +218,16 @@ describe("check_road_status", () => {
       rule({ layer: "zone", street: null, municipality: null }),
     ]);
     const de = body(await call("check_road_status", { place: "Haan", vehicle: "lorry", language: "de" })).split("Lkw-Regeln:\n")[1]!.split("\n\n")[0];
-    expect(de).toBe(["- Kaiserstraße, Haan: Lkw-Vorrangroute", "- Bahnstraße, Haan: Beschränkung: height 3,8 m (Richtung Hilden)", "- Lkw-Zone"].join("\n"));
-    expect(lorryLine(rule({ layer: "restriction", kind: "weight", value: 7.5, unit: "t" }) as never, "en")).toBe("- restriction: weight 7.5 t");
+    expect(de).toBe(["- Kaiserstraße, Haan: Lkw-Vorrangroute", "- Bahnstraße, Haan: Beschränkung: Höhe 3,8 m (Richtung Hilden)", "- Lkw-Zone"].join("\n"));
+    expect(lorryLine(rule({ layer: "restriction", kind: "weight", value: 7.5, unit: "t" }) as never, "en")).toBe("- restriction: weight limit 7.5 t");
+    // Every kind the contract names is said in words, in German with no English code word left.
+    for (const kind of ["height", "weight", "width", "length", "axle_load", "ban"]) {
+      const line = lorryLine(rule({ layer: "restriction", kind }) as never, "de");
+      expect(line).not.toMatch(/height|weight|width|length|axle|ban\b|_/u);
+      expect(lorryLine(rule({ layer: "restriction", kind }) as never, "en")).not.toMatch(new RegExp(`: ${kind}$`, "u"));
+    }
+    // A kind the API adds later is said as published (open enumeration).
+    expect(lorryLine(rule({ layer: "restriction", kind: "Gefahrgut" }) as never, "de")).toBe("- Beschränkung: Gefahrgut");
     expect(lorryLine(rule({ layer: "priority_route", street: "Kaiserstraße", municipality: "Haan", direction: " " }) as never, "en")).toBe("- Kaiserstraße, Haan: lorry priority route (Lkw-Vorrangroute)");
     expect(lorryLine(rule({ layer: "something_new", publishedText: "Nur Anlieger" }) as never, "de")).toBe("- something_new: Nur Anlieger");
   });
@@ -949,7 +957,8 @@ describe("find_place, find_poi, find_address", () => {
     const en = await call("find_address", { query: "Hauptstraße 1", language: "en" });
     expect(body(en)).toBe('I read "Hauptstraße 1" as a street and house number — the town or postcode is missing. Please add it, e.g. "Hauptstraße 1, Fulda".');
     // With a town or a postcode typed, the refusal is the API's own: it is about something else.
-    for (const query of ["Hauptstraße 1, Fulda", "Hauptstraße 1 36037"]) {
+    // A town alone ("Fulda") or any text with no house number is no street and number: the API's own refusal.
+    for (const query of ["Hauptstraße 1, Fulda", "Hauptstraße 1 36037", "Fulda", "xyz"]) {
       const r = await call("find_address", { query, language: "en" });
       expect(body(r)).toBe("The request does not fit: One or more parameters are invalid.");
       expect(r._meta).not.toHaveProperty("errorReason");
@@ -1925,13 +1934,14 @@ describe("stations", () => {
       serve("listStationFacilities", facilities([]));
       const en = await call("check_station_facilities", { station: "Stuttgart Charlottenplatz", language: "en" });
       expect(en.isError).toBe(true);
-      expect(body(en)).toBe('I know "Charlottenplatz" as a stop, but not as a DB station: lift and escalator status is published by DB for its stations and by the Köln Stadtbahn for its stops — none is held for this stop. Its step-free platforms, where surveyed: describe_station.');
+      // The name the person asked is echoed, as every refusal of a name does, not the register's shorter one.
+      expect(body(en)).toBe('I know "Stuttgart Charlottenplatz" as a stop, but not as a DB station, and no lift or escalator status is published for this stop. Its step-free platforms, where surveyed: describe_station.');
       expect(en._meta).toMatchObject({ errorCode: "out_of_coverage" });
       expect(query("listStations")).toEqual([{ q: "Stuttgart Charlottenplatz", limit: "1", railway: "true", lang: "en" }, { q: "Stuttgart Charlottenplatz", limit: "1", lang: "en" }]);
       expect(query("listStationFacilities")).toEqual([{ limit: "20", lang: "en" }]);
       expect(calls.find((c) => c.operationId === "listStationFacilities")?.url.pathname).toContain(encodeURIComponent("stop-charlottenplatz"));
       mockServer.use(handlerFor("listStationFacilities", () => problem(404, "not_found")));
-      expect(body(await call("check_station_facilities", { station: "Stuttgart Charlottenplatz", language: "de" }))).toMatch(/^„Charlottenplatz“ kenne ich als Haltestelle, aber nicht als Bahnhof der DB: /u);
+      expect(body(await call("check_station_facilities", { station: "Stuttgart Charlottenplatz", language: "de" }))).toBe("„Stuttgart Charlottenplatz“ kenne ich als Haltestelle, aber nicht als Bahnhof der DB, und für diese Haltestelle wird kein Zustand von Aufzügen und Fahrtreppen veröffentlicht. Ihre stufenfreien Steige, wo erhoben: describe_station.");
       // A stop whose lifts the API does publish: they are said as a station's are.
       serve("listStationFacilities", facilities([unit("7", "elevator", "zu Gleis 1", "inactive")]));
       const known = await call("check_station_facilities", { station: "Stuttgart Charlottenplatz", language: "en" });

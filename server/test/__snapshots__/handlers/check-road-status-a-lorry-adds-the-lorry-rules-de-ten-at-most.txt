@@ -6,7 +6,7 @@ A1: 1× Verkehrsmeldung, 1× Baustelle, Fahrbahn eingeengt.
 
 Lkw-Regeln:
 - A1, Hauptstraße, Köln: Lang-Lkw-Positivnetz: Durchfahrt verboten
-- Lang-Lkw-Positivnetz: weight
+- Lang-Lkw-Positivnetz: Gewicht
 - A100: Lang-Lkw-Positivnetz
 - A10: Lang-Lkw-Positivnetz
 - A11: Lang-Lkw-Positivnetz

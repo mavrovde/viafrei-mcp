@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import type { DataMeta } from "../src/api/client.js";
 import type * as T from "../src/api/types.js";
 import { HANDLERS } from "../src/tools/handlers.js";
-import { dayText, guidanceLine, roadStatusHead, roadStatusItem, roadStatusMore, roadStatusOf, roadStatusText, sourceName } from "../src/tools/road-status-words.js";
+import { dayText, guidanceLine, roadStatusHead, roadStatusItem, roadStatusMore, publisherOf, roadStatusOf, roadStatusText, sourceName } from "../src/tools/road-status-words.js";
 
 const now = new Date("2026-11-25T00:10:00Z");
 const item = (o: Partial<T.RoadStatusItem> = {}): T.RoadStatusItem => ({
@@ -101,20 +101,48 @@ describe("API 2.0.4's roadStatus, as prod sent it for the A7", () => {
     const { text, isError } = await run(a7.data.roadStatus);
     expect(isError).toBe(false);
     const lines = text.split("\n");
-    expect(lines).toContain("A7: 20 closures, 137 restrictions, 22 planned roadworks sites, 38 current roadworks sites per Arbeitsstellen auf Autobahnen (14 Tage): Die Autobahn GmbH des Bundes and Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen (BASt) — window until 2026-11-28.");
+    // The tally names who counted (the publisher), not the dataset's "title: holder" line.
+    expect(lines).toContain("A7: 20 closures, 137 restrictions, 22 planned roadworks sites, 38 current roadworks sites per Die Autobahn GmbH des Bundes and Bundesanstalt für Straßen- und Verkehrswesen (BASt) — window until 2026-11-28.");
     // The road operator's entry: title · junction — description; another publisher's: its message, the road named.
     expect(lines).toContain('• Closure (Sperrung): Provider text (German): "Via Erhalt A7 von Harz (Raststaette) nach Schwalenberg (Parkplatz) Fahrbahninstandsetzung · AS Seesen (Harz) (aus Richtung Harz) nach A7 — Die Baustelle ist zu…" (2026-11-28, whole measure until 2026-11-28)');
     expect(lines.some((l) => l.startsWith('• Closure (Sperrung) A7: Provider text (German): "A7 Hamburg Richtung Flensburg Einfahrt Neumünster-Mitte gesperrt,'))).toBe(true);
     // The clock decides whether the day stands beside the time (standOf), so the day is optional here.
-    expect(text).toMatch(/^Sources that answered: Verkehrsdaten: Autobahn GmbH des Bundes — As of (2026-11-27 )?06:32; Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen \(BASt\) — As of (2026-11-27 )?05:54; Arbeitsstellen auf Autobahnen \(14 Tage\): Die Autobahn GmbH des Bundes\.$/mu);
+    expect(text).toMatch(/^Sources that answered: "Verkehrsdaten: Autobahn GmbH des Bundes" — As of (2026-11-27 )?06:32; "Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen \(BASt\)" — As of (2026-11-27 )?05:54; "Arbeitsstellen auf Autobahnen \(14 Tage\): Die Autobahn GmbH des Bundes"\.$/mu);
     expect(text).toMatch(/^Planned roadworks are filed by road and section/mu);
   });
   it("names a source by its family when the answer credits none, and says a planned entry by its bucket", async () => {
     const s = roadStatusOf({ ...a7.data.roadStatus, items: [{ ...a7.data.roadStatus.items[0]!, status: "planned", term: "roadworks" }] }, { ...a7.meta, attribution: [] }, "de");
     expect(s.counts.currentBy).toEqual(["ald_14d", "roadworks_bast"]);
+    expect(s.sourcesAnswered[0]!.label).toBe("„autobahn“");
+    // Two datasets of one publisher are one name in the tally.
+    const both = roadStatusOf({ ...a7.data.roadStatus, counts: { ...a7.data.roadStatus.counts, currentFamilies: ["ald_14d", "autobahn", "x"] } }, a7.meta, "en");
+    expect(both.counts.currentBy).toEqual(["Die Autobahn GmbH des Bundes", "Autobahn GmbH des Bundes", "x"]);
+    expect(roadStatusOf({ ...a7.data.roadStatus, counts: { ...a7.data.roadStatus.counts, currentFamilies: ["ald_14d", "ald_14d"] } }, a7.meta, "en").counts.currentBy).toEqual(["Die Autobahn GmbH des Bundes"]);
+    expect(publisherOf("Nur ein Name")).toBe("Nur ein Name");
     expect(s.items[0]!.label).toBe("Geplante Arbeitsstelle");
     expect(s.items[0]!.namedRoad).toBe(false);
     expect(sourceName("x", { ...a7.meta, attribution: [{ family: "x", text: "Nur ein Name" }] })).toBe("Nur ein Name");
+  });
+  it("every status × every term has a label in words, in both languages, never the raw value", () => {
+    const statuses = ["closed", "restricted", "current", "programme", "planned"];
+    const terms = ["closure", "roadworks", "restriction"];
+    const raw = [...statuses, ...terms];
+    for (const language of ["de", "en"] as const) {
+      for (const status of statuses) {
+        for (const term of terms) {
+          const label = roadStatusOf({ ...a7.data.roadStatus, items: [{ ...a7.data.roadStatus.items[0]!, status, term }] }, a7.meta, language).items[0]!.label;
+          expect(raw).not.toContain(label);
+          expect(label).toMatch(/^\p{Lu}/u);
+          // German says no English value at all.
+          if (language === "de") for (const r of raw) expect(label.toLowerCase()).not.toContain(r);
+        }
+      }
+      // A works bucket (planned, current, programme) is told apart from what the entry is called, and from each other.
+      const labelOf = (status: string, term: string) => roadStatusOf({ ...a7.data.roadStatus, items: [{ ...a7.data.roadStatus.items[0]!, status, term }] }, a7.meta, language).items[0]!.label;
+      const buckets = ["planned", "current", "programme"].map((b) => labelOf(b, "roadworks"));
+      expect(new Set(buckets).size).toBe(3);
+      for (const b of buckets) expect(b).not.toBe(labelOf("closed", "roadworks"));
+    }
   });
   it("a motorway with a place is the place's situations on it, as the more line offers", async () => {
     const { asked, text } = await run(a7.data.roadStatus, { road: "A7", place: "Seesen" });

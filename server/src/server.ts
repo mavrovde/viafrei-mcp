@@ -48,9 +48,16 @@ const RULES_TOPICS: Readonly<Record<string, readonly string[]>> = {
  */
 export function crashOf(err: unknown): { message?: string; frame?: string } {
   if (!(err instanceof Error) || err instanceof ApiError) return {};
-  const frame = err.stack?.split("\n").find((l) => /^\s+at /u.test(l))?.trim().replace(/\(?(?:file:\/\/)?\/[^()]*?\/((?:src|dist)\/)/u, (m, dir: string) => (m.startsWith("(") ? "(" : "") + dir);
-  return { message: err.message, ...(frame === undefined ? {} : { frame }) };
+  const frames = (err.stack ?? "").split("\n").filter((l) => /^\s+at /u.test(l)).map((l) => l.trim());
+  // The first frame in this package's own code, else the first frame there is (a native one).
+  const own = frames.find((l) => /\/(?:src|dist)\//u.test(l) && !l.includes("/node_modules/"));
+  const frame = own === undefined ? frames[0] : own.replace(/(\(?)(?:file:\/\/)?\/[^()]*\/((?:src|dist)\/)/u, (_m, paren: string, dir: string) => paren + dir);
+  const message = err.message.length > CRASH_MESSAGE_MAX ? `${err.message.slice(0, CRASH_MESSAGE_MAX)}…` : err.message;
+  return { message, ...(frame === undefined ? {} : { frame }) };
 }
+
+/** A crash message is cut here: a diagnosis, not a dump. */
+export const CRASH_MESSAGE_MAX = 200;
 
 export function withErrorCode(result: CallToolResult, code: ToolErrorCode): CallToolResult {
   if (result.isError !== true || toolErrorCodeOf(result) !== null) return result;

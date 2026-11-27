@@ -242,6 +242,17 @@ describe("describe_station reads the page first", () => {
     expect(a.map(([op, q]) => [op, q["railway"] ?? null, q["stationId"] ?? null])).toEqual([["listStations", "true", null], ["getStationPage", null, db.id]]);
     const b = await ask([], [tram]);
     expect(b.map(([op, q]) => [op, q["railway"] ?? null, q["stationId"] ?? null])).toEqual([["listStations", "true", null], ["listStations", null, null], ["getStationPage", null, tram.id]]);
+    // By a stop code (eva_no) too: DB's register first, the stop that carries the code when DB has none.
+    const seen: [string, Record<string, unknown>][] = [];
+    const get = async (op: string, q: Record<string, unknown>) => {
+      seen.push([op, q]);
+      if (op === "listStations") return { data: q["railway"] === "true" ? [] : [tram], meta };
+      return page;
+    };
+    const r = await HANDLERS["describe_station"]!({ eva_no: "de:alpha:x", language: "en" }, { tool: "describe_station", language: "en", api: { get } } as never);
+    expect(r.isError).not.toBe(true);
+    expect(seen.map(([op, q]) => [op, q["railway"] ?? null, q["code"] ?? null, q["stationId"] ?? null])).toEqual([
+      ["listStations", "true", "de:alpha:x", null], ["listStations", null, "de:alpha:x", null], ["getStationPage", null, null, tram.id]]);
   });
   it("no departures asked: the page is asked for its least (the API's minimum is 1) and its board left out", async () => {
     const page = { data: apiPage([apiSec("departures", { departures: [apiDep()] }), apiSec("parking_charging", { facilities: { flags: [], location: null } })]), meta };

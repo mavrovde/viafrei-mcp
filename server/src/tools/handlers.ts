@@ -82,11 +82,18 @@ const LORRY_LAYER: Record<Language, Record<string, string>> = {
   en: { long_lorry: "long-lorry positive network (Lang-Lkw-Positivnetz)", restriction: "restriction", priority_route: "lorry priority route (Lkw-Vorrangroute)", zone: "lorry zone" },
 };
 
+/** What a lorry restriction limits, in words; a kind not listed is said as published (open enumeration). */
+const LORRY_KIND: Record<Language, Record<string, string>> = {
+  de: { height: "Höhe", weight: "Gewicht", width: "Breite", length: "Länge", axle_load: "Achslast", ban: "Durchfahrtverbot" },
+  en: { height: "height limit", weight: "weight limit", width: "width limit", length: "length limit", axle_load: "axle-load limit", ban: "no through traffic" },
+};
+
 /** One lorry rule: where, its layer, the publisher's words (else the figure as published), the direction it applies in. */
 export function lorryLine(x: T.LorryRule, language: Language): string {
   const where = [x.road, x.street, x.municipality].filter((p): p is string => p !== null && p.trim() !== "").join(", ");
   const figure = x.value === null ? null : `${String(x.value).replace(".", language === "de" ? "," : ".")}${x.unit === null ? "" : ` ${x.unit}`}`;
-  const words = x.publishedText ?? ([x.kind, figure].filter((p) => p !== null).join(" ") || null);
+  const kind = x.kind === null ? null : LORRY_KIND[language][x.kind] ?? x.kind;
+  const words = x.publishedText ?? ([kind, figure].filter((p) => p !== null).join(" ") || null);
   const dir = x.direction === undefined || x.direction === null || x.direction.trim() === "" ? "" : ` (${x.direction})`;
   return `- ${where === "" ? "" : `${where}: `}${LORRY_LAYER[language][x.layer] ?? x.layer}${words === null ? "" : `: ${words}`}${dir}`;
 }
@@ -782,7 +789,7 @@ const ADDRESS_WORDS = {
 } as const;
 
 /** A typed address with no town part: no comma before a town and no postcode (the API's q is street and number, then a postcode or a town). */
-const NO_TOWN = (q: string): boolean => !q.includes(",") && !/\b\d{5}\b/u.test(q);
+const NO_TOWN = (q: string): boolean => looksLikeHouseNumber(q) && !q.includes(",") && !/\b\d{5}\b/u.test(q);
 
 const findAddress: Handler = async (args, ctx) => {
   const { language } = ctx;
@@ -1089,8 +1096,8 @@ const checkStationFacilities: Handler = async (args, ctx) => {
       return toolResult(facilitiesText(language, own.data, kind, limit, []), [own.meta], language);
     }
     return toolError(L(language,
-      `„${stop.name}“ kenne ich als Haltestelle, aber nicht als Bahnhof der DB: Den Zustand von Aufzügen und Fahrtreppen veröffentlichen die DB für ihre Bahnhöfe und die Kölner Stadtbahn für ihre Haltestellen — für diese Haltestelle liegt er mir nicht vor. Ihre stufenfreien Steige, wo erhoben: describe_station.`,
-      `I know "${stop.name}" as a stop, but not as a DB station: lift and escalator status is published by DB for its stations and by the Köln Stadtbahn for its stops — none is held for this stop. Its step-free platforms, where surveyed: describe_station.`), "out_of_coverage");
+      `„${asked}“ kenne ich als Haltestelle, aber nicht als Bahnhof der DB, und für diese Haltestelle wird kein Zustand von Aufzügen und Fahrtreppen veröffentlicht. Ihre stufenfreien Steige, wo erhoben: describe_station.`,
+      `I know "${asked}" as a stop, but not as a DB station, and no lift or escalator status is published for this stop. Its step-free platforms, where surveyed: describe_station.`), "out_of_coverage");
   }
   const r = await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id, kind, limit });
   const d = r.data;
@@ -1121,7 +1128,7 @@ const describeStation: Handler = async (args, ctx) => {
   if (noStation(args)) return NEED_STATION(language);
   // The DB station of that name first ("Leipzig Hbf" is the station, not the tram stop in front of it); a stop otherwise.
   const railway = await stationOf(args, ctx, true);
-  const stations = railway.data.length > 0 || str(args["station"]) === undefined ? railway : await stationOf(args, ctx);
+  const stations = railway.data.length > 0 ? railway : await stationOf(args, ctx);
   const station = stations.data[0];
   if (station === undefined) {
     const eva = str(args["eva_no"]);
