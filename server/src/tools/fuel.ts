@@ -244,14 +244,22 @@ export const findCheapestFuel: Handler = async (args, ctx): Promise<CallToolResu
       });
     }
   }
-  const rows = r.data;
+  // Cheapest first is said, so it is made true here (round 2.7.9 Q18, Q20: with no current price the API's rows
+  // came in distance order): current prices first, each part by the asked grade's price, ties in the API's order.
+  const rows = cheapestOrder(r.data, fuel);
   const details = await detailsOf(ctx, rows);
   const addresses = details.map((d) => d?.address ?? null);
   const de = language === "de";
-  const head = de ? `${grade} um ${around} (Umkreis ${radiusKm} km), günstigste zuerst:` : `${grade} around ${around} (within ${radiusKm} km), cheapest first:`;
+  const noneCurrent = !rows.some((s) => s.prices.some((x) => x.fuel === fuel && x.current));
+  const head = noneCurrent
+    ? de
+      ? `${grade} um ${around} (Umkreis ${radiusKm} km): Keine Tankstelle hat einen aktuellen ${grade}-Preis. Hier die zuletzt gemeldeten Preise, günstigste zuerst; sie können sich seitdem geändert haben:`
+      : `${grade} around ${around} (within ${radiusKm} km): no station has a current ${grade} price. These are the last prices reported, cheapest first; they may have changed since:`
+    : de ? `${grade} um ${around} (Umkreis ${radiusKm} km), günstigste zuerst:` : `${grade} around ${around} (within ${radiusKm} km), cheapest first:`;
   const lines = rows.map((s, i) => {
     const p = s.prices.find((x) => x.fuel === fuel);
-    return `${i + 1}. ${stationLabel(s, addresses[i] ?? null)} — ${p === undefined ? "–" : fmtPrice(p.priceEur, language)}, ${kmText(s.distanceM ?? 0, language)}, ${wholeDayOpen(details[i] ?? null, s, language) ?? observedOpen(s, p, language)}`;
+    const stale = p !== undefined && !p.current ? (de ? " (nicht aktuell)" : " (not current)") : "";
+    return `${i + 1}. ${stationLabel(s, addresses[i] ?? null)} — ${p === undefined ? "–" : fmtPrice(p.priceEur, language)}${stale}, ${kmText(s.distanceM ?? 0, language)}, ${wholeDayOpen(details[i] ?? null, s, language) ?? observedOpen(s, p, language)}`;
   });
   const short = rows.length >= limit
     ? ""
@@ -261,7 +269,8 @@ export const findCheapestFuel: Handler = async (args, ctx): Promise<CallToolResu
   // Today's sentence on the held stations the ranking leaves out for want of a current price; then the
   // unpriced OpenStreetMap stations, when the API lists them.
   const q = ((r.meta as { query?: Record<string, unknown> }).query ?? {}) as { stationsWithoutCurrentPrice?: number; stationsInRadius?: number; osmUnpriced?: readonly T.OsmFuelStation[] };
-  const uncovered = unrankedLine(language, q.stationsWithoutCurrentPrice ?? 0, q.stationsInRadius ?? 0, grade);
+  // With no current price at all the head says so; "not in the ranking" would contradict the list below it.
+  const uncovered = noneCurrent ? "" : unrankedLine(language, q.stationsWithoutCurrentPrice ?? 0, q.stationsInRadius ?? 0, grade);
   const osm = osmFuelLines(language, q.osmUnpriced ?? []);
   const observed = rows.flatMap((s) => s.prices.filter((p) => p.fuel === fuel).map((p) => p.reportedAt)).sort();
   // Today's stamp: the oldest price observation ranked (oldestObservedAt), not the feed's last write.
@@ -269,11 +278,22 @@ export const findCheapestFuel: Handler = async (args, ctx): Promise<CallToolResu
   return toolResult(`${head}\n${lines.join("\n")}${short}${uncovered}${osm.length === 0 ? "" : `\n${osm.join("\n")}`}`, [r.meta], language, stamp);
 };
 
+/** The rows cheapest first by `fuel`: current prices before older ones, unpriced last, equal prices in the API's order (the sort is stable). */
+export function cheapestOrder(rows: readonly T.FuelStation[], fuel: string): T.FuelStation[] {
+  const key = (s: T.FuelStation): [number, number] => {
+    const p = s.prices.find((x) => x.fuel === fuel);
+    return p === undefined ? [2, 0] : [p.current ? 0 : 1, p.priceEur];
+  };
+  return rows.map((s) => ({ s, k: key(s) })).sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1]).map((x) => x.s);
+}
+
 /** "Diesel 2,509 €/l, Super E10 2,349 €/l, Super E5 2,409 €/l": the asked grade, else every grade held. */
 function pricesText(s: T.FuelStation, fuel: string | undefined, language: Language): string {
   const ps = s.prices.filter((p) => fuel === undefined || p.fuel === fuel).sort((a, b) => GRADE_ORDER.indexOf(a.fuel) - GRADE_ORDER.indexOf(b.fuel));
   if (ps.length === 0) return language === "de" ? "noch kein Preis" : "no price yet";
-  return ps.map((p) => `${gradeWord(p.fuel, language)} ${fmtPrice(p.priceEur, language)}`).join(", ");
+  // A price older than the provider's window is marked (round 2.7.9 Q25: prices of 23.11. read as current).
+  const stale = (p: T.FuelPrice): string => (p.current ? "" : language === "de" ? ` (nicht aktuell, Stand ${standTime(p.reportedAt, language)})` : ` (not current, as of ${standTime(p.reportedAt, language)})`);
+  return ps.map((p) => `${gradeWord(p.fuel, language)} ${fmtPrice(p.priceEur, language)}${stale(p)}`).join(", ");
 }
 
 /** opennessText without the hours' date, which the contract does not carry. */
