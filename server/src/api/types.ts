@@ -49,6 +49,20 @@ export type ChargingSite = {
   summary: { chargePoints: number; availableNow: number | null; maxPowerKw: number | null };
   /** Each point and its last report (null: none published, or one that says nothing). */
   chargePoints?: { id: string; current: string | null; maxPowerKw: number | null; availability: { state: string; observedAt: string } | null }[];
+  /** Only with group=place: the place the item stands for (its name is then the place's label: name and address). */
+  place?: ChargingPlace;
+};
+export type ChargingAddress = { street: string | null; number: string | null; postcode: string | null; city: string | null };
+/** ChargingPlace: the records of one place folded into one item (listChargingOptions group=place). */
+export type ChargingPlace = {
+  siteId: string; siteIds: string[];
+  address: ChargingAddress | null; reportedAddress?: ChargingAddress; reportedLocation?: LatLon; locatedNear?: string;
+  connectors: { type: string; count: number; powerKw: number | null }[];
+  /** null: no record publishes a price per kWh (never 0). */
+  price: { amount: number; basis: "net" | "gross"; currency: "EUR" } | null;
+  /** null: no point has a status (unknown, never 0). stale: no point is current; the counts are the last known, as of observedAt. */
+  status: { free: number; occupied: number; outOfOrder: number; total: number; observedAt: string; stale: boolean } | null;
+  fromRegister: boolean; registerReleasedOn: string | null; sourceEnded: boolean;
 };
 /** HydrogenData */
 export type HydrogenStation = {

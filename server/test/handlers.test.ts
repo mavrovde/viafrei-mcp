@@ -385,7 +385,7 @@ describe("find_charging_station", () => {
       expect(body(await call("find_charging_station", { ...at, language }))).toBe(language === "de"
         ? "Im Umkreis von 10 km um 52.520, 13.405 kenne ich keine Ladestandorte. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis 25 km) hilft oft."
         : "I hold no charging sites within 10 km of 52.520, 13.405. Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
-      expect(query("listChargingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "10000", lang: language }]);
+      expect(query("listChargingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "10000", group: "place", lang: language }]);
     });
     it(`a filter in a circle with no site at all (${language}): today's sentence, the filter notwithstanding`, async () => {
       serve("listChargingOptions", []);
@@ -394,7 +394,7 @@ describe("find_charging_station", () => {
         : "I hold no charging sites within 10 km of 52.520, 13.405. Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
       // The circle is read a second time without the filter, to count what it holds.
       expect(query("listChargingOptions")).toEqual([
-        { at: "52.52,13.405", radius_m: "10000", min_kw: "150", lang: language },
+        { at: "52.52,13.405", radius_m: "10000", min_kw: "150", group: "place", lang: language },
         { at: "52.52,13.405", radius_m: "10000", limit: "100", lang: language },
       ]);
     });
@@ -2172,6 +2172,14 @@ describe("watch_situation on a charger named by a place: the nearest listed site
       expect(query("getWatch")).toEqual([]);
     });
   }
+  it("a nameless site is named by its operator, else as a charging site, never by its id", async () => {
+    for (const [operator, said] of [["Strom AG", "Strom AG"], [null, "charging site"]] as const) {
+      serve("listChargingOptions", [{ ...site("bnetza_lsr:52.52,13.40:1a6a", 1, 500), name: null, operator }]);
+      serve("getWatch", { ...ex<Record<string, unknown>>("getWatch"), kind: "charger", key: "x", condition: {}, note: null });
+      const r = await call("watch_situation", { kind: "charger", key: "Leipzig", language: "en" });
+      expect(textOf(r).split("\n")[0]).toContain(`the nearest charging site with live occupancy, ${said} (0.5 km away), site id bnetza_lsr:52.52,13.40:1a6a`);
+    }
+  });
   it("a site id is the key as given, with no search", async () => {
     serve("getWatch", { ...ex<Record<string, unknown>>("getWatch"), kind: "charger", key: "afir_alpha:cs-01-0001", condition: {}, note: null });
     await call("watch_situation", { kind: "charger", key: "afir_alpha:cs-01-0001", language: "en" });

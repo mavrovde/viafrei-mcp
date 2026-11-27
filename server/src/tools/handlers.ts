@@ -1131,7 +1131,7 @@ async function chargerByPlace(key: string, ctx: ToolContext): Promise<{ target: 
     return toolResult(text, [r.meta], language, { structured: { watchOpened: false, reason } });
   }
   for (const a of r.meta.attribution ?? []) creditPlace([a]);
-  const name = site.name ?? site.id;
+  const name = site.name?.trim() || site.operator?.trim() || L(language, "Ladestandort", "charging site");
   const away = kmText(site.distanceM ?? 0, language);
   return { target: site.id, resolved: { from: key, label: name, what: {
     de: `nächster Ladestandort mit Live-Belegung, ${name} (${away} entfernt), Standort-ID ${site.id}`,

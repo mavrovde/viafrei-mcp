@@ -14,6 +14,14 @@ a Changelog and the versions follow Semantic Versioning.
   - in `structuredContent.osmFacilities`, capacity and free spaces are null, never zero;
   - beside the publishers' sites they follow as a separate block;
   - under a free-spaces or facilities filter, the answer first says that the filter cannot be checked for them (#280).
+- **`find_charging_station` names a site by its name and address, never by an internal id.** A site with no name was shown by its record id, such as `bnetza_lsr:52.52,13.40:…`. Without `max_power_kw`, `operator` or `conditions`, the tool now asks API 2.0.4 for its place grouping (`group=place`), which folds one place's records into one line labelled by its name and address. Each line gives:
+  - the operator, the plugs and the power;
+  - the price per kWh, marked net or gross, and never printed when it is not published;
+  - the live counts with their time. A status that no point confirms now leads with its last counts, followed by "status from 09:36 (9 h 17 min ago) — possibly out of date";
+  - "per charging point register" for register places, with the register's release date said once;
+  - "located by its address" where that applies.
+
+  Under the list the answer adds "price per kWh published for k of n only", the sites `only_available` hid, by reason, and the site ids a charger watch takes for the places that report a status. With the filters the grouping does not take, each record keeps its own line, named by its name, its operator or "charging site". An empty filtered answer counts the circle by the API's `meta.inRadius` without a second read. `watch_situation` (kind `charger`) names a site without a name by its operator in the same way (#269).
 
 ### Changed
 - **The server runs against ViaFrei API 2.0.4** (`server/api.pin`, the contract fixture copied from the release tag).
