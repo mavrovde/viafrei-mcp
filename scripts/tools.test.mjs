@@ -606,6 +606,73 @@ check('no source file spawns a program by bare name — every program comes from
     );
 });
 
+// --- the hang witness (issue #288) -------------------------------------------
+// A gate killed at the deadline after its exit line: the witness must say which of the
+// three states held the parent. Two are planted here; a zombie cannot be made on purpose
+// without racing the parent's own reaping, so it is the one left to the real case.
+
+const onLinux = process.platform === 'linux';
+
+check('a call that finishes in time returns its output; the witness says nothing', () => {
+    const out = runTool(process.execPath, ['-e', 'process.stdout.write("done")'], { encoding: 'utf8', witness: true });
+    assert.equal(out, 'done');
+});
+
+check('a child that does not exit: the witness names it, its state and its threads', () => {
+    let error;
+    try {
+        runTool(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { encoding: 'utf8', timeout: 3000, witness: true });
+    } catch (caught) {
+        error = caught;
+    }
+    assert.ok(error instanceof ToolError && error.timedOut, `expected a timeout, got ${error}`);
+    if (!onLinux) {
+        assert.match(error.message, /hang witness: no \/proc on/u);
+        return;
+    }
+    assert.match(error.message, /hang witness at .*, parent \d+/u);
+    assert.match(error.message, /pid \d+ \(parent \d+\) "[^"]+" state [SR]/u);
+    assert.match(error.message, /cmdline ".*setInterval/u);
+    assert.match(error.message, /thread \d+ "[^"]+" state/u);
+});
+
+check('a child gone, its pipe held by a grandchild: the witness names the holder', () => {
+    // The child hands its stdout to a detached grandchild and exits at once; the parent
+    // then waits for an end-of-file that the grandchild withholds.
+    // The grandchild writes its own pid to a file, so this kills the planted process and no
+    // other: the witness's list can hold any process the machine started in the window.
+    const pidDir = mkdtempSync(join(tmpdir(), 'hang-witness-'));
+    const pidFile = join(pidDir, 'grandchild.pid');
+    const grandchild = `require("node:fs").writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); setTimeout(() => {}, 20000)`;
+    const plant = 'const { spawn } = require("node:child_process");' +
+        `spawn(process.execPath, ["-e", ${JSON.stringify(grandchild)}], { stdio: ["ignore", "inherit", "ignore"], detached: true }).unref();`;
+    let error;
+    try {
+        runTool(process.execPath, ['-e', plant], { encoding: 'utf8', timeout: 3000, witness: true });
+    } catch (caught) {
+        error = caught;
+    }
+    let planted;
+    try {
+        planted = Number(readFileSync(pidFile, 'utf8'));
+        // 0 or less would signal the test's own process group
+        if (Number.isInteger(planted) && planted > 0) process.kill(planted, 'SIGKILL');
+    } catch {
+        // never written, or already gone
+    }
+    rmSync(pidDir, { recursive: true, force: true });
+    assert.ok(error instanceof ToolError && error.timedOut, `expected a timeout, got ${error}`);
+    if (!onLinux) {
+        return;
+    }
+    assert.ok(Number.isInteger(planted) && planted > 0, 'the grandchild never wrote its pid');
+    const listed = /started during the call, not under the parent: ([\d ]+)/u.exec(error.message);
+    assert.ok(listed !== null && listed[1].split(' ').map(Number).includes(planted),
+        `the witness did not name the pipe's holder ${planted}:\n${error.message}`);
+    assert.match(error.message, /no process under the parent: the child is gone and reaped/u);
+    assert.match(error.message, /cmdline ".*setTimeout\(\(\) => \{\}, 20000\)/u);
+});
+
 console.log(cases.join('\n'));
 if (failed > 0) {
     console.error(`\ntool-resolution self-test: FAIL - ${failed} of ${cases.length} case(s)`);

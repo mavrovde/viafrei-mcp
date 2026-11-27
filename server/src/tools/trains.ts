@@ -226,7 +226,11 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
     const outcome: Outcome = parts.some((p) => p.outcome === "timed_out") ? "timed_out" : parts.every((p) => p.outcome === "failed") ? "failed" : newest.outcome;
     const text = staleLine(station, newest.board.data, outcome, language);
     if (outcome === "failed") return toolError(text, "unavailable");
+    // The board's time is the answer's: the station read beside it is the daily register (db_stada, DELFI),
+    // and toolResult would otherwise say the oldest of the reads, a board fetched a minute ago aged by a
+    // register built at midnight (the freshness probe's 980 min, 2026-11-27).
     return toolResult(text, [...metas, { ...newest.board.meta, asOf: newest.board.data.fetchedAt }], language, {
+      ...(newest.board.data.fetchedAt === null ? {} : { asOf: newest.board.data.fetchedAt }),
       structured: { ...head, departures: [], dbTimetables: { answered: false, reason: "unavailable" } },
     });
   }
@@ -264,7 +268,9 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
   // ever held for, and whose refresh did not fail, is one DB does not file trains under: today says nothing of it.
   const degraded = parts.some((p) => !p.board.data.fresh && (p.outcome === "failed" || p.board.data.fetchedAt !== null));
   const oldest = fresh.map((p) => p.board.data.fetchedAt).filter((x): x is string => x !== null).sort()[0] ?? null;
+  // The oldest FRESH board is the answer's time, not the station register read beside it (see above).
   return toolResult(lines.join("\n"), [...metas, { ...fresh[0]!.board.meta, asOf: oldest }], language, {
+    ...(oldest === null ? {} : { asOf: oldest }),
     structured: { ...head, departures: rows.map(departureStructured) },
     ...(degraded ? { note: c.unavailable } : {}),
   });

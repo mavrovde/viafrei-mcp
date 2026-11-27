@@ -120,116 +120,90 @@ npm run check:sources   # the counts SOURCES.md states agree with catalogue.json
 
 Each `check:*` above that renders or reads a document has a `test:*` self-test
 beside it (`test:docs`, `test:readme`, `test:sources`, `test:versions`), and the
-release tooling has seven more that run against local stubs, injected fetches or
-fixture files (`test:probe`, `test:freshness`, `test:propose`, `test:auto-release`
-for the automatic release path, the two release verifiers, `test:verify` for npm
+release tooling has more that run against local stubs, injected fetches or
+fixture files (`test:probe`, `test:freshness`, `test:release-state` for Version
+sync's decisions, the two release verifiers, `test:verify` for npm
 and `test:verify-smithery` for the Smithery listing, and `test:release-notes` for
 the release page).
 
 ### How a release happens
 
-This package carries the version of the hosted server it relays to. The `Version
-sync` workflow (`.github/workflows/version-sync.yml`) compares the running server,
-the registry and `main` once a day (06:30 UTC; dispatch it by hand after a release;
-one `initialize` and the four list calls, never a tool call). When the server is
-ahead, it prepares the release with `scripts/propose-release.mjs` and opens a
-`release/X.Y.Z` pull request. What happens next depends on one decision, made by
-`scripts/auto-release.mjs decide`:
+One chain, each workflow one job, each refusal naming its recovery. It is the
+shape of viafrei-api's pipeline; where this repository differs, the step says why.
 
-- **A pure mirror is released automatically.** The probe found the surface
-  unchanged, every offline gate passed and the leak sweep is clean. The workflow
-  waits for the pull request's required checks (`build-and-test (22)`,
-  `build-and-test (24)`, `SonarCloud Code Analysis`) for at most 12 minutes,
-  merges it with a merge commit pinned to the head it checked, pushes the
-  annotated tag `vX.Y.Z` on the merge commit, then dispatches the `npm` workflow
-  on the tag (its first job is Snyk, below) and waits for it to succeed: up to
-  51 minutes, as a chain of four jobs of 12 and 13 minutes, because the mutation
-  run and the e2e come before the npm publish and no job runs longer than 15; then
-  dispatches `Smithery`, the MCP Registry entry and `Release page`, each from
-  a job of its own, side by side. A red check, a check still pending at the deadline, a pull request a
-  person has touched in the meantime, or any later failure ends the run red with
-  the reason, and the message says what has already happened at that stage. Nothing
-  is merged on red or pending. A pull request left unmerged waits for a person, who
-  finishes it the manual way below; a stage that failed after the merge is recovered
-  as described under "Recovering a release that stopped halfway".
-- **Anything else is a person's.** A changed surface, a probe report that could not
-  be classified, a failed gate or a leak
-  finding opens the pull request as a draft (or a ready pull request for a
-  person) and the workflow stops. Review it, write what the change means in the
-  CHANGELOG block, merge with a merge commit, then `git tag vX.Y.Z <merge sha>`
-  and push the tag on its own. The tag push starts `npm`, and `npm`'s success
-  starts `Smithery` and `Release page`.
+1. **Release pull request** (`.github/workflows/release-please.yml`). After CI
+   passes on a push to `main`, release-please opens or updates the pull request
+   `chore: release X.Y.Z` from the Conventional Commits since the last release:
+   the version in `package.json`, `package-lock.json`, `server/package.json`,
+   `server/package-lock.json` and both `catalogue.json` copies
+   (`release-please-config.json`), and a `## [X.Y.Z]` block in `CHANGELOG.md`.
+   Its `docs` job then regenerates `API.md` and the README catalogue on the
+   release branch, because both print the version. Its `approve` job approves the
+   pull request's held runs (`scripts/approve-release-runs.sh`). To give the
+   release page a lead sentence, add a bold lead to the block in the pull
+   request; otherwise the page is titled by the first entry.
+2. **Merge.** Merge it with a merge commit once CI is green. Nothing else is
+   needed by hand.
+3. **Tag.** On that merge's CI success, release-please writes a draft release,
+   and the `tag` job checks CI passed on the release commit
+   (`scripts/ci-gate.mjs`), pushes the annotated tag `vX.Y.Z` on it, and
+   dispatches `publish.yml` **on the tag** with `dry_run=false`. A tag pushed with
+   `GITHUB_TOKEN` starts no workflow, so the dispatch is what starts the release;
+   it runs on the tag (viafrei-api dispatches on `main`) so npm provenance and the
+   image's cosign identity name the tag exactly as a tag push would. Tag only a
+   commit whose CI on `main` has completed: every gate below refuses a run still
+   going instead of waiting for it.
+4. **Release** (`publish.yml`, named `Release`; the file name stays because npm's
+   trusted publisher is bound to it). Before anything is packed, on the tagged
+   commit: Snyk (`snyk.yml`), the full mutation run (`mutation.yml`, 18 shards,
+   70 % floor) and the server e2e against the real API. Then the `npm` job: the
+   tag equals the manifest, the versions agree, the commit is on `main`, CI passed
+   on it, the build, the offline tests, the sources page, the leak sweep and its
+   scope self-test, the publish-hygiene gate's self-test, the pack, the gate on
+   that exact tarball, `npm publish --provenance`, and the read-back
+   (`scripts/verify-published.mjs`). Then, side by side: `image` dispatches
+   `image.yml` on the tag (its own gate, the server tests, Trivy, push by digest,
+   cosign, SBOM, verify, then the tags; dispatched rather than called so its
+   signing identity stays `image.yml@refs/tags/vX.Y.Z`), and `release-page`
+   (`release-page.yml`) fills release-please's draft from the CHANGELOG block
+   and publishes it.
+5. **Deploy** - outside this repository. It pins the image by digest.
+6. **Listings** (`version-sync.yml`, daily at 06:30 UTC, or dispatched right
+   after a deploy). It reads the live server's `serverInfo.version`, npm's latest
+   and versions, the tags and the last successful run of each listing, and
+   `scripts/release-state.mjs` decides. When the live server serves the newest
+   tag, it dispatches `mcp-registry.yml` and `smithery.yml` (input `version`) for
+   each listing whose last successful run is of another version; both refuse a
+   live server of any other version. While the deploy is pending it is green and
+   does nothing. The listings never follow npm directly: until 2.7.10 they ran
+   straight after npm, always met the older live server, and refused.
 
-Why the automatic path dispatches the three workflows instead of letting the tag
-start them: a tag pushed with `GITHUB_TOKEN` starts no workflow, because GitHub
-creates no new runs for events caused by that token, apart from
-`workflow_dispatch` and `repository_dispatch`. `Smithery` and `Release page` act on
-a `workflow_run` of `npm` only when that run was a tag **push**, so a dispatched
-`npm` run never starts them a second time.
+A **maintainer's tag push** (`git tag -a vX.Y.Z <sha>`, pushed on its own)
+starts step 4 the same way. The tag alone does not move release-please: bump
+`.release-please-manifest.json` to that version in a commit on main as well, or
+release-please proposes the same version again at its next run.
 
-"Unchanged" means the catalogue probe reported the snapshot DATED, read positively:
-exit 0, or exit 1 with the DATED report and without the WRONG one. Any other report
-(reworded, an undocumented exit code, a crash) is `unclassified` and goes to a
-person, like a changed surface. The surface includes the server's instructions,
-capabilities and protocol version as well as the tool, resource, template and prompt
-lists, because API.md renders all of them and ships in the tarball.
+**Abandoned versions.** A tag npm never served that is older than the newest
+tag (2.7.9, after 2.7.10 was cut) is abandoned: it stays a tag (tags are never
+moved or deleted), it is never published, and nothing waits on it. Version sync
+reports it and judges only the newest tag.
 
-If the required checks of `main` change, change `REQUIRED_CHECKS` in the
-workflow's `release` job too. Each entry is `name@app-slug`, matched the way branch
-protection matches it: the two CI jobs come from `github-actions` and the analysis
-from `sonarqubecloud`, and a check of the same name from another app does not count.
-The workflow cannot read branch protection itself, and GitHub's own protection
-still refuses a merge with a required check missing.
+**Recovering a release that stopped.** Each refusal says what to do; in short:
 
-**What a merge by the workflow does not get.** A merge made with `GITHUB_TOKEN` starts
-no `push` run, so `main`'s merge commit gets no CI run. Whether SonarCloud's automatic
-analysis of `main` follows such a merge has not been checked here. This is accepted
-because the tree was green on the pull request and `publish.yml` runs every gate again
-against the tag before it uploads anything.
-
-**Checked once, by the first automatic release (v1.7.5, #59, 2026-10-05):**
-
-- *npm trusted publishing from a dispatched run.* The trusted publisher is matched on
-  the repository, the workflow file name (`publish.yml`) and the `npm` environment,
-  with no field for the ref or the event; npm's documentation
-  (docs.npmjs.com/trusted-publishers) warns that with `workflow_call`, "or
-  workflow_dispatch", validation may check the calling workflow's name. Here
-  `publish.yml` itself is dispatched, and v1.7.5 was published from a dispatched run
-  with provenance attested. If it ever fails, the recovery below applies.
-- *Who `mergedBy` names when the workflow merges.* `app/github-actions` on #59. The
-  stuck-release check accepts that, `github-actions` and `github-actions[bot]`.
-
-**Not checked yet:**
-
-- *Approving the held CI run.* For a pull request opened with `GITHUB_TOKEN`, GitHub
-  holds the CI run until it is approved. The workflow approves it with the same token,
-  and that call is known to work: the Version sync run that opened #53 logged the
-  approval. Whether the held run blocks the merge, or whether a dispatched CI run
-  simply does not count, was seen once (#40) and not told apart. Approving it covers
-  both cases.
-
-**Recovering a release that stopped halfway.** Each failure message says which stage
-it stopped at. The daily run also turns red, with the fix, while the release stays
-stuck:
-
-- *Red before the merge* (a check red, or still pending after 12 minutes). Nothing was
-  merged. Finish by hand: merge with a merge commit, then tag.
-- *Merged but not tagged.* The next daily run reports it. Tag the merge commit
-  (`git tag -a vX.Y.Z <merge sha>`) and push the tag yourself. A tag pushed by a person
-  starts `npm`, and `npm`'s success starts `Smithery` and `Release page`.
-- *Tagged, but npm did not publish.* The next daily run reports it. Re-run the
-  failed job of that Version sync run, or dispatch `publish.yml` on the tag with
-  `dry_run=false`. Once npm serves the version, dispatch `smithery.yml` (input
-  `version`) and `release-page.yml` (input `tag`) by hand. Their `workflow_run` trigger
-  skips an npm run that was dispatched rather than started by a tag push, so they will
-  not start on their own.
-- *npm published, Smithery or the release page failed.* Dispatch the one that failed,
-  with the same input.
-- *Snyk stopped the npm workflow* (its `Snyk (dependencies)` job failed; nothing was
-  packed or published). A Snyk outage (the CLI download, the API, a timeout): re-run
-  the failed jobs of that `npm` run. An advisory (high or critical): fix it on `main`
-  and release a new patch. An exhausted free-plan monthly test quota fails like an
-  advisory, and is not forced through.
+- *CI still running or red on the release commit* (`tag`, `npm` or `image`
+  gate): once CI on that commit has finished green, re-run the failed job
+  (`gh run rerun <run id> --failed`).
+- *Snyk, mutation or e2e red* (nothing packed): an outage is re-run; a real
+  finding is fixed on `main`, which makes the next release pull request. The
+  stopped tag is then abandoned.
+- *npm failed after its checks*: re-run the failed jobs of that Release run, or
+  `gh workflow run publish.yml --ref vX.Y.Z -f dry_run=false`.
+- *Image or release page failed*: `gh workflow run image.yml --ref vX.Y.Z`, or
+  `gh workflow run release-page.yml -f tag=vX.Y.Z`.
+- *A listing failed*: dispatch it with `version`, or let the next Version sync
+  dispatch it.
+- *Version sync red, STUCK*: the newest tag is not on npm; the message names the
+  command above.
 
 **Snyk.** `.github/workflows/snyk.yml` runs Snyk Open Source over the npm
 dependencies once a week on `main` (Mondays 05:17 UTC; a dispatch on `main`
@@ -239,16 +213,18 @@ the release. It never runs on a pull request or a push. In `publish.yml` the
 scan runs on a tag only; a `workflow_dispatch` on a branch is the dry-run
 rehearsal, which skips the scan and publishes nothing. It needs the Actions
 repository secret `SNYK_TOKEN`, handed on by name. `npm run test:snyk` pins
-this wiring.
+this wiring. An exhausted free-plan monthly test quota fails like an
+advisory, and is not forced through.
 
 ### Release pages are written from the CHANGELOG
 
-Nobody writes a GitHub release page by hand. After the npm workflow has published
-a `v*` tag and verified it, the `Release page` workflow
-(`.github/workflows/release-page.yml`) creates the page for that tag:
+Nobody writes a GitHub release page by hand. After the Release workflow's npm job
+has published a `v*` tag and verified it, it calls the `Release page` workflow
+(`.github/workflows/release-page.yml`), which fills release-please's draft page for
+that tag (or creates the page, for a tag a maintainer pushed) and publishes it:
 
 - **Body:** a normal release note built from the tag's `## [X.Y.Z]` block of
-  `CHANGELOG.md`, read at the tag. The Version sync proposer's opening paragraph is
+  `CHANGELOG.md`, read at the tag. The retired Version sync proposer's opening paragraph (blocks up to 2.7.10) is
   written for whoever merges the pull request (registry numbers, the probe's verdict,
   the raw list of catalogue differences: tools, prompts or resources added, removed or
   changed, and `initialize` fields moved), so on the page it becomes one sentence:
@@ -271,13 +247,14 @@ a `v*` tag and verified it, the `Release page` workflow
   the Version sync proposer opens every block with, so it is skipped and the first
   real change names the page; when it is the block's only bold lead (a pure
   version-sync release) the title is `viafrei vX.Y.Z — same tools, mirrors the server`
-  (`MIRROR_TITLE`). A block with no bold lead at all fails the run. The string is one
-  constant, `MIRROR_LEAD` in `scripts/release-notes.mjs`, and the self-test fails if
-  the proposer's opening line stops matching it. Choose the title by the first real
-  bold lead you write.
+  (`MIRROR_TITLE`). The string is one constant, `MIRROR_LEAD` in
+  `scripts/release-notes.mjs`, and the self-test fails if a mirror block in
+  `CHANGELOG.md` stops matching it. A block release-please wrote has no bold lead
+  unless you add one in the release pull request; it is titled by its first entry's
+  subject (scope and links dropped). A block with neither fails the run.
 - **Latest:** only when the tag is the highest `vX.Y.Z` tag, compared as numbers.
-- **Never destructive:** a page that already exists for the tag, draft or published,
-  is left unchanged and the run says so. To change a page, edit it on GitHub.
+- **Never destructive:** a published page for the tag is left unchanged and the run
+  says so; only release-please's draft is filled. To change a page, edit it on GitHub.
 
 `scripts/release-notes.mjs` holds those rules and `npm run test:release-notes` pins
 them. To see what a tag's page would say before tagging:

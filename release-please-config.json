@@ -1,0 +1,35 @@
+{
+  "bootstrap-sha": "8b9b6db3b113a4e520340b4b69594f51a56a2702",
+  "include-component-in-tag": false,
+  "include-v-in-tag": true,
+  "draft": true,
+  "pull-request-title-pattern": "chore: release ${version}",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "viafrei",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        { "type": "json", "path": "server/package.json", "jsonpath": "$.version" },
+        { "type": "json", "path": "server/package-lock.json", "jsonpath": "$.version" },
+        { "type": "json", "path": "server/package-lock.json", "jsonpath": "$.packages[''].version" },
+        { "type": "json", "path": "catalogue.json", "jsonpath": "$.serverInfo.version" },
+        { "type": "json", "path": "server/catalogue/catalogue.json", "jsonpath": "$.serverInfo.version" }
+      ],
+      "changelog-sections": [
+        { "type": "feat", "section": "Added" },
+        { "type": "fix", "section": "Fixed" },
+        { "type": "perf", "section": "Changed" },
+        { "type": "refactor", "section": "Changed" },
+        { "type": "revert", "section": "Removed" },
+        { "type": "deps", "section": "Dependencies" },
+        { "type": "docs", "section": "Documentation", "hidden": false },
+        { "type": "ci", "section": "Build and CI", "hidden": false },
+        { "type": "build", "section": "Build and CI", "hidden": false },
+        { "type": "test", "section": "Tests", "hidden": true },
+        { "type": "chore", "section": "Chores", "hidden": true },
+        { "type": "style", "section": "Chores", "hidden": true }
+      ]
+    }
+  }
+}

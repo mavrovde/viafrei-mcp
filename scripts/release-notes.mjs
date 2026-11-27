@@ -91,15 +91,27 @@ export function extractBlock(changelog, version) {
 }
 
 /**
- * The opening bold lead of every block scripts/propose-release.mjs writes. ONE copy:
- * the self-test reads the proposer's source and fails unless its opening line is this
- * string, so the two cannot drift apart.
+ * The opening bold lead of every block the retired Version sync proposer wrote (up to
+ * 2.7.10). Those blocks stay in CHANGELOG.md; the self-test reads it and fails unless
+ * every one of them opens with this string.
  */
 export const MIRROR_LEAD = 'Mirrors the server.';
 
 /** A bold lead as a title fragment: no backticks, collapsed spaces, no trailing `.:;`. */
 export function normaliseLead(text) {
     return text.replace(/`/g, '').replace(/\s+/g, ' ').trim().replace(/[.:;]+$/, '').trim();
+}
+
+/**
+ * One entry release-please writes from a Conventional Commit:
+ * `* **scope:** subject ([#12](…)) ([abc1234](…/commit/…))`, or without the scope. The links
+ * at the end (at least the commit's) are what tells it from a hand-written list item.
+ */
+const ENTRY = /^\* (?:\*\*[^*]+?:\*\* )?(.+?)((?: \(\[[^\]]+\]\([^)]+\)\))+)$/u;
+
+/** The subject of each release-please entry of the block, in order, without scope or links. */
+export function entrySubjects(block) {
+    return block.split('\n').map((line) => ENTRY.exec(line)).filter((m) => m !== null && /\/commit\//u.test(m[2])).map((m) => normaliseLead(m[1]));
 }
 
 /**
@@ -112,6 +124,11 @@ export function boldLeads(block) {
     const leads = [];
     let previous = '';
     for (const line of block.split('\n')) {
+        // A release-please entry's bold is its scope (`**trains:**`), not a lead.
+        if (ENTRY.test(line) && /\/commit\//u.test(line)) {
+            previous = line;
+            continue;
+        }
         const opensParagraph = previous.trim() === '' || /^#{1,6}\s/.test(previous);
         const m = /^\s*([-*]\s+)?\*\*(.+?)\*\*/.exec(line);
         const lead = m && (m[1] || opensParagraph) ? normaliseLead(m[2]) : '';
@@ -132,6 +149,11 @@ export const MIRROR_TITLE = 'same tools, mirrors the server';
  */
 export function titleFor(block, version) {
     const leads = boldLeads(block);
+    // A block release-please wrote has no bold lead of its own unless a person added one;
+    // its first entry's subject (the first Added, then Fixed, as the sections are ordered)
+    // titles the page then.
+    const subject = entrySubjects(block)[0];
+    if (leads.length === 0 && subject !== undefined) return `viafrei v${version} — ${subject}`;
     if (leads.length === 0) {
         throw new NotesError(`v${version}: the "## [${version}]" block has no bold lead to title the page with`);
     }

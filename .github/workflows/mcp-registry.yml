@@ -1,11 +1,9 @@
 name: MCP Registry
 
 # Publishes the remote server entry `de.viafrei/mcp` to the Official MCP
-# Registry (registry.modelcontextprotocol.io) after every successful npm
-# release, the same way the Smithery workflow follows npm: through workflow_run
-# after a tag PUSH (a person's release), and by dispatch from Version sync's
-# publish job after an automatic release, whose npm run is itself dispatched
-# and therefore skipped by the workflow_run filter below.
+# Registry (registry.modelcontextprotocol.io) after every release, once the
+# live server serves it: the daily Version sync dispatches it, as it does
+# Smithery.
 #
 # The entry describes the REMOTE endpoints (Streamable HTTP and SSE), not the
 # npm package, so what it must agree with is the live server. Its version is
@@ -22,10 +20,16 @@ name: MCP Registry
 # Idempotent: a version the registry already holds is reported and the job
 # succeeds without publishing, so a re-run after a later failure is safe.
 
+# Dispatched, never chained to npm (item 2 of the 2.7.11 pipeline round): the live
+# server serves a release only after the deploy outside this repository, so a
+# run straight after npm always met an older live version and refused - no
+# listing from 2.7.6 to 2.7.10. The daily Version sync dispatches this once the
+# live server, npm latest and the newest tag agree and this listing is behind
+# (it reads the last successful run's name, below). The refusal on a live
+# version other than the input stays: a dispatch is a claim that it matches.
+run-name: MCP Registry ${{ inputs.version }}
+
 on:
-  workflow_run:
-    workflows: [npm]
-    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -48,18 +52,13 @@ env:
 
 jobs:
   publish:
-    # Only after a SUCCESSFUL npm run that was started by a tag push, or by hand.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push' &&
-       startsWith(github.event.workflow_run.head_branch, 'v'))
+    # Dispatched by Version sync once the live server serves the release, or by hand.
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: mcp-registry
     steps:
-      # The default branch, never the tag: workflow_run runs in main's context,
-      # and registry/server.json is not part of the npm release.
+      # The default branch (Version sync dispatches on it): registry/server.json
+      # is not part of the npm release.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -69,11 +68,10 @@ jobs:
       - name: Which version this run releases
         id: version
         env:
-          RUN_TAG: ${{ github.event.workflow_run.head_branch }}
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           set -eu
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then v="${INPUT_VERSION}"; else v="${RUN_TAG#v}"; fi
+          v="${INPUT_VERSION}"
           if ! printf '%s' "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "Not a version: '$v'" >&2
             exit 2
@@ -104,7 +102,7 @@ jobs:
             exit 2
           fi
           if [ "$live" != "$WANT" ]; then
-            echo "The live server is ${live}, not ${WANT}. Refusing." >&2
+            echo "The live server is ${live}, not ${WANT}. Refusing: a listing names the live server. Dispatch this again once the deploy serves ${WANT} (the daily Version sync does it by itself)." >&2
             exit 1
           fi
 

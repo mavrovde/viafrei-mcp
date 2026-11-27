@@ -59,7 +59,7 @@ import { AUTO_RUN_SCRIPTS, FORBIDDEN_NAMES, relativeMarkdownLinks, REQUIRED } fr
 import { missingFixtureImports } from './fixture-root.mjs';
 import { PackJsonError, soleTarballFilename } from './npm-pack-json.mjs';
 import { hashToken, loadRules } from './rules.mjs';
-import { exitOf, nodePath, npmCliPath, resolveTool, runTool } from './tools.mjs';
+import { TOOL_TIMEOUT_MS, exitOf, nodePath, npmCliPath, resolveTool, runTool } from './tools.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const GATE = join(ROOT, 'scripts/check-tarball.mjs');
@@ -914,9 +914,17 @@ function buildSweepRepo(workspace) {
     return root;
 }
 
+/**
+ * The deadline of one gate or sweep run here: 180 s (owner decision 2026-11-27, "120 s deadline - give
+ * 180 seconds"), or VF_TOOL_TIMEOUT_MS when that is set higher. A case takes about a second; the
+ * deadline exists for the rare run on the ubuntu runner that does not end after its exit line (#288),
+ * and the witness (scripts/hang-witness.mjs) records what held it, whichever deadline it reaches.
+ */
+const GATE_CASE_TIMEOUT_MS = Math.max(180_000, TOOL_TIMEOUT_MS);
+
 function runNode(script, args, env = process.env) {
     try {
-        const stdout = runTool(process.execPath, [script, ...args], { encoding: 'utf8', env });
+        const stdout = runTool(process.execPath, [script, ...args], { encoding: 'utf8', env, timeout: GATE_CASE_TIMEOUT_MS, witness: true });
         return { code: 0, timedOut: false, stdout };
     } catch (error) {
         // exitOf, not `error.status ?? -1`: a run killed at the deadline has no exit
@@ -978,7 +986,7 @@ function saysItsTail(stdout, code) {
 
 function runGate(tarball, env = process.env) {
     try {
-        const stdout = runTool(process.execPath, [GATE, tarball], { encoding: 'utf8', cwd: ROOT, env });
+        const stdout = runTool(process.execPath, [GATE, tarball], { encoding: 'utf8', cwd: ROOT, env, timeout: GATE_CASE_TIMEOUT_MS, witness: true });
         return { code: 0, timedOut: false, stdout };
     } catch (error) {
         return exitOf(error);

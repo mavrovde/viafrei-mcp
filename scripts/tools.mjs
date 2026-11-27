@@ -35,8 +35,10 @@
  * `process.execPath <npm-cli.js> …` and never as a program named "npm".
  */
 
-import { execFile, execFileSync } from 'node:child_process';
-import { accessSync, constants, realpathSync } from 'node:fs';
+import { execFile, execFileSync, spawn } from 'node:child_process';
+import { accessSync, constants, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { dirname, isAbsolute, join, sep } from 'node:path';
 
 /** The only directories a tool may come from. Root-owned on both platforms. */
@@ -164,20 +166,60 @@ function decoded(output) {
  * occurrence diagnoses itself instead of needing somebody to watch a log stop.
  */
 export function runTool(file, args = [], options = {}) {
+    const { witness: wanted = false, ...execOptions } = options;
+    const limit = execOptions.timeout ?? TOOL_TIMEOUT_MS;
+    const watch = wanted ? startWitness(limit) : undefined;
     try {
-        return execFileSync(file, args, { timeout: TOOL_TIMEOUT_MS, killSignal: 'SIGKILL', ...options });
+        return execFileSync(file, args, { timeout: TOOL_TIMEOUT_MS, killSignal: 'SIGKILL', ...execOptions });
     } catch (error) {
         const timedOut = error.code === 'ETIMEDOUT'
             || (error.killed === true && error.signal === 'SIGKILL');
         if (!timedOut) throw error;
-        const limit = options.timeout ?? TOOL_TIMEOUT_MS;
+        const seen = watch === undefined ? '' : `\n${watch.report()}`;
         throw new ToolError(
             `timed out after ${limit} ms and was killed: ${file} ${args.join(' ')}. ` +
             'This is a hang, not a failing assertion - see issue #25. Raise VF_TOOL_TIMEOUT_MS only ' +
-            'if the machine is genuinely that slow.',
+            `if the machine is genuinely that slow.${seen}`,
             { stdout: decoded(error.stdout), stderr: decoded(error.stderr) }
         );
+    } finally {
+        watch?.stop();
     }
+}
+
+const WITNESS = fileURLToPath(new URL('./hang-witness.mjs', import.meta.url));
+/** Witnesses already killed: a blocked parent has not reaped them, and they are no evidence. */
+const earlierWitnesses = new Set();
+
+/**
+ * `runTool({ witness: true })`: a separate process (scripts/hang-witness.mjs) that wakes ONCE,
+ * a few seconds before the deadline, and records what every process under this one is
+ * doing - issue #288, a gate killed at the deadline after it had printed its exit line.
+ * The parent cannot look itself: `execFileSync` blocks its event loop until the kill.
+ * Its stdio is ignored, so it holds none of the pipes it reports on; it is killed as soon
+ * as the call returns, so a call that finishes in time costs one short-lived process.
+ */
+function startWitness(limit) {
+    const margin = Math.min(5000, Math.floor(limit / 2));
+    const directory = mkdtempSync(join(tmpdir(), 'viafrei-witness-'));
+    const out = join(directory, 'report.txt');
+    const now = Date.now();
+    const child = spawn(process.execPath, [WITNESS, String(process.pid), String(now + limit - margin), out, String(now), [...earlierWitnesses].join(',')], { stdio: 'ignore' });
+    child.unref();
+    earlierWitnesses.add(child.pid);
+    return {
+        report() {
+            try {
+                return readFileSync(out, 'utf8').trimEnd();
+            } catch (error) {
+                return `hang witness: wrote nothing (${error.code ?? error.message}) - it did not wake ${margin} ms before the deadline`;
+            }
+        },
+        stop() {
+            child.kill('SIGKILL');
+            rmSync(directory, { recursive: true, force: true });
+        }
+    };
 }
 
 /**

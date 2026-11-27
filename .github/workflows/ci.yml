@@ -147,18 +147,16 @@ jobs:
       - name: Freshness probe self-test (offline, against a local stub)
         run: npm run test:freshness
 
-      # The release proposer's self-test: it drives the real script against two local
-      # stubs and includes every refusal, so the Version sync workflow cannot open a pull
-      # request for a value it should have refused. Offline, like everything else here.
-      - name: Release proposer self-test (offline, two local stubs)
-        run: npm run test:propose
+      # Version sync's decisions (scripts/release-state.mjs): the newest tag is judged,
+      # an older unpublished one is abandoned and never stuck, a listing is dispatched
+      # only when the live server serves the newest tag. Offline: pure inputs.
+      - name: Release-state self-test (offline)
+        run: npm run test:release-state
 
-      # The automatic release path's decisions: only a pure mirror is merged without a
-      # person, a red or still-pending required check never merges, a read that failed
-      # is never green, and the workflow waits before it merges and tags after.
-      # Offline: pure functions and a GitHub API stub on loopback.
-      - name: Automatic-release decisions self-test (offline, loopback stub)
-        run: npm run test:auto-release
+      # The release pull request's held runs are approved by this script; its
+      # self-test runs it against a stub gh (offline).
+      - name: Release-run approval self-test (offline, stub gh)
+        run: bash scripts/approve-release-runs.test.sh
 
       # The version gate above compares three fields. This proves it can say NO, with
       # the mutant #18 asks for, and that "could not read the lockfile" (exit 2) never

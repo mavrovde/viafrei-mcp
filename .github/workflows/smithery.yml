@@ -1,8 +1,8 @@
 name: Smithery
 
-# Re-publish the Smithery listing (viafrei/viafrei) after every release, the
-# way publish.yml releases the npm package: a tag the owner pushes is the only
-# thing that starts it, and a person never types the command.
+# Re-publish the Smithery listing (viafrei/viafrei) after every release, once
+# the live server serves it: the daily Version sync dispatches it, and a person
+# never types the command.
 #
 # Smithery lists the hosted server, not this tarball: a publish makes Smithery
 # re-scan https://mcp.viafrei.de/mcp and store what it finds (tools, prompts,
@@ -11,19 +11,21 @@ name: Smithery
 # the listing would record another release's surface under this one's run.
 # That is asserted, not assumed, and a mismatch is a refusal.
 #
-# The Version sync workflow's automatic path dispatches this with `version`
-# once the npm run it dispatched has concluded success; the workflow_run
-# trigger below ignores a dispatched npm run, so that never runs twice.
-#
-# Order: runs only after the npm workflow concluded SUCCESS for a tag push,
-# so a release that failed on npm never reaches Smithery either.
-# workflow_dispatch re-publishes by hand (e.g. after Smithery had an outage),
-# with the same version assertion.
+# Order: Version sync dispatches it only when npm latest, the newest tag and
+# the live server are one version, so a release that failed on npm never
+# reaches Smithery. A dispatch by hand (e.g. after a Smithery outage) is held
+# to the same version assertion.
+
+# Dispatched, never chained to npm (item 2 of the 2.7.11 pipeline round): the live
+# server serves a release only after the deploy outside this repository, so a
+# run straight after npm always met an older live version and refused - no
+# listing from 2.7.6 to 2.7.10. The daily Version sync dispatches this once the
+# live server, npm latest and the newest tag agree and this listing is behind
+# (it reads the last successful run's name, below). The refusal on a live
+# version other than the input stays: a dispatch is a claim that it matches.
+run-name: Smithery ${{ inputs.version }}
 
 on:
-  workflow_run:
-    workflows: [npm]
-    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -43,12 +45,6 @@ env:
 
 jobs:
   publish:
-    # Only an npm run that succeeded, for a TAG push (not a dispatch dry run).
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push' &&
-       startsWith(github.event.workflow_run.head_branch, 'v'))
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     # Holds the one secret, SMITHERY_API_KEY. No protection rule, for the
@@ -64,11 +60,10 @@ jobs:
       - name: Which version this run releases
         id: version
         env:
-          RUN_TAG: ${{ github.event.workflow_run.head_branch }}
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           set -eu
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then v="${INPUT_VERSION}"; else v="${RUN_TAG#v}"; fi
+          v="${INPUT_VERSION}"
           if ! printf '%s' "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "Not a version: '$v'" >&2
             exit 2
@@ -100,7 +95,7 @@ jobs:
             exit 2
           fi
           if [ "$live" != "$WANT" ]; then
-            echo "The live server is ${live}, not ${WANT}: Smithery would record another release's surface. Refusing." >&2
+            echo "The live server is ${live}, not ${WANT}: Smithery would record another release's surface. Refusing. Dispatch this again once the deploy serves ${WANT} (the daily Version sync does it by itself)." >&2
             exit 1
           fi
 
@@ -188,8 +183,7 @@ jobs:
       # The release reached SUCCESS on Smithery's side; now check what a person sees.
       # The PUBLIC registry entry must list exactly this release's tools (names and
       # descriptions), prompts and resources, as catalogue.json states them.
-      # The checkout is the DEFAULT branch, never the commit the triggering run
-      # names: a workflow_run job must not execute code from a ref it was handed.
+      # The checkout is the DEFAULT branch (Version sync dispatches on it).
       # A tag is cut from main, so main's catalogue is this release's — and that is
       # asserted below rather than assumed. No credentials kept, no secret here.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

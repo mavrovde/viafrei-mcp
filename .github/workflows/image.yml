@@ -20,12 +20,14 @@ name: Image
 #      point at the verified digest, each read back.
 #
 # Every action is pinned by its full commit SHA; every job ends within 15 min.
-# Started by a person's tag push, or dispatched on the tag by Version sync
-# (a tag pushed with the workflow token starts no run).
+# Dispatched on the tag by publish.yml (the Release workflow) once its checks
+# (Snyk, the full mutation run, the e2e against the real API) have passed and
+# npm serves the version, so an image is never built for a release those
+# checks stopped. Not started by the tag push itself: that would build beside
+# the checks instead of after them. A dispatch by hand on a tag
+# (gh workflow run image.yml --ref vX.Y.Z) is the recovery for a failed run.
 
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
 
 permissions:
