@@ -98,10 +98,17 @@ describe("roadworks rows as the API sends them", () => {
         : "- A7: Roadworks (Baustelle) · km 346.2 · 23/03/2023, 00:00 – 27/07/2029, 00:00");
     });
   }
+  for (const language of ["de", "en"] as const) {
+    it(`a publisher text and a kilometre: both, the text first (${language})`, () => {
+      const row = { ...real.data.situations[0]!, subtitle: "AS Seesen (Harz) (aus Richtung Harz) nach A7" };
+      expect(roadworksLine(row, language)).toContain(` · AS Seesen (Harz) (aus Richtung Harz) nach A7, km ${language === "de" ? "346,2" : "346.2"} · `);
+    });
+  }
   it("between junctions where named, a point where no kilometre, nothing where neither", () => {
     const row = real.data.situations[0]!;
     expect(roadPlace({ ...row, position: { fromKm: 1, toKm: 2, junctionFrom: "AS Seesen", junctionTo: "AS Echte" } }, "de")).toBe("zwischen AS Seesen und AS Echte");
     expect(roadPlace({ ...row, position: { fromKm: 346.2, toKm: 350, junctionFrom: null, junctionTo: null } }, "en")).toBe("km 346.2–350.0");
+    expect(roadPlace({ ...row, position: { fromKm: 346.2, toKm: null, junctionFrom: "AS Seesen", junctionTo: null } }, "de")).toBe("km 346,2");
     expect(roadPlace({ ...row, position: null }, "en")).toBe("at 50.334, 9.775");
     expect(roadPlace({ ...row, position: null, location: null }, "de")).toBeNull();
   });

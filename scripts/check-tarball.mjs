@@ -543,8 +543,9 @@ function report() {
  * When this run started, for the phase lines below.
  *
  * On the publish runner a gate run was killed at the 120 s deadline four times in
- * five runs, each time AFTER it had printed its full verdict, and never on a
- * laptop or in a Linux amd64 container (1,300 runs). The verdict line alone cannot
+ * about five runs, each time AFTER it had printed its full verdict, and never on a
+ * laptop or in a Linux amd64 container (about 750 runs: 600 under an async parent,
+ * about 150 under the self-test's own execFileSync parent). The verdict line alone cannot
  * say where those 120 s went, so the tail says each step it takes after the
  * verdict: the workspace removed, then the exit. A future kill's partial output
  * then names the phase that held it: the removal, the exit, or (both printed) the
