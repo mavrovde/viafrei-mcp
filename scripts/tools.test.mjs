@@ -24,7 +24,7 @@ import { dirname, extname, isAbsolute, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { missingFixtureImports } from './fixture-root.mjs';
-import { TOOL_DIRS, TOOL_TIMEOUT_MS, ToolError, nodePath, npmCliPath, resolveTool, runTool } from './tools.mjs';
+import { TOOL_DIRS, TOOL_TIMEOUT_MS, ToolError, exitOf, nodePath, npmCliPath, resolveTool, runTool } from './tools.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..');
@@ -424,6 +424,33 @@ check('runTool kills a program that overruns, and names it (#25)', () => {
     );
     const elapsed = Date.now() - started;
     assert.ok(elapsed < 10_000, `the kill took ${elapsed} ms, so the deadline is not being enforced`);
+});
+
+check('a hang is no exit code: exitOf reports it as unfinished, with what the program printed', () => {
+    // The gate self-test judged `error.status ?? -1`, so a gate run killed at the
+    // deadline was read as exit -1 and reported "ACCEPTED - it would have shipped".
+    // exitOf keeps the hang apart, and the partial output says where it stopped.
+    const program = ['-e', 'console.log("gate: started"); setTimeout(() => {}, 30_000)'];
+    let hang;
+    try {
+        runTool(process.execPath, program, { timeout: 1_500, encoding: 'utf8' });
+    } catch (error) {
+        hang = error;
+    }
+    assert.ok(hang instanceof ToolError && hang.timedOut === true, 'a killed program must be a ToolError marked timedOut');
+    const outcome = exitOf(hang);
+    assert.equal(outcome.timedOut, true, 'a hang must not be judged as an exit code');
+    assert.equal(outcome.code, null, 'a hang has no exit code');
+    assert.match(outcome.stdout, /gate: started/u, 'what it printed before the kill must be kept');
+    assert.match(outcome.reason, /timed out after [0-9_]+ ms and was killed/u);
+    let failure;
+    try {
+        runTool(process.execPath, ['-e', 'console.log("refused"); process.exit(2)'], { encoding: 'utf8' });
+    } catch (error) {
+        failure = error;
+    }
+    assert.deepEqual(exitOf(failure), { code: 2, timedOut: false, stdout: 'refused\n' }, 'an ordinary exit keeps its code');
+    assert.equal(new ToolError('not a hang').timedOut, false, 'only a timeout is a hang');
 });
 
 check('runTool re-throws an ordinary failure unchanged, so the gates can still read it', () => {

@@ -44,10 +44,34 @@ export const TOOL_DIRS = Object.freeze(['/usr/bin', '/bin']);
 
 /** Raised when a tool is not in one of `TOOL_DIRS`, or was asked for wrongly. */
 export class ToolError extends Error {
-    constructor(message) {
+    constructor(message, hang = undefined) {
         super(message);
         this.name = 'ToolError';
+        // A timeout's ToolError says so, and keeps what the program printed before it was
+        // killed. A caller that turns a failure into an exit code (`exitOf`) must tell a
+        // hang from a verdict: a killed gate has no exit code, and read as one it was
+        // reported as "ACCEPTED - it would have shipped" (the 2.7.8 pull request's CI).
+        // The partial output names where it stopped.
+        this.timedOut = hang !== undefined;
+        if (hang !== undefined) {
+            this.stdout = hang.stdout ?? '';
+            this.stderr = hang.stderr ?? '';
+        }
     }
+}
+
+/**
+ * The outcome of a `runTool` call that threw, for a caller that judges exit codes.
+ * `{ timedOut: true }` for a hang: there is no exit code to judge, and a caller must
+ * report it as a run that did not finish, never as a pass or a refusal. Otherwise the
+ * program's exit status. Either way, what it printed.
+ */
+export function exitOf(error) {
+    const stdout = `${error?.stdout ?? ''}${error?.stderr ?? ''}`;
+    if (error instanceof ToolError && error.timedOut) {
+        return { code: null, timedOut: true, reason: error.message, stdout };
+    }
+    return { code: typeof error?.status === 'number' ? error.status : -1, timedOut: false, stdout };
 }
 
 /**
@@ -106,6 +130,11 @@ function resolveTimeout(raw) {
 
 export const TOOL_TIMEOUT_MS = resolveTimeout(process.env.VF_TOOL_TIMEOUT_MS);
 
+/** A killed program's partial output as text, whichever encoding the call asked for. */
+function decoded(output) {
+    return output === undefined || output === null ? '' : String(output);
+}
+
 /**
  * `execFileSync` with a deadline, and a refusal that names what stopped.
  *
@@ -126,7 +155,8 @@ export function runTool(file, args = [], options = {}) {
         throw new ToolError(
             `timed out after ${limit} ms and was killed: ${file} ${args.join(' ')}. ` +
             'This is a hang, not a failing assertion - see issue #25. Raise VF_TOOL_TIMEOUT_MS only ' +
-            'if the machine is genuinely that slow.'
+            'if the machine is genuinely that slow.',
+            { stdout: decoded(error.stdout), stderr: decoded(error.stderr) }
         );
     }
 }
@@ -184,7 +214,8 @@ export function runToolAsync(file, args = [], options = {}) {
             reject(new ToolError(
                 `timed out after ${limit} ms and was killed: ${file} ${args.join(' ')}. ` +
                 'This is a hang, not a failing assertion - see issue #25. Raise VF_TOOL_TIMEOUT_MS only ' +
-                'if the machine is genuinely that slow.'
+                'if the machine is genuinely that slow.',
+                { stdout: decoded(stdout), stderr: decoded(stderr) }
             ));
         });
     });
