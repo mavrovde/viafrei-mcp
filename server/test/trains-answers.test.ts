@@ -9,7 +9,7 @@ import { http, HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { API_BASE, calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
 import { connect, textOf } from "./harness.js";
-import { MAX_BOARD_PARTS, REFRESH_WAIT, TRAIN_BOARD_SOURCE } from "../src/tools/trains.js";
+import { BOARD_ASK, boardMinutes, MAX_BOARD_PARTS, onlyStationWords, REFRESH_WAIT, TRAIN_BOARD_SOURCE } from "../src/tools/trains.js";
 
 type Body = { data: Record<string, unknown>; meta: Record<string, unknown> };
 
@@ -351,5 +351,54 @@ describe("structuredContent: the shape the server sent before the move", () => {
       asOf: expect.any(String), attribution: expect.any(String), license: expect.any(String),
     });
     expect(ops()).toContain("listStationDepartures");
+  });
+});
+
+/**
+ * The board read asks the API for the asked window and types (round Q84, Q86, Q87): with only the EVA number the
+ * API's defaults applied (5 departures, 60 minutes), so a busy station's board stopped at its fifth train and a
+ * long-distance or regional question saw none of its trains behind five others.
+ */
+describe("the board read asks the window, the most departures and the types", () => {
+  const boardQuery = (): URLSearchParams => calls.find((c) => c.operationId === "getTrainBoard")!.url.searchParams;
+
+  it("without when: the asked minutes, the API's maximum of departures, no types", async () => {
+    mockServer.use(settled(), boards({}));
+    await ask({ eva_no: "8001001", when: undefined, duration_min: 30 });
+    expect(boardQuery().get("limit")).toBe(String(50));
+    expect(boardQuery().get("duration_min")).toBe("30");
+    expect(boardQuery().has("categories")).toBe(false);
+  });
+
+  it("with when 30 minutes ahead and 60 minutes asked: the read reaches 90 minutes ahead; the types go with it", async () => {
+    mockServer.use(settled(), boards({}));
+    const when = new Date(Date.now() + 30 * 60_000).toISOString();
+    await ask({ eva_no: "8001001", when, duration_min: 60, categories: ["RE", "RB"] });
+    expect(Number(boardQuery().get("duration_min"))).toBeGreaterThanOrEqual(90);
+    expect(Number(boardQuery().get("duration_min"))).toBeLessThanOrEqual(91);
+    expect(boardQuery().get("categories")).toBe("RE,RB");
+  });
+
+  it("the window the API takes is 5 to 120 minutes", () => {
+    expect([boardMinutes(0, 0), boardMinutes(-60_000, 0), boardMinutes(30 * 60_000 + 1, 0), boardMinutes(500 * 60_000, 0)]).toEqual([5, 5, 31, 120]);
+    expect(BOARD_ASK).toBe(50);
+  });
+});
+
+/** Round Q87: "Hauptbahnhof" alone was read as Stuttgart Hbf; a name of station words alone is asked (mcp #291). */
+describe("a station name with no town is asked, not guessed", () => {
+  for (const language of LANGS) {
+    it(`"Hauptbahnhof": which one, no station read (${language})`, async () => {
+      const r = await ask({ station: "Hauptbahnhof", categories: ["RE", "RB"], language });
+      expect(r.isError).toBe(true);
+      expect(ops()).toEqual([]);
+      expect(textOf(r)).toBe(language === "de"
+        ? '„Hauptbahnhof“ nennt keine Stadt, und fast jede Stadt hat einen. Welcher Bahnhof ist gemeint? Bitte die Person fragen und mit der Stadt erneut aufrufen, zum Beispiel {"station": "Köln Hbf"}.'
+        : '"Hauptbahnhof" names no town, and almost every town has one. Which station is meant? Please ask the person and call again with the town, for example {"station": "Köln Hbf"}.');
+    });
+  }
+  it("station words alone, in either language; a town with them is a station", () => {
+    expect(["Hauptbahnhof", " hbf ", "Bahnhof", "Bf", "Bhf", "main  station", "Central Station", "station"].map(onlyStationWords)).toEqual(Array(8).fill(true));
+    expect(["Köln Hbf", "Hauptbahnhof Köln", "Bahnhof Zoo", "Stationsweg", "Fulda"].map(onlyStationWords)).toEqual(Array(5).fill(false));
   });
 });
