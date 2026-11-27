@@ -3,9 +3,11 @@
  * itemLines, tailLines and strategyLine).
  */
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import type { DataMeta } from "../src/api/client.js";
 import type * as T from "../src/api/types.js";
 import { HANDLERS } from "../src/tools/handlers.js";
-import { dayText, guidanceLine, roadStatusHead, roadStatusItem, roadStatusMore, roadStatusText } from "../src/tools/road-status-words.js";
+import { dayText, guidanceLine, roadStatusHead, roadStatusItem, roadStatusMore, roadStatusOf, roadStatusText, sourceName } from "../src/tools/road-status-words.js";
 
 const now = new Date("2026-11-25T00:10:00Z");
 const item = (o: Partial<T.RoadStatusItem> = {}): T.RoadStatusItem => ({
@@ -78,16 +80,49 @@ describe("the rest, the sources, the guidance, the by-road note", () => {
     const g: T.RoadGuidance = { title: null, titleEn: "R", words: null, wordsEn: null, from: null, to: null, via: null, until: null };
     expect(roadStatusText("A7", status({ guidance: [g] }), "en", now).split("\n")[4]).toMatch(/^• Traffic guidance by the Autobahn GmbH /u);
   });
-  it("check_road_status says it for a motorway asked by number, and today's list without it", async () => {
-    const run = async (roadStatus: T.RoadStatus | null) => {
-      const get = async (op: string) => {
-        if (op === "getMotorwayConditions") return { data: { lamp: "amber", lampReason: "jam", situations: [], roadStatus }, meta: { generatedAt: "2026-11-25T00:10:00Z", language: "en", asOf: "2026-11-25T00:06:00Z", freshness: [], attribution: [] } };
-        throw new Error(op);
-      };
-      const r = await HANDLERS["check_road_status"]!({ road: "A7", language: "en" }, { tool: "check_road_status", language: "en", api: { get } } as never);
-      return (r.content[0] as { text: string }).text.split("\n")[0];
+});
+
+describe("API 2.0.4's roadStatus, as prod sent it for the A7", () => {
+  // The answer of getMotorwayConditions for A7, trimmed: the roadStatus the contract's example leaves null.
+  const a7 = JSON.parse(readFileSync(new URL("./fixtures/road-status-a7.json", import.meta.url), "utf8")) as { data: { roadStatus: T.ApiRoadStatus }; meta: DataMeta };
+  const run = async (roadStatus: T.ApiRoadStatus | null, args: Record<string, unknown> = { road: "A7" }) => {
+    const asked: string[] = [];
+    const get = async (op: string) => {
+      asked.push(op);
+      if (op === "getMotorwayConditions") return { data: { lamp: "amber", lampReason: "narrowing", situations: [], roadStatus }, meta: a7.meta };
+      if (op === "listRoadConditions") return { data: { lamp: "amber", lampReason: "narrowing", situations: [] }, meta: a7.meta };
+      if (op === "resolvePlace") return { data: { name: "Seesen", label: "Seesen", kind: "municipality", location: { lat: 51.89, lon: 10.18 } }, meta: a7.meta };
+      throw new Error(op);
     };
-    expect(await run(status())).toMatch(/^A7: 24 closures, /u);
-    expect(await run(null)).toBe("A7: there is no report — which explicitly does not mean the road is clear.");
+    const r = await HANDLERS["check_road_status"]!({ language: "en", ...args }, { tool: "check_road_status", language: "en", api: { get } } as never);
+    return { text: (r.content[0] as { text: string }).text, isError: r.isError === true, asked };
+  };
+  it("is read, not crashed on: the tally names its publishers, each entry its provider text", async () => {
+    const { text, isError } = await run(a7.data.roadStatus);
+    expect(isError).toBe(false);
+    const lines = text.split("\n");
+    expect(lines).toContain("A7: 20 closures, 137 restrictions, 22 planned roadworks sites, 38 current roadworks sites per Arbeitsstellen auf Autobahnen (14 Tage): Die Autobahn GmbH des Bundes and Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen (BASt) — window until 2026-11-28.");
+    // The road operator's entry: title · junction — description; another publisher's: its message, the road named.
+    expect(lines).toContain('• Closure (Sperrung): Provider text (German): "Via Erhalt A7 von Harz (Raststaette) nach Schwalenberg (Parkplatz) Fahrbahninstandsetzung · AS Seesen (Harz) (aus Richtung Harz) nach A7 — Die Baustelle ist zu…" (2026-11-28, whole measure until 2026-11-28)');
+    expect(lines.some((l) => l.startsWith('• Closure (Sperrung) A7: Provider text (German): "A7 Hamburg Richtung Flensburg Einfahrt Neumünster-Mitte gesperrt,'))).toBe(true);
+    // The clock decides whether the day stands beside the time (standOf), so the day is optional here.
+    expect(text).toMatch(/^Sources that answered: Verkehrsdaten: Autobahn GmbH des Bundes — As of (2026-11-27 )?06:32; Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen \(BASt\) — As of (2026-11-27 )?05:54; Arbeitsstellen auf Autobahnen \(14 Tage\): Die Autobahn GmbH des Bundes\.$/mu);
+    expect(text).toMatch(/^Planned roadworks are filed by road and section/mu);
+  });
+  it("names a source by its family when the answer credits none, and says a planned entry by its bucket", async () => {
+    const s = roadStatusOf({ ...a7.data.roadStatus, items: [{ ...a7.data.roadStatus.items[0]!, status: "planned", term: "roadworks" }] }, { ...a7.meta, attribution: [] }, "de");
+    expect(s.counts.currentBy).toEqual(["ald_14d", "roadworks_bast"]);
+    expect(s.items[0]!.label).toBe("Geplante Arbeitsstelle");
+    expect(s.items[0]!.namedRoad).toBe(false);
+    expect(sourceName("x", { ...a7.meta, attribution: [{ family: "x", text: "Nur ein Name" }] })).toBe("Nur ein Name");
+  });
+  it("a motorway with a place is the place's situations on it, as the more line offers", async () => {
+    const { asked, text } = await run(a7.data.roadStatus, { road: "A7", place: "Seesen" });
+    expect(asked).toContain("listRoadConditions");
+    expect(asked).not.toContain("getMotorwayConditions");
+    expect(text).toMatch(/^A7 near Seesen/u);
+  });
+  it("today's list without it", async () => {
+    expect((await run(null)).text.split("\n")[0]).toBe("A7: there is no report — which explicitly does not mean the road is clear.");
   });
 });

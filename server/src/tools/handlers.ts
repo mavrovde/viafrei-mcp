@@ -13,7 +13,7 @@ import { SID_CONDITION_NOTE } from "../sid-consent.js";
 import { atParam, bool, isResult, looksLikeHouseNumber, num, placeMissing, placeUnknown, position, radiusM, str, strs, townCentre, type Args, type Handler, type ToolContext } from "./context.js";
 import { getDrivingRules } from "./driving-rules.js";
 import { findNearby, kmText } from "./nearby.js";
-import { roadStatusText } from "./road-status-words.js";
+import { roadStatusOf, roadStatusText } from "./road-status-words.js";
 import { findPlace, LAENDER } from "./find-place.js";
 import { flixBlock } from "./flix-words.js";
 import { findCheapestFuel, findFuelStation } from "./fuel.js";
@@ -70,8 +70,25 @@ export { MAX_WATCHES };
 function situationLine(s: T.RoadSituation, language: Language): string {
   const until = s.validity.until === null ? "" : L(language, ` bis ${berlinDateTime(s.validity.until, language)}`, ` until ${berlinDateTime(s.validity.until, language)}`);
   const delay = s.delayMin === null ? "" : L(language, ` (+${s.delayMin} min)`, ` (+${s.delayMin} min)`);
-  const dir = s.directionText === null ? "" : ` ${s.directionText}`;
-  return `- ${s.road ?? ""}${dir}: ${s.headline}${delay}${until}${s.distanceM === undefined ? "" : ` · ${km(s.distanceM, language)}`}`;
+  const where = [s.road ?? "", s.directionText ?? ""].filter((x) => x.trim() !== "").join(" ");
+  // A provider code ("constructionWorks") is said by its kind; a situation with no road starts with its words.
+  const what = isCode(s.headline) ? KIND[language][s.kind] ?? s.kind : s.headline;
+  return `- ${where === "" ? "" : `${where}: `}${what}${delay}${until}${s.distanceM === undefined ? "" : ` · ${km(s.distanceM, language)}`}`;
+}
+
+/** A lorry rule's layer in words: the code is never read out. */
+const LORRY_LAYER: Record<Language, Record<string, string>> = {
+  de: { long_lorry: "Lang-Lkw-Positivnetz", restriction: "Beschränkung", priority_route: "Lkw-Vorrangroute", zone: "Lkw-Zone" },
+  en: { long_lorry: "long-lorry positive network (Lang-Lkw-Positivnetz)", restriction: "restriction", priority_route: "lorry priority route (Lkw-Vorrangroute)", zone: "lorry zone" },
+};
+
+/** One lorry rule: where, its layer, the publisher's words (else the figure as published), the direction it applies in. */
+export function lorryLine(x: T.LorryRule, language: Language): string {
+  const where = [x.road, x.street, x.municipality].filter((p): p is string => p !== null && p.trim() !== "").join(", ");
+  const figure = x.value === null ? null : `${String(x.value).replace(".", language === "de" ? "," : ".")}${x.unit === null ? "" : ` ${x.unit}`}`;
+  const words = x.publishedText ?? ([x.kind, figure].filter((p) => p !== null).join(" ") || null);
+  const dir = x.direction === undefined || x.direction === null || x.direction.trim() === "" ? "" : ` (${x.direction})`;
+  return `- ${where === "" ? "" : `${where}: `}${LORRY_LAYER[language][x.layer] ?? x.layer}${words === null ? "" : `: ${words}`}${dir}`;
 }
 
 /** The lamp's colour and its reason in words, as today's server says them (autobahn-ampel.ts); the code is never read out. */
@@ -257,7 +274,7 @@ function roadStatusBody(d: T.RoadConditionsData, language: Language, limit: numb
 }
 
 /** A situation's kind in words, the German term beside the English one as today's answer names it. */
-const KIND: Record<Language, Record<string, string>> = {
+export const KIND: Record<Language, Record<string, string>> = {
   de: { closure: "Sperrung", roadworks: "Baustelle", jam: "Stau", accident: "Unfall", hazard: "Gefahr", restriction: "Einschränkung", weather: "Wetter", other: "Meldung" },
   en: { closure: "Closure (Sperrung)", roadworks: "Roadworks (Baustelle)", jam: "Jam (Stau)", accident: "Accident (Unfall)", hazard: "Hazard (Gefahr)", restriction: "Restriction (Einschränkung)", weather: "Weather (Wetter)", other: "Report (Meldung)" },
 };
@@ -284,7 +301,7 @@ export function roadEvents(situations: readonly T.RoadSituation[]): T.RoadSituat
 }
 
 /** The provider's text, one line, cut at a word near `max` characters. */
-const excerpt = (t: string, max = 160): string => {
+export const excerpt = (t: string, max = 160): string => {
   const one = t.replace(/\s+/gu, " ").trim();
   if (one.length <= max) return one;
   const cut = one.slice(0, max);
@@ -487,7 +504,9 @@ const checkRoadStatus: Handler = async (args, ctx) => {
   let body: string;
   let at: string | undefined;
   const asked = road?.replace(/\s/g, "").toUpperCase();
-  if (road !== undefined && /^A\s?\d+$/i.test(road)) {
+  // A motorway asked by its number alone: its road status; with a place or a point, the place's situations on it
+  // (the narrowing the "… more" line offers: road and place together).
+  if (road !== undefined && /^A\s?\d+$/i.test(road) && args["place"] === undefined && args["lat"] === undefined) {
     const code = asked!;
     const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: code, horizon_days: horizon, limit: ROAD_READ })
       .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; });
@@ -497,7 +516,7 @@ const checkRoadStatus: Handler = async (args, ctx) => {
     }
     metas.push(r.meta);
     const status = r.data.roadStatus ?? null;
-    body = status === null ? roadStatusBody(r.data, language, limit, code, true, r.meta.page?.hasMore === true) : roadStatusText(code, status, language);
+    body = status === null ? roadStatusBody(r.data, language, limit, code, true, r.meta.page?.hasMore === true) : roadStatusText(code, roadStatusOf(status, r.meta, language), language);
   } else if (asked !== undefined && /^[BLS]\d{1,4}$/u.test(asked) && args["place"] === undefined && args["lat"] === undefined) {
     // A federal or Land road asked by its number alone: the API reads the situations naming it (a Kreisstraße is no reference).
     const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: asked, horizon_days: horizon, limit });
@@ -526,7 +545,9 @@ const checkRoadStatus: Handler = async (args, ctx) => {
   if (vehicle === "lorry" || vehicle === "long_lorry") {
     const rules = await ctx.api.get<T.LorryRule[]>("listLorryRules", { vehicle, road, at });
     metas.push(rules.meta);
-    if (rules.data.length > 0) body += `\n\n${L(language, "Lkw-Regeln:", "Lorry rules:")}\n${rules.data.slice(0, 10).map((x) => `- ${[x.road, x.street, x.municipality].filter(Boolean).join(", ")}: ${x.publishedText ?? x.kind ?? x.layer}`).join("\n")}`;
+    // One line per rule as said: a street's priority route published as many segments is one rule, not ten.
+    const lines = [...new Set(rules.data.map((x) => lorryLine(x, language)))];
+    if (lines.length > 0) body += `\n\n${L(language, "Lkw-Regeln:", "Lorry rules:")}\n${lines.slice(0, 10).join("\n")}`;
   }
   return toolResult(body, roadWeatherCredits(metas, null), language);
 };
@@ -760,9 +781,23 @@ const ADDRESS_WORDS = {
   en: { notLoaded: "This installation holds no OpenStreetMap address data — I can look up towns and stations, but not house numbers." },
 } as const;
 
+/** A typed address with no town part: no comma before a town and no postcode (the API's q is street and number, then a postcode or a town). */
+const NO_TOWN = (q: string): boolean => !q.includes(",") && !/\b\d{5}\b/u.test(q);
+
 const findAddress: Handler = async (args, ctx) => {
   const { language } = ctx;
-  const r = await ctx.api.get<T.AddressData>("listAddresses", { q: str(args["query"]), limit: num(args["limit"]) });
+  const q = str(args["query"]);
+  const r = await ctx.api.get<T.AddressData>("listAddresses", { q, limit: num(args["limit"]) }).catch((err: unknown) => {
+    // The API refuses a street and number alone (400): said in the person's words, asking for the town, never its generic sentence.
+    if (err instanceof ApiError && err.kind === "invalid" && q !== undefined && NO_TOWN(q)) return null;
+    throw err;
+  });
+  if (r === null) {
+    const typed = q!.trim();
+    return toolError(L(language,
+      `„${typed}“ habe ich als Straße und Hausnummer gelesen — dazu fehlt der Ort oder die Postleitzahl. Bitte mit angeben, z. B. „${typed}, Fulda“.`,
+      `I read "${typed}" as a street and house number — the town or postcode is missing. Please add it, e.g. "${typed}, Fulda".`), "invalid_input", "place_missing");
+  }
   if (r.data.addresses.length === 0) {
     // Today's server first asks whether any address is loaded at all (osmAddressesLoaded): with none, it says so,
     // credits nothing and lists found 0. The contract's coverage names the Länder the addresses cover.
@@ -1037,14 +1072,26 @@ const checkStationFacilities: Handler = async (args, ctx) => {
   if (noStation(args)) return NEED_STATION(language);
   const stations = await stationOf(args, ctx, true);
   const station = stations.data[0];
-  if (station === undefined) {
-    const asked = str(args["station"]) ?? str(args["eva_no"]);
-    return asked === undefined ? none(language, [stations.meta], L(language, "Bahnhöfe", "stations")) : NOT_KNOWN.facilityStation(asked, language);
-  }
   const facility = str(args["facility"]);
   const kind = facility === "any" ? undefined : facility;
   // Today's default list length, sent so the counts and the list agree on it.
   const limit = num(args["limit"]) ?? FACILITIES_LIMIT;
+  if (station === undefined) {
+    const asked = str(args["station"]) ?? str(args["eva_no"]);
+    if (asked === undefined) return none(language, [stations.meta], L(language, "Bahnhöfe", "stations"));
+    const name = str(args["station"]);
+    // No DB station of that name: a stop of it (a tram or U-Bahn stop) is known, and its lifts are read where any are published.
+    const stop = name === undefined ? undefined : (await ctx.api.get<T.Station[]>("listStations", { q: name, limit: 1 })).data[0];
+    if (stop === undefined) return NOT_KNOWN.facilityStation(asked, language);
+    const own = await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: stop.id, kind, limit })
+      .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; });
+    if (own !== null && own.data.counts.active + own.data.counts.inactive + own.data.counts.unknown > 0) {
+      return toolResult(facilitiesText(language, own.data, kind, limit, []), [own.meta], language);
+    }
+    return toolError(L(language,
+      `„${stop.name}“ kenne ich als Haltestelle, aber nicht als Bahnhof der DB: Den Zustand von Aufzügen und Fahrtreppen veröffentlichen die DB für ihre Bahnhöfe und die Kölner Stadtbahn für ihre Haltestellen — für diese Haltestelle liegt er mir nicht vor. Ihre stufenfreien Steige, wo erhoben: describe_station.`,
+      `I know "${stop.name}" as a stop, but not as a DB station: lift and escalator status is published by DB for its stations and by the Köln Stadtbahn for its stops — none is held for this stop. Its step-free platforms, where surveyed: describe_station.`), "out_of_coverage");
+  }
   const r = await ctx.api.get<T.StationFacilitiesData>("listStationFacilities", { stationId: station.id, kind, limit });
   const d = r.data;
   // None of the asked kind: one more read, on this path only, says what DB does list ("nur 6 Fahrtreppen").
@@ -1072,7 +1119,9 @@ async function stationPage(stationId: string, stationName: string, departures: n
 const describeStation: Handler = async (args, ctx) => {
   const { language } = ctx;
   if (noStation(args)) return NEED_STATION(language);
-  const stations = await stationOf(args, ctx);
+  // The DB station of that name first ("Leipzig Hbf" is the station, not the tram stop in front of it); a stop otherwise.
+  const railway = await stationOf(args, ctx, true);
+  const stations = railway.data.length > 0 || str(args["station"]) === undefined ? railway : await stationOf(args, ctx);
   const station = stations.data[0];
   if (station === undefined) {
     const eva = str(args["eva_no"]);
@@ -1081,7 +1130,9 @@ const describeStation: Handler = async (args, ctx) => {
     return name === undefined ? none(language, [stations.meta], L(language, "Bahnhöfe", "stations")) : NOT_KNOWN.station(name, language);
   }
   const n = num(args["departures"]) ?? STATION_DEPARTURES;
-  const page = await stationPage(station.id, station.name, n, ctx);
+  // The API lists at least one departure (getStationPage's minimum is 1): 0 asks for its least, and the board is left out.
+  const read = await stationPage(station.id, station.name, Math.max(n, 1), ctx);
+  const page = read === undefined || n > 0 ? read : { ...read, data: { ...read.data, sections: read.data.sections.filter((s) => s.id !== "departures") } };
   if (page !== undefined) {
     const subject = shareAlikeSubjectOf(page.data, language);
     return toolResult(stationPageSectionsText(page.data, language, new Date()), [page.meta], language, subject === undefined ? {} : { shareAlikeSubject: subject });

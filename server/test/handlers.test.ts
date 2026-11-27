@@ -12,7 +12,7 @@ import { ApiError } from "../src/api/client.js";
 import { pinned } from "./pinned.js";
 import { haversineM } from "../src/tools/location.js";
 import { connect, textOf } from "./harness.js";
-import { GAPS, HANDLERS, lampText, nearestMotorways } from "../src/tools/handlers.js";
+import { GAPS, HANDLERS, lampText, lorryLine, nearestMotorways } from "../src/tools/handlers.js";
 import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
 import { kmText } from "../src/tools/nearby.js";
 import { conditionSentence } from "../src/tools/watch-words.js";
@@ -209,12 +209,35 @@ describe("check_road_status", () => {
       await pinned("handlers", body(r));
     });
   }
+  it("a lorry's rules as prod sent them near Haan: one line per rule, its layer and figure in words, never the code", async () => {
+    const rule = (o: Record<string, unknown>) => ({ ...ex<Record<string, unknown>[]>("listLorryRules")[0], road: null, kind: null, publishedText: null, value: null, unit: null, direction: null, ...o });
+    // The same street's priority route, published as ten segments.
+    serve("listLorryRules", [
+      ...Array.from({ length: 10 }, () => rule({ layer: "priority_route", street: "Kaiserstraße", municipality: "Haan" })),
+      rule({ layer: "restriction", kind: "height", value: 3.8, unit: "m", street: "Bahnstraße", municipality: "Haan", direction: "Richtung Hilden" }),
+      rule({ layer: "zone", street: null, municipality: null }),
+    ]);
+    const de = body(await call("check_road_status", { place: "Haan", vehicle: "lorry", language: "de" })).split("Lkw-Regeln:\n")[1]!.split("\n\n")[0];
+    expect(de).toBe(["- Kaiserstraße, Haan: Lkw-Vorrangroute", "- Bahnstraße, Haan: Beschränkung: height 3,8 m (Richtung Hilden)", "- Lkw-Zone"].join("\n"));
+    expect(lorryLine(rule({ layer: "restriction", kind: "weight", value: 7.5, unit: "t" }) as never, "en")).toBe("- restriction: weight 7.5 t");
+    expect(lorryLine(rule({ layer: "priority_route", street: "Kaiserstraße", municipality: "Haan", direction: " " }) as never, "en")).toBe("- Kaiserstraße, Haan: lorry priority route (Lkw-Vorrangroute)");
+    expect(lorryLine(rule({ layer: "something_new", publishedText: "Nur Anlieger" }) as never, "de")).toBe("- something_new: Nur Anlieger");
+  });
+
+  it("a situation with no road (a city's closure, prod: Köln) starts with its words; a provider code is said by its kind", async () => {
+    serve("listRoadConditions", { ...ex<Record<string, unknown>>("listRoadConditions"), situations: [
+      situation({ road: "", directionText: null, headline: "Straßensperrung", kind: "closure", validity: { from: null, until: null }, distanceM: 400 }),
+      situation({ road: "A46", directionText: null, headline: "maintenanceWorks", kind: "roadworks", validity: { from: null, until: null }, distanceM: 1_500 }),
+    ] });
+    const lines = body(await call("check_road_status", { place: "Köln", language: "de" })).split("\n");
+    expect(lines.slice(0, 2)).toEqual(["- Straßensperrung · 400 m", "- A46: Baustelle · 1,5 km"]);
+  });
 
   it("a long lorry at a position passes the position to the lorry rules; none found adds nothing", async () => {
     serve("listLorryRules", []);
     const r = await call("check_road_status", { ...at, vehicle: "long_lorry", language: "en" });
     expect(query("listLorryRules")).toEqual([{ vehicle: "long_lorry", at: "52.52,13.405", lang: "en" }]);
-    expect(body(r)).toBe(`${String(meta(r)["conditionNote"])}\n- A103: MaintenanceWorks · 500 m`);
+    expect(body(r)).toBe(`${String(meta(r)["conditionNote"])}\n- A103: Roadworks (Baustelle) · 500 m`);
     expect(meta(r)["sources"]).toEqual(["roads_alpha", "lorry_bast_langlkw"]);
   });
 
@@ -289,7 +312,7 @@ describe("find_roadworks_ahead", () => {
     const r = await call("find_roadworks_ahead", { road: "a 3", limit: 4, language: "en" });
     expect(paths("getMotorwayConditions")).toEqual(["/v1/motorways/A3/conditions"]);
     expect(query("getMotorwayConditions")).toEqual([{ kinds: "roadworks", horizon_days: "14", limit: "4", lang: "en" }]);
-    expect(body(r)).toBe("traffic light yellow: DWD warning.\n- A101: GeneralObstruction\n- A101: GeneralObstruction");
+    expect(body(r)).toBe("traffic light yellow: DWD warning.\n- A101: Hazard (Gefahr)\n- A101: Hazard (Gefahr)");
   });
 
   for (const key of ["place"]) {
@@ -298,7 +321,7 @@ describe("find_roadworks_ahead", () => {
       expect(ops()).toEqual(["resolvePlace", "listRoadConditions"]);
       expect(query("resolvePlace")).toEqual([{ q: "Köln", lang: "en" }]);
       expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", horizon_days: "14", lang: "en" }]);
-      expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: MaintenanceWorks · 500 m");
+      expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: Roadworks (Baustelle) · 500 m");
     });
   }
 
@@ -915,6 +938,23 @@ describe("find_place, find_poi, find_address", () => {
       expect(body(await call("find_address", { query: "Xyz", language }))).toBe(language === "de" ? "Keine Adressen gefunden." : "No addresses found.");
     });
   }
+
+  it("find_address with a street and number alone: the API's 400 said in the person's words, asking for the town (place_missing)", async () => {
+    // The API's answer to "Hauptstraße 1" on prod: a 400 whose sentence names no parameter.
+    mockServer.use(handlerFor("listAddresses", () => problem(400, "invalid-parameter", "One or more parameters are invalid.")));
+    const de = await call("find_address", { query: " Hauptstraße 1 ", language: "de" });
+    expect(de.isError).toBe(true);
+    expect(body(de)).toBe("„Hauptstraße 1“ habe ich als Straße und Hausnummer gelesen — dazu fehlt der Ort oder die Postleitzahl. Bitte mit angeben, z. B. „Hauptstraße 1, Fulda“.");
+    expect(de._meta).toMatchObject({ errorCode: "invalid_input", errorReason: "place_missing" });
+    const en = await call("find_address", { query: "Hauptstraße 1", language: "en" });
+    expect(body(en)).toBe('I read "Hauptstraße 1" as a street and house number — the town or postcode is missing. Please add it, e.g. "Hauptstraße 1, Fulda".');
+    // With a town or a postcode typed, the refusal is the API's own: it is about something else.
+    for (const query of ["Hauptstraße 1, Fulda", "Hauptstraße 1 36037"]) {
+      const r = await call("find_address", { query, language: "en" });
+      expect(body(r)).toBe("The request does not fit: One or more parameters are invalid.");
+      expect(r._meta).not.toHaveProperty("errorReason");
+    }
+  });
 });
 
 describe("describe_location", () => {
@@ -1878,6 +1918,26 @@ describe("stations", () => {
     const facilities = (list: ReturnType<typeof unit>[]) => ({ station: { name: "Schömpingbach Hbf" }, facilities: list,
       counts: { active: list.filter((f) => f.state === "active").length, inactive: list.filter((f) => f.state === "inactive").length, unknown: list.filter((f) => f.state !== "active" && f.state !== "inactive").length } });
     const text = async (args: Record<string, unknown>) => body(await call("check_station_facilities", { station: "Schömpingbach Hbf", ...args }));
+    it("a stop that is no DB station (prod: Stuttgart Charlottenplatz): known as a stop, its lifts said where published, else out of coverage", async () => {
+      // The railway search knows no DB station of that name; the stop search answers the urban rail stop.
+      const stop = { ...ex<Record<string, unknown>[]>("listStations")[0], id: "stop-charlottenplatz", name: "Charlottenplatz", eva: null, evaNumbers: [], modes: ["tram"] };
+      mockServer.use(handlerFor("listStations", (u) => HttpResponse.json({ ...exampleOf<Body>("listStations"), data: u.searchParams.get("railway") === "true" ? [] : [stop] })));
+      serve("listStationFacilities", facilities([]));
+      const en = await call("check_station_facilities", { station: "Stuttgart Charlottenplatz", language: "en" });
+      expect(en.isError).toBe(true);
+      expect(body(en)).toBe('I know "Charlottenplatz" as a stop, but not as a DB station: lift and escalator status is published by DB for its stations and by the Köln Stadtbahn for its stops — none is held for this stop. Its step-free platforms, where surveyed: describe_station.');
+      expect(en._meta).toMatchObject({ errorCode: "out_of_coverage" });
+      expect(query("listStations")).toEqual([{ q: "Stuttgart Charlottenplatz", limit: "1", railway: "true", lang: "en" }, { q: "Stuttgart Charlottenplatz", limit: "1", lang: "en" }]);
+      expect(query("listStationFacilities")).toEqual([{ limit: "20", lang: "en" }]);
+      expect(calls.find((c) => c.operationId === "listStationFacilities")?.url.pathname).toContain(encodeURIComponent("stop-charlottenplatz"));
+      mockServer.use(handlerFor("listStationFacilities", () => problem(404, "not_found")));
+      expect(body(await call("check_station_facilities", { station: "Stuttgart Charlottenplatz", language: "de" }))).toMatch(/^„Charlottenplatz“ kenne ich als Haltestelle, aber nicht als Bahnhof der DB: /u);
+      // A stop whose lifts the API does publish: they are said as a station's are.
+      serve("listStationFacilities", facilities([unit("7", "elevator", "zu Gleis 1", "inactive")]));
+      const known = await call("check_station_facilities", { station: "Stuttgart Charlottenplatz", language: "en" });
+      expect(known.isError).not.toBe(true);
+      expect(body(known)).toMatch(/^1 of 1 reported facilities at Schömpingbach Hbf /u);
+    });
     it("every unit in service, one name twice told apart by its number (the equipment number, without the API's id prefix), and a list cut at the limit", async () => {
       serve("listStationFacilities", facilities([unit("fasta:10", "elevator", "zu Gleis 1", "active"), unit("equipment:11", "elevator", "zu Gleis 1", "active"), unit("12", "escalator", "Westseite", "active")]));
       expect(await text({ limit: 2, language: "de" })).toBe([

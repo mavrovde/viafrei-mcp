@@ -1,0 +1,144 @@
+{
+ "_about": "Trimmed from the API 2.0.4 answer of getMotorwayConditions for A7 (horizon_days=1): the roadStatus as sent, two of its items, three of its sources.",
+ "data": {
+  "roadStatus": {
+   "windowEnd": "2026-11-28T05:35:11.651649582Z",
+   "counts": {
+    "closed": 20,
+    "restricted": 137,
+    "planned": 22,
+    "programme": 0,
+    "current": 38,
+    "total": 217,
+    "currentFamilies": [
+     "ald_14d",
+     "roadworks_bast"
+    ]
+   },
+   "items": [
+    {
+     "status": "closed",
+     "term": "closure",
+     "sourceFamily": "autobahn",
+     "road": "A7",
+     "id": "a7-item-1",
+     "kind": "closure",
+     "title": "Via Erhalt A7 von Harz (Raststaette) nach Schwalenberg (Parkplatz) Fahrbahninstandsetzung",
+     "subtitle": "AS Seesen (Harz) (aus Richtung Harz) nach A7",
+     "extent": "51.883436665887345,10.130789806410693,51.88364685080699,10.129430107703756",
+     "description": [
+      "Die Baustelle ist zu folgenden Zeiträumen gültig:",
+      "27.11.26 18:30 bis zum 28.11.26 06:00 Uhr.",
+      "(Ende der Gesamtmaßnahme: 28.11.26)",
+      "Von Auffahrt auf die A7: AS Seesen (Harz) (aus Richtung Harz) nach A7: Hannover -> Kassel, zwischen AS Rhüden (Harz) und 12.3 km vor AS Echte",
+      "Länge: konnte nicht ermittelt werden",
+      "Via Erhalt A7 von Harz (Raststaette) nach Schwalenberg (Parkplatz) Fahrbahninstandsetzung"
+     ],
+     "segments": 1,
+     "eventType": null,
+     "publisher": null,
+     "publicationId": null,
+     "place": null,
+     "detail": null,
+     "siteName": null,
+     "sectionName": null,
+     "cause": null,
+     "referentFrom": null,
+     "referentTo": null,
+     "detour": false,
+     "detourVia": null,
+     "detourForSomeVehicles": false,
+     "windowStarts": [],
+     "windowEnds": [],
+     "windowCount": 0,
+     "closureFrom": null,
+     "closureTo": null,
+     "from": null,
+     "to": "2026-11-28T05:00:00Z",
+     "measureTo": "2026-11-27T23:00:00Z",
+     "lat": 51.883436665887345,
+     "lon": 10.130789806410693
+    },
+    {
+     "status": "closed",
+     "term": "closure",
+     "sourceFamily": "traffic_sh",
+     "road": "A7",
+     "id": "a7-item-2",
+     "kind": null,
+     "title": null,
+     "subtitle": null,
+     "extent": null,
+     "description": [],
+     "segments": 0,
+     "eventType": "roadOrCarriagewayOrLaneManagement",
+     "publisher": "D SH LMS-SH",
+     "publicationId": "LMS/r_LMS/1004424_D  SH LMS-SH",
+     "place": "A7 Hamburg Richtung Flensburg\nEinfahrt Neumünster-Mitte",
+     "detail": "A7 Hamburg Richtung Flensburg\nEinfahrt Neumünster-Mitte\ngesperrt, geplante Bauarbeiten, Fahrbahnerneuerung, der Umleitungsbeschilderung folgen, von 17.08.2026 bis 27.11.2026",
+     "siteName": null,
+     "sectionName": null,
+     "cause": null,
+     "referentFrom": null,
+     "referentTo": null,
+     "detour": false,
+     "detourVia": null,
+     "detourForSomeVehicles": false,
+     "windowStarts": [],
+     "windowEnds": [],
+     "windowCount": 0,
+     "closureFrom": null,
+     "closureTo": null,
+     "from": "2026-08-10T06:19:57Z",
+     "to": "2026-11-27T22:59:00Z",
+     "measureTo": null,
+     "lat": null,
+     "lon": null
+    }
+   ],
+   "hidden": 215,
+   "hiddenClosures": 9,
+   "canRaise": false,
+   "sourcesAnswered": [
+    {
+     "sourceFamily": "autobahn",
+     "asOf": "2026-11-27T05:32:04.115Z"
+    },
+    {
+     "sourceFamily": "roadworks_bast",
+     "asOf": "2026-11-27T04:54:51.245Z"
+    },
+    {
+     "sourceFamily": "ald_14d",
+     "asOf": null
+    }
+   ],
+   "guidance": [],
+   "guidanceNotCurrent": [],
+   "plannedWorksHaveNoCoordinates": true
+  }
+ },
+ "meta": {
+  "requestId": "road-status-a7",
+  "generatedAt": "2026-11-27T05:35:12Z",
+  "language": "de",
+  "attribution": [
+   {
+    "family": "ald_14d",
+    "text": "Arbeitsstellen auf Autobahnen (14 Tage): Die Autobahn GmbH des Bundes | MIA via Mobilithek, eingeschränkte Nutzung, kostenfrei, bearbeitet"
+   },
+   {
+    "family": "autobahn",
+    "text": "Verkehrsdaten: Autobahn GmbH des Bundes"
+   },
+   {
+    "family": "roadworks_bast",
+    "text": "Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen (BASt) via Mobilithek, CC BY 4.0, bearbeitet"
+   },
+   {
+    "family": "traffic_sh",
+    "text": "Verkehrsmeldungen Schleswig-Holstein: Landesmeldestelle Polizei Schleswig-Holstein via Mobilithek, Open Data (freie Nutzung)"
+   }
+  ]
+ }
+}

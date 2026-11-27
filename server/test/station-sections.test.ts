@@ -224,6 +224,33 @@ describe("describe_station reads the page first", () => {
     const { seen } = await run((op) => (op === "getStationPage" ? { data: apiPage([]), meta } : null), { departures: 3 });
     expect(seen[1]![1]).toEqual({ stationId: "1:k", departures: 3 });
   });
+  it("the DB station of the name first (prod: Leipzig Hbf answered its tram stop); a stop of it only when DB has none", async () => {
+    const page = { data: apiPage([]), meta };
+    const ask = async (railway: unknown[], stop: unknown[]) => {
+      const seen: [string, Record<string, unknown>][] = [];
+      const get = async (op: string, q: Record<string, unknown>) => {
+        seen.push([op, q]);
+        if (op === "listStations") return { data: q["railway"] === "true" ? railway : stop, meta };
+        return page;
+      };
+      await HANDLERS["describe_station"]!({ station: "Leipzig Hbf", language: "de" }, { tool: "describe_station", language: "de", api: { get } } as never);
+      return seen;
+    };
+    const db = { id: "db-leipzig-hbf", name: "Leipzig Hbf", evaNo: "101", location: { lat: 51.345, lon: 12.382 } };
+    const tram = { id: "tram-leipzig-hbf", name: "Leipzig, Hauptbahnhof/Goethestr.", evaNo: null, location: { lat: 51.344, lon: 12.379 } };
+    const a = await ask([db], [tram]);
+    expect(a.map(([op, q]) => [op, q["railway"] ?? null, q["stationId"] ?? null])).toEqual([["listStations", "true", null], ["getStationPage", null, db.id]]);
+    const b = await ask([], [tram]);
+    expect(b.map(([op, q]) => [op, q["railway"] ?? null, q["stationId"] ?? null])).toEqual([["listStations", "true", null], ["listStations", null, null], ["getStationPage", null, tram.id]]);
+  });
+  it("no departures asked: the page is asked for its least (the API's minimum is 1) and its board left out", async () => {
+    const page = { data: apiPage([apiSec("departures", { departures: [apiDep()] }), apiSec("parking_charging", { facilities: { flags: [], location: null } })]), meta };
+    const { seen, text: t, r } = await run((op) => (op === "getStationPage" ? page : null), { departures: 0 });
+    expect(r.isError).not.toBe(true);
+    expect(seen[1]![1]).toEqual({ stationId: "1:k", departures: 1 });
+    expect(t).not.toMatch(/^Departures|S11/mu);
+    expect((await run((op) => (op === "getStationPage" ? page : null), { departures: 1 })).text).toMatch(/^Departures \(As of 11:58\):\n- 12:05 S11/mu);
+  });
   it("not offered (404) or no page (null): the facilities and board are read as before; another failure is the API's", async () => {
     const fallback = (op: string): unknown => {
       if (op === "listStationFacilities") return { data: { station: { name: "Köln Hbf" }, counts: { active: 0, inactive: 0, unknown: 0 }, facilities: [] }, meta };

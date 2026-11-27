@@ -141,7 +141,7 @@ describe("tool calls that go wrong", () => {
 
   it("an API failure is worded for the person", async () => {
     mockServer.use(handlerFor("listAddresses", () => problem(400, "invalid-parameter", "q is too short")));
-    const r = await call("find_address", { query: "xyz", language: "en" });
+    const r = await call("find_address", { query: "xyz, Alpha", language: "en" });
     expect(r.isError).toBe(true);
     expect(textOf(r)).toBe("The request does not fit: q is too short");
   });

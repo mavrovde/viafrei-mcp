@@ -42,6 +42,16 @@ const RULES_TOPICS: Readonly<Record<string, readonly string[]>> = {
  * The reason code a tool error carries in `_meta.errorCode`, as the server this one replaces sets it: the usage
  * counters and the request log count an error by it, never by its text. A code the handler set is kept.
  */
+/**
+ * A crash's diagnosis for the "tool call failed" line: its message and the first frame of its stack, the path from the
+ * package's own src/ or dist/ on. An API failure carries its kind instead: its message may repeat the request's words.
+ */
+export function crashOf(err: unknown): { message?: string; frame?: string } {
+  if (!(err instanceof Error) || err instanceof ApiError) return {};
+  const frame = err.stack?.split("\n").find((l) => /^\s+at /u.test(l))?.trim().replace(/\(?(?:file:\/\/)?\/[^()]*?\/((?:src|dist)\/)/u, (m, dir: string) => (m.startsWith("(") ? "(" : "") + dir);
+  return { message: err.message, ...(frame === undefined ? {} : { frame }) };
+}
+
 export function withErrorCode(result: CallToolResult, code: ToolErrorCode): CallToolResult {
   if (result.isError !== true || toolErrorCodeOf(result) !== null) return result;
   return { ...result, _meta: { ...result._meta, errorCode: code } };
@@ -95,7 +105,7 @@ export function createServer(deps: ServerDeps): McpServer {
       log.info({ tool: name, ms: Date.now() - started, isError: result.isError === true }, "tool call");
       return result;
     } catch (err) {
-      log.warn({ tool: name, ms: Date.now() - started, error: err instanceof Error ? err.name : "error", kind: err instanceof ApiError ? err.kind : null }, "tool call failed");
+      log.warn({ tool: name, ms: Date.now() - started, error: err instanceof Error ? err.name : "error", kind: err instanceof ApiError ? err.kind : null, ...crashOf(err) }, "tool call failed");
       if (err instanceof ApiError) return withErrorCode(apiFailure(err, language), API_FAILURE_CODE[err.kind]);
       return withErrorCode(toolError(language === "de" ? "Bei dieser Anfrage ist ein Fehler aufgetreten." : "Something went wrong with this request.", "internal"), "internal");
     }
