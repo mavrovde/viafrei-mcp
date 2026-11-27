@@ -774,8 +774,14 @@ describe("find_place, find_poi, find_address", () => {
     expect(textOf(dated).split("\n").at(-1)).toMatch(/ · As of 2026-11-23$/u);
     expect(textOf(await call("find_place", { query: "Essen", language: "de" })).split("\n").at(-1)).toMatch(/ · Stand 23\.11\.2026$/u);
     serve("listPlaces", [{ ...row, name: "Essen", kind: "municipality" }], { asOf: null });
-    const undated = textOf(await call("find_place", { query: "Essen", language: "en" }));
+    expect(dated._meta).toMatchObject({ asOf: "2026-11-22T23:03:00Z" });
+    const undatedResult = await call("find_place", { query: "Essen", language: "en" });
+    const undated = textOf(undatedResult);
     expect(undated).not.toMatch(/As of/u);
+    // No data time: none sent either, never the time of this read.
+    expect(undatedResult._meta).not.toHaveProperty("asOf");
+    expect(undatedResult._meta).not.toHaveProperty("asOfLocal");
+    expect(undatedResult._meta).toHaveProperty("attribution");
     expect(undated.split("\n").at(-1)).toMatch(/GeoNames.*bearbeitet[^·]*$/u);
   });
 

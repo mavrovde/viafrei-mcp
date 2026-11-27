@@ -111,7 +111,8 @@ export const findPlace: Handler = async (args, ctx) => {
   }
   const n = r.data.length;
   const head = r.meta.page?.hasMore === true ? c.more(query, n, MAX_RESULTS) : n === 1 ? c.one(query) : c.head(query, n);
-  // The place index is reference data: its day, never the clock time of its load or of this read; no day known, none said.
+  // The place index is reference data: its day, never the clock time of its load or of this read; no day known,
+  // none said or sent (no _meta.asOf, asOfLocal or structured asOf, rather than the time of this read).
   const asOf = typeof r.meta.asOf === "string" ? r.meta.asOf : undefined;
-  return toolResult([head, ...r.data.map((p, i) => `${i + 1}. ${line(p, language, at !== undefined)}`)].join("\n"), [r.meta], language, { asOfLabel: asOf === undefined ? "" : asOfDayLabel(asOf, language) });
+  return toolResult([head, ...r.data.map((p, i) => `${i + 1}. ${line(p, language, at !== undefined)}`)].join("\n"), [r.meta], language, asOf === undefined ? { asOf: null } : { asOfLabel: asOfDayLabel(asOf, language) });
 };

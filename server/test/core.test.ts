@@ -121,6 +121,14 @@ describe("the result envelope", () => {
     expect(bare._meta).toEqual({ attribution: "", license: "", licenses: {}, asOf: "2026-01-01T12:00:00Z", asOfLocal: "01.01.2026, 13:00", sources: [] });
   });
 
+  it("asOf null: data without a time of its own; no as-of said, none in _meta or structuredContent", () => {
+    const r = toolResult("B", [meta({ attribution: [a("x", "X", { shareAlike: false })] })], "en", { asOf: null, structured: { n: 1 } });
+    expect((r.content[0] as { text: string }).text).toBe("B\n\nSource: X");
+    expect(r._meta).not.toHaveProperty("asOf");
+    expect(r._meta).not.toHaveProperty("asOfLocal");
+    expect(r.structuredContent).toEqual({ n: 1, attribution: "X", license: "" });
+  });
+
   it("no read at all: the time of the answer", () => {
     vi.useFakeTimers({ now: new Date("2026-06-01T10:00:00Z"), toFake: ["Date"] });
     try {

@@ -118,8 +118,9 @@ export type ToolMeta = {
   attribution: string;
   license: string;
   licenses: Record<string, string>;
-  asOf: string;
-  asOfLocal: string;
+  /** Absent when the data carries no time of its own (toolResult's asOf null), never the time it was read. */
+  asOf?: string;
+  asOfLocal?: string;
   sources: string[];
   purposeNote?: string;
   conditionNote?: string;
@@ -161,8 +162,8 @@ function uniqueAttributions(list: readonly Attribution[]): Attribution[] {
  */
 export function toolResult(body: string, metas: readonly DataMeta[], language: Language, extra: {
   conditionNote?: string; nextCursor?: string | null; structured?: Record<string, unknown>;
-  /** The data time when it is not the reads' (the driving rules: the review date). */
-  asOf?: string;
+  /** The data time when it is not the reads' (the driving rules: the review date); null when the data has none, so no as-of is said or sent. */
+  asOf?: string | null;
   /** The Stand when it is not a clock time (the driving rules: "Stand 19.09.2026"). */
   asOfLabel?: string;
   /** A sentence AFTER the credit line, the last thing read aloud (the rules' disclaimer). */
@@ -174,11 +175,12 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
   const purpose = [...new Set(metas.flatMap((m) => m.notes?.purpose ?? []))];
   const condition = [...new Set([...metas.flatMap((m) => m.notes?.condition ?? []), ...(extra.conditionNote ? [extra.conditionNote] : [])])];
   const asOfs = metas.map((m) => m.asOf).filter((x): x is string => typeof x === "string").sort();
+  const undated = extra.asOf === null;
   const asOf = extra.asOf ?? asOfs[0] ?? metas[0]?.generatedAt ?? new Date().toISOString();
   const credits = attributions.map(creditWithLinks);
   const attributionText = credits.join(" · ");
   const shareAlike = shareAlikeNote(attributions, language, extra.shareAlikeSubject);
-  const footer = creditFooter(language, credits, extra.asOfLabel ?? `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`)
+  const footer = creditFooter(language, credits, extra.asOfLabel ?? (undated ? "" : `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`))
     + (shareAlike === undefined ? "" : `\n${shareAlike}`) + (extra.note === undefined ? "" : `\n${extra.note}`);
   const lines = [...purpose, ...condition];
   const room = TOOL_RESULT_CHARS - footer.length - lines.join("\n").length - 4;
@@ -189,8 +191,7 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
     attribution: attributionText,
     license: [...new Set(Object.values(licenses))].join(", "),
     licenses,
-    asOf,
-    asOfLocal: berlinDateTime(asOf, language),
+    ...(undated ? {} : { asOf, asOfLocal: berlinDateTime(asOf, language) }),
     sources: attributions.map((a) => a.family),
   };
   if (purpose.length > 0) meta.purposeNote = purpose.join(" ");
@@ -201,7 +202,7 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
   if (extra.structured !== undefined) {
     result.structuredContent = {
       ...extra.structured,
-      asOf: meta.asOf,
+      ...(meta.asOf === undefined ? {} : { asOf: meta.asOf }),
       attribution: meta.attribution,
       license: meta.license,
       ...(meta.purposeNote === undefined ? {} : { purposeNote: meta.purposeNote }),
