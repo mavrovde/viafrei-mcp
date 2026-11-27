@@ -916,7 +916,7 @@ function buildSweepRepo(workspace) {
 
 function runNode(script, args, env = process.env) {
     try {
-        const stdout = runTool(process.execPath, [script, ...args], { encoding: 'utf8', env });
+        const stdout = runTool(process.execPath, [script, ...args], { encoding: 'utf8', env, witness: true });
         return { code: 0, timedOut: false, stdout };
     } catch (error) {
         // exitOf, not `error.status ?? -1`: a run killed at the deadline has no exit
@@ -978,7 +978,7 @@ function saysItsTail(stdout, code) {
 
 function runGate(tarball, env = process.env) {
     try {
-        const stdout = runTool(process.execPath, [GATE, tarball], { encoding: 'utf8', cwd: ROOT, env });
+        const stdout = runTool(process.execPath, [GATE, tarball], { encoding: 'utf8', cwd: ROOT, env, witness: true });
         return { code: 0, timedOut: false, stdout };
     } catch (error) {
         return exitOf(error);

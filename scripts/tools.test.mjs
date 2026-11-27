@@ -606,6 +606,64 @@ check('no source file spawns a program by bare name — every program comes from
     );
 });
 
+// --- the hang witness (issue #288) -------------------------------------------
+// A gate killed at the deadline after its exit line: the witness must say which of the
+// three states held the parent. Two are planted here; a zombie cannot be made on purpose
+// without racing the parent's own reaping, so it is the one left to the real case.
+
+const onLinux = process.platform === 'linux';
+
+check('a call that finishes in time returns its output; the witness says nothing', () => {
+    const out = runTool(process.execPath, ['-e', 'process.stdout.write("done")'], { encoding: 'utf8', witness: true });
+    assert.equal(out, 'done');
+});
+
+check('a child that does not exit: the witness names it, its state and its threads', () => {
+    let error;
+    try {
+        runTool(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { encoding: 'utf8', timeout: 3000, witness: true });
+    } catch (caught) {
+        error = caught;
+    }
+    assert.ok(error instanceof ToolError && error.timedOut, `expected a timeout, got ${error}`);
+    if (!onLinux) {
+        assert.match(error.message, /hang witness: no \/proc on/u);
+        return;
+    }
+    assert.match(error.message, /hang witness at .*, parent \d+/u);
+    assert.match(error.message, /pid \d+ \(parent \d+\) "[^"]+" state [SR]/u);
+    assert.match(error.message, /cmdline ".*setInterval/u);
+    assert.match(error.message, /thread \d+ "[^"]+" state/u);
+});
+
+check('a child gone, its pipe held by a grandchild: the witness names the holder', () => {
+    // The child hands its stdout to a detached grandchild and exits at once; the parent
+    // then waits for an end-of-file that the grandchild withholds.
+    const plant = 'const { spawn } = require("node:child_process");' +
+        'spawn(process.execPath, ["-e", "setTimeout(() => {}, 20000)"], { stdio: ["ignore", "inherit", "ignore"], detached: true }).unref();';
+    let error;
+    try {
+        runTool(process.execPath, ['-e', plant], { encoding: 'utf8', timeout: 3000, witness: true });
+    } catch (caught) {
+        error = caught;
+    }
+    const holder = /started during the call and no longer under the parent \(reparented\): (\d+)/u.exec(error?.message ?? '');
+    if (holder !== null) {
+        try {
+            process.kill(Number(holder[1]), 'SIGKILL');
+        } catch {
+            // already gone
+        }
+    }
+    assert.ok(error instanceof ToolError && error.timedOut, `expected a timeout, got ${error}`);
+    if (!onLinux) {
+        return;
+    }
+    assert.ok(holder !== null, `the witness did not name the pipe's holder:\n${error.message}`);
+    assert.match(error.message, /no process under the parent: the child is gone and reaped/u);
+    assert.match(error.message, /cmdline ".*setTimeout\(\(\) => \{\}, 20000\)"/u);
+});
+
 console.log(cases.join('\n'));
 if (failed > 0) {
     console.error(`\ntool-resolution self-test: FAIL - ${failed} of ${cases.length} case(s)`);
