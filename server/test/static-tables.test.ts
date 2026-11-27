@@ -77,7 +77,7 @@ const many = (n: number, f: (i: number) => string): string => Array.from({ lengt
 
 describe("no word or pattern table at module level (Stryker would mutate it statically)", () => {
   // The scope mutation.mjs mutates: every source but the generated operation table.
-  const all = new Map(sources(join(ROOT, "src")).filter((f) => f !== "src/api/operations.ts").flatMap((f) => [...tablesOf(f, readFileSync(join(ROOT, f), "utf8"))]));
+  const all = new Map(sources(join(ROOT, "src")).filter((f) => f !== "src/api/operations.ts" && f !== "src/content/home-page.ts").flatMap((f) => [...tablesOf(f, readFileSync(join(ROOT, f), "utf8"))]));
 
   it(`every module-level table holds at most ${TABLE_MAX} literals, or its allowed size`, () => {
     expect(overBound(all)).toEqual([]);

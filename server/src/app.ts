@@ -21,6 +21,7 @@ import { isInitializeRequest, JSONRPCMessageSchema } from "@modelcontextprotocol
 import express, { type Express, type Request, type Response } from "express";
 import { BlockList } from "node:net";
 import { bucketKey, clientIp } from "./client-ip.js";
+import { homePage } from "./home-page.js";
 import { IpLimiter, type IpLimitOptions } from "./ip-limit.js";
 import type { ReadyState } from "./readiness.js";
 
@@ -1094,7 +1095,8 @@ export function createMcpApp(o: McpAppOptions): McpApp {
     res.setHeader("Cache-Control", "public, max-age=86400");
     res.redirect(301, SECURITY_TXT_URL);
   });
-  app.get("/", (_req, res) => { res.status(404).end(); });
+  // GET/HEAD / (owner order): the page for a browser, the old empty 404 for every other client.
+  app.get("/", homePage);
   // Every other path: a JSON 404 naming the endpoint, not Express's HTML page.
   // Registered last, so it answers only what no route above claimed.
   app.use((_req: Request, res: Response) => {
