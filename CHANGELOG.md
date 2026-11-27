@@ -5,6 +5,31 @@ a Changelog and the versions follow Semantic Versioning.
 
 release-please writes each release's block from the Conventional Commits merged since the last release; there is no hand-kept Unreleased section.
 
+## [2.7.11](https://github.com/mavrovde/viafrei-mcp/compare/v2.7.10...v2.7.11) (2026-11-27)
+
+
+### Fixed
+
+* **fuel:** cheapest first is true, no current price is said, a stale price is marked ([#299](https://github.com/mavrovde/viafrei-mcp/issues/299)) ([f5cd231](https://github.com/mavrovde/viafrei-mcp/commit/f5cd231e33e4d96998aa46147bf9d754026c6f5d))
+* **fuel:** only current prices are ranked cheapest; older and missing prices are marked ([#299](https://github.com/mavrovde/viafrei-mcp/issues/299)) ([811058d](https://github.com/mavrovde/viafrei-mcp/commit/811058d4ac50c96b881b16b13c2a54103b597836))
+* **fuel:** the German head says Tankstellen ohne Preis, as the rest of the fuel text ([#299](https://github.com/mavrovde/viafrei-mcp/issues/299)) ([d758ee8](https://github.com/mavrovde/viafrei-mcp/commit/d758ee840156166c6380ed3c66ef5147a5303f91))
+* **fuel:** the mixed head names what follows the current prices, older prices, none or both ([#299](https://github.com/mavrovde/viafrei-mcp/issues/299)) ([d7bc2c5](https://github.com/mavrovde/viafrei-mcp/commit/d7bc2c57ce3e707d092170e1d71ffa18ee10e335))
+* **fuel:** the unranked line counts only stations not listed, and a mixed list says current prices first ([#299](https://github.com/mavrovde/viafrei-mcp/issues/299)) ([5004650](https://github.com/mavrovde/viafrei-mcp/commit/5004650d5e5621e7211f517c49b57f31f4512cfd))
+* **trains:** a departure board's asOf is the board's fetch, not the station register's ([db03223](https://github.com/mavrovde/viafrei-mcp/commit/db03223321ff85f2ab1b2c521261bd987343d36f))
+
+
+### Documentation
+
+* **changelog:** release-please writes the blocks; no hand-kept Unreleased section ([0e4ba24](https://github.com/mavrovde/viafrei-mcp/commit/0e4ba24179e639a562c211e145d48a92f4399511))
+* **release:** review nits on the release-please chain ([b7d0cf9](https://github.com/mavrovde/viafrei-mcp/commit/b7d0cf99648e56c2ac301d0991f9eafd14f56a5d))
+
+
+### Build and CI
+
+* **release:** one chain from the release pull request to the listings, on release-please ([3b10c26](https://github.com/mavrovde/viafrei-mcp/commit/3b10c26eef37e3cdc9443f4839baf48682dbc300))
+* **release:** release-please on the API model, mutation after the tag and before publish ([057cce2](https://github.com/mavrovde/viafrei-mcp/commit/057cce289245846c11d3ca080863331896d6a12b))
+* **versions:** check-versions reads the five fields release-please writes beside the root pair ([2b60dff](https://github.com/mavrovde/viafrei-mcp/commit/2b60dff9f787611fbdcb6173b8694176d2f3c036))
+
 ## [2.7.10] - 2026-11-27
 
 **Roadworks lines say where the site is, and a publish-gate hang now shows where it stopped.** No tool name, input schema or annotation changes.
