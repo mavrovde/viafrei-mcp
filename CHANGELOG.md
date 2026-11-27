@@ -5,6 +5,17 @@ a Changelog and the versions follow Semantic Versioning.
 
 release-please writes each release's block from the Conventional Commits merged since the last release; there is no hand-kept Unreleased section.
 
+## [2.7.13](https://github.com/mavrovde/viafrei-mcp/compare/v2.7.12...v2.7.13) (2026-11-27)
+
+
+### Fixed
+
+* **server:** /sse answers a Streamable HTTP client, and every ended-session 404 is logged ([414273c](https://github.com/mavrovde/viafrei-mcp/commit/414273c5178ddcfbb894815fcd1f2c4814750c43))
+* **server:** /sse takes Streamable HTTP, a legacy session id POSTed gets 404, ended sessions are logged ([fee0e69](https://github.com/mavrovde/viafrei-mcp/commit/fee0e69fda8106496851f89a0afbf4f05acc7548))
+* **server:** a POST naming a legacy session's id is the ended-session 404, not a 500 ([c0bb8d6](https://github.com/mavrovde/viafrei-mcp/commit/c0bb8d67419348ff088c0db53c43c92e861395e4))
+* **test:** pin the clock in the tests whose answer depended on the day or the hour they ran ([f2f7477](https://github.com/mavrovde/viafrei-mcp/commit/f2f7477c7abfa6f780a22eab3566abf14cccf322))
+* **test:** tests that render times pin the clock, so a run near Berlin midnight passes ([135d46a](https://github.com/mavrovde/viafrei-mcp/commit/135d46a16bb0f848ad03b37b53c40bb6b729a56e))
+
 ## [2.7.12](https://github.com/mavrovde/viafrei-mcp/compare/v2.7.11...v2.7.12) (2026-11-27)
 
 
