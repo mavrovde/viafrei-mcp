@@ -58,6 +58,13 @@ export type HydrogenStation = {
 };
 export type HydrogenData = { stations: HydrogenStation[]; nearest: HydrogenStation | null };
 /** ParkingSite */
+/** OSMCarPark (ParkingMeta.around.osmCarParks): an OpenStreetMap car park (ODbL), no capacity, no occupancy. */
+export type OsmCarPark = {
+  id: string; name: string | null; operator: string | null; street: string | null; houseNo: string | null; zip: string | null; town: string | null;
+  location: LatLon; distanceM: number;
+};
+/** ParkingMeta.around: null fields where not read (a lorry or rest-area question, a key without OpenStreetMap). */
+export type ParkingAround = { osmCarParks: OsmCarPark[] | null; osmDataAsOf: string | null; roadContext: unknown[] | null } | null;
 export type ParkingSite = {
   id: string; name: string | null; operator: string | null; kind: string; location: LatLon; distanceM?: number | null;
   occupancy: { free: number | null; total: number | null; state: string; observedAt: string | null } | null; termsRequired: boolean;

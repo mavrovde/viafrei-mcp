@@ -9,6 +9,11 @@ a Changelog and the versions follow Semantic Versioning.
 - **The release's mutation run ends inside its 20-minute shards again.** `find_poi`'s OSM word tables (`server/src/tools/osm-words.ts`) were module-level, so Stryker treated their ~1,050 mutants as static and ran the whole suite for each one. That took about two hours against an estimate of 259 s, and shard 6 of the 2.7.4 and 2.7.5 publishes hit its limit, so the publish was skipped. The tables are now built inside functions, so each mutant runs only the tests that read it (about one). A new test pins every word in both languages, so the mutants are killed, not left alive. The file's pieces are measured (`server/scripts/mutation-weights.json`). `scripts/mutation-weights.mjs` now also reads the log of the reusable workflow, whose lines start with `Mutation / `.
 - **An empty list is never sent as an empty query value.** The API client left out `undefined`, `null` and `""` but sent an empty array as `name=`, which API 2.0.4 refuses with 400 "empty value". It now leaves out any parameter whose value is empty once joined. The API mock refuses empty values as the API does, so every tool test also checks this (#281).
 - **`describe_station` on a stop that is not in DB's register.** API 2.0.4 builds a page for such a stop with no register number or slug. Its `pageUrl` is the stop's page under the nearest station page that lists it, or null. A null page address is left out, so the answer shows the stop's name alone and never the text "null" (#279).
+- **`find_parking` lists OpenStreetMap's car parks where no publisher reports a site.** In central Berlin it answered "I know of no parking", but the API's answer carries OpenStreetMap's car parks in `meta.around.osmCarParks`. They are now listed in the API's order and cap:
+  - each line gives the name and operator, the distance and the address, then the extract day; the list is credited by the ODbL line the answer carries;
+  - in `structuredContent.osmFacilities`, capacity and free spaces are null, never zero;
+  - beside the publishers' sites they follow as a separate block;
+  - under a free-spaces or facilities filter, the answer first says that the filter cannot be checked for them (#280).
 
 ### Changed
 - **The server runs against ViaFrei API 2.0.4** (`server/api.pin`, the contract fixture copied from the release tag).

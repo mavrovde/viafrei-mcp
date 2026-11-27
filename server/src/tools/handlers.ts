@@ -32,7 +32,7 @@ import { checkTransitDisruption } from "./transit.js";
 import { findSharing } from "./sharing.js";
 import { describeLocation } from "./location.js";
 import { findDisabledBays } from "./parking-bays.js";
-import { NOT_FULL_NOTE, parkingHead, parkingLine } from "./parking-words.js";
+import { NOT_FULL_NOTE, osmCarParkBlock, osmCarParkFacility, parkingHead, parkingLine } from "./parking-words.js";
 import { poiCategoryWord } from "./osm-words.js";
 import { addressAnswer } from "./address-words.js";
 import { hasEnglish, VERBATIM_BUDGET_CHARS, warningsList } from "./weather-block.js";
@@ -640,6 +640,19 @@ const findParking: Handler = async (args, ctx) => {
   }
   const read = await parkingRead(ctx, op, { ...scope, ...common });
   const { r } = read;
+  // OpenStreetMap's car parks the API lists beside the publishers' sites (listParkingOptions meta.around, null where not
+  // read; listMotorwayParking carries none).
+  const around = (r.meta["around"] as T.ParkingAround | undefined) ?? null;
+  const osm = around?.osmCarParks ?? [];
+  const osmAsOf = around?.osmDataAsOf ?? null;
+  const notJudged = common.free_min !== undefined ? "free" : common.facilities !== undefined ? "amenities" : null;
+  const osmText = (held: boolean): string => osmCarParkBlock(language, osm, osmAsOf, parkingWhereText(language, where), held, notJudged);
+  const osmLicence = (r.meta.attribution ?? []).find((a) => a.family === "osm")?.licence ?? null;
+  const osmStructured = osm.length === 0 ? {} : { osmFacilities: osm.map((c) => osmCarParkFacility(c, osmAsOf, osmLicence)) };
+  if (r.data.length === 0 && osm.length > 0) {
+    // No publisher's site there, but OpenStreetMap maps car parks: those are the answer, never "no parking".
+    return toolResult(osmText(false), [r.meta], language, { structured: { place: "place" in where ? where.place : null, kind: kind ?? "any", facilities: [], ...osmStructured } });
+  }
   if (r.data.length === 0) {
     const facilities = common.facilities !== undefined;
     const freeOnly = common.free_min !== undefined;
@@ -656,8 +669,8 @@ const findParking: Handler = async (args, ctx) => {
     return none(language, [r.meta], L(language, "Parkplätze", "car parks"));
   }
   const now = new Date();
-  const lines = [parkingHead(where, language), ...r.data.map((p, i) => parkingLine(p, i, language, now))];
-  return toolResult(lines.join("\n"), [r.meta], language, { note: NOT_FULL_NOTE[language], ...(read.conditionNote === undefined ? {} : { conditionNote: read.conditionNote }) });
+  const lines = [parkingHead(where, language), ...r.data.map((p, i) => parkingLine(p, i, language, now)), ...(osm.length === 0 ? [] : ["", osmText(true)])];
+  return toolResult(lines.join("\n"), [r.meta], language, { note: NOT_FULL_NOTE[language], ...(read.conditionNote === undefined ? {} : { conditionNote: read.conditionNote }), ...(osm.length === 0 ? {} : { structured: osmStructured }) });
 };
 
 /** Today's find_poi words (main packages/mcp/src/tools/find_poi.ts COPY), verbatim. */
