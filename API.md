@@ -17,7 +17,7 @@ server:** connect any MCP client and call `tools/list`.
 
 | | |
 | --- | --- |
-| Server | `viafrei` 2.7.11 (set by hand; the capture is of 2.6.40 and is taken again after the 2.7.11 deploy) |
+| Server | `viafrei` 2.7.12 (set by hand; the capture is of 2.6.40 and is taken again after the 2.7.12 deploy) |
 | MCP protocol | `2025-06-18` |
 | Streamable HTTP | https://mcp.viafrei.de/mcp |
 | Legacy HTTP+SSE | https://mcp.viafrei.de/sse |
