@@ -951,6 +951,8 @@ function hung(name, result, token = undefined) {
     log(`  CANNOT RUN  "${name}" - ${result.reason}`);
     if (token === undefined || !printsStandIn(result.stdout, token)) {
         log(`  what it printed before it was killed:\n${result.stdout}`);
+    } else {
+        log(`  (its output is withheld: it holds the ${token.length}-character stand-in)`);
     }
     return true;
 }
