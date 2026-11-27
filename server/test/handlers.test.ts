@@ -2186,8 +2186,11 @@ describe("watch_situation's answer: the condition said back, what a name became,
     const w = ex<Record<string, unknown>>("getWatch");
     serve("getWatch", { ...w, kind: "station", key: "1:de:01002:9001", condition: { delay_min: 10 }, note: null });
     const st = await call("watch_situation", { kind: "station", key: "Leipzig Hbf", language: "de" });
-    expect(textOf(st).split("\n")[0]).toMatch(/^Ich beobachte die Haltestelle 1:de:01002:9001 und melde mich hier\. Aus "Leipzig Hbf" aufgelöst: Haltestelle Schömpingbach Hbf, DHID 1:de:01002:9001\. Bedingung: Abfahrten mit 10 Minuten/u);
-    expect(st.structuredContent).toMatchObject({ resolvedFrom: "Leipzig Hbf", resolvedLabel: "Schömpingbach Hbf" });
+    expect(textOf(st).split("\n")[0]).toMatch(/^Ich beobachte die Haltestelle Schömpingbach Hbf und melde mich hier\. Aus "Leipzig Hbf" aufgelöst: Haltestelle Schömpingbach Hbf\. Bedingung: Abfahrten mit 10 Minuten/u);
+    expect(st.structuredContent).toMatchObject({ key: "1:de:01002:9001", resolvedFrom: "Leipzig Hbf", resolvedLabel: "Schömpingbach Hbf" });
+    expect(textOf(st)).not.toContain("DHID");
+    const en = textOf(await call("watch_situation", { kind: "station", key: "Leipzig Hbf", language: "en" }));
+    expect(en).toMatch(/^I am watching stop Schömpingbach Hbf and will tell you here\. Resolved from "Leipzig Hbf": the stop Schömpingbach Hbf\. /u);
     serve("getWatch", { ...w, kind: "place", key: "48.24375,7.01625", condition: { radius_km: 25 }, note: "Ein Stau wird bei einer Orts-Beobachtung nicht gemeldet." });
     const pl = await call("watch_situation", { kind: "place", key: "Fulda", request: "Stau", language: "de" });
     expect(textOf(pl).split("\n")[0]).toMatch(/^Ein Stau wird bei einer Orts-Beobachtung nicht gemeldet\. Ich beobachte den Ort Fulda und melde mich hier\. Bedingung: neue Sperrungen oder Einschränkungen im Umkreis von 25 km\./u);

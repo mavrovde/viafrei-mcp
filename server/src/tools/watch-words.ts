@@ -114,6 +114,8 @@ export type Resolved = { from: string; label: string; what: Record<Language, str
 export function watchOpened(o: {
   language: Language; id: number; kind: string; key: string; condition: Readonly<Record<string, unknown>> | null | undefined;
   until: string; open: number; resolved?: Resolved; note: string | null;
+  /** How the head names what is watched when it is not the key (a station by its name); structuredContent.key stays the key. */
+  label?: string;
 }): CallToolResult {
   const { language } = o;
   const c = COPY[language];
@@ -121,7 +123,7 @@ export function watchOpened(o: {
   const now = new Date();
   const text = [
     o.note,
-    c.head(KIND_LABEL[o.kind]?.[language] ?? o.kind, o.key),
+    c.head(KIND_LABEL[o.kind]?.[language] ?? o.kind, o.label ?? o.key),
     o.resolved === undefined ? null : c.resolved(o.resolved.from, o.resolved.what[language]),
     conditionSentence(o.kind, o.condition, language),
     c.until(standTime(o.until, language, now)),

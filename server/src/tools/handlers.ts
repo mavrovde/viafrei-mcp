@@ -1169,7 +1169,7 @@ async function resolveWatch(kind: string, key: string, ctx: ToolContext): Promis
     const found = await ctx.api.get<T.Station[]>("listStations", { q: key, limit: 1 });
     const first = found.data[0];
     if (first === undefined) return stopNotFound(key, ctx);
-    return { target: first.id, resolved: { from: key, label: first.name, what: { de: `Haltestelle ${first.name}, DHID ${first.id}`, en: `the stop ${first.name}, DHID ${first.id}` } } };
+    return { target: first.id, resolved: { from: key, label: first.name, what: { de: `Haltestelle ${first.name}`, en: `the stop ${first.name}` } } };
   }
   if (kind === "charger" && !(/\d/u.test(key) && !/\s/u.test(key))) return chargerByPlace(key, ctx);
   if (kind === "region") {
@@ -1208,9 +1208,11 @@ const watchSituation: Handler = async (args, ctx) => {
     : await asked;
   if (r === null) return toolResult(WEATHER_NO_CELL[language](resolved.label!), [], language, { structured: { watchOpened: false, reason: "no_warn_cell" } });
   const id = ctx.watches.add({ watchId: r.data.watchId, uri: r.data.uri, kind: r.data.kind, key: r.data.key }, key);
-  // A place is said by its name, as it was asked; every other kind by the key the platform watches.
+  // A place is said by its name, as it was asked; a station named in words by the station's own name, never its id
+  // (stop_watch ends a watch by its uri); every other kind by the key the platform watches.
+  const said = r.data.kind === "station" && resolved.resolved !== undefined ? resolved.resolved.label : undefined;
   return watchOpened({
-    language, id, kind: r.data.kind, key: r.data.kind === "place" ? key : r.data.key, condition: r.data.condition, until: r.data.until,
+    language, id, kind: r.data.kind, key: r.data.kind === "place" ? key : r.data.key, ...(said === undefined ? {} : { label: said }), condition: r.data.condition, until: r.data.until,
     open: ctx.watches.list().length, note: r.data.note, ...(resolved.resolved === undefined ? {} : { resolved: resolved.resolved }),
   });
 };
