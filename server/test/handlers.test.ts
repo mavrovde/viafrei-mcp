@@ -744,6 +744,41 @@ describe("find_place, find_poi, find_address", () => {
     expect(body(r).split("\n")[0]).toBe('"Marienplatz" — the first 2 matches; more exist, so this is not a count of every place with that name (narrow with near or kind, limit up to 10):');
   });
 
+  it("find_place says the Kreis the API names, the English name beside the German one, no empty slot without one", async () => {
+    const row = ex<object[]>("listPlaces")[0];
+    serve("listPlaces", [
+      { ...row, name: "Ahaus, Marienplatz", kind: "stop", districtCode: "05554004", kreis: "Kreis Borken", location: { lat: 52.07743, lon: 7.00896 } },
+      { ...row, name: "München", nameEn: "Munich", kind: "municipality", districtCode: "09162000", kreis: "kreisfreie Stadt", location: { lat: 48.13705, lon: 11.57539 } },
+      { ...row, name: "Marienplatz", kind: "station_area", districtCode: "09162000", kreis: "kreisfreie Stadt München", location: { lat: 48.13705, lon: 11.57539 } },
+      { ...row, name: "Bayern", kind: "region", districtCode: "09", location: { lat: 48.9, lon: 11.4 } },
+    ], { asOf: "2026-11-22T23:03:00Z" });
+    const en = body(await call("find_place", { query: "Marienplatz", language: "en" })).split("\n");
+    expect(en.slice(1, 5)).toEqual([
+      "1. Ahaus, Marienplatz — stop, North Rhine-Westphalia, district Borken, 52.07743, 7.00896",
+      "2. München (Munich) — town, Bavaria, independent city, 48.13705, 11.57539",
+      "3. Marienplatz — station, Bavaria, independent city München, 48.13705, 11.57539",
+      "4. Bayern — administrative area, 48.90000, 11.40000",
+    ]);
+    const de = body(await call("find_place", { query: "Marienplatz", language: "de" })).split("\n");
+    expect(de.slice(1, 4)).toEqual([
+      "1. Ahaus, Marienplatz — Haltestelle, Nordrhein-Westfalen, Kreis Borken, 52.07743, 7.00896",
+      "2. München — Stadt/Gemeinde, Bayern, kreisfreie Stadt, 48.13705, 11.57539",
+      "3. Marienplatz — Bahnhof, Bayern, kreisfreie Stadt München, 48.13705, 11.57539",
+    ]);
+  });
+
+  it("find_place's as-of is the place data's day, never a clock time; with no time known, no as-of is said", async () => {
+    const row = ex<object[]>("listPlaces")[0];
+    serve("listPlaces", [{ ...row, name: "Essen", kind: "municipality" }], { asOf: "2026-11-22T23:03:00Z" });
+    const dated = await call("find_place", { query: "Essen", language: "en" });
+    expect(textOf(dated).split("\n").at(-1)).toMatch(/ · As of 2026-11-23$/u);
+    expect(textOf(await call("find_place", { query: "Essen", language: "de" })).split("\n").at(-1)).toMatch(/ · Stand 23\.11\.2026$/u);
+    serve("listPlaces", [{ ...row, name: "Essen", kind: "municipality" }], { asOf: null });
+    const undated = textOf(await call("find_place", { query: "Essen", language: "en" }));
+    expect(undated).not.toMatch(/As of/u);
+    expect(undated.split("\n").at(-1)).toMatch(/GeoNames.*bearbeitet[^·]*$/u);
+  });
+
   for (const [kind, contract] of [["district", "district"], ["admin", "region"], ["station", "station_area"], ["stop", "station_area"]]) {
     it(`find_place kind=${kind} asks kind=${contract}`, async () => {
       await call("find_place", { query: "Xy", kind, language: "en" });

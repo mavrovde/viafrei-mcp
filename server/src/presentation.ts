@@ -86,7 +86,14 @@ export function creditFooter(language: Language, rows: readonly string[], stand:
   const basis = rows.filter((r) => !labelled(r) && r.startsWith(CHANGED_DATA_LEAD));
   const rest = rows.filter((r) => !labelled(r) && !r.startsWith(CHANGED_DATA_LEAD));
   const lead = own.length > 0 || rest.length === 0 ? "" : `${SOURCE_LABEL[language]}: `;
-  return `${lead}${[...own, ...rest, ...basis].join(" · ")} · ${stand}`;
+  // An answer whose data carries no time of its own says none (stand ""), never the time it was read.
+  return `${lead}${[...own, ...rest, ...basis].join(" · ")}${stand === "" ? "" : ` · ${stand}`}`;
+}
+
+/** "Stand 23.11.2026" / "As of 2026-11-23": the Berlin day of a reference data set's time, never its clock time. */
+export function asOfDayLabel(iso: string, language: Language): string {
+  const day = berlinDay(new Date(iso));
+  return language === "de" ? `${AS_OF_LABEL.de} ${day.slice(8, 10)}.${day.slice(5, 7)}.${day.slice(0, 4)}` : `${AS_OF_LABEL.en} ${day}`;
 }
 
 export const km = (m: number | null | undefined, language: Language): string =>

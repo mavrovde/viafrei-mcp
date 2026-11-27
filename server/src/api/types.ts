@@ -6,8 +6,12 @@ import type { LatLon } from "./client.js";
 
 /** PlaceItem */
 export type PlaceItem = { id: string; name: string; kind: string; location: LatLon; distanceM?: number; districtCode?: string | null; sourceFamily: string;
-  /** Proposed: the Kreis the row lies in, by name (BKG), with districtCode its eight-digit Gemeinde key. */
-  districtName?: string | null;
+  /** The Kreis the place lies in, in German, as the platform's place search states it ("kreisfreie Stadt", "Kreis Borken", "kreisfreie Stadt München", "Vogtlandkreis"); absent when none can be named. */
+  kreis?: string;
+  /** The place's English name where it differs (Munich for München); absent else. */
+  nameEn?: string;
+  /** The place's own AGS where it has one. */
+  ags?: string;
 };
 /** resolvePlace: the one place a text names, as today's resolver says it (label), with its alternatives. */
 export type ResolvedPlace = { name: string; label: string; kind: string; location: LatLon; districtCode?: string | null; alternatives?: { name: string; kind: string }[] } | null;

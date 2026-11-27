@@ -22,6 +22,7 @@ a Changelog and the versions follow Semantic Versioning.
   - "located by its address" where that applies.
 
   Under the list the answer adds "price per kWh published for k of n only", the sites `only_available` hid, by reason, and the site ids a charger watch takes for the places that report a status. With the filters the grouping does not take, each record keeps its own line, named by its name, its operator or "charging site". An empty filtered answer counts the circle by the API's `meta.inRadius` without a second read. `watch_situation` (kind `charger`) names a site without a name by its operator in the same way (#269).
+- **`find_place` names the Kreis a place lies in and dates the place data by its day.** Each line now gives the Kreis that the API's place search states ("Kreis Borken", "kreisfreie Stadt München"), and an English answer says "district Borken" or "independent city München". A place without a Kreis leaves no empty slot in its line. An English line gives the English name beside the German one: "München (Munich)". The as-of is the place data's day ("As of 2026-11-23"), never a clock time from its load. When the data carries no time, no as-of is said. The cap of 10 that the head names is the catalogue's and the API's (#268).
 
 ### Changed
 - **The server runs against ViaFrei API 2.0.4** (`server/api.pin`, the contract fixture copied from the release tag).
