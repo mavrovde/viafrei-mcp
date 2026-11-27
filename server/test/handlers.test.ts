@@ -12,7 +12,7 @@ import { ApiError } from "../src/api/client.js";
 import { pinned } from "./pinned.js";
 import { haversineM } from "../src/tools/location.js";
 import { connect, textOf } from "./harness.js";
-import { GAPS, HANDLERS, lampText, lorryLine, nearestMotorways } from "../src/tools/handlers.js";
+import { GAPS, HANDLERS, lampText, lorryLine, nearestMotorways, roadworksWindow } from "../src/tools/handlers.js";
 import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
 import { kmText } from "../src/tools/nearby.js";
 import { conditionSentence } from "../src/tools/watch-words.js";
@@ -321,11 +321,19 @@ describe("check_autobahn_traffic's lamp, as today's ampel says it", () => {
 });
 
 describe("find_roadworks_ahead", () => {
-  it("a road: the roadworks of the next fortnight on it", async () => {
+  it("a road: the roadworks of today and the seven days after on it, the window the API's", async () => {
+    const w = roadworksWindow(undefined, undefined, new Date());
     const r = await call("find_roadworks_ahead", { road: "a 3", limit: 4, language: "en" });
     expect(paths("getMotorwayConditions")).toEqual(["/v1/motorways/A3/conditions"]);
-    expect(query("getMotorwayConditions")).toEqual([{ kinds: "roadworks", horizon_days: "14", limit: "4", lang: "en" }]);
-    expect(body(r)).toBe("traffic light yellow: DWD warning.\n- A101: Hazard (Gefahr)\n- A101: Hazard (Gefahr)");
+    expect(query("getMotorwayConditions")).toEqual([{ kinds: "roadworks", from: w.from, to: w.to, limit: "4", lang: "en" }]);
+    expect(body(r).split("\n").slice(0, 2)).toEqual(["traffic light yellow: DWD warning.", `At least 3 roadworks sites for ${w.from}–${w.to}; the first 2:`]);
+  });
+
+  it("the asked days are the window (round Q13 'next week' read a fixed fortnight)", async () => {
+    await call("find_roadworks_ahead", { road: "A7", from: "2026-11-30", to: "2026-12-06", language: "de" });
+    expect(query("getMotorwayConditions")).toEqual([{ kinds: "roadworks", from: "2026-11-30", to: "2026-12-06", lang: "de" }]);
+    expect(roadworksWindow("2026-11-30", undefined, new Date())).toEqual({ from: "2026-11-30", to: "2026-12-07" });
+    expect(roadworksWindow(undefined, undefined, new Date("2026-03-28T23:30:00Z"))).toEqual({ from: "2026-03-29", to: "2026-04-05" });
   });
 
   for (const key of ["place"]) {
@@ -333,8 +341,10 @@ describe("find_roadworks_ahead", () => {
       const r = await call("find_roadworks_ahead", { [key]: "Köln", language: "en" });
       expect(ops()).toEqual(["resolvePlace", "listRoadConditions"]);
       expect(query("resolvePlace")).toEqual([{ q: "Köln", lang: "en" }]);
-      expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", horizon_days: "14", lang: "en" }]);
-      expect(body(r)).toBe("traffic light yellow: roadworks narrowing the carriageway.\n- A103: Roadworks (Baustelle) · 500 m");
+      const w = roadworksWindow(undefined, undefined, new Date());
+      expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", from: w.from, to: w.to, lang: "en" }]);
+      expect(body(r).split("\n").slice(0, 2)).toEqual(["traffic light yellow: roadworks narrowing the carriageway.", `One roadworks site for ${w.from}–${w.to}:`]);
+      expect(body(r).split("\n")[2]).toMatch(/^- A103: Roadworks \(Baustelle\) · .+ · .+ · 500 m$/u);
     });
   }
 
@@ -775,7 +785,8 @@ describe("find_place, find_poi, find_address", () => {
 
   it("find_place with more matches than shown names today's cap of 10, the catalogue's own", async () => {
     const row = ex<object[]>("listPlaces")[0];
-    serve("listPlaces", [{ ...row, name: "Marienplatz" }, { ...row, name: "Marienplatz" }], { page: { limit: 2, hasMore: true, nextCursor: null } });
+    // Two places of one name far apart (one place held twice would be said once: onePerPlace).
+    serve("listPlaces", [{ ...row, name: "Marienplatz" }, { ...row, name: "Marienplatz", location: { lat: 51.0, lon: 9.0 } }], { page: { limit: 2, hasMore: true, nextCursor: null } });
     const r = await call("find_place", { query: "Marienplatz", limit: 2, language: "en" });
     expect(body(r).split("\n")[0]).toBe('"Marienplatz" — the first 2 matches; more exist, so this is not a count of every place with that name (narrow with near or kind, limit up to 10):');
   });
