@@ -14,7 +14,7 @@ import { haversineM } from "../src/tools/location.js";
 import { connect, textOf } from "./harness.js";
 import { placeZoneVerdict } from "../src/tools/driving-rules.js";
 import { GAPS, HANDLERS, lampText, lorryLine, nearestMotorways, roadworksWindow } from "../src/tools/handlers.js";
-import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
+import { noMobileLine, SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
 import { kmText } from "../src/tools/nearby.js";
 import { conditionSentence } from "../src/tools/watch-words.js";
 
@@ -763,6 +763,25 @@ describe("find_speed_cameras", () => {
       });
     });
   }
+  // Round Q49 "mobile Blitzer in Bielefeld": fixed OpenStreetMap cameras only, and no word of mobile checks.
+  for (const language of LANGS) {
+    it(`a list with no announced mobile check says that no source announces one (${language})`, async () => {
+      serve("listSpeedCameras", { official: [], officialTotal: 0, osm: [cam({ locationLabel: null, location: { lat: 52.03211, lon: 8.53319 }, limitKmh: 60 })], osmTotal: 1 });
+      const lines = body(await call("find_speed_cameras", { place: "Bielefeld", language })).split("\n");
+      const i = lines.indexOf(noMobileLine(language));
+      expect(i).toBeGreaterThan(lines.findIndex((l) => l.startsWith("- 52.03211, 8.53319")));
+      expect(lines[i + 1]).toMatch(/^Stand Blitzer/u);
+      expect(noMobileLine(language)).toBe(language === "de"
+        ? "Angekündigte mobile Kontrollen: Für dieses Gebiet kündigt keine unserer Quellen eine an. Mobile Kontrollen sind trotzdem jederzeit und überall möglich."
+        : "Announced mobile checks: none of our sources announces one for this area. Mobile checks are still possible anywhere at any time.");
+    });
+  }
+  it("a list with an announced mobile check, or none at all, does not say it", async () => {
+    serve("listSpeedCameras", { official: [cam({ id: "x:2", kind: "mobile_announced", street: "Allee", firstDay: null, lastDay: null, sourceFamily: "osm_speed_cameras" })], officialTotal: 1, osm: [], osmTotal: 0 });
+    expect(body(await call("find_speed_cameras", { place: "Köln", language: "en" }))).not.toContain(noMobileLine("en"));
+    serve("listSpeedCameras", { official: [], officialTotal: 0, osm: [], osmTotal: 0 });
+    expect(body(await call("find_speed_cameras", { place: "Köln", language: "de" }))).not.toContain(noMobileLine("de"));
+  });
   for (const language of LANGS) {
     it(`none: nothing published is not no checks; coordinates name the point; the Stand is the time we looked (${language})`, async () => {
       serve("listSpeedCameras", { official: [], officialTotal: 0, osm: [], osmTotal: 0 });

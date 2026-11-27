@@ -73,6 +73,17 @@ const sourceName = (meta: DataMeta, family: string): string => {
 
 const coordText = (c: T.SpeedCamera): string | null => (c.location === null ? null : `${c.location.lat.toFixed(5)}, ${c.location.lon.toFixed(5)}`);
 
+/**
+ * The sentence a list without announced mobile checks ends with (round Q49 "mobile Blitzer in Bielefeld" listed
+ * fixed cameras and never said that no source announces a mobile check there). Built per call, so its words are
+ * no module-level table.
+ */
+export function noMobileLine(language: Language): string {
+  return language === "de"
+    ? "Angekündigte mobile Kontrollen: Für dieses Gebiet kündigt keine unserer Quellen eine an. Mobile Kontrollen sind trotzdem jederzeit und überall möglich."
+    : "Announced mobile checks: none of our sources announces one for this area. Mobile checks are still possible anywhere at any time.";
+}
+
 export const findSpeedCameras: Handler = async (args, ctx): Promise<CallToolResult> => {
   const { language } = ctx;
   const c = COPY[language];
@@ -111,6 +122,7 @@ export const findSpeedCameras: Handler = async (args, ctx): Promise<CallToolResu
       for (const x of osm) text.push(line(x));
       if (r.data.osmTotal > osm.length) text.push(c.moreOsm(r.data.osmTotal - osm.length));
     }
+    if (!official.some((x) => x.kind === "mobile_announced")) text.push(noMobileLine(language));
   }
   // One Stand per source of the rows shown, in the order they first appear: when it was read, its newest own date.
   const rows = [...official, ...osm];
