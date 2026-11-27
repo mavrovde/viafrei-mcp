@@ -5,6 +5,16 @@ a Changelog and the versions follow Semantic Versioning.
 
 release-please writes each release's block from the Conventional Commits merged since the last release; there is no hand-kept Unreleased section.
 
+## [2.7.13](https://github.com/mavrovde/viafrei-mcp/compare/v2.7.12...v2.7.13) (2026-11-27)
+
+
+**2.7.11 and 2.7.12 were not published: 2.7.11's mutation gate timed out in shard 7, and 2.7.12's publish dry run failed on a test whose fixture times depended on the clock (it ran near Berlin midnight). npm has neither; 2.7.13 is the first release to carry their changes.**
+
+### Fixed
+
+* **server:** /sse takes Streamable HTTP, a legacy session id POSTed gets 404, ended sessions are logged ([fee0e69](https://github.com/mavrovde/viafrei-mcp/commit/fee0e69fda8106496851f89a0afbf4f05acc7548))
+* **test:** tests that render times pin the clock, so a run near Berlin midnight passes ([135d46a](https://github.com/mavrovde/viafrei-mcp/commit/135d46a16bb0f848ad03b37b53c40bb6b729a56e))
+
 ## [2.7.12](https://github.com/mavrovde/viafrei-mcp/compare/v2.7.11...v2.7.12) (2026-11-27)
 
 
