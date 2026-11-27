@@ -4,7 +4,7 @@
  * in `_meta`, and the model-actionable errors. Every answer starts from the API contract's v0.3.0 example
  * (test/fixtures/api-openapi.json), changed only in the fields a case is about.
  */
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { calls, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
@@ -1147,6 +1147,11 @@ describe("find_nearby and find_sharing", () => {
   const fleet = (count = 0, over: Record<string, unknown> = {}) => ({ count, electric: 0, atLeast: false, nearest: count === 0 ? [] : [{ distanceM: 420, propulsion: "human", rangeLeftM: null, vehicleType: "bicycle", sourceFamily: "gbfs_donkey" }], ...over });
   for (const language of LANGS) {
     it(`find_sharing (${language}): each station in today's words, its docks, the free-floating bikes`, async () => {
+      // The clock pinned on a day that is none of the fixtures' (29.03. and 30.03.): each count keeps its date.
+      // On the real clock a run on one of those days said that count with its time only.
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-27T11:00:00Z"));
+      onTestFinished(() => { vi.useRealTimers(); });
       serve("listSharingOptions", {
         stations: [
           bike(), bike({ id: "st-2", name: null, systemLabel: null, bikes: null, current: false }), bike({ name: "Zone", virtual: true, freeDocks: 3, electricBikes: 0, distanceM: 1234 }),
@@ -1744,6 +1749,11 @@ describe("check_weather_warnings", () => {
     }
   });
   it("a warning that starts within the look-ahead says when it starts; one in force does not", async () => {
+    // The clock pinned between the two warnings' starts (21:00 Berlin): one is in force, the other starts within
+    // the look-ahead. On the real clock the answer depended on the day the suite ran.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-22T20:00:00Z"));
+    onTestFinished(() => { vi.useRealTimers(); });
     for (const language of ["de", "en"] as const) {
       serve("getWeatherRisk", { warnings: [{ ...w(), inForce: false, validity: { from: "2026-11-22T21:16:00Z", until: "2026-11-23T05:16:00Z" } }, { ...w(), inForce: true, validity: { from: "2026-11-22T10:00:00Z", until: "2026-11-23T05:16:00Z" } }] });
       const valid = body(await call("check_weather_warnings", { ...at, language })).split("\n").filter((l) => /^ {3}(Gültig|Valid): /u.test(l));

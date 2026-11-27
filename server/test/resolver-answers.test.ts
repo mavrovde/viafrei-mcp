@@ -3,7 +3,7 @@
  * place the API names (resolvePlace, read before the place search, which answers where it names none),
  * a place's Kreis by name, a POI's nearest address and Land, a coordinate's Gemeinde, junction and plaque source.
  */
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpResponse } from "msw";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { calls, documentReads, exampleOf, handlerFor, mockServer, problem } from "./api-mock.js";
@@ -139,7 +139,13 @@ describe("a credit whose register links no licence text", () => {
 });
 
 describe("listStopBoards: the stops around a place in one read", () => {
-  const soon = new Date(Date.now() + 10 * 60_000).toISOString();
+  // The clock pinned at mid-day Berlin (12:00 CEST), and every fixture time ten minutes after it: a departure
+  // today is said with its time only, so a time relative to the REAL clock crossed into the next day near
+  // midnight and gained a date (the v2.7.12 publish's dry run at 23:51 Berlin).
+  const NOW = new Date("2026-03-30T10:00:00Z");
+  const soon = new Date(NOW.getTime() + 10 * 60_000).toISOString();
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(NOW); });
+  afterEach(() => { vi.useRealTimers(); });
   const dep = (o: Partial<T.Departure> = {}): T.Departure => ({
     id: "d", journeyId: "j", line: "RB30", mode: "rail", routeType: 2, trainNumber: null, category: null, destination: "Remagen", plannedAt: soon, plannedAtLocal: soon, platform: null, plannedPlatform: null,
     platformChanged: false, realtime: false, realtimeSource: null, cancelled: false, delayMin: null, expectedAt: null, noForecast: false, sourceFamily: "delfi_static", ...o,
