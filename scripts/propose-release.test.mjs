@@ -39,7 +39,7 @@ import { fileURLToPath } from 'node:url';
 import { createChecker } from './check-harness.mjs';
 import { missingFixtureImports } from './fixture-root.mjs';
 import { liveAnswers, startStub } from './mcp-stub.mjs';
-import { nodePath, runToolAsync } from './tools.mjs';
+import { exitOrHang, nodePath, runToolAsync } from './tools.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -172,7 +172,8 @@ async function run(root, registryUrl, args = []) {
         });
         return { status: 0, text: stdout, out: readOut(out), body: readIfPresent(body) };
     } catch (error) {
-        return { status: error.status ?? -1, text: `${error.stdout ?? ''}${error.stderr ?? ''}`, out: readOut(out), body: readIfPresent(body) };
+        const { code, stdout } = exitOrHang(error, 'propose self-test');
+        return { status: code, text: stdout, out: readOut(out), body: readIfPresent(body) };
     }
 }
 

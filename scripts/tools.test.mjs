@@ -21,10 +21,10 @@ import { strict as assert } from 'node:assert';
 import { accessSync, constants, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, extname, isAbsolute, join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { missingFixtureImports } from './fixture-root.mjs';
-import { TOOL_DIRS, TOOL_TIMEOUT_MS, ToolError, exitOf, nodePath, npmCliPath, resolveTool, runTool } from './tools.mjs';
+import { TOOL_DIRS, TOOL_TIMEOUT_MS, ToolError, exitOf, exitOrHang, nodePath, npmCliPath, resolveTool, runTool } from './tools.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..');
@@ -451,6 +451,40 @@ check('a hang is no exit code: exitOf reports it as unfinished, with what the pr
     }
     assert.deepEqual(exitOf(failure), { code: 2, timedOut: false, stdout: 'refused\n' }, 'an ordinary exit keeps its code');
     assert.equal(new ToolError('not a hang').timedOut, false, 'only a timeout is a hang');
+});
+
+check('exitOrHang stops a self-test on a hang: CANNOT RUN, exit 2, never an exit code to judge', () => {
+    // The eight self-tests that judged `error.status ?? -1` call exitOrHang: a killed
+    // program there read as exit -1, a wrong code or a verdict. A child plays such a
+    // self-test: its program hangs, and it must stop with exit 2 and say so.
+    const tools = pathToFileURL(join(ROOT, 'scripts', 'tools.mjs')).href;
+    const suite = [
+        `import { exitOrHang, runTool } from ${JSON.stringify(tools)};`,
+        'try {',
+        '    runTool(process.execPath, ["-e", "console.log(\'half done\'); setTimeout(() => {}, 30_000)"], { timeout: 1_500, encoding: "utf8" });',
+        '} catch (error) {',
+        '    const { code } = exitOrHang(error, "planted self-test");',
+        '    console.log(`judged exit ${code}`);',
+        '}'
+    ].join('\n');
+    let outcome;
+    try {
+        runTool(process.execPath, ['--input-type=module', '-e', suite], { encoding: 'utf8' });
+        outcome = { code: 0, stdout: '' };
+    } catch (error) {
+        outcome = exitOf(error);
+    }
+    assert.equal(outcome.code, 2, `a hang must stop the suite with exit 2, got ${outcome.code}`);
+    assert.match(outcome.stdout, /planted self-test: CANNOT RUN - timed out after [0-9_]+ ms and was killed/u);
+    assert.match(outcome.stdout, /half done/u, 'what the program printed before the kill must be shown');
+    assert.doesNotMatch(outcome.stdout, /judged exit/u, 'a hang must never reach the judging code');
+    let failure;
+    try {
+        runTool(process.execPath, ['-e', 'process.exit(3)']);
+    } catch (error) {
+        failure = error;
+    }
+    assert.equal(exitOrHang(failure, 'unused').code, 3, 'an ordinary exit is returned for judging, unchanged');
 });
 
 check('runTool re-throws an ordinary failure unchanged, so the gates can still read it', () => {

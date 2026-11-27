@@ -75,6 +75,25 @@ export function exitOf(error) {
 }
 
 /**
+ * `exitOf` for a self-test that judges an exit code and has no verdict for a hang: the
+ * outcome when the program exited, and when it was killed at the deadline the suite
+ * stops here, says `<label>: CANNOT RUN` with the program, the limit and what it printed
+ * before the kill, and exits 2. A hang judged as exit -1 reads as a wrong exit code, or
+ * worse as a verdict (the gate self-test's "ACCEPTED"); it is neither.
+ */
+export function exitOrHang(error, label) {
+    const outcome = exitOf(error);
+    if (!outcome.timedOut) {
+        return outcome;
+    }
+    process.stdout.write(
+        `\n${label}: CANNOT RUN - ${outcome.reason}\n` +
+        `${label}: a hang is not a pass and not a failure; what it printed before it was killed:\n${outcome.stdout}\n`
+    );
+    process.exit(2);
+}
+
+/**
  * How long any external program may run before it is killed.
  *
  * WHY THIS EXISTS. On 2026-09-28 a `git` call inside the tarball gate's self-test

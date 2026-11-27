@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 import { createChecker } from './check-harness.mjs';
 import { DIFFERENCE_SHAPES, MIRROR_LEAD, MIRROR_TITLE, NotesError, boldLeads, compareSemver, extractBlock, isHighest, pageBody, paragraphsOf, releaseNotes, titleFor, unwrap, withoutDifferences } from './release-notes.mjs';
-import { nodePath, runTool } from './tools.mjs';
+import { exitOrHang, nodePath, runTool } from './tools.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -245,7 +245,8 @@ function cli(args) {
         const out = runTool(nodePath(), [SCRIPT, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
         return { status: 0, out };
     } catch (error) {
-        return { status: error.status ?? -1, out: `${error.stdout ?? ''}${error.stderr ?? ''}` };
+        const { code, stdout } = exitOrHang(error, 'release-notes self-test');
+        return { status: code, out: stdout };
     }
 }
 try {
