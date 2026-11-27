@@ -634,7 +634,7 @@ const findRoadworksAhead: Handler = async (args, ctx) => {
   const window = roadworksWindow(str(args["from"]), str(args["to"]), new Date());
   if (road !== undefined) {
     const code = road.replace(/\s/g, "").toUpperCase();
-    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: code, kinds: ["roadworks"], from: window.from, to: window.to, limit })
+    const r = await ctx.api.get<T.RoadConditionsData>("getMotorwayConditions", { road: code, kinds: ["roadworks"], from: window.from, to: window.to, limit: limit ?? 20 })
       .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; });
     // A number no register knows: today's refusal, with the nearest real numbers (as check_road_status).
     if (r === null) {
@@ -646,7 +646,7 @@ const findRoadworksAhead: Handler = async (args, ctx) => {
   // `from` and `to` are the window's days (YYYY-MM-DD, the schema's pattern), never a place.
   const pos = await position({ place: args["place"] }, ctx);
   if (isResult(pos)) return pos;
-  const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at: atParam(pos.at), kinds: ["roadworks"], from: window.from, to: window.to, limit });
+  const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at: atParam(pos.at), kinds: ["roadworks"], from: window.from, to: window.to, limit: limit ?? 20 });
   // A place's sites nearest first, the same distance in the API's order.
   const near = r.data.situations.map((s, i) => ({ s, i })).sort((a, b) => (a.s.distanceM ?? Infinity) - (b.s.distanceM ?? Infinity) || a.i - b.i).map((x) => x.s);
   return toolResult(situationsBody({ ...r.data, situations: near }, language, limit, r.meta.page, window), [r.meta], language);

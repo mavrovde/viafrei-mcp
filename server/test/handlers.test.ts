@@ -332,7 +332,7 @@ describe("find_roadworks_ahead", () => {
 
   it("the asked days are the window (round Q13 'next week' read a fixed fortnight)", async () => {
     await call("find_roadworks_ahead", { road: "A7", from: "2026-11-30", to: "2026-12-06", language: "de" });
-    expect(query("getMotorwayConditions")).toEqual([{ kinds: "roadworks", from: "2026-11-30", to: "2026-12-06", lang: "de" }]);
+    expect(query("getMotorwayConditions")).toEqual([{ kinds: "roadworks", from: "2026-11-30", to: "2026-12-06", limit: "20", lang: "de" }]);
     expect(roadworksWindow("2026-11-30", undefined, new Date())).toEqual({ from: "2026-11-30", to: "2026-12-07" });
     expect(roadworksWindow(undefined, undefined, new Date("2026-03-28T23:30:00Z"))).toEqual({ from: "2026-03-29", to: "2026-04-05" });
   });
@@ -343,7 +343,7 @@ describe("find_roadworks_ahead", () => {
       expect(ops()).toEqual(["resolvePlace", "listRoadConditions"]);
       expect(query("resolvePlace")).toEqual([{ q: "Köln", lang: "en" }]);
       const w = roadworksWindow(undefined, undefined, new Date());
-      expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", from: w.from, to: w.to, lang: "en" }]);
+      expect(query("listRoadConditions")).toEqual([{ at: "48.24375,7.01625", kinds: "roadworks", from: w.from, to: w.to, limit: "20", lang: "en" }]);
       expect(body(r).split("\n").slice(0, 2)).toEqual(["traffic light yellow: roadworks narrowing the carriageway.", `One roadworks site for ${w.from}–${w.to}:`]);
       expect(body(r).split("\n")[2]).toMatch(/^- A103: Roadworks \(Baustelle\) · .+ · .+ · 500 m$/u);
     });
