@@ -5,6 +5,10 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.7.8] - 2026-11-27
+
+**2.7.7 was published as an image only: its npm publish stopped in the mutation gate, so npm has no 2.7.7.** This release carries 2.7.7 with its answers unchanged, plus the fix that lets the mutation run pass.
+
 ### Fixed
 - **The release mutation run passes its static-mutant bound again.** The npm publish of 2.7.7 stopped in the mutation gather: `src/tools/handlers.ts` had 247 static mutants, over its bound of 220. 2.7.7 added two module-level word tables for lorry rules (26 static mutants) and a module-level arrow for an address with no town (1). Stryker runs the whole suite for each static mutant. All three are now built in function declarations, with the same words and the same behaviour. The older module-level lamp-colour table (9 static mutants) is built in a function too, so the file ends at 211, below its bound of 220 rather than at it; the bound is not raised. The tests now pin every lorry layer and kind word and every lamp colour word, in both languages. Before, the static run marked these words killed or timed out; scored per test, ten of them would have survived.
 
@@ -4667,6 +4671,7 @@ for it, so the number is free; the bridge will use it when the platform does.
   commits, and a squash makes them unreachable from `main` - which would turn
   the check red on `main` for everybody, for something no contributor did.
 
+[2.7.8]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.8
 [2.7.7]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.7
 [2.7.6]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.6
 [2.7.5]: https://github.com/mavrovde/viafrei-mcp/releases/tag/v2.7.5
