@@ -5,6 +5,9 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+### Fixed
+- **The release mutation run passes its static-mutant bound again.** The npm publish of 2.7.7 stopped in the mutation gather: `src/tools/handlers.ts` had 247 static mutants, over its bound of 220. 2.7.7 added two module-level word tables for lorry rules (26 static mutants) and a module-level arrow for an address with no town (1). Stryker runs the whole suite for each static mutant. All three are now built in function declarations, with the same words and the same behaviour. The file is back at 220; the bound is not raised. The lorry test now pins every layer and kind word in both languages. Before, the static run marked these words killed or timed out; scored per test, ten of them would have survived.
+
 ## [2.7.7] - 2026-11-27
 
 **The answers the 2.7.6 prod round found wrong are right on API 2.0.4.** `check_road_status` no longer answers "internal" for a motorway asked by number. Four other answers no longer refuse or misname what the user asked: `describe_station` with no departures, `find_address` with a street alone, `check_station_facilities` on a stop that is no DB station, and `describe_station` on a main station. Lorry rules and situation lines no longer read out provider codes. Tool names and input schemas are those of 2.7.6.
