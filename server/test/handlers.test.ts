@@ -12,6 +12,7 @@ import { ApiError } from "../src/api/client.js";
 import { pinned } from "./pinned.js";
 import { haversineM } from "../src/tools/location.js";
 import { connect, textOf } from "./harness.js";
+import { placeZoneVerdict } from "../src/tools/driving-rules.js";
 import { GAPS, HANDLERS, lampText, lorryLine, nearestMotorways, roadworksWindow } from "../src/tools/handlers.js";
 import { SPEED_NOTICE_DE } from "../src/tools/speed-cameras.js";
 import { kmText } from "../src/tools/nearby.js";
@@ -1315,9 +1316,30 @@ describe("get_driving_rules", () => {
     expect(body(r).split("\n").slice(0, 4)).toEqual([caveat, "Umweltzone und Plakette — 50.941, 6.958:", "", "• Text lez.1. (§ lez.1 StVO)"]);
     expect(meta(r)["conditionNote"]).toBe(caveat);
     serve("getDrivingRules", rulesOf("lez", [rule("lez.1")], { zoneVerdict: { kind: "outside", distanceM: 4000 } }), { notes: { purpose: [], condition: [] } });
-    const inside = await call("get_driving_rules", { lat: 50.9413, lon: 6.9583, language: "en" });
-    expect(body(inside).split("\n")[0]).toBe("Low-emission zone and plaque — 50.941, 6.958:");
-    expect(meta(inside)["conditionNote"]).toBeUndefined();
+    const outside = await call("get_driving_rules", { lat: 50.9413, lon: 6.9583, language: "en" });
+    expect(body(outside).split("\n").slice(0, 2)).toEqual(["50.941, 6.958 lies outside the low-emission zone; its boundary is 4.0 km away.", "Low-emission zone and plaque — 50.941, 6.958:"]);
+    expect(meta(outside)["conditionNote"]).toBeUndefined();
+  });
+
+  // Round Q56 "Alexanderplatz in der Umweltzone?" listed the rules with no verdict (mcp #293).
+  for (const language of LANGS) {
+    it(`a place inside a zone: the verdict with the zone's name opens the answer, then the rules (${language})`, async () => {
+      const zones = [{ key: "berlin/umweltzone", name: "Umweltzone Berlin", city: "Berlin", inside: true, distanceM: 0, role: "zone" }];
+      serve("getDrivingRules", rulesOf("lez", [rule("lez.1")], { zoneVerdict: { kind: "inside", zone: "berlin/umweltzone", distanceM: null }, zones }), { notes: { purpose: [], condition: [] } });
+      const r = await call("get_driving_rules", { topic: "lez", lat: 52.5219, lon: 13.4132, language });
+      const lines = body(r).split("\n");
+      expect(lines[0]).toBe(language === "de" ? "52.522, 13.413 liegt in der Umweltzone Berlin." : "52.522, 13.413 lies inside the Umweltzone Berlin (Umweltzone).");
+      expect(lines[1]).toBe(language === "de" ? "Umweltzone und Plakette — 52.522, 13.413:" : "Low-emission zone and plaque — 52.522, 13.413:");
+      expect((r.structuredContent as Record<string, unknown>)["zoneVerdict"]).toEqual({ kind: "inside", text: lines[0] });
+    });
+  }
+
+  it("the zone named by its city where its row has no name; the verdict's key no row carries: the word alone", () => {
+    const v = { kind: "outside" as const, zone: "k", distanceM: 1_200 };
+    expect(placeZoneVerdict(v, [{ key: "k", name: " ", city: "Köln", inside: false, distanceM: 1_200 }], "Ehrenfeld", "de")).toBe("Ehrenfeld liegt außerhalb der Umweltzone Köln; ihre Grenze ist 1,2 km entfernt.");
+    expect(placeZoneVerdict(v, [], "Ehrenfeld", "en")).toBe("Ehrenfeld lies outside the low-emission zone; its boundary is 1.2 km away.");
+    expect(placeZoneVerdict({ kind: "unknown", distanceM: null }, [], "X", "de")).toBeNull();
+    expect(placeZoneVerdict(undefined, [], "X", "de")).toBeNull();
   });
 
   it("a list entry that carries no description yet is still an entry: green plaque, not 'no entry'", async () => {

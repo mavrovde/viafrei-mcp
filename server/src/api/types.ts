@@ -218,8 +218,10 @@ export type DrivingRule = { id: string; text: string; legalBasis: string | null;
 /** With topic lez and a city: the curated list's entry, or the asked city uncovered (zone null). */
 export type ZoneCity = { name: string; zone: string | null; plakette: string | null; covered: boolean };
 /** With topic lez and a position: the platform's verdict. */
-export type ZoneVerdict = { kind: "inside" | "transfer" | "outside" | "unknown"; distanceM: number | null };
-export type DrivingRulesData = { topic: string; title: string; rules: DrivingRule[]; reviewedOn: string; disclaimer: string; zoneCity?: ZoneCity; zoneVerdict?: ZoneVerdict };
+export type ZoneVerdict = { kind: "inside" | "transfer" | "outside" | "unknown"; distanceM: number | null; zone?: string | null; liftedOn?: string | null };
+/** RulesZone: a published zone row of a rules answer with a position (its key is `zone` of the verdict). */
+export type RulesZone = { key: string; name: string; city: string; inside: boolean; distanceM: number; role?: string };
+export type DrivingRulesData = { topic: string; title: string; rules: DrivingRule[]; reviewedOn: string; disclaimer: string; zoneCity?: ZoneCity; zoneVerdict?: ZoneVerdict; zones?: RulesZone[] };
 /** DisruptionData */
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
 /** DisruptionPunctuality (API 2.0.4): the trips with a delay report in the source's own window, those late at least once. */
