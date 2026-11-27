@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 /**
  * Mutation testing's wiring (owner 2026-11-18): the full StrykerJS run of the
- * server once per release, cut into 18 shards of pieces (every job ends within 15
+ * server once per release, cut into 20 shards of pieces (every job ends within 15
  * minutes, owner 2026-11-22, except the shards at 20: owner 2026-11-23, a viafrei-mcp
  * pipeline ends within 30) and gathered into one 70 % gate,
  * called by the npm workflow on the commit about to be published, and never on
  * a pull request or a push. Read off the workflow files and run:
  *
  *   - mutation.yml: triggers (the release call with a ref, a dispatch, nothing
- *     else), the plan, the 18-shard matrix (fail-fast off, 20 min each, each
+ *     else), the plan, the 20-shard matrix (fail-fast off, 20 min each, each
  *     uploading its report), the gate job "Mutation testing" (needs the shards,
  *     runs unless cancelled, its shard-result guard RUN under bash, the gather,
  *     the job summary, the report artefact);
  *   - publish.yml: the mutation job calls mutation.yml on the tagged commit, and
  *     publish needs it next to Snyk;
- *   - the 18 shards of the real scope are disjoint, together every piece of every
+ *   - the 20 shards of the real scope are disjoint, together every piece of every
  *     in-scope file, none empty, and leave out the generated operation table
  *     (that no MUTANT is lost or counted twice is server/scripts/mutation-pieces.test.mjs,
  *     which needs Stryker's instrumenter);
