@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * The manifest's version and BOTH of the lockfile's must agree.
+ * Every version field of the release must agree: the manifest's, BOTH of the lockfile's,
+ * and the five release-please writes beside them.
  *
  * WHY THIS EXISTS, and it is the one that actually bit. Cutting 1.3.15 left
  * `package.json` saying `1.3.15` while `package-lock.json` still said `1.3.12`, on a
@@ -17,6 +18,12 @@
  *
  *   node scripts/check-versions.mjs
  *
+ * release-please writes five more version fields beside the root pair (its extra-files in
+ * release-please-config.json): server/package.json, both of server/package-lock.json's,
+ * and serverInfo.version in both catalogue.json copies. A jsonpath it does not match is
+ * skipped without a word, so all eight are read here and must agree; the docs job on the
+ * release branch runs this, and a missed field goes red there, before the merge.
+ *
  * Exit codes are distinct on purpose: **2** means this check could not run (a file is
  * missing, unreadable, or not the shape it must be) and **1** means it ran and the
  * versions disagree. A gate that cannot read its input must not be able to look like a
@@ -28,8 +35,6 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = process.env.VF_VERSIONS_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), '..');
-const MANIFEST = join(ROOT, 'package.json');
-const LOCKFILE = join(ROOT, 'package-lock.json');
 
 function refuse(message) {
     console.error(`check-versions: ${message}`);
@@ -51,22 +56,29 @@ function read(path, label) {
     return undefined;
 }
 
-const manifest = read(MANIFEST, 'package.json');
-const lockfile = read(LOCKFILE, 'package-lock.json');
+// [file, label, the field read from it]: the root pair npm writes, then release-please's five.
+const FILES = [
+    ['package.json', [['.version', json => json.version]]],
+    ['package-lock.json', [['.version', json => json.version], ['.packages[""].version', json => json.packages?.['']?.version]]],
+    ['server/package.json', [['.version', json => json.version]]],
+    ['server/package-lock.json', [['.version', json => json.version], ['.packages[""].version', json => json.packages?.['']?.version]]],
+    ['catalogue.json', [['.serverInfo.version', json => json.serverInfo?.version]]],
+    ['server/catalogue/catalogue.json', [['.serverInfo.version', json => json.serverInfo?.version]]]
+];
+
+const fields = FILES.flatMap(([file, reads]) => {
+    const json = read(join(ROOT, file), file);
+    return reads.map(([path, get]) => [`${file} ${path}`, get(json)]);
+});
 
 // Each field is required to EXIST and to be a string before anything is compared:
-// three `undefined`s are all equal to one another, which would be a gate reporting
+// absent fields are all equal to one another, which would be a gate reporting
 // agreement about nothing.
-const fields = [
-    ['package.json .version', manifest.version],
-    ['package-lock.json .version', lockfile.version],
-    ['package-lock.json .packages[""].version', lockfile.packages?.['']?.version]
-];
 for (const [label, value] of fields) {
     if (typeof value !== 'string' || value.length === 0) {
         refuse(
             `${label} is ${value === undefined ? 'absent' : JSON.stringify(value)}, not a version string. ` +
-            'Three absent fields would compare equal, so this refuses rather than agreeing about nothing.'
+            'Absent fields would compare equal, so this refuses rather than agreeing about nothing.'
         );
     }
 }
@@ -76,13 +88,14 @@ const printed = fields.map(([label, value]) => `    ${label} = ${value}`).join('
 
 if (distinct.size !== 1) {
     console.error(
-        'check-versions: the manifest and the lockfile disagree about the version.\n' +
+        'check-versions: the version fields disagree.\n' +
         `${printed}\n` +
-        '  `npm ci` does not compare the root `version` field, so no other gate here reads this pair. ' +
-        'Run `npm version <the version> --no-git-tag-version`, or edit all three, and commit the lockfile.'
+        '  `npm ci` does not compare the root `version` field, and release-please skips a jsonpath that ' +
+        'matches nothing, so no other gate here reads these. Fix the field that differs (for a release-please ' +
+        'field, its extra-files entry in release-please-config.json) and commit it.'
     );
     process.exit(1);
 }
 
-console.log(`check-versions: PASS - all three agree at ${[...distinct][0]}`);
+console.log(`check-versions: PASS - all ${fields.length} agree at ${[...distinct][0]}`);
 console.log(printed);
