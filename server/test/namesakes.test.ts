@@ -10,6 +10,7 @@ import { calls, exampleOf, handlerFor, mockServer } from "./api-mock.js";
 import { connect, textOf } from "./harness.js";
 import type * as T from "../src/api/types.js";
 import { NAMESAKES_SHOWN, namesakes, onePerPlace, SAME_PLACE_M } from "../src/tools/find-place.js";
+import { SPEED_NOTICE_DE, speedNotice } from "../src/tools/speed-cameras.js";
 
 beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
@@ -27,6 +28,12 @@ async function call(tool: string, args: Record<string, unknown>): Promise<CallTo
   }
 }
 const ops = (): string[] => calls.map((c) => c.operationId);
+/** A speed-camera answer's lines after the planning notice it opens with. */
+function afterNotice(r: CallToolResult, language: "de" | "en"): string[] {
+  const t = textOf(r);
+  expect(t.startsWith(`${speedNotice(language)}\n\n`)).toBe(true);
+  return t.slice(speedNotice(language).length + 2).split("\n");
+}
 const meta = () => exampleOf<{ meta: Record<string, unknown> }>("listPlaces").meta;
 const place = (o: Partial<T.PlaceItem> & { name: string; lat: number; lon: number }): T.PlaceItem => {
   const { lat, lon, ...rest } = o;
@@ -54,7 +61,7 @@ describe("an ambiguous town name is asked (mcp #291 A1)", () => {
       const r = await call("find_speed_cameras", { place: "Neustadt", language });
       expect(r.isError).toBeFalsy();
       expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
-      const lines = textOf(r).split("\n");
+      const lines = afterNotice(r, language);
       expect(lines[0]).toBe(language === "de"
         ? "„Neustadt“ heißen 3 Orte, ich rate nicht. Welcher ist gemeint? Bitte erneut fragen, mit dem Ort und seinem Kreis oder Land (z. B. „Neustadt, Hamburg“) oder mit lat und lon des gemeinten Orts:"
         : '3 places are called "Neustadt", so I do not guess. Which one is meant? Please ask again with the place and its Kreis or Land (for example "Neustadt, Hamburg") or with the lat and lon of the one meant:');
@@ -63,7 +70,7 @@ describe("an ambiguous town name is asked (mcp #291 A1)", () => {
         : "2. Neustadt — town, Thuringia, district Eichsfeld, 51.46725, 10.46726");
       expect(lines[3]).toMatch(/^3\. Neustadt — (Stadt\/Gemeinde|town), 53\.71979, 9\.30941$/u);
       expect(r._meta?.["attribution"]).not.toBe("");
-      expect(r.structuredContent).toMatchObject({ ambiguous: true, query: "Neustadt", candidates: [{ districtCode: "02000000" }, { kreis: "Kreis Eichsfeld" }, { lat: 53.71979 }] });
+      expect(r.structuredContent).toMatchObject({ ambiguous: true, query: "Neustadt", candidates: [{ districtCode: "02000000" }, { kreis: "Kreis Eichsfeld" }, { lat: 53.71979 }], planningOnly: true, noticeDe: SPEED_NOTICE_DE });
     });
   }
 
@@ -76,8 +83,10 @@ describe("an ambiguous town name is asked (mcp #291 A1)", () => {
   it("one clear match is answered at once: one town of the name, the others other names", async () => {
     world([NEUSTADT[1]!, place({ name: "Neustadt an der Weinstraße", lat: 49.35, lon: 8.14 }), place({ name: "Neustadt (Hessen)", lat: 50.85, lon: 9.11 })]);
     expect(namesakes("Neustadt", [NEUSTADT[1]!, place({ name: "Neustadt an der Weinstraße", lat: 49.35, lon: 8.14 })])).toHaveLength(1);
-    await call("find_speed_cameras", { place: "Neustadt", language: "en" }).catch(() => undefined);
-    expect(ops()).toContain("listSpeedCameras");
+    mockServer.use(handlerFor("listSpeedCameras", () => HttpResponse.json({ data: { official: [], officialTotal: 0, osm: [], osmTotal: 0 }, meta: exampleOf<{ meta: Record<string, unknown> }>("listSpeedCameras").meta })));
+    const r = await call("find_speed_cameras", { place: "Neustadt", language: "en" });
+    expect(r.isError).toBeFalsy();
+    expect(ops()).toEqual(["resolvePlace", "listPlaces", "listSpeedCameras"]);
   });
 
   it("one town held twice (GeoNames beside BKG, 160 m apart) is one place: answered, not asked", () => {
@@ -91,7 +100,7 @@ describe("an ambiguous town name is asked (mcp #291 A1)", () => {
 
   it("at most five are listed, the rest counted", async () => {
     world(Array.from({ length: 7 }, (_, i) => place({ name: "Neustadt", lat: 48 + i, lon: 9 })));
-    const t = textOf(await call("find_speed_cameras", { place: "Neustadt", language: "en" })).split("\n");
+    const t = afterNotice(await call("find_speed_cameras", { place: "Neustadt", language: "en" }), "en");
     expect(NAMESAKES_SHOWN).toBe(5);
     expect(t[6]).toBe("… and 2 more (find_place lists them).");
     expect(t[0]).toContain('"Neustadt, district"');
