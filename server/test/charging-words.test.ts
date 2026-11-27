@@ -66,7 +66,12 @@ describe("N1/N2: a place is named by its name and address, its operator after it
 describe("N3: the price per kWh as published, and how many places publish one", () => {
   it("net or gross, in each language's decimal sign; no price, no price word (never 0)", () => {
     expect(priceText({ amount: 0.57, basis: "net", currency: "EUR" }, "en")).toBe("0.57 €/kWh net");
-    expect(priceText({ amount: 0.489, basis: "gross", currency: "EUR" }, "de")).toBe("0,49 €/kWh brutto");
+    expect(priceText({ amount: 0.489, basis: "gross", currency: "EUR" }, "de")).toBe("0,489 €/kWh brutto");
+    expect(priceText({ amount: 0.489, basis: "net", currency: "EUR" }, "en")).toBe("0.489 €/kWh net");
+    expect(priceText({ amount: 0.59, basis: "gross", currency: "EUR" }, "de")).toBe("0,59 €/kWh brutto");
+    expect(priceText({ amount: 0.5, basis: "gross", currency: "EUR" }, "en")).toBe("0.5 €/kWh gross");
+    expect(priceText({ amount: 1, basis: "gross", currency: "EUR" }, "en")).toBe("1 €/kWh gross");
+    expect(priceText({ amount: 0.4894, basis: "gross", currency: "EUR" }, "en")).toBe("0.489 €/kWh gross");
     expect(priceText({ amount: 0.49, basis: "gross", currency: "EUR" }, "en")).toBe("0.49 €/kWh gross");
     expect(priceText({ amount: 0.49, basis: "net", currency: "EUR" }, "de")).toBe("0,49 €/kWh netto");
     expect(priceText(null, "en")).toBeNull();

@@ -113,10 +113,13 @@ export function placeStatusText(st: PlaceStatus | null, language: Language, now:
   return de ? "keine Statusdaten" : "no status data";
 }
 
-/** "0.57 €/kWh net", "0,49 €/kWh brutto": the price as published, its basis said; null for an absent price, never 0. */
+/**
+ * "0.57 €/kWh net", "0,489 €/kWh brutto": the price as the API publishes it, to its three decimals with trailing zeros
+ * trimmed (0.590 is "0,59"), never rounded to cents; its basis said; null for an absent price, never 0.
+ */
 export function priceText(price: T.ChargingPlace["price"], language: Language): string | null {
   if (price === null) return null;
-  const n = price.amount.toFixed(2);
+  const n = price.amount.toFixed(3).replace(/\.?0+$/u, "");
   const basis = price.basis === "net" ? (language === "de" ? "netto" : "net") : language === "de" ? "brutto" : "gross";
   return `${language === "de" ? n.replace(".", ",") : n} €/kWh ${basis}`;
 }
