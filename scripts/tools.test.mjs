@@ -639,29 +639,37 @@ check('a child that does not exit: the witness names it, its state and its threa
 check('a child gone, its pipe held by a grandchild: the witness names the holder', () => {
     // The child hands its stdout to a detached grandchild and exits at once; the parent
     // then waits for an end-of-file that the grandchild withholds.
+    // The grandchild writes its own pid to a file, so this kills the planted process and no
+    // other: the witness's list can hold any process the machine started in the window.
+    const pidDir = mkdtempSync(join(tmpdir(), 'hang-witness-'));
+    const pidFile = join(pidDir, 'grandchild.pid');
+    const grandchild = `require("node:fs").writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); setTimeout(() => {}, 20000)`;
     const plant = 'const { spawn } = require("node:child_process");' +
-        'spawn(process.execPath, ["-e", "setTimeout(() => {}, 20000)"], { stdio: ["ignore", "inherit", "ignore"], detached: true }).unref();';
+        `spawn(process.execPath, ["-e", ${JSON.stringify(grandchild)}], { stdio: ["ignore", "inherit", "ignore"], detached: true }).unref();`;
     let error;
     try {
         runTool(process.execPath, ['-e', plant], { encoding: 'utf8', timeout: 3000, witness: true });
     } catch (caught) {
         error = caught;
     }
-    const holder = /started during the call and no longer under the parent \(reparented\): (\d+)/u.exec(error?.message ?? '');
-    if (holder !== null) {
-        try {
-            process.kill(Number(holder[1]), 'SIGKILL');
-        } catch {
-            // already gone
-        }
+    let planted;
+    try {
+        planted = Number(readFileSync(pidFile, 'utf8'));
+        process.kill(planted, 'SIGKILL');
+    } catch {
+        // never written, or already gone
     }
+    rmSync(pidDir, { recursive: true, force: true });
     assert.ok(error instanceof ToolError && error.timedOut, `expected a timeout, got ${error}`);
     if (!onLinux) {
         return;
     }
-    assert.ok(holder !== null, `the witness did not name the pipe's holder:\n${error.message}`);
+    assert.ok(Number.isInteger(planted) && planted > 0, 'the grandchild never wrote its pid');
+    const listed = /started during the call, not under the parent: ([\d ]+)/u.exec(error.message);
+    assert.ok(listed !== null && listed[1].split(' ').map(Number).includes(planted),
+        `the witness did not name the pipe's holder ${planted}:\n${error.message}`);
     assert.match(error.message, /no process under the parent: the child is gone and reaped/u);
-    assert.match(error.message, /cmdline ".*setTimeout\(\(\) => \{\}, 20000\)"/u);
+    assert.match(error.message, /cmdline ".*setTimeout\(\(\) => \{\}, 20000\)/u);
 });
 
 console.log(cases.join('\n'));

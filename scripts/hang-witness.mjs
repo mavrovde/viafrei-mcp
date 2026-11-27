@@ -44,9 +44,18 @@ const link = path => {
     }
 };
 
-/** `/proc/<pid>/stat` split after the command name, which may itself hold spaces and parentheses. */
+/**
+ * `/proc/<pid>/stat` split after the command name, which may itself hold spaces and parentheses.
+ * Undefined when the file cannot be read (the process gone between the listing and the read):
+ * read()'s "(unreadable: ...)" text holds a ')' and would parse as a process with no fields.
+ */
 function stat(pid) {
-    const text = read(`/proc/${pid}/stat`);
+    let text;
+    try {
+        text = readFileSync(`/proc/${pid}/stat`, 'utf8');
+    } catch {
+        return undefined;
+    }
     const close = text.lastIndexOf(')');
     if (close === -1) {
         return undefined;
@@ -117,9 +126,13 @@ function describe(pid, info, lines) {
 /**
  * The report for the processes under `parent` at this moment.
  *
- * `since` is when the call started (epoch ms): a process started after it that is NOT under
- * the parent any more was started by the child and outlived it (reparented), which is the
- * one way a pipe stays open after the child is gone. It is found by start time, not by the
+ * `since` is when the call started (epoch ms): a process started after it that is not under
+ * the parent is named, because a process the child started and that outlived it is one of
+ * them, the one way a pipe stays open after the child is gone. The list can also hold any
+ * other process the machine started in that window; only its fds tell a holder apart. A
+ * parent that is PID 1 (a container run without an init) adopts the orphan, which then shows
+ * under the parent instead. It is
+ * found by start time, not by the
  * pipe's identity, because libuv gives a child its stdio as a socketpair and the two ends of
  * a socketpair carry different inode numbers, so /proc cannot pair them. `ignore` are the
  * parent's earlier witnesses, killed and not yet reaped (the parent's loop is blocked).
@@ -150,7 +163,7 @@ export function witness(parent, since = undefined, ignore = new Set()) {
             boot + table.get(pid).start * 10 >= since - 1000);
         lines.push(outlived.length === 0
             ? '  no process started during the call outlived it outside the parent'
-            : `  started during the call and no longer under the parent (reparented): ${outlived.join(' ')}`);
+            : `  started during the call, not under the parent: ${outlived.join(' ')}`);
         for (const pid of outlived) describe(pid, table.get(pid), lines);
     }
     // The parent's pipes. A real pipe's two ends share one inode, so a holder of one of
