@@ -140,6 +140,9 @@ export type RoadSituation = {
   trafficType?: string | null;
   /** Proposed (today's jamStructured): a jam's end and length, its trend, the hour's usual and how long jams here last. */
   jam?: RoadJam | null;
+  /** Chainage along the road (API RoadSituation.position); null when it cannot be placed on its road. */
+  position?: { fromKm: number | null; toKm: number | null; junctionFrom: string | null; junctionTo: string | null } | null;
+  location?: { lat: number; lon: number } | null;
 };
 /** Proposed (today's check_road_status by road number): the window's tally, the page's entries, the rest, the sources that answered, the guidance. */
 export type RoadStatus = {
