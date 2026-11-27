@@ -261,7 +261,7 @@ export const findCheapestFuel: Handler = async (args, ctx): Promise<CallToolResu
   // What stands below the current prices: older prices, stations without one, or both.
   const after = hasStale && hasUnpriced
     ? de ? "danach ältere oder keine Preise" : "then older or no prices"
-    : hasStale ? (de ? "danach ältere" : "then older prices") : de ? "danach Stationen ohne Preis" : "then stations without a price";
+    : hasStale ? (de ? "danach ältere" : "then older prices") : de ? "danach Tankstellen ohne Preis" : "then stations without a price";
   const head = noneCurrent
     ? de
       ? `${grade} um ${around} (Umkreis ${radiusKm} km): Keine Tankstelle hat einen aktuellen ${grade}-Preis. Hier die zuletzt gemeldeten Preise, günstigste zuerst; sie können sich seitdem geändert haben:`

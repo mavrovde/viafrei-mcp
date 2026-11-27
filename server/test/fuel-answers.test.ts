@@ -84,7 +84,7 @@ describe("find_cheapest_fuel, the head names what stands below the current price
     });
     it(`an unpriced row, no stale one: then stations without a price (${language})`, async () => {
       serve("listFuelOptions", [row("D", 100, null, false), row("C", 900, 1.649, true)]);
-      expect(lines(await call("find_cheapest_fuel", { ...at, language }))[0]).toBe(HEAD[language] + (language === "de" ? "danach Stationen ohne Preis:" : "then stations without a price:"));
+      expect(lines(await call("find_cheapest_fuel", { ...at, language }))[0]).toBe(HEAD[language] + (language === "de" ? "danach Tankstellen ohne Preis:" : "then stations without a price:"));
     });
     it(`both: then older or no prices (${language})`, async () => {
       serve("listFuelOptions", [row("D", 100, null, false), row("B", 500, 1.599, false, OLD), row("C", 900, 1.649, true)]);
