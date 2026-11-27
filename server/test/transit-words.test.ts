@@ -49,9 +49,18 @@ describe("regionAnswer (check_transit_disruption) on API 2.0.4's figures", () =>
     const none = regionAnswer("en", "B", "B", data({ punctuality: null, windowMin: 30 })).split("\n");
     expect(none[0]).toBe("B: no public-transport realtime reports from this region in the last 30 minutes.");
     expect(none.at(-1)).toBe("Published service alerts for B (diversions, closed stops): none in force now.");
-    const untimed = regionAnswer("de", "B", "B", data({ punctuality: p({ observed: 0, late: 0, untimed: 2, windowMin: 45 }) })).split("\n");
-    expect(untimed[0]).toBe("B: in den letzten 45 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region. 2 Fahrten wurden ohne zählbare Verspätung gemeldet.");
-    expect(regionAnswer("en", "B", "B", data({ punctuality: p({ observed: 0, late: 0, untimed: 1 }) }))).toContain(" 1 trip was reported without a delay to count.");
+    // Nothing at all arrived, with a punctuality row: still "no realtime reports".
+    expect(regionAnswer("en", "B", "B", data({ punctuality: p({ observed: 0, late: 0, untimed: 0, stopsReporting: 0 }) })).split("\n")[0]).toBe("B: no public-transport realtime reports from this region in the last 60 minutes.");
+  });
+  it("reports arrived but no trip with a delay to count: says so, never \"no realtime reports\"", () => {
+    const untimed = regionAnswer("de", "B", "B", data({ punctuality: p({ observed: 0, late: 0, untimed: 2, stopsReporting: 0, windowMin: 45 }) })).split("\n");
+    expect(untimed[0]).toBe("B: in den letzten 45 Minuten keine Fahrt mit einer Verspätungsmeldung, die sich zählen ließe. 2 Fahrten wurden ohne zählbare Verspätung gemeldet.");
+    const one = regionAnswer("en", "B", "B", data({ punctuality: p({ observed: 0, late: 0, untimed: 1, stopsReporting: 0 }) })).split("\n")[0];
+    expect(one).toBe("B: no trip with a delay report to count from this region in the last 60 minutes. 1 trip was reported without a delay to count.");
+    const stops = regionAnswer("en", "B", "B", data({ punctuality: p({ observed: 0, late: 0, untimed: 0, stopsReporting: 3 }) })).split("\n")[0];
+    expect(stops).toBe("B: no trip with a delay report to count from this region in the last 60 minutes (reports from 3 stops).");
+    expect(regionAnswer("de", "B", "B", data({ punctuality: p({ observed: 0, late: 0, untimed: 0, stopsReporting: 1 }) }))).toContain(" (Meldungen von 1 Haltestelle).");
+    for (const t of [untimed[0], one, stops]) expect(t).not.toMatch(/no public-transport realtime reports|keine Echtzeitmeldungen/u);
   });
 });
 

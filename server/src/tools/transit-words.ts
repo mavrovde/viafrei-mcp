@@ -42,13 +42,23 @@ function windowLines(language: Language, label: string, data: T.DisruptionData):
   const p = data.punctuality;
   if (p === null || p.observed === 0) {
     const window = TRANSIT_WORDS.window(language, p?.windowMin ?? data.windowMin);
+    // Nothing at all arrived: no realtime reports. Reports arrived (untimed trips, stops reporting) but none with a
+    // delay to count: said so, never "no reports", which the next sentence would contradict.
+    const arrived = p !== null && (p.untimed > 0 || p.stopsReporting > 0);
     const untimed = p === null || p.untimed === 0 ? "" : L(language,
       ` ${counted(language, p.untimed, "Fahrt wurde", "Fahrten wurden")} ohne zählbare Verspätung gemeldet.`,
       ` ${counted(language, p.untimed, "trip was", "trips were")} reported without a delay to count.`);
-    return [L(language,
-      `${label}: ${window} keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.${untimed}`,
-      `${label}: no public-transport realtime reports from this region ${window}.${untimed}`),
-    TRANSIT_WORDS.changeOnly[language], TRANSIT_WORDS.perLine[language]];
+    const stops = p === null || p.stopsReporting === 0 ? "" : L(language,
+      ` (Meldungen von ${counted(language, p.stopsReporting, "Haltestelle", "Haltestellen")})`,
+      ` (reports from ${counted(language, p.stopsReporting, "stop", "stops")})`);
+    const head = arrived
+      ? L(language,
+        `${label}: ${window} keine Fahrt mit einer Verspätungsmeldung, die sich zählen ließe${stops}.${untimed}`,
+        `${label}: no trip with a delay report to count from this region ${window}${stops}.${untimed}`)
+      : L(language,
+        `${label}: ${window} keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.`,
+        `${label}: no public-transport realtime reports from this region ${window}.`);
+    return [head, TRANSIT_WORDS.changeOnly[language], TRANSIT_WORDS.perLine[language]];
   }
   const window = TRANSIT_WORDS.window(language, p.windowMin);
   const late = count(language, p.late), observed = count(language, p.observed), pct = percent(language, p.late / p.observed);
