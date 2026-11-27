@@ -118,7 +118,7 @@ describe("the board, the alerts, parking", () => {
   });
 });
 
-/** The page as API 1.2.2 sends it (StationPageEnvelope.data): each section's content under its own key. */
+/** The page as API 2.0.4 sends it (StationPageEnvelope.data): each section's content under its own key. */
 const apiPage = (sections: T.ApiPageSection[]): NonNullable<T.ApiStationPage> => ({ pageUrl: "https://alpha.example/en/station/koeln-hbf", sections });
 const apiSec = (id: T.ApiPageSection["id"], o: Partial<T.ApiPageSection> = {}): T.ApiPageSection => ({ id, asOf: "2026-03-30T09:58:00Z", sources: [], ...o });
 const apiDep = (o: Partial<NonNullable<T.ApiPageSection["departures"]>[number]> = {}) => ({ plannedAt: "2026-03-30T10:05:00Z", line: "S11", destination: "Dormagen", platform: "11 B-C", plannedPlatform: "11", platformChanged: false, delayMin: 0, cancelled: false, noForecast: false, ...o });
@@ -175,6 +175,23 @@ describe("the page as the API sends it", () => {
     expect(lines(null)).toBe("- Lift (no location given): working");
     expect(lines("")).toBe("- Lift (no location given): working");
     expect(lines("zu Gleis 1", "de")).toBe("- Aufzug zu Gleis 1: in Betrieb");
+  });
+});
+
+describe("a stop DB's register does not hold (API 2.0.4): no register number, no slug, a nested or no page", () => {
+  const stopHeader = { name: "Köln, Dom/Hbf", stationNo: null, eva: null, evaNumbers: [], slug: null, street: null, zipcode: null, city: null, land: null, category: null };
+  const said = (pageUrl: string | null, language: "de" | "en" = "en"): string[] =>
+    stationPageSectionsText(pageFromApi({ pageUrl, sections: [apiSec("header", { header: stopHeader }), apiSec("departures", { departures: [apiDep()] })] }, "Köln, Dom/Hbf"), language, NOW).split("\n");
+  it("a register station's page and a nested stop page are said as the page line", () => {
+    expect(said("https://alpha.example/en/station/koeln-hbf/stop/de-05315-11201")[0]).toBe("Köln, Dom/Hbf — Station page: https://alpha.example/en/station/koeln-hbf/stop/de-05315-11201");
+  });
+  it("a null pageUrl leaves the page out: the name alone, never the text null", () => {
+    for (const language of ["en", "de"] as const) {
+      const lines = said(null, language);
+      expect(lines[0]).toBe("Köln, Dom/Hbf");
+      expect(lines.join("\n")).not.toContain("null");
+    }
+    expect(said(null).slice(1, 4)).toEqual(["", "Departures (As of 11:58):", "- 12:05 S11 → Dormagen, Platform 11 B-C: on time"]);
   });
 });
 

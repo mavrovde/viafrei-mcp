@@ -6,8 +6,12 @@ import type { LatLon } from "./client.js";
 
 /** PlaceItem */
 export type PlaceItem = { id: string; name: string; kind: string; location: LatLon; distanceM?: number; districtCode?: string | null; sourceFamily: string;
-  /** Proposed: the Kreis the row lies in, by name (BKG), with districtCode its eight-digit Gemeinde key. */
-  districtName?: string | null;
+  /** The Kreis the place lies in, in German, as the platform's place search states it ("kreisfreie Stadt", "Kreis Borken", "kreisfreie Stadt München", "Vogtlandkreis"); absent when none can be named. */
+  kreis?: string;
+  /** The place's English name where it differs (Munich for München); absent else. */
+  nameEn?: string;
+  /** The place's own AGS where it has one. */
+  ags?: string;
 };
 /** resolvePlace: the one place a text names, as today's resolver says it (label), with its alternatives. */
 export type ResolvedPlace = { name: string; label: string; kind: string; location: LatLon; districtCode?: string | null; alternatives?: { name: string; kind: string }[] } | null;
@@ -15,7 +19,7 @@ export type ResolvedPlace = { name: string; label: string; kind: string; locatio
 export type StopBoards = {
   location: LatLon; window: { from: string; until: string };
   stops: { id: string; name: string; stopId: string; distanceM: number; departures: Departure[] }[];
-  /** Today's FlixBus/FlixTrain block near the point (its own feed, not DELFI's twins); null where none is near. Not in StopBoardsData of API 1.2.2. */
+  /** Today's FlixBus/FlixTrain block near the point (its own feed, not DELFI's twins); null where none is near. Not in StopBoardsData of API 2.0.4. */
   longDistance?: LongDistance | null;
 } | null;
 export type LongDistanceDeparture = {
@@ -49,6 +53,20 @@ export type ChargingSite = {
   summary: { chargePoints: number; availableNow: number | null; maxPowerKw: number | null };
   /** Each point and its last report (null: none published, or one that says nothing). */
   chargePoints?: { id: string; current: string | null; maxPowerKw: number | null; availability: { state: string; observedAt: string } | null }[];
+  /** Only with group=place: the place the item stands for (its name is then the place's label: name and address). */
+  place?: ChargingPlace;
+};
+export type ChargingAddress = { street: string | null; number: string | null; postcode: string | null; city: string | null };
+/** ChargingPlace: the records of one place folded into one item (listChargingOptions group=place). */
+export type ChargingPlace = {
+  siteId: string; siteIds: string[];
+  address: ChargingAddress | null; reportedAddress?: ChargingAddress; reportedLocation?: LatLon; locatedNear?: string;
+  connectors: { type: string; count: number; powerKw: number | null }[];
+  /** null: no record publishes a price per kWh (never 0). */
+  price: { amount: number; basis: "net" | "gross"; currency: "EUR" } | null;
+  /** null: no point has a status (unknown, never 0). stale: no point is current; the counts are the last known, as of observedAt. */
+  status: { free: number; occupied: number; outOfOrder: number; total: number; observedAt: string; stale: boolean } | null;
+  fromRegister: boolean; registerReleasedOn: string | null; sourceEnded: boolean;
 };
 /** HydrogenData */
 export type HydrogenStation = {
@@ -58,6 +76,13 @@ export type HydrogenStation = {
 };
 export type HydrogenData = { stations: HydrogenStation[]; nearest: HydrogenStation | null };
 /** ParkingSite */
+/** OSMCarPark (ParkingMeta.around.osmCarParks): an OpenStreetMap car park (ODbL), no capacity, no occupancy. */
+export type OsmCarPark = {
+  id: string; name: string | null; operator: string | null; street: string | null; houseNo: string | null; zip: string | null; town: string | null;
+  location: LatLon; distanceM: number;
+};
+/** ParkingMeta.around: null fields where not read (a lorry or rest-area question, a key without OpenStreetMap). */
+export type ParkingAround = { osmCarParks: OsmCarPark[] | null; osmDataAsOf: string | null; roadContext: unknown[] | null } | null;
 export type ParkingSite = {
   id: string; name: string | null; operator: string | null; kind: string; location: LatLon; distanceM?: number | null;
   occupancy: { free: number | null; total: number | null; state: string; observedAt: string | null } | null; termsRequired: boolean;
@@ -82,7 +107,7 @@ export type NearbyPartStatus = { part: NearbyPart; status: "ok" | "timeout" | "n
 /** Every category is optional: a category that is not ok (or not asked) is absent, and named in meta.parts. */
 export type NearbyData = {
   fuel?: NearbyFuelStation[]; charging?: ChargingSite[]; parking?: ParkingSite[]; stations?: Station[]; junctions?: NearbyJunction[];
-  /** Proposed (today's): the filling stations OpenStreetMap maps near the point that the price feed does not hold. */
+  /** With fuel (API 2.0.4): OpenStreetMap's filling stations (ODbL) in the radius with no priced station within 300 m, nearest first, three at most; credited in meta.attribution. */
   osmFuel?: OsmFuelStation[];
   /** Proposed (today's): the charging point register's release where a register row is among the charging rows shown. */
   chargingRegister?: { releasedOn: string | null } | null;
@@ -181,15 +206,18 @@ export type ZoneVerdict = { kind: "inside" | "transfer" | "outside" | "unknown";
 export type DrivingRulesData = { topic: string; title: string; rules: DrivingRule[]; reviewedOn: string; disclaimer: string; zoneCity?: ZoneCity; zoneVerdict?: ZoneVerdict };
 /** DisruptionData */
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
+/** DisruptionPunctuality (API 2.0.4): the trips with a delay report in the source's own window, those late at least once. */
+export type DisruptionPunctuality = {
+  code?: string; name: string | null; level: string; windowMin: number; observed: number; late: number; tripsSkippingStops: number; untimed: number;
+  medianWorstDelaySeconds: number | null; stopsReporting: number; observedAt: string | null; sourceFamily: string;
+};
 export type DisruptionData = {
   alerts: DisruptionAlert[]; alertsTotal: number; alertsChecked?: boolean; windowMin: number;
-  punctuality: {
-    name: string | null; level: string; late: number; observed: number; stopsReporting?: number; untimed?: number; tripsSkippingStops?: number; sourceFamily?: string;
-    /** Proposed (today's aggregate): the counted trips' delay reports, the trips cancelled here, the window before and its trend, thin. */
-    reports?: number; tripsCancelled?: number; previous?: { observed: number; late: number } | null; trend?: "better" | "worse" | "unchanged" | "unknown"; thin?: "few_trips" | "low_coverage" | null;
-  } | null;
-  /** Proposed (today's alertsCoverage): whether any alert source covers the area, and when each of its Länder last published. */
-  alertsCoverage?: { covered: boolean; lookbackDays: number; lastSeenAt: (string | null)[] };
+  punctuality: DisruptionPunctuality | null;
+  /** Whether any alert source read covers the area's Länder, and when each last published one; null without an area. */
+  alertsCoverage?: { covered: boolean; lookbackDays: number; lands: { land: string; alertsSeen: number; newestAlertSeenAt: string | null }[] } | null;
+  /** What the static timetable says of the line asked; null without line. */
+  line?: { key: string; checked: boolean; inTimetable: boolean } | null;
 };
 /** WeatherRiskData */
 /** The issuer's own English text of a warning (the next API release; absent before it). */
@@ -304,14 +332,15 @@ export type StationPageSection = {
   units?: StationPageLift[]; rows?: StationPageDeparture[]; alerts?: StationPageAlert[];
   facilities?: string[]; point?: LatLon | null;
 };
-export type StationPage = { station: { name: string }; pageUrl: string; sections: StationPageSection[] } | null;
+/** pageUrl: null for a stop DB's register does not hold that no station page lists (API 2.0.4). */
+export type StationPage = { station: { name: string }; pageUrl: string | null; sections: StationPageSection[] } | null;
 
-/** StationPageEnvelope.data, as API 1.2.2 sends it: each section's content under its own key (PageSection, PageLift, PlatformAccess). */
+/** StationPageEnvelope.data, as API 2.0.4 sends it: each section's content under its own key (PageSection, PageLift, PlatformAccess). */
 type Access = "yes" | "partial" | "no" | "unknown";
 export type ApiPagePlatform = { tracks: string[]; name: string | null; lift: "ok" | "out" | "unknown" | "none" };
 export type ApiPageSection = {
   id: StationPageSection["id"]; asOf: string | null; sources: string[];
-  header?: { name: string; stationNo: string; eva: string | null; evaNumbers: string[]; slug: string; street: string | null; zipcode: string | null; city: string | null; land: string | null; category: number | null };
+  header?: { name: string; stationNo: string | null; eva: string | null; evaNumbers: string[]; slug: string | null; street: string | null; zipcode: string | null; city: string | null; land: string | null; category: number | null };
   railAmpel?: { lamp: RailLamp; trips: number; reasons: RailReason[]; lines: { line: string; long: boolean; lamp: RailLamp }[] };
   stepFreeNow?: { platforms: ApiPagePlatform[]; blocked: ApiPagePlatform[]; steplessAccess: string | null };
   lifts?: { id: string; kind: string; position: string | null; state: "active" | "inactive" | "unknown"; equipmentNo: string | null }[];
@@ -320,4 +349,8 @@ export type ApiPageSection = {
   alerts?: StationPageAlert[];
   facilities?: { flags: string[]; location: LatLon | null };
 };
-export type ApiStationPage = { pageUrl: string; sections: ApiPageSection[] } | null;
+/**
+ * pageUrl: a register station's page; for a stop the register does not hold, its page under the nearest station page
+ * that lists it (…/station/<slug>/stop/<key>), or null where none lists it (API 2.0.4). An unknown id answers 404.
+ */
+export type ApiStationPage = { pageUrl: string | null; sections: ApiPageSection[] } | null;

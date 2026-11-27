@@ -77,7 +77,7 @@ export function createServer(deps: ServerDeps): McpServer {
     const args = (request.params.arguments ?? {}) as Record<string, unknown>;
     const language = languageOf(args["language"]);
     const handler = HANDLERS[name];
-    if (!toolNames.has(name) || handler === undefined) return withErrorCode(toolError(language === "de" ? `Unbekanntes Werkzeug: ${name}` : `Unknown tool: ${name}`), "not_found");
+    if (!toolNames.has(name) || handler === undefined) return withErrorCode(toolError(language === "de" ? `Unbekanntes Werkzeug: ${name}` : `Unknown tool: ${name}`, "not_found"), "not_found");
     const refused = checkInput(name, args);
     if (refused !== null) return withErrorCode(refused, "invalid_input");
     const ctx: ToolContext = {
@@ -97,7 +97,7 @@ export function createServer(deps: ServerDeps): McpServer {
     } catch (err) {
       log.warn({ tool: name, ms: Date.now() - started, error: err instanceof Error ? err.name : "error", kind: err instanceof ApiError ? err.kind : null }, "tool call failed");
       if (err instanceof ApiError) return withErrorCode(apiFailure(err, language), API_FAILURE_CODE[err.kind]);
-      return withErrorCode(toolError(language === "de" ? "Bei dieser Anfrage ist ein Fehler aufgetreten." : "Something went wrong with this request."), "internal");
+      return withErrorCode(toolError(language === "de" ? "Bei dieser Anfrage ist ein Fehler aufgetreten." : "Something went wrong with this request.", "internal"), "internal");
     }
   });
 

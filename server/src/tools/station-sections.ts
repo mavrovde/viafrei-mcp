@@ -234,7 +234,8 @@ export function stationPageSectionsText(page: NonNullable<T.StationPage>, langua
   for (const s of page.sections) {
     switch (s.id) {
       case "header": {
-        out.push(`${s.name ?? page.station.name} — ${w.page}: ${page.pageUrl}`);
+        // A stop no station page lists has no page (pageUrl null): its name alone, never "null" as an address.
+        out.push(page.pageUrl === null ? (s.name ?? page.station.name) : `${s.name ?? page.station.name} — ${w.page}: ${page.pageUrl}`);
         const address = [s.street ?? null, [s.zipcode ?? null, s.city ?? null].filter((x) => x !== null && x !== "").join(" ")].filter((x) => x !== null && x !== "").join(", ");
         const facts = [address, s.land ?? null, s.category === undefined || s.category === null ? null : w.category(s.category), s.evaNo === undefined || s.evaNo === null ? null : `EVA ${s.evaNo}`]
           .filter((x): x is string => x !== null && x !== "");

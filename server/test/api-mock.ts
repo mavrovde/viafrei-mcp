@@ -89,6 +89,8 @@ export function handlerFor(id: string, respond?: (url: URL) => Response | Promis
     calls.push({ operationId: id, url, headers: request.headers });
     const unknown = [...new Set(url.searchParams.keys())].filter((k) => !op.query.includes(k));
     if (unknown.length > 0) return unknownParameters(url.pathname, unknown);
+    const empty = [...new Set(url.searchParams.keys())].filter((k) => url.searchParams.getAll(k).some((v) => v === ""));
+    if (empty.length > 0) return unknownParameters(url.pathname, empty, "empty value");
     if (respond !== undefined) return respond(url);
     // A proposed operation is answered as today's API answers it: not offered (404); its document does not list it.
     if (op.proposed) return notOffered(op.path);
@@ -97,10 +99,13 @@ export function handlerFor(id: string, respond?: (url: URL) => Response | Promis
   });
 }
 
-/** The API's answer to a query parameter its operation does not declare (params.go): one error per such parameter. */
-export const unknownParameters = (instance: string, names: readonly string[]): Response =>
+/**
+ * The API's answer to a query parameter its operation does not declare, or (API 2.0.4) to one sent with an empty
+ * value (`name=`): one error per such parameter.
+ */
+export const unknownParameters = (instance: string, names: readonly string[], detail = "unknown parameter"): Response =>
   HttpResponse.json(
-    { type: "https://api.viafrei.de/problems/invalid-parameter", title: "Invalid parameter", status: 400, detail: "One or more parameters are invalid.", instance, retryable: false, errors: names.map((n) => ({ parameter: `query.${n}`, code: "invalid", detail: "unknown parameter" })) },
+    { type: "https://api.viafrei.de/problems/invalid-parameter", title: "Invalid parameter", status: 400, detail: "One or more parameters are invalid.", instance, retryable: false, errors: names.map((n) => ({ parameter: `query.${n}`, code: "invalid", detail })) },
     { status: 400, headers: { "content-type": "application/problem+json" } },
   );
 

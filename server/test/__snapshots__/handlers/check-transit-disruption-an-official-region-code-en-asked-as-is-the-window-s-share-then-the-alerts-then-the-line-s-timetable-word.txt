@@ -1,0 +1,10 @@
+Berlin: 23% of observed trips late at least once (1,007 of 4,437 trips in the last 60 minutes, reports from 672 stops); in addition, 512 trips skip at least one stop (a detour, a closed stop or a trip ending early).
+Median of each trip's worst delay: 3 min.
+Trips are counted, not reports: a trip counts as late if it was reported late at least once during the window, even if it caught up afterwards.
+The source reports changes only: these figures cover the trips whose delay moved during the window, not every trip. Few reports therefore does not by itself mean "everything on time".
+Individual lines, trips or stops cannot be judged from these delay figures — the realtime data arrives with no line reference, and its licence permits region-wide totals only.
+
+2 service alerts in force for Berlin, line RE 1:
+- RE 1, RB 2: Bauarbeiten
+- (no headline published)
+No line RE 1 is in any timetable I read — check the line name.

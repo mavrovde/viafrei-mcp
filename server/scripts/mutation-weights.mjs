@@ -25,7 +25,7 @@ if (!dir || !logFile || !run) {
 
 const doneOf = new Map();
 for (const line of readFileSync(logFile, "utf8").split("\n")) {
-  const m = /^Mutation shard \((\d+)\)\t.*Done in (?:(\d+) minutes? and )?(\d+) seconds?\./u.exec(line);
+  const m = /^(?:Mutation \/ )?Mutation shard \((\d+)\)\t.*Done in (?:(\d+) minutes? and )?(\d+) seconds?\./u.exec(line);
   if (m) doneOf.set(Number(m[1]), Number(m[2] ?? 0) * 60 + Number(m[3]));
 }
 

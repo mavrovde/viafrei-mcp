@@ -7,7 +7,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Attribution, DataMeta } from "./api/client.js";
-import { ApiError } from "./api/client.js";
+import { ApiError, problemCode } from "./api/client.js";
+import type { ToolErrorCode, ToolErrorReason } from "./usage-names.js";
 
 export type Language = "de" | "en";
 
@@ -86,7 +87,14 @@ export function creditFooter(language: Language, rows: readonly string[], stand:
   const basis = rows.filter((r) => !labelled(r) && r.startsWith(CHANGED_DATA_LEAD));
   const rest = rows.filter((r) => !labelled(r) && !r.startsWith(CHANGED_DATA_LEAD));
   const lead = own.length > 0 || rest.length === 0 ? "" : `${SOURCE_LABEL[language]}: `;
-  return `${lead}${[...own, ...rest, ...basis].join(" · ")} · ${stand}`;
+  // An answer whose data carries no time of its own says none (stand ""), never the time it was read.
+  return `${lead}${[...own, ...rest, ...basis].join(" · ")}${stand === "" ? "" : ` · ${stand}`}`;
+}
+
+/** "Stand 23.11.2026" / "As of 2026-11-23": the Berlin day of a reference data set's time, never its clock time. */
+export function asOfDayLabel(iso: string, language: Language): string {
+  const day = berlinDay(new Date(iso));
+  return language === "de" ? `${AS_OF_LABEL.de} ${day.slice(8, 10)}.${day.slice(5, 7)}.${day.slice(0, 4)}` : `${AS_OF_LABEL.en} ${day}`;
 }
 
 export const km = (m: number | null | undefined, language: Language): string =>
@@ -110,8 +118,9 @@ export type ToolMeta = {
   attribution: string;
   license: string;
   licenses: Record<string, string>;
-  asOf: string;
-  asOfLocal: string;
+  /** Absent when the data carries no time of its own (toolResult's asOf null), never the time it was read. */
+  asOf?: string;
+  asOfLocal?: string;
   sources: string[];
   purposeNote?: string;
   conditionNote?: string;
@@ -153,8 +162,8 @@ function uniqueAttributions(list: readonly Attribution[]): Attribution[] {
  */
 export function toolResult(body: string, metas: readonly DataMeta[], language: Language, extra: {
   conditionNote?: string; nextCursor?: string | null; structured?: Record<string, unknown>;
-  /** The data time when it is not the reads' (the driving rules: the review date). */
-  asOf?: string;
+  /** The data time when it is not the reads' (the driving rules: the review date); null when the data has none, so no as-of is said or sent. */
+  asOf?: string | null;
   /** The Stand when it is not a clock time (the driving rules: "Stand 19.09.2026"). */
   asOfLabel?: string;
   /** A sentence AFTER the credit line, the last thing read aloud (the rules' disclaimer). */
@@ -166,11 +175,12 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
   const purpose = [...new Set(metas.flatMap((m) => m.notes?.purpose ?? []))];
   const condition = [...new Set([...metas.flatMap((m) => m.notes?.condition ?? []), ...(extra.conditionNote ? [extra.conditionNote] : [])])];
   const asOfs = metas.map((m) => m.asOf).filter((x): x is string => typeof x === "string").sort();
+  const undated = extra.asOf === null;
   const asOf = extra.asOf ?? asOfs[0] ?? metas[0]?.generatedAt ?? new Date().toISOString();
   const credits = attributions.map(creditWithLinks);
   const attributionText = credits.join(" · ");
   const shareAlike = shareAlikeNote(attributions, language, extra.shareAlikeSubject);
-  const footer = creditFooter(language, credits, extra.asOfLabel ?? `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`)
+  const footer = creditFooter(language, credits, extra.asOfLabel ?? (undated ? "" : `${AS_OF_LABEL[language]} ${standTime(asOf, language)}`))
     + (shareAlike === undefined ? "" : `\n${shareAlike}`) + (extra.note === undefined ? "" : `\n${extra.note}`);
   const lines = [...purpose, ...condition];
   const room = TOOL_RESULT_CHARS - footer.length - lines.join("\n").length - 4;
@@ -181,8 +191,7 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
     attribution: attributionText,
     license: [...new Set(Object.values(licenses))].join(", "),
     licenses,
-    asOf,
-    asOfLocal: berlinDateTime(asOf, language),
+    ...(undated ? {} : { asOf, asOfLocal: berlinDateTime(asOf, language) }),
     sources: attributions.map((a) => a.family),
   };
   if (purpose.length > 0) meta.purposeNote = purpose.join(" ");
@@ -193,7 +202,7 @@ export function toolResult(body: string, metas: readonly DataMeta[], language: L
   if (extra.structured !== undefined) {
     result.structuredContent = {
       ...extra.structured,
-      asOf: meta.asOf,
+      ...(meta.asOf === undefined ? {} : { asOf: meta.asOf }),
       attribution: meta.attribution,
       license: meta.license,
       ...(meta.purposeNote === undefined ? {} : { purposeNote: meta.purposeNote }),
@@ -228,9 +237,13 @@ export function shareAlikeNote(attributions: readonly Attribution[], language: L
       : `${subject ?? "These figures"} are licensed ${named} (share-alike) by their source; we release our adaptation under ${ours}: anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution.`;
 }
 
-/** A tool error the assistant can act on. */
-export function toolError(text: string): CallToolResult {
-  return { content: [{ type: "text", text }], isError: true };
+/**
+ * A tool error the assistant can act on, with the reason code the usage counters and the request log count it by
+ * (`_meta.errorCode`) and, for a refused argument clause, which one (`_meta.errorReason`). Every handler error
+ * names its code here; none is left for the server to guess.
+ */
+export function toolError(text: string, code: ToolErrorCode, reason?: ToolErrorReason): CallToolResult {
+  return { content: [{ type: "text", text }], isError: true, _meta: { errorCode: code, ...(reason === undefined ? {} : { errorReason: reason }) } };
 }
 
 const NOT_AVAILABLE: Record<Language, string> = {
@@ -240,7 +253,7 @@ const NOT_AVAILABLE: Record<Language, string> = {
 
 /** The answer of a handler whose API operation the contract does not have yet. */
 export function notAvailable(language: Language, what?: string): CallToolResult {
-  return toolError(what === undefined ? NOT_AVAILABLE[language] : `${NOT_AVAILABLE[language]} (${what})`);
+  return toolError(what === undefined ? NOT_AVAILABLE[language] : `${NOT_AVAILABLE[language]} (${what})`, "unavailable");
 }
 
 /** An API failure, worded for the person. Never carries a key or a URL. */
@@ -249,15 +262,30 @@ export function apiFailure(err: unknown, language: Language): CallToolResult {
   const de = language === "de";
   switch (err.kind) {
     case "not_found":
-      return toolError(de ? "Dazu hat die ViaFrei-API nichts gefunden." : "The ViaFrei API found nothing for this.");
+      return toolError(de ? "Dazu hat die ViaFrei-API nichts gefunden." : "The ViaFrei API found nothing for this.", "not_found");
     case "invalid":
-      return toolError(de ? `Die Anfrage passt nicht: ${err.problem?.detail ?? err.message}` : `The request does not fit: ${err.problem?.detail ?? err.message}`);
+      return toolError(de ? `Die Anfrage passt nicht: ${err.problem?.detail ?? err.message}` : `The request does not fit: ${err.problem?.detail ?? err.message}`, "invalid_input");
     case "rate_limited":
-      return toolError(de ? "Gerade zu viele Anfragen – bitte in einer Minute noch einmal fragen." : "Too many requests right now – please ask again in a minute.");
+      if (problemCode(err.problem) === "quota-exceeded") {
+        return toolError(de ? `Das Anfragekontingent dieses ViaFrei-Zugangs ist aufgebraucht – bitte ${retryWhen(err, de) ?? "später"} noch einmal fragen.` : `This ViaFrei access has used up its request quota – please ask again ${retryWhen(err, de) ?? "later"}.`, "limit_reached");
+      }
+      return toolError(de ? `Gerade zu viele Anfragen – bitte ${retryWhen(err, de) ?? "in einer Minute"} noch einmal fragen.` : `Too many requests right now – please ask again ${retryWhen(err, de) ?? "in a minute"}.`, "limit_reached");
     case "not_configured":
     case "refused":
       return notAvailable(language);
     default:
-      return toolError(de ? "Die ViaFrei-API antwortet gerade nicht – bitte gleich noch einmal fragen." : "The ViaFrei API is not answering right now – please ask again shortly.");
+      if (problemCode(err.problem) === "overloaded") {
+        return toolError(de ? `Die ViaFrei-API ist gerade ausgelastet – bitte ${retryWhen(err, de) ?? "gleich"} noch einmal fragen.` : `The ViaFrei API is busy right now – please ask again ${retryWhen(err, de) ?? "shortly"}.`, "unavailable");
+      }
+      return toolError(de ? "Die ViaFrei-API antwortet gerade nicht – bitte gleich noch einmal fragen." : "The ViaFrei API is not answering right now – please ask again shortly.", "unavailable");
   }
+}
+
+/** "in 30 seconds" / "in 5 minutes" from the problem's retryAfter (equal to Retry-After); undefined without one. */
+function retryWhen(err: ApiError, de: boolean): string | undefined {
+  const s = err.problem?.retryAfter;
+  if (typeof s !== "number" || !Number.isFinite(s) || s <= 0) return undefined;
+  if (s < 90) return de ? `in ${Math.ceil(s)} Sekunden` : `in ${Math.ceil(s)} seconds`;
+  if (s < 90 * 60) return de ? `in ${Math.round(s / 60)} Minuten` : `in ${Math.round(s / 60)} minutes`;
+  return de ? `in ${Math.round(s / 3600)} Stunden` : `in ${Math.round(s / 3600)} hours`;
 }

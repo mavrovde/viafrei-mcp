@@ -385,7 +385,7 @@ describe("find_charging_station", () => {
       expect(body(await call("find_charging_station", { ...at, language }))).toBe(language === "de"
         ? "Im Umkreis von 10 km um 52.520, 13.405 kenne ich keine Ladestandorte. Die Abdeckung ist bundesweit, aber nicht lückenlos — ein größerer Radius (bis 25 km) hilft oft."
         : "I hold no charging sites within 10 km of 52.520, 13.405. Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
-      expect(query("listChargingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "10000", lang: language }]);
+      expect(query("listChargingOptions")).toEqual([{ at: "52.52,13.405", radius_m: "10000", group: "place", lang: language }]);
     });
     it(`a filter in a circle with no site at all (${language}): today's sentence, the filter notwithstanding`, async () => {
       serve("listChargingOptions", []);
@@ -394,7 +394,7 @@ describe("find_charging_station", () => {
         : "I hold no charging sites within 10 km of 52.520, 13.405. Coverage is nationwide but not complete — a larger radius (up to 25 km) often helps.");
       // The circle is read a second time without the filter, to count what it holds.
       expect(query("listChargingOptions")).toEqual([
-        { at: "52.52,13.405", radius_m: "10000", min_kw: "150", lang: language },
+        { at: "52.52,13.405", radius_m: "10000", min_kw: "150", group: "place", lang: language },
         { at: "52.52,13.405", radius_m: "10000", limit: "100", lang: language },
       ]);
     });
@@ -742,6 +742,47 @@ describe("find_place, find_poi, find_address", () => {
     serve("listPlaces", [{ ...row, name: "Marienplatz" }, { ...row, name: "Marienplatz" }], { page: { limit: 2, hasMore: true, nextCursor: null } });
     const r = await call("find_place", { query: "Marienplatz", limit: 2, language: "en" });
     expect(body(r).split("\n")[0]).toBe('"Marienplatz" — the first 2 matches; more exist, so this is not a count of every place with that name (narrow with near or kind, limit up to 10):');
+  });
+
+  it("find_place says the Kreis the API names, the English name beside the German one, no empty slot without one", async () => {
+    const row = ex<object[]>("listPlaces")[0];
+    serve("listPlaces", [
+      { ...row, name: "Ahaus, Marienplatz", kind: "stop", districtCode: "05554004", kreis: "Kreis Borken", location: { lat: 52.07743, lon: 7.00896 } },
+      { ...row, name: "München", nameEn: "Munich", kind: "municipality", districtCode: "09162000", kreis: "kreisfreie Stadt", location: { lat: 48.13705, lon: 11.57539 } },
+      { ...row, name: "Marienplatz", kind: "station_area", districtCode: "09162000", kreis: "kreisfreie Stadt München", location: { lat: 48.13705, lon: 11.57539 } },
+      { ...row, name: "Bayern", kind: "region", districtCode: "09", location: { lat: 48.9, lon: 11.4 } },
+    ], { asOf: "2026-11-22T23:03:00Z" });
+    const en = body(await call("find_place", { query: "Marienplatz", language: "en" })).split("\n");
+    expect(en.slice(1, 5)).toEqual([
+      "1. Ahaus, Marienplatz — stop, North Rhine-Westphalia, district Borken, 52.07743, 7.00896",
+      "2. München (Munich) — town, Bavaria, independent city, 48.13705, 11.57539",
+      "3. Marienplatz — station, Bavaria, independent city München, 48.13705, 11.57539",
+      "4. Bayern — administrative area, 48.90000, 11.40000",
+    ]);
+    const de = body(await call("find_place", { query: "Marienplatz", language: "de" })).split("\n");
+    expect(de.slice(1, 4)).toEqual([
+      "1. Ahaus, Marienplatz — Haltestelle, Nordrhein-Westfalen, Kreis Borken, 52.07743, 7.00896",
+      "2. München — Stadt/Gemeinde, Bayern, kreisfreie Stadt, 48.13705, 11.57539",
+      "3. Marienplatz — Bahnhof, Bayern, kreisfreie Stadt München, 48.13705, 11.57539",
+    ]);
+  });
+
+  it("find_place's as-of is the place data's day, never a clock time; with no time known, no as-of is said", async () => {
+    const row = ex<object[]>("listPlaces")[0];
+    serve("listPlaces", [{ ...row, name: "Essen", kind: "municipality" }], { asOf: "2026-11-22T23:03:00Z" });
+    const dated = await call("find_place", { query: "Essen", language: "en" });
+    expect(textOf(dated).split("\n").at(-1)).toMatch(/ · As of 2026-11-23$/u);
+    expect(textOf(await call("find_place", { query: "Essen", language: "de" })).split("\n").at(-1)).toMatch(/ · Stand 23\.11\.2026$/u);
+    serve("listPlaces", [{ ...row, name: "Essen", kind: "municipality" }], { asOf: null });
+    expect(dated._meta).toMatchObject({ asOf: "2026-11-22T23:03:00Z" });
+    const undatedResult = await call("find_place", { query: "Essen", language: "en" });
+    const undated = textOf(undatedResult);
+    expect(undated).not.toMatch(/As of/u);
+    // No data time: none sent either, never the time of this read.
+    expect(undatedResult._meta).not.toHaveProperty("asOf");
+    expect(undatedResult._meta).not.toHaveProperty("asOfLocal");
+    expect(undatedResult._meta).toHaveProperty("attribution");
+    expect(undated.split("\n").at(-1)).toMatch(/GeoNames.*bearbeitet[^·]*$/u);
   });
 
   for (const [kind, contract] of [["district", "district"], ["admin", "region"], ["station", "station_area"], ["stop", "station_area"]]) {
@@ -1192,11 +1233,11 @@ describe("get_driving_rules", () => {
   });
 
   for (const language of LANGS) {
-    it(`an unknown place in today's words, with no error code (${language})`, async () => {
+    it(`an unknown place in today's words, coded not_found (${language})`, async () => {
       serve("listPlaces", []);
       expect(await call("get_driving_rules", { place: "Nirgendwo", language })).toEqual({
         content: [{ type: "text", text: language === "de" ? "„Nirgendwo“ habe ich als Ort nicht gefunden." : 'I could not find "Nirgendwo" as a place.' }],
-        isError: true,
+        isError: true, _meta: { errorCode: "not_found" },
       });
       expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
     });
@@ -1227,28 +1268,40 @@ describe("check_transit_disruption", () => {
     { header: "Bauarbeiten", lines: ["RE 1", "RB 2"], inForceFrom: null, inForceUntil: null },
     { header: null, lines: [], inForceFrom: null, inForceUntil: null },
   ];
+  const punct = { code: "11", name: "Berlin", level: "state", windowMin: 60, observed: 4_437, late: 1_007, stopsReporting: 672, untimed: 0, tripsSkippingStops: 512, medianWorstDelaySeconds: 150, observedAt: null, sourceFamily: "delfi_rt_tu" };
   for (const language of LANGS) {
-    it(`an official region code (${language}): asked as is; punctuality first, then the alerts`, async () => {
-      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts, punctuality: { name: "VBB", level: "amber", late: 12, observed: 80 } });
+    it(`an official region code (${language}): asked as is; the window's share, then the alerts, then the line's timetable word`, async () => {
+      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts, alertsTotal: 2, alertsChecked: true, punctuality: punct, line: { key: "RE1", checked: true, inTimetable: false } });
       const r = await call("check_transit_disruption", { region: "05315", line: "RE 1", window_min: 30, language });
       expect(ops()).toEqual(["listTransitDisruptions"]);
       expect(query("listTransitDisruptions")).toEqual([{ area: "05315", line: "RE 1", window_min: "30", lang: language }]);
       await pinned("handlers", body(r));
     });
-    it(`nothing to report (${language})`, async () => {
-      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], punctuality: null });
-      expect(body(await call("check_transit_disruption", { region: "11", language }))).toBe(language === "de" ? "Keine Störungen gefunden." : "No disruptions found.");
+    it(`no counted trip, no alert, the feeds alive (${language}): says both, never a bare "no disruptions"`, async () => {
+      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], alertsTotal: 0, alertsChecked: true, punctuality: null, alertsCoverage: null });
+      const lines = body(await call("check_transit_disruption", { region: "11", language })).split("\n");
+      expect(lines[0]).toBe(language === "de" ? "11: in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region." : "11: no public-transport realtime reports from this region in the last 60 minutes.");
+      expect(lines.at(-1)).toBe(language === "de" ? "Veröffentlichte Störungsmeldungen für 11 (Umleitungen, gesperrte Haltestellen): derzeit keine in Kraft." : "Published service alerts for 11 (diversions, closed stops): none in force now.");
+    });
+    it(`a line alone (${language}): its alerts anywhere, or that the feeds are not current`, async () => {
+      serve("listPlaces", []);
+      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [alerts[0]], alertsTotal: 1, alertsChecked: true, punctuality: null, alertsCoverage: null, line: { key: "S1", checked: true, inTimetable: true } });
+      expect(body(await call("check_transit_disruption", { line: "S1", language }))).toBe(language === "de" ? "1 Störungsmeldung in Kraft für Linie S1:\n- RE 1, RB 2: Bauarbeiten" : "1 service alert in force for line S1:\n- RE 1, RB 2: Bauarbeiten");
+      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], alertsTotal: 0, alertsChecked: false, punctuality: null, alertsCoverage: null, line: null });
+      expect(body(await call("check_transit_disruption", { line: "S1", language }))).toContain(language === "de" ? "Störungsmeldungen für Linie S1: Die Meldungsquellen sind gerade nicht aktuell" : "Service alerts for line S1: the alert feeds are not current right now");
     });
     it(`an unknown region (${language})`, async () => {
       serve("listPlaces", []);
       const r = await call("check_transit_disruption", { region: "Atlantis", language });
-      expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? '"Atlantis" kenne ich als Region nicht. Die Daten sind auf Kreisebene gemeldet — bitte ein Bundesland, eine kreisfreie Stadt oder den Kreis nennen (z. B. "Bayern", "Köln", "Landkreis Fulda").' : 'I do not know "Atlantis" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").' }], isError: true });
+      expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? '"Atlantis" kenne ich als Region nicht. Die Daten sind auf Kreisebene gemeldet — bitte ein Bundesland, eine kreisfreie Stadt oder den Kreis nennen (z. B. "Bayern", "Köln", "Landkreis Fulda").' : 'I do not know "Atlantis" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").' }], isError: true, _meta: { errorCode: "not_found", errorReason: "region" } });
       expect(ops()).toEqual(["listPlaces", "listPlaces"]);
     });
   }
-  it("a punctuality without a name", async () => {
-    serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], punctuality: { name: null, level: "green", late: 0, observed: 5 } });
-    expect(body(await call("check_transit_disruption", { region: "11", language: "en" }))).toBe("Punctuality : green (0 of 5 late)");
+  it("a region asked by its code is said by the API's name for it; a nameless one keeps the code", async () => {
+    serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], alertsChecked: true, alertsCoverage: null, punctuality: punct });
+    expect(body(await call("check_transit_disruption", { region: "11", language: "en" })).split("\n")[0]).toMatch(/^Berlin: 23% of observed trips late at least once \(1,007 of 4,437 trips in the last 60 minutes/u);
+    serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], alertsChecked: true, alertsCoverage: null, punctuality: { ...punct, name: null } });
+    expect(body(await call("check_transit_disruption", { region: "11", language: "en" })).split("\n")[0]).toMatch(/^11: 23% of observed/u);
   });
   it("a region name: its district code through the place search", async () => {
     await call("check_transit_disruption", { region: "VBB", language: "en" });
@@ -1458,7 +1511,7 @@ describe("parity of four answers with today's server", () => {
       for (const language of LANGS) {
         const r = await call("get_departures", { stop_id: "1:de:01002:1", language });
         expect(ops().at(-1)).toBe("listStationDepartures");
-        expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "1:de:01002:1" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "1:de:01002:1". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true });
+        expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "1:de:01002:1" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "1:de:01002:1". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true, _meta: { errorCode: "not_found" } });
       }
     });
     it("every board failing is the API's failure, an error; no list of unread stops", async () => {
@@ -1763,7 +1816,7 @@ describe("stations", () => {
     });
     it(`get_departures, no such stop (${language})`, async () => {
       serve("listStations", []);
-      expect(await call("get_departures", { stop: "Xy", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "Xy" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "Xy". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true });
+      expect(await call("get_departures", { stop: "Xy", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "Xy" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "Xy". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true, _meta: { errorCode: "not_found" } });
     });
   }
 
@@ -1775,7 +1828,7 @@ describe("stations", () => {
   for (const tool of ["check_station_facilities", "describe_station"]) {
     it(`${tool} with no station asks which one, in today's words, and searches nothing`, async () => {
       const de = await call(tool, { language: "de" });
-      expect(de).toEqual({ content: [{ type: "text", text: 'Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {"station": "Hannover Hbf"}.' }], isError: true });
+      expect(de).toEqual({ content: [{ type: "text", text: 'Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {"station": "Hannover Hbf"}.' }], isError: true, _meta: { errorCode: "invalid_input" } });
       const en = await call(tool, { language: "en" });
       expect(textOf(en)).toBe('Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {"station": "Hannover Hbf"}.');
       expect(query("listStations")).toEqual([]);
@@ -1802,9 +1855,9 @@ describe("stations", () => {
     });
     it(`check_station_facilities and describe_station, no such station (${language})`, async () => {
       serve("listStations", []);
-      expect(await call("check_station_facilities", { station: "X", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Einen Bahnhof oder eine Haltestelle "X" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof oder an der Haltestelle steht, mit der Stadt (z. B. "Köln Hbf", "Stuttgart Charlottenplatz").' : 'I do not know a station or stop called "X". Please give the name as it appears at the station or stop, with the city (e.g. "Köln Hbf", "Stuttgart Charlottenplatz").' }], isError: true });
-      expect(await call("describe_station", { station: "X", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Den Bahnhof "X" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Köln Hbf").' : 'I do not know a station called "X". Please give the name as it appears at the station (e.g. "Köln Hbf").' }], isError: true });
-      expect(await call("describe_station", { eva_no: "8000207", language })).toEqual({ content: [{ type: "text", text: language === "de" ? "Zu EVA 8000207 halten wir keinen Bahnhofseintrag. Aufzüge: check_station_facilities; Abfahrten: get_train_departures." : "We hold no station record for EVA 8000207. Lifts: check_station_facilities; departures: get_train_departures." }], isError: true });
+      expect(await call("check_station_facilities", { station: "X", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Einen Bahnhof oder eine Haltestelle "X" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof oder an der Haltestelle steht, mit der Stadt (z. B. "Köln Hbf", "Stuttgart Charlottenplatz").' : 'I do not know a station or stop called "X". Please give the name as it appears at the station or stop, with the city (e.g. "Köln Hbf", "Stuttgart Charlottenplatz").' }], isError: true, _meta: { errorCode: "not_found" } });
+      expect(await call("describe_station", { station: "X", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Den Bahnhof "X" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Köln Hbf").' : 'I do not know a station called "X". Please give the name as it appears at the station (e.g. "Köln Hbf").' }], isError: true, _meta: { errorCode: "not_found" } });
+      expect(await call("describe_station", { eva_no: "8000207", language })).toEqual({ content: [{ type: "text", text: language === "de" ? "Zu EVA 8000207 halten wir keinen Bahnhofseintrag. Aufzüge: check_station_facilities; Abfahrten: get_train_departures." : "We hold no station record for EVA 8000207. Lifts: check_station_facilities; departures: get_train_departures." }], isError: true, _meta: { errorCode: "not_found" } });
     });
     it(`describe_station (${language}): position, lifts and escalators, the next departures`, async () => {
       mockServer.use(handlerFor("getStationPage", () => problem(404, "not_found"))); // no page: the facilities and the board are read
@@ -2139,8 +2192,11 @@ describe("watch_situation's answer: the condition said back, what a name became,
     const w = ex<Record<string, unknown>>("getWatch");
     serve("getWatch", { ...w, kind: "station", key: "1:de:01002:9001", condition: { delay_min: 10 }, note: null });
     const st = await call("watch_situation", { kind: "station", key: "Leipzig Hbf", language: "de" });
-    expect(textOf(st).split("\n")[0]).toMatch(/^Ich beobachte die Haltestelle 1:de:01002:9001 und melde mich hier\. Aus "Leipzig Hbf" aufgelöst: Haltestelle Schömpingbach Hbf, DHID 1:de:01002:9001\. Bedingung: Abfahrten mit 10 Minuten/u);
-    expect(st.structuredContent).toMatchObject({ resolvedFrom: "Leipzig Hbf", resolvedLabel: "Schömpingbach Hbf" });
+    expect(textOf(st).split("\n")[0]).toMatch(/^Ich beobachte die Haltestelle Schömpingbach Hbf und melde mich hier\. Aus "Leipzig Hbf" aufgelöst: Haltestelle Schömpingbach Hbf\. Bedingung: Abfahrten mit 10 Minuten/u);
+    expect(st.structuredContent).toMatchObject({ key: "1:de:01002:9001", resolvedFrom: "Leipzig Hbf", resolvedLabel: "Schömpingbach Hbf" });
+    expect(textOf(st)).not.toContain("DHID");
+    const en = textOf(await call("watch_situation", { kind: "station", key: "Leipzig Hbf", language: "en" }));
+    expect(en).toMatch(/^I am watching stop Schömpingbach Hbf and will tell you here\. Resolved from "Leipzig Hbf": the stop Schömpingbach Hbf\. /u);
     serve("getWatch", { ...w, kind: "place", key: "48.24375,7.01625", condition: { radius_km: 25 }, note: "Ein Stau wird bei einer Orts-Beobachtung nicht gemeldet." });
     const pl = await call("watch_situation", { kind: "place", key: "Fulda", request: "Stau", language: "de" });
     expect(textOf(pl).split("\n")[0]).toMatch(/^Ein Stau wird bei einer Orts-Beobachtung nicht gemeldet\. Ich beobachte den Ort Fulda und melde mich hier\. Bedingung: neue Sperrungen oder Einschränkungen im Umkreis von 25 km\./u);
@@ -2172,6 +2228,14 @@ describe("watch_situation on a charger named by a place: the nearest listed site
       expect(query("getWatch")).toEqual([]);
     });
   }
+  it("a nameless site is named by its operator, else as a charging site, never by its id", async () => {
+    for (const [operator, said] of [["Strom AG", "Strom AG"], [null, "charging site"]] as const) {
+      serve("listChargingOptions", [{ ...site("bnetza_lsr:52.52,13.40:1a6a", 1, 500), name: null, operator }]);
+      serve("getWatch", { ...ex<Record<string, unknown>>("getWatch"), kind: "charger", key: "x", condition: {}, note: null });
+      const r = await call("watch_situation", { kind: "charger", key: "Leipzig", language: "en" });
+      expect(textOf(r).split("\n")[0]).toContain(`the nearest charging site with live occupancy, ${said} (0.5 km away), site id bnetza_lsr:52.52,13.40:1a6a`);
+    }
+  });
   it("a site id is the key as given, with no search", async () => {
     serve("getWatch", { ...ex<Record<string, unknown>>("getWatch"), kind: "charger", key: "afir_alpha:cs-01-0001", condition: {}, note: null });
     await call("watch_situation", { kind: "charger", key: "afir_alpha:cs-01-0001", language: "en" });
@@ -2232,7 +2296,7 @@ describe("watch_situation: at most ten open watches a session", () => {
     const before = calls.length;
     const eleventh = await watch("A9");
     await close();
-    expect(eleventh).toEqual({ content: [{ type: "text", text: "This session already has 10 open watches — the limit is 10. End one with stop_watch (viafrei://watches lists them) and try again." }], isError: true });
+    expect(eleventh).toEqual({ content: [{ type: "text", text: "This session already has 10 open watches — the limit is 10. End one with stop_watch (viafrei://watches lists them) and try again." }], isError: true, _meta: { errorCode: "limit_reached" } });
     expect(calls).toHaveLength(before);
   });
 });
@@ -2269,7 +2333,7 @@ describe("motorway numbers no register knows, and the lamp in words", () => {
     register(["A3", "A9"]);
     expect(await call("check_autobahn_traffic", { roads: ["A8"], language: "de" })).toEqual({
       content: [{ type: "text", text: 'Für A8 liegen keine Daten vor — das ist keine mir bekannte Autobahnnummer, also keine Bundesautobahn, über die ich etwas sagen kann. 2 Autobahnen sind erfasst. Nächstliegende Nummern: A3, A9. Bitte prüfen Sie die Nummer (z. B. "A9", "A100").' }],
-      isError: true,
+      isError: true, _meta: { errorCode: "not_found" },
     });
   });
 
@@ -2278,7 +2342,7 @@ describe("motorway numbers no register knows, and the lamp in words", () => {
     register(["A3", "A9"]);
     expect(await call("check_road_status", { road: "a 8", language: "de" })).toEqual({
       content: [{ type: "text", text: "A8 ist keine Bundesautobahn, die ich kenne — weder die Autobahn GmbH noch unser Archiv führen diese Nummer, deshalb kann ich über sie nichts sagen. Nächstliegende Nummern: A3, A9. Bitte prüfen Sie die Nummer." }],
-      isError: true,
+      isError: true, _meta: { errorCode: "not_found" },
     });
     notFound("A8");
     register(["A3", "A9"]);

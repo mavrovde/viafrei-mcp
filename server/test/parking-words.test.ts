@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type * as T from "../src/api/types.js";
 import { occupiedPct, parkingHead, parkingKindText, parkingLine, parkingOccupancyText } from "../src/tools/parking-words.js";
+import { HANDLERS } from "../src/tools/handlers.js";
 
 const at = "2026-11-24T20:56:00Z";
 const now = new Date("2026-11-24T21:01:00Z");
@@ -60,5 +61,79 @@ describe("find_parking's words, as today's server says them", () => {
     expect(parkingOccupancyText(night(5, null, "unknown"), "en", new Date("2026-11-24T23:20:00Z"))).toBe("5 free (as of 2026-11-24 23:50)");
     expect(parkingOccupancyText(night(5, null, "unknown"), "en", new Date("2026-11-24T23:20:01Z"))).toBe("last reported 5 free (as of 2026-11-24 23:50, 30 min ago)");
     expect(parkingOccupancyText(night(5, null, "unknown"), "de", new Date("2026-11-25T00:50:00Z"))).toBe("zuletzt 5 frei gemeldet (Stand 24.11. 23:50, vor 2 h)");
+  });
+});
+
+describe("find_parking lists OpenStreetMap's car parks the API gives in meta.around", () => {
+  const credit = { family: "osm", domain: "places", publisher: "OSM", text: "OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0", licence: "ODbL 1.0", licenceUrl: null, shareAlike: true, shareAlikeOffer: null, termsUrl: null };
+  const park = (name: string | null, distanceM: number, o: Partial<T.OsmCarPark> = {}): T.OsmCarPark =>
+    ({ id: `way/${distanceM}`, name, operator: null, street: null, houseNo: null, zip: null, town: null, location: { lat: 52.52, lon: 13.4 }, distanceM, ...o });
+  // Central Berlin: no publisher reports a site there; five OpenStreetMap car parks, in the API's order and cap.
+  const berlin = [
+    park("Parkhaus Rathauspassagen", 419, { operator: "Contipark", street: "Rathausstraße", houseNo: "5", zip: "10117", town: "Berlin" }),
+    park("Friedrichstadt-Passagen (Q 207)", 650, { street: "Jägerstraße", houseNo: "0" }),
+    park(null, 800), park("Alexa", 870, { operator: "Alexa" }), park("Spittelmarkt", 960),
+  ];
+  const run = async (data: T.ParkingSite[], parks: T.OsmCarPark[] | null, args: Record<string, unknown> = {}, language: "de" | "en" = "en") => {
+    const seen: string[] = [];
+    const meta = { generatedAt: "2026-11-26T10:00:00Z", language, asOf: "2026-11-26T09:58:00Z", freshness: [], attribution: parks === null || parks.length === 0 ? [] : [credit],
+      around: { osmCarParks: parks, osmDataAsOf: parks === null ? null : "2026-11-20", roadContext: [] } };
+    const get = async (op: string) => { seen.push(op); return { data: op === "listParkingOptions" ? data : [], meta }; };
+    const r = await HANDLERS["find_parking"]!({ lat: 52.52, lon: 13.405, language, ...args }, { tool: "find_parking", language, api: { get } } as never);
+    return { r, text: (r.content[0] as { text: string }).text, seen };
+  };
+
+  it("no publisher site: the five car parks are the answer, numbered with operator, distance and address, dated, ODbL credited", async () => {
+    const { r, text } = await run([], berlin);
+    expect(r.isError).not.toBe(true);
+    expect(text.split("\n").slice(0, 7)).toEqual([
+      "Around 52.520, 13.405 (within 10 km) we hold no car park or P+R data from an operator or a city. OpenStreetMap (ODbL, held separately) lists these car parks there — with no capacity and no occupancy:",
+      "1. Parkhaus Rathauspassagen (Contipark) — 0.4 km, Rathausstraße 5, 10117 Berlin",
+      "2. Friedrichstadt-Passagen (Q 207) — 0.7 km, Jägerstraße",
+      "3. Car park — 0.8 km",
+      "4. Alexa — 0.9 km",
+      "5. Spittelmarkt — 1.0 km",
+      "OpenStreetMap data as of 2026-11-20",
+    ]);
+    expect(text).not.toMatch(/I know of no parking/u);
+    expect((r._meta as { attribution: string }).attribution).toContain("OpenStreetMap-Mitwirkende, ODbL 1.0");
+    const facilities = (r.structuredContent as { osmFacilities: Record<string, unknown>[] }).osmFacilities;
+    expect(facilities).toHaveLength(5);
+    expect(facilities[0]).toEqual({ id: "way/419", name: "Parkhaus Rathauspassagen", operator: "Contipark", address: "Rathausstraße 5, 10117 Berlin", lat: 52.52, lon: 13.4, distanceM: 419, distanceKm: 0.4, capacityTotal: null, spacesFree: null, extractDate: "2026-11-20", license: "ODbL 1.0" });
+  });
+
+  it("in German, the extract day as a German date", async () => {
+    const { text } = await run([], berlin.slice(0, 1), {}, "de");
+    expect(text.split("\n").slice(0, 3)).toEqual([
+      "Um 52.520, 13.405 (Umkreis 10 km) führen wir keine Parkhaus- oder P+R-Daten eines Betreibers oder einer Stadt. Laut OpenStreetMap (ODbL, separat geführt) gibt es dort diese Parkplätze und Parkhäuser — ohne Platzzahl und ohne Belegung:",
+      "1. Parkhaus Rathauspassagen (Contipark) — 0,4 km, Rathausstraße 5, 10117 Berlin",
+      "Stand der OpenStreetMap-Daten: 20.11.2026",
+    ]);
+  });
+
+  it("beside the publishers' sites, as a block of its own after them", async () => {
+    const { text, r } = await run([site({ distanceM: 100 })], berlin.slice(0, 2));
+    const lines = text.split("\n");
+    expect(lines[1]).toBe("1. Alsterhaus — Car park (Parkhaus), 0.1 km, no occupancy published");
+    expect(lines.slice(2, 6)).toEqual(["", "Also, from OpenStreetMap (ODbL, held separately; what is listed above is left out) — car parks, with no capacity and no occupancy:", "1. Parkhaus Rathauspassagen (Contipark) — 0.4 km, Rathausstraße 5, 10117 Berlin", "2. Friedrichstadt-Passagen (Q 207) — 0.7 km, Jägerstraße"]);
+    expect((r.structuredContent as { osmFacilities: unknown[] }).osmFacilities).toHaveLength(2);
+  });
+
+  it("a free-spaces filter OpenStreetMap cannot judge is said first, never read as no free spaces", async () => {
+    const { text } = await run([], berlin.slice(0, 1), { only_with_free_spaces: true });
+    const amenities = await run([], berlin.slice(0, 1), { facilities: ["ev_charging"] });
+    expect(amenities.text.split("\n")[0]).toBe("The facilities asked for I cannot check for the car parks below — OpenStreetMap holds no such data; they are listed without that filter. OpenStreetMap (ODbL, held separately) lists these car parks there — with no capacity and no occupancy:");
+    expect(text.split("\n")[0]).toBe("Whether spaces are free I cannot check for the car parks below — OpenStreetMap holds no occupancy; they are listed without that filter, not as \"no free spaces\". OpenStreetMap (ODbL, held separately) lists these car parks there — with no capacity and no occupancy:");
+  });
+
+  it("none listed, or not read (null): today's answer, no OpenStreetMap block, no osmFacilities", async () => {
+    for (const parks of [[], null]) {
+      const { text, r } = await run([], parks);
+      expect(text).toMatch(/^I know of no parking around 52\.520, 13\.405/u);
+      expect(text).not.toContain("OpenStreetMap");
+      expect(r.structuredContent?.["osmFacilities"]).toBeUndefined();
+    }
+    const held = await run([site({})], null);
+    expect(held.text).not.toContain("OpenStreetMap");
   });
 });

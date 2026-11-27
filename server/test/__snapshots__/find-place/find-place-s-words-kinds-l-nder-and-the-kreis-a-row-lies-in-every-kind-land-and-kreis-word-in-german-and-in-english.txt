@@ -1,0 +1,39 @@
+kind municipality: Stadt/Gemeinde / town
+kind district: Kreis / district
+kind region: Verwaltungseinheit / administrative area
+kind station_area: Bahnhof / station
+kind stop: Haltestelle / stop
+kind motorway: Autobahn / motorway
+kind junction: Anschlussstelle / junction
+kind island: Insel / island
+land 10: Saarland / Saarland
+land 11: Berlin / Berlin
+land 12: Brandenburg / Brandenburg
+land 13: Mecklenburg-Vorpommern / Mecklenburg-Western Pomerania
+land 14: Sachsen / Saxony
+land 15: Sachsen-Anhalt / Saxony-Anhalt
+land 16: Thüringen / Thuringia
+land 01: Schleswig-Holstein / Schleswig-Holstein
+land 02: Hamburg / Hamburg
+land 03: Niedersachsen / Lower Saxony
+land 04: Bremen / Bremen
+land 05: Nordrhein-Westfalen / North Rhine-Westphalia
+land 06: Hessen / Hesse
+land 07: Rheinland-Pfalz / Rhineland-Palatinate
+land 08: Baden-Württemberg / Baden-Württemberg
+land 09: Bayern / Bavaria
+asked city: municipality
+asked district: district
+asked admin: region
+asked station: station_area
+asked stop: station_area
+asked motorway: motorway
+asked junction: junction
+kreis Kreis Borken: Kreis Borken / district Borken
+kreis kreisfreie Stadt: kreisfreie Stadt / independent city
+kreis kreisfreie Stadt München: kreisfreie Stadt München / independent city München
+kreis Vogtlandkreis: Vogtlandkreis / district Vogtlandkreis
+kreis Region Hannover: Region Hannover / district Region Hannover
+kreis Städteregion Aachen: Städteregion Aachen / district Städteregion Aachen
+kreis  : null / null
+kreis undefined: null / null

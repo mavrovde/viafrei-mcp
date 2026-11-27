@@ -59,12 +59,9 @@ const sites = (language: Language, n: number): string => `${grouped(language, n)
 export async function findDisabledBays(args: Args, ctx: ToolContext): Promise<CallToolResult> {
   const { language } = ctx;
   if (args["road"] !== undefined) {
-    return {
-      ...toolError(L(language,
-        "Behindertenparkplätze am Straßenrand liegen in Orten, nicht an einer Autobahn: bitte place oder lat/lon statt road angeben.",
-        "Disabled-badge bays are on town streets, not along a motorway: pass place or lat/lon instead of road.")),
-      _meta: { errorCode: "invalid_input", errorReason: "road_not_point" },
-    };
+    return toolError(L(language,
+      "Behindertenparkplätze am Straßenrand liegen in Orten, nicht an einer Autobahn: bitte place oder lat/lon statt road angeben.",
+      "Disabled-badge bays are on town streets, not along a motorway: pass place or lat/lon instead of road."), "invalid_input", "road_not_point");
   }
   const pos = await position(args, ctx);
   if (isResult(pos)) return pos;

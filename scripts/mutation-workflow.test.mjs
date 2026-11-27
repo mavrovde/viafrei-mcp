@@ -18,7 +18,7 @@
  *     in-scope file, none empty, and leave out the generated operation table
  *     (that no MUTANT is lost or counted twice is server/scripts/mutation-pieces.test.mjs,
  *     which needs Stryker's instrumenter);
- *   - the gather on planted reports: exit 0 at the floor, 1 below it, 2 when a
+ *   - the gather on planted reports: exit 0 at the floor, 1 below it, 2 when a file is over its static bound, or when a
  *     piece has no report or two, a shard has no report, or a report or a mutant strays.
  * Then each planted fault in the workflows must be reported.
  *
@@ -26,13 +26,13 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createChecker } from './check-harness.mjs';
 import { resolveTool, runTool } from './tools.mjs';
-import { FLOOR, GENERATED, PIECE_WEIGHT, SHARDS, WEIGHTS, gather, inScope, parsePiece, piecesOf, piecesOfScope, planOf, shardOf } from '../server/scripts/mutation.mjs';
+import { FLOOR, GENERATED, PIECE_WEIGHT, SHARDS, STATIC_CEILING, STATIC_MAX, WEIGHTS, gather, inScope, parsePiece, piecesOf, piecesOfScope, planOf, shardOf } from '../server/scripts/mutation.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -217,6 +217,21 @@ console.log('the gather on planted reports');
         ['a piece outside the scope', (sh) => { sh[0].scope.push('src/nope.ts:1-2'); }, 'is in a shard but not in the scope'],
         ['a mutant not finished', (sh) => { const f = Object.values(sh[3].report.files)[0]; f.mutants.push({ ...f.mutants[0], id: 'p', status: 'Pending' }); }, "ended 'Pending'"],
     ];
+    // Static mutants: n of them planted in the shard that holds file f's first piece.
+    const plantStatic = (f, n) => (sh) => {
+        const s = sh.find((x) => x.scope.some((id) => parsePiece(id).file === f));
+        const p = parsePiece(s.scope.find((id) => parsePiece(id).file === f));
+        s.report.files[f].mutants.push(...Array.from({ length: n }, (_, i) => ({ id: `st${i}`, mutatorName: 'StringLiteral', replacement: '""', status: 'Killed', static: true, location: at(p.start) })));
+    };
+    const table = scope.find((f) => STATIC_CEILING[f] === undefined && pieces.some((p) => p.file === f && p.weight > 0));
+    const ceiled = Object.keys(STATIC_CEILING)[0];
+    check('a file at the static bound passes', gather(plantRun('static-at', FLOOR, 100 - FLOOR, plantStatic(table, STATIC_MAX)), scope).files[table] !== undefined);
+    check('a file at its static ceiling passes', gather(plantRun('static-ceiling', FLOOR, 100 - FLOOR, plantStatic(ceiled, STATIC_CEILING[ceiled])), scope).files[ceiled] !== undefined);
+    check('the static bound is small and every ceiling above it', STATIC_MAX <= 50 && Object.values(STATIC_CEILING).every((n) => n > STATIC_MAX), `${STATIC_MAX}`);
+    refusals.push(
+        ['a file over the static bound', plantStatic(table, STATIC_MAX + 1), `${table} has ${STATIC_MAX + 1} static mutants, over its bound of ${STATIC_MAX}`],
+        ['a file over its static ceiling', plantStatic(ceiled, STATIC_CEILING[ceiled] + 1), `${ceiled} has ${STATIC_CEILING[ceiled] + 1} static mutants, over its bound of ${STATIC_CEILING[ceiled]}`],
+    );
     for (const [label, edit, want] of refusals) {
         const r = cli(plantRun(label.replace(/\W+/gu, '-'), FLOOR, 100 - FLOOR, edit));
         check(`${label} is exit 2`, r.status === 2 && r.stderr.includes(want), `${r.status} ${r.stderr.trim()}`);
@@ -310,9 +325,16 @@ console.log('each planted fault in the workflows is reported');
     const mean = plan.reduce((sum, x) => sum + x.seconds, 0) / plan.length;
     const crowded = plan.filter((x) => x.ids.length > 1 && x.ids.some((id) => (WEIGHTS[id] ?? 0) > mean));
     check('a piece heavier than the mean shard has a shard of its own', crowded.length === 0, crowded.map((x) => x.ids.join(' ')).join(' | '));
-    check('the static table whose mutants time out weighs what it cost (≥ 8 minutes)', (WEIGHTS['src/tools/facilities.ts:61-71'] ?? 0) >= 480, String(WEIGHTS['src/tools/facilities.ts:61-71']));
     const stale = Object.keys(WEIGHTS).filter((id) => !ids.includes(id));
     check('the weights name no piece the scope does not have', stale.length === 0, stale.slice(0, 5).join(' '));
+}
+
+// Stryker mutates the sources in place, so a test that reads them (test/static-tables.test.ts) would see the
+// instrumented code and fail Stryker's dry run: Stryker's vitest config leaves it out, the defaults kept.
+{
+    const cfg = readFileSync(join(ROOT, 'server', 'vitest.stryker.config.ts'), 'utf8');
+    check("Stryker's vitest leaves out the source-reading table test, keeping vitest's default excludes",
+        /exclude:\s*\[\s*\.\.\.configDefaults\.exclude,\s*"test\/static-tables\.test\.ts"\s*\]/u.test(cfg) && existsSync(join(ROOT, 'server', 'test', 'static-tables.test.ts')));
 }
 
 console.log(`\nmutation-workflow self-test: ${passed()} passed, ${failures.length} failed`);

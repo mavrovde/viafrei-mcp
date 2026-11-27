@@ -70,28 +70,22 @@ describe("resolvePlace", () => {
   });
 });
 
-describe("kreisWord (find_place)", () => {
-  const row = (o: Partial<T.PlaceItem>): Pick<T.PlaceItem, "kind" | "districtCode" | "districtName"> => ({ kind: "stop", districtCode: "05554004", districtName: "Borken", ...o });
-  it("the Kreis by name, a kreisfreie Stadt said so, in both languages", () => {
-    expect(kreisWord(row({}), "en")).toBe("district Borken");
-    expect(kreisWord(row({}), "de")).toBe("Kreis Borken");
-    expect(kreisWord(row({ districtName: "Vogtlandkreis" }), "de")).toBe("Vogtlandkreis");
-    expect(kreisWord(row({ districtName: "Region Hannover" }), "de")).toBe("Region Hannover");
-    expect(kreisWord(row({ kind: "station_area", districtCode: "09162000", districtName: "München" }), "en")).toBe("independent city München");
-    expect(kreisWord(row({ kind: "station_area", districtCode: "09162000", districtName: "München" }), "de")).toBe("kreisfreie Stadt München");
-    expect(kreisWord(row({ kind: "municipality", districtCode: "09162000", districtName: null }), "en")).toBe("independent city");
+describe("kreisWord (find_place): the API's own Kreis text (PlaceItem.kreis)", () => {
+  it("as given in German; in English a district, an independent city, named or bare", () => {
+    expect(kreisWord("Kreis Borken", "en")).toBe("district Borken");
+    expect(kreisWord("Kreis Borken", "de")).toBe("Kreis Borken");
+    expect(kreisWord("Vogtlandkreis", "de")).toBe("Vogtlandkreis");
+    expect(kreisWord("Vogtlandkreis", "en")).toBe("district Vogtlandkreis");
+    expect(kreisWord("Region Hannover", "de")).toBe("Region Hannover");
+    expect(kreisWord("kreisfreie Stadt München", "en")).toBe("independent city München");
+    expect(kreisWord("kreisfreie Stadt München", "de")).toBe("kreisfreie Stadt München");
+    expect(kreisWord("kreisfreie Stadt", "en")).toBe("independent city");
   });
-  it("nothing for a city-state, a short key, a kind not in a Kreis, or no name", () => {
-    expect(kreisWord(row({ districtCode: "11000000" }), "en")).toBeNull();
-    expect(kreisWord(row({ districtCode: "055" }), "en")).toBeNull();
-    expect(kreisWord(row({ kind: "district" }), "en")).toBeNull();
-    expect(kreisWord(row({ districtName: null }), "en")).toBeNull();
-    expect(kreisWord(row({ districtCode: null }), "en")).toBeNull();
-    const { districtName: _n, ...noName } = row({});
-    expect(kreisWord(noName, "en")).toBeNull();
+  it("nothing where the API names none (a Land, a city-state, a stop without one)", () => {
+    for (const k of [undefined, null, "", "  "]) expect(kreisWord(k, "en")).toBeNull();
   });
   it("is said in the find_place line", async () => {
-    mockServer.use(handlerFor("listPlaces", () => HttpResponse.json({ ...exampleOf<Record<string, unknown>>("listPlaces"), data: [{ id: "1", name: "Ahaus, Marienplatz", kind: "stop", location: { lat: 52, lon: 7 }, sourceFamily: "x", districtCode: "05554004", districtName: "Borken" }] })));
+    mockServer.use(handlerFor("listPlaces", () => HttpResponse.json({ ...exampleOf<Record<string, unknown>>("listPlaces"), data: [{ id: "1", name: "Ahaus, Marienplatz", kind: "stop", location: { lat: 52, lon: 7 }, sourceFamily: "x", districtCode: "05554004", kreis: "Kreis Borken" }] })));
     expect(textOf(await call("find_place", { query: "Marienplatz", language: "en" }))).toContain("1. Ahaus, Marienplatz — stop, North Rhine-Westphalia, district Borken, 52.");
   });
 });

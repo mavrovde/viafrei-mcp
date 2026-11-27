@@ -1,4 +1,4 @@
 Charging around 52.520, 13.405 (within 1 km, CCS2, ≥ 50 kW, ≤ 350 kW, operator Strom AG, free of charge, open 24/7), nearest first, sites wholly out of order last:
 1. Laden Mitte (Löckbrau Strom) — 3.0 km, up to 150 kW, 1 of 2 free
 2. Strom AG — 3.0 km, 1 of 2 free
-3. cs-9 — 3.0 km, up to 22 kW, 1 of 2 free
+3. Charging site — 3.0 km, up to 22 kW, 1 of 2 free

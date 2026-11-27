@@ -103,7 +103,7 @@ export function normaliseClientName(raw: unknown): string {
 }
 
 /** Which argument clause refused a call: a closed list, so the request log never carries an argument. */
-export const TOOL_ERROR_REASONS = ["place_missing", "place_and_coords", "half_coordinate", "road_not_point", "two_ways_in"] as const;
+export const TOOL_ERROR_REASONS = ["place_missing", "place_and_coords", "half_coordinate", "road_not_point", "two_ways_in", "region"] as const;
 export type ToolErrorReason = (typeof TOOL_ERROR_REASONS)[number];
 export type ToolErrorCode = McpToolErrorCode;
 

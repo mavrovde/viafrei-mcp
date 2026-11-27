@@ -33,6 +33,19 @@ describe("the OpenStreetMap filling stations without a price", () => {
     const lines = await nearby({ fuel: [], osmFuel: [osmFuel()] }, ["fuel"], "de");
     expect(lines[2]).toBe("- Weitere Tankstellen laut OpenStreetMap — Preis liegt uns noch nicht vor: 1) Supol, Hauptstraße 7, 123 Alpha (0,8 km)");
   });
+  it("credited by the OpenStreetMap line meta.attribution carries, its share-alike licence flagged", async () => {
+    const osmCredit = { family: "osm", domain: "places", publisher: "OSM", text: "OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0", licence: "ODbL 1.0", licenceUrl: "https://opendatacommons.org/licenses/odbl/1-0/", shareAlike: true, shareAlikeOffer: null, termsUrl: null };
+    const get = async (op: string) => {
+      if (op === "listNearby") return { data: { fuel: [], osmFuel: [osmFuel()] }, meta: { ...meta, attribution: [osmCredit] } };
+      if (op === "listFuelOptions") return { data: [], meta };
+      throw new Error(op);
+    };
+    const r = await HANDLERS["find_nearby"]!({ lat: 1, lon: 2, categories: ["fuel"], language: "en" }, { tool: "find_nearby", language: "en", api: { get } } as never);
+    expect((r.content[0] as { text: string }).text).toContain("1) Supol, Hauptstraße 7, 123 Alpha (0.8 km)");
+    expect((r._meta as { attribution: string }).attribution).toContain("OSM-Standortdaten: © OpenStreetMap-Mitwirkende, ODbL 1.0");
+    expect(JSON.stringify((r._meta as { license: unknown }).license)).toContain("ODbL 1.0");
+    expect((r._meta as { shareAlike?: boolean }).shareAlike).toBe(true);
+  });
   it("nothing where OSM maps none", async () => {
     expect(osmFuelInline("en", [])).toBeNull();
     expect(await nearby({ fuel: [fuelRow] }, ["fuel"])).toHaveLength(4);

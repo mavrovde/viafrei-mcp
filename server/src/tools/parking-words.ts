@@ -120,3 +120,62 @@ export const NOT_FULL_NOTE: Record<Language, string> = {
   de: "Fehlt eine Angabe „frei“, veröffentlicht der Betreiber keine Belegung — das heißt nicht, dass die Anlage voll ist.",
   en: "Where no \"free\" count is shown the operator publishes no occupancy — it does not mean the site is full.",
 };
+
+/** What the question asked that no OpenStreetMap car park can be judged by: said before the list, never read as "none". */
+export type OsmNotJudged = "free" | "amenities" | null;
+
+const OSM_PARK = {
+  de: {
+    notHeld: (where: string) => `${where} führen wir keine Parkhaus- oder P+R-Daten eines Betreibers oder einer Stadt.`,
+    alone: "Laut OpenStreetMap (ODbL, separat geführt) gibt es dort diese Parkplätze und Parkhäuser — ohne Platzzahl und ohne Belegung:",
+    also: "Außerdem laut OpenStreetMap (ODbL, separat geführt; was oben schon steht, ist ausgelassen) — Parkplätze und Parkhäuser, ohne Platzzahl und ohne Belegung:",
+    free: "Ob dort Plätze frei sind, kann ich bei den folgenden Parkplätzen nicht prüfen — OpenStreetMap führt keine Belegung; sie stehen deshalb ohne diese Einschränkung hier, nicht als „keine freien Plätze“.",
+    amenities: "Die gefragte Ausstattung kann ich bei den folgenden Parkplätzen nicht prüfen — OpenStreetMap führt dazu keine Angaben; sie stehen deshalb ohne diese Einschränkung hier.",
+    unnamed: "Parkplatz", stand: (d: string) => `Stand der OpenStreetMap-Daten: ${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`,
+  },
+  en: {
+    notHeld: (where: string) => `${where} we hold no car park or P+R data from an operator or a city.`,
+    alone: "OpenStreetMap (ODbL, held separately) lists these car parks there — with no capacity and no occupancy:",
+    also: "Also, from OpenStreetMap (ODbL, held separately; what is listed above is left out) — car parks, with no capacity and no occupancy:",
+    free: "Whether spaces are free I cannot check for the car parks below — OpenStreetMap holds no occupancy; they are listed without that filter, not as \"no free spaces\".",
+    amenities: "The facilities asked for I cannot check for the car parks below — OpenStreetMap holds no such data; they are listed without that filter.",
+    unnamed: "Car park", stand: (d: string) => `OpenStreetMap data as of ${d}`,
+  },
+} as const;
+
+/** "Bahnhofstraße 5, 10117 Berlin": as much of the address as OpenStreetMap maps; a house number "0" is its placeholder, never said. */
+export function osmCarParkAddress(c: T.OsmCarPark): string | null {
+  const no = c.houseNo === null || c.houseNo.trim() === "" || c.houseNo.trim() === "0" ? null : c.houseNo.trim();
+  const street = [c.street?.trim() || null, c.street?.trim() ? no : null].filter((x) => x !== null).join(" ");
+  const town = [c.zip?.trim() || null, c.town?.trim() || null].filter((x) => x !== null).join(" ");
+  const out = [street, town].filter((x) => x !== "").join(", ");
+  return out === "" ? null : out;
+}
+
+/**
+ * The OpenStreetMap car parks the API lists beside the publishers' sites (ParkingMeta.around.osmCarParks), in the
+ * API's order and cap: their own heading and numbering, name (operator), distance and address, and the extract's
+ * day. `where` is "around X (within N km)"; `held` says the publishers' list is above, so the block is "also".
+ * "" when the API lists none.
+ */
+export function osmCarParkBlock(language: Language, parks: readonly T.OsmCarPark[], asOf: string | null, where: string, held: boolean, notJudged: OsmNotJudged): string {
+  if (parks.length === 0) return "";
+  const w = OSM_PARK[language];
+  const lead = notJudged !== null ? `${w[notJudged]} ${held ? w.also : w.alone}` : held ? w.also : `${w.notHeld(`${where.charAt(0).toUpperCase()}${where.slice(1)}`)} ${w.alone}`;
+  const lines = parks.map((c, i) => {
+    const name = c.name?.trim() || w.unnamed;
+    const op = c.operator?.trim() ?? "";
+    const operator = op !== "" && op !== name ? ` (${op})` : "";
+    const address = osmCarParkAddress(c);
+    return `${i + 1}. ${name}${operator} — ${[kmText(c.distanceM, language), address].filter((x): x is string => x !== null).join(", ")}`;
+  });
+  return [lead, ...lines, ...(asOf === null ? [] : [w.stand(asOf)])].join("\n");
+}
+
+/** One OpenStreetMap car park as structured JSON: capacity and free spaces null, never read as zero or full. */
+export function osmCarParkFacility(c: T.OsmCarPark, asOf: string | null, licence: string | null): Record<string, unknown> {
+  return {
+    id: c.id, name: c.name, operator: c.operator, address: osmCarParkAddress(c), lat: c.location.lat, lon: c.location.lon,
+    distanceM: Math.round(c.distanceM), distanceKm: Math.round(c.distanceM / 100) / 10, capacityTotal: null, spacesFree: null, extractDate: asOf, license: licence,
+  };
+}

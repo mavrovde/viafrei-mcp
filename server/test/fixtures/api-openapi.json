@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "x-source": {
-    "comment": "Copied from the viafrei-api repository, api/openapi.json at the release tag v1.2.2 (its document is that of main at the commit named; everything after 1.2.0 changed tests, CI and release tooling only, not the document).",
-    "commit": "940726da977b1e8e421f4d547f3e5a83bafbb7d2"
+    "comment": "Copied from the viafrei-api repository, api/openapi.json at the release tag v2.0.4.",
+    "commit": "dfbf1ec2651265e548ec4e4548124b1f97b872ab"
   },
   "components": {
     "headers": {
@@ -32,13 +32,13 @@
         }
       },
       "RateLimit": {
-        "description": "Sent on every keyed answer but a 401, success or error, in the syntax of draft-ietf-httpapi-ratelimit-headers-09: a burst policy, and a day and a month policy for a plan with those quotas.",
+        "description": "Sent on every keyed answer but a 401, success or error, in the syntax of draft-ietf-httpapi-ratelimit-headers-09: a burst policy, and a day and a month policy for a plan with those quotas. An overloaded refusal carries the policy but no RateLimit field: it was refused under load, not by the key's budget.",
         "schema": {
           "type": "string"
         }
       },
       "RateLimit-Policy": {
-        "description": "Sent on every keyed answer but a 401, success or error, in the syntax of draft-ietf-httpapi-ratelimit-headers-09: a burst policy, and a day and a month policy for a plan with those quotas.",
+        "description": "Sent on every keyed answer but a 401, success or error, in the syntax of draft-ietf-httpapi-ratelimit-headers-09: a burst policy, and a day and a month policy for a plan with those quotas. An overloaded refusal carries the policy but no RateLimit field: it was refused under load, not by the key's budget.",
         "schema": {
           "type": "string"
         }
@@ -5446,6 +5446,13 @@
             },
             "type": "array"
           },
+          "osmFuel": {
+            "description": "With fuel: OpenStreetMap's filling stations (ODbL) in the radius with no station we hold within 300 m, so no price yet, nearest first, three at most, as listFuelOptions' osmWithoutPrice; empty when there are none or the key may not read OpenStreetMap's places. Credited in meta.attribution.",
+            "items": {
+              "$ref": "#/components/schemas/OSMFuelStation"
+            },
+            "type": "array"
+          },
           "osmParking": {
             "description": "OpenStreetMap's car parks (ODbL; no capacity, no occupancy) in the radius that are none of the parking sites, nearest first, same-named ones as one, three at most; with parking, when the key may read OpenStreetMap.",
             "items": {
@@ -6173,12 +6180,18 @@
             "type": "string"
           },
           "slug": {
-            "description": "The page's slug on viafrei.de.",
-            "type": "string"
+            "description": "The station page's slug on viafrei.de; null for a stop the register does not hold.",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "stationNo": {
-            "description": "DB's register number.",
-            "type": "string"
+            "description": "DB's register number; null for a stop the register does not hold, which is paged from its own name, point, departures and facilities.",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "street": {
             "type": [
@@ -10844,11 +10857,13 @@
         "properties": {
           "data": {
             "additionalProperties": false,
-            "description": "Null when no station of DB's register has that id.",
             "properties": {
               "pageUrl": {
-                "description": "The station's page on viafrei.de, in the language asked.",
-                "type": "string"
+                "description": "The station's page on viafrei.de, in the language asked. For a stop the register does not hold, its page under the nearest station page that lists it among the stops around it (the bus, tram and U-Bahn stops within 400 m of the station, eight at most, the station's own left out), /<lang>/station/<slug>/stop/<key> with key the stop family's id, colons as hyphens; null when no station page lists it.",
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "sections": {
                 "description": "header, rail_ampel, step_free_now, lifts, platforms, departures, service_alerts, parking_charging, in this order, each present.",
@@ -12347,7 +12362,7 @@
       "name": "ViaFrei API maintainers",
       "url": "https://github.com/mavrovde/viafrei-api/issues"
     },
-    "description": "Keyed, read-only access to live German mobility context. This document is generated from the code.",
+    "description": "Keyed, read-only access to live German mobility context. HEAD mirrors every GET operation without a body, and a 405 names the methods its path serves in Allow. This document is generated from the code.",
     "license": {
       "name": "Terms of use",
       "url": "https://viafrei.de/"
@@ -19091,7 +19106,7 @@
     },
     "/v1/parking-options": {
       "get": {
-        "description": "Parking sites within the radius of a position, nearest first, then by id, each with its last reported occupancy. A site whose terms are not accepted (accept_terms) is not listed; meta.terms offers its terms. Needs the scope parking.",
+        "description": "Parking sites within the radius of a position, nearest first, then by id, each with its last reported occupancy. A site whose terms are not accepted (accept_terms) is not listed; meta.terms offers its terms. The sites are those the parking publishers report, so the list can be empty where none covers the area (the centre of a city whose publishers report only park-and-ride sites on its edge); OpenStreetMap's car parks there are in meta.around.osmCarParks. Needs the scope parking.",
         "operationId": "listParkingOptions",
         "parameters": [
           {
@@ -22690,17 +22705,17 @@
         "operationId": "getRoadSituation",
         "parameters": [
           {
-            "description": "The situation's id.",
+            "description": "The situation's id, exactly as a list operation gave it (percent-encoded in the path).",
             "in": "path",
             "name": "situationId",
             "required": true,
             "schema": {
-              "description": "The situation's id.",
+              "description": "The situation's id, exactly as a list operation gave it (percent-encoded in the path).",
               "examples": [
                 "datex:syn:ev-00001"
               ],
-              "maxLength": 64,
-              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "maxLength": 256,
+              "pattern": "^[^\\x00-\\x1F\\x7F]+$",
               "type": "string"
             }
           },
@@ -26481,7 +26496,7 @@
     },
     "/v1/stations/{stationId}/page": {
       "get": {
-        "description": "A station's page as the platform's station page shows it, section by section: the register's record, the rail lamp, the step-free platforms now, the lifts, the platforms, the next departures, the service alerts and DB's facility flags. Needs the scope transit.",
+        "description": "A station's page as the platform's station page shows it, section by section: the register's record, the rail lamp, the step-free platforms now, the lifts, the platforms, the next departures, the service alerts and DB's facility flags. A stop listStations answers that DB's register does not hold is paged from its own name, point, departures, lifts and alerts, with no register number, slug or facility flags. An id that names neither answers 404 not-found. Needs the scope transit.",
         "operationId": "getStationPage",
         "parameters": [
           {
@@ -26777,7 +26792,7 @@
                 }
               }
             },
-            "description": "Not used by this operation.",
+            "description": "No station with this id (not-found), or the operation is switched off on this instance (feature-disabled).",
             "headers": {
               "RateLimit": {
                 "$ref": "#/components/headers/RateLimit"

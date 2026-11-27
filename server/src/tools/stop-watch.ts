@@ -95,9 +95,9 @@ export function stopWatchHandler(resolve: (kind: string, key: string, ctx: ToolC
     const kind = str(args["kind"]);
     const key = str(args["key"]);
     const bySubject = kind !== undefined || key !== undefined;
-    if (watchId === undefined && uriArg === undefined && !bySubject) return toolError(c.name);
-    if (bySubject && (watchId !== undefined || uriArg !== undefined)) return toolError(c.idAndSubject);
-    if (watchId !== undefined && uriArg !== undefined) return toolError(c.idAndUri);
+    if (watchId === undefined && uriArg === undefined && !bySubject) return toolError(c.name, "invalid_input");
+    if (bySubject && (watchId !== undefined || uriArg !== undefined)) return toolError(c.idAndSubject, "invalid_input");
+    if (watchId !== undefined && uriArg !== undefined) return toolError(c.idAndUri, "invalid_input");
     const credit = (structured: Record<string, unknown>, text: string): CallToolResult => {
       const meta: DataMeta = { requestId: "", generatedAt: new Date().toISOString(), language, attribution: [WATCH_CREDIT] };
       return toolResult(text, [meta], language, { structured });
@@ -105,7 +105,7 @@ export function stopWatchHandler(resolve: (kind: string, key: string, ctx: ToolC
     if (!bySubject) {
       // The session's own uri, or the platform's uri the watch was opened with.
       const id = watchId ?? parseUri(uriArg!) ?? ctx.watches.find((w) => w.uri === uriArg) ?? null;
-      if (id === null) return toolError(c.badUri);
+      if (id === null) return toolError(c.badUri, "invalid_input");
       const uri = watchUri(id);
       const stopped = ctx.watches.remove(id);
       return credit({ uri, watchId: id, stopped, scope: "session" }, stopped ? c.stopped(uri) : c.absent(uri));
