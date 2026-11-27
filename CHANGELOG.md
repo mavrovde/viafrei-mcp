@@ -28,6 +28,7 @@ a Changelog and the versions follow Semantic Versioning.
   - when none is in force: "none in force now", or that no source covers the area, with the last day one arrived, or that the feeds are not current.
 
   A region asked by its code is named by the API's name for it. A line asked alone gives its alerts anywhere, and says when the timetable knows no such line. The API does not carry a trend against the window before, the reports behind the counts, the trips cancelled, or its late threshold in minutes, so none of these is said (#270).
+- **Every tool refusal carries its reason code.** Most handler refusals carried no `_meta.errorCode`, so the request log and the usage counters could not count them. Examples are an unknown station, stop, motorway or region, a missing station, a watch without kind or key, the eleventh watch, and a bad `stop_watch` call. Each handler now names its own code: `not_found`, `invalid_input`, `limit_reached` or `unavailable`. An API failure is coded where it is worded: a quota or rate limit is `limit_reached`, and an overload is `unavailable`. Where the refusal is about an argument clause, the code comes with an `errorReason`. An unknown region in `check_transit_disruption` gives the new reason `region`, and an unknown place in `get_driving_rules` is now `not_found` (#262).
 
 ### Changed
 - **The server runs against ViaFrei API 2.0.4** (`server/api.pin`, the contract fixture copied from the release tag).

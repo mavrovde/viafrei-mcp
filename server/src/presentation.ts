@@ -8,6 +8,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Attribution, DataMeta } from "./api/client.js";
 import { ApiError, problemCode } from "./api/client.js";
+import type { ToolErrorCode, ToolErrorReason } from "./usage-names.js";
 
 export type Language = "de" | "en";
 
@@ -235,9 +236,13 @@ export function shareAlikeNote(attributions: readonly Attribution[], language: L
       : `${subject ?? "These figures"} are licensed ${named} (share-alike) by their source; we release our adaptation under ${ours}: anyone who passes them on, or builds something on them, must release the result under the same licence and with this attribution.`;
 }
 
-/** A tool error the assistant can act on. */
-export function toolError(text: string): CallToolResult {
-  return { content: [{ type: "text", text }], isError: true };
+/**
+ * A tool error the assistant can act on, with the reason code the usage counters and the request log count it by
+ * (`_meta.errorCode`) and, for a refused argument clause, which one (`_meta.errorReason`). Every handler error
+ * names its code here; none is left for the server to guess.
+ */
+export function toolError(text: string, code: ToolErrorCode, reason?: ToolErrorReason): CallToolResult {
+  return { content: [{ type: "text", text }], isError: true, _meta: { errorCode: code, ...(reason === undefined ? {} : { errorReason: reason }) } };
 }
 
 const NOT_AVAILABLE: Record<Language, string> = {
@@ -247,7 +252,7 @@ const NOT_AVAILABLE: Record<Language, string> = {
 
 /** The answer of a handler whose API operation the contract does not have yet. */
 export function notAvailable(language: Language, what?: string): CallToolResult {
-  return toolError(what === undefined ? NOT_AVAILABLE[language] : `${NOT_AVAILABLE[language]} (${what})`);
+  return toolError(what === undefined ? NOT_AVAILABLE[language] : `${NOT_AVAILABLE[language]} (${what})`, "unavailable");
 }
 
 /** An API failure, worded for the person. Never carries a key or a URL. */
@@ -256,22 +261,22 @@ export function apiFailure(err: unknown, language: Language): CallToolResult {
   const de = language === "de";
   switch (err.kind) {
     case "not_found":
-      return toolError(de ? "Dazu hat die ViaFrei-API nichts gefunden." : "The ViaFrei API found nothing for this.");
+      return toolError(de ? "Dazu hat die ViaFrei-API nichts gefunden." : "The ViaFrei API found nothing for this.", "not_found");
     case "invalid":
-      return toolError(de ? `Die Anfrage passt nicht: ${err.problem?.detail ?? err.message}` : `The request does not fit: ${err.problem?.detail ?? err.message}`);
+      return toolError(de ? `Die Anfrage passt nicht: ${err.problem?.detail ?? err.message}` : `The request does not fit: ${err.problem?.detail ?? err.message}`, "invalid_input");
     case "rate_limited":
       if (problemCode(err.problem) === "quota-exceeded") {
-        return toolError(de ? `Das Anfragekontingent dieses ViaFrei-Zugangs ist aufgebraucht – bitte ${retryWhen(err, de) ?? "später"} noch einmal fragen.` : `This ViaFrei access has used up its request quota – please ask again ${retryWhen(err, de) ?? "later"}.`);
+        return toolError(de ? `Das Anfragekontingent dieses ViaFrei-Zugangs ist aufgebraucht – bitte ${retryWhen(err, de) ?? "später"} noch einmal fragen.` : `This ViaFrei access has used up its request quota – please ask again ${retryWhen(err, de) ?? "later"}.`, "limit_reached");
       }
-      return toolError(de ? `Gerade zu viele Anfragen – bitte ${retryWhen(err, de) ?? "in einer Minute"} noch einmal fragen.` : `Too many requests right now – please ask again ${retryWhen(err, de) ?? "in a minute"}.`);
+      return toolError(de ? `Gerade zu viele Anfragen – bitte ${retryWhen(err, de) ?? "in einer Minute"} noch einmal fragen.` : `Too many requests right now – please ask again ${retryWhen(err, de) ?? "in a minute"}.`, "limit_reached");
     case "not_configured":
     case "refused":
       return notAvailable(language);
     default:
       if (problemCode(err.problem) === "overloaded") {
-        return toolError(de ? `Die ViaFrei-API ist gerade ausgelastet – bitte ${retryWhen(err, de) ?? "gleich"} noch einmal fragen.` : `The ViaFrei API is busy right now – please ask again ${retryWhen(err, de) ?? "shortly"}.`);
+        return toolError(de ? `Die ViaFrei-API ist gerade ausgelastet – bitte ${retryWhen(err, de) ?? "gleich"} noch einmal fragen.` : `The ViaFrei API is busy right now – please ask again ${retryWhen(err, de) ?? "shortly"}.`, "unavailable");
       }
-      return toolError(de ? "Die ViaFrei-API antwortet gerade nicht – bitte gleich noch einmal fragen." : "The ViaFrei API is not answering right now – please ask again shortly.");
+      return toolError(de ? "Die ViaFrei-API antwortet gerade nicht – bitte gleich noch einmal fragen." : "The ViaFrei API is not answering right now – please ask again shortly.", "unavailable");
   }
 }
 

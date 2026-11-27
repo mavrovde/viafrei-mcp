@@ -1,4 +1,4 @@
-get_driving_rules (uncoded)
+get_driving_rules
   missing de: Bitte einen Ort (place) oder Koordinaten (lat und lon) angeben.
   missing en: Please give a place (place) or coordinates (lat and lon).
   unknown de: „Xy“ habe ich als Ort nicht gefunden.

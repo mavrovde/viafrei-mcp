@@ -1227,11 +1227,11 @@ describe("get_driving_rules", () => {
   });
 
   for (const language of LANGS) {
-    it(`an unknown place in today's words, with no error code (${language})`, async () => {
+    it(`an unknown place in today's words, coded not_found (${language})`, async () => {
       serve("listPlaces", []);
       expect(await call("get_driving_rules", { place: "Nirgendwo", language })).toEqual({
         content: [{ type: "text", text: language === "de" ? "„Nirgendwo“ habe ich als Ort nicht gefunden." : 'I could not find "Nirgendwo" as a place.' }],
-        isError: true,
+        isError: true, _meta: { errorCode: "not_found" },
       });
       expect(ops()).toEqual(["resolvePlace", "listPlaces"]);
     });
@@ -1287,7 +1287,7 @@ describe("check_transit_disruption", () => {
     it(`an unknown region (${language})`, async () => {
       serve("listPlaces", []);
       const r = await call("check_transit_disruption", { region: "Atlantis", language });
-      expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? '"Atlantis" kenne ich als Region nicht. Die Daten sind auf Kreisebene gemeldet — bitte ein Bundesland, eine kreisfreie Stadt oder den Kreis nennen (z. B. "Bayern", "Köln", "Landkreis Fulda").' : 'I do not know "Atlantis" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").' }], isError: true });
+      expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? '"Atlantis" kenne ich als Region nicht. Die Daten sind auf Kreisebene gemeldet — bitte ein Bundesland, eine kreisfreie Stadt oder den Kreis nennen (z. B. "Bayern", "Köln", "Landkreis Fulda").' : 'I do not know "Atlantis" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").' }], isError: true, _meta: { errorCode: "not_found", errorReason: "region" } });
       expect(ops()).toEqual(["listPlaces", "listPlaces"]);
     });
   }
@@ -1505,7 +1505,7 @@ describe("parity of four answers with today's server", () => {
       for (const language of LANGS) {
         const r = await call("get_departures", { stop_id: "1:de:01002:1", language });
         expect(ops().at(-1)).toBe("listStationDepartures");
-        expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "1:de:01002:1" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "1:de:01002:1". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true });
+        expect(r).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "1:de:01002:1" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "1:de:01002:1". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true, _meta: { errorCode: "not_found" } });
       }
     });
     it("every board failing is the API's failure, an error; no list of unread stops", async () => {
@@ -1810,7 +1810,7 @@ describe("stations", () => {
     });
     it(`get_departures, no such stop (${language})`, async () => {
       serve("listStations", []);
-      expect(await call("get_departures", { stop: "Xy", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "Xy" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "Xy". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true });
+      expect(await call("get_departures", { stop: "Xy", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Die Haltestelle "Xy" kenne ich nicht. Bitte den Namen so nennen, wie er am Schild steht, am besten mit Ort (z. B. "Fulda Bahnhof", "München, Marienplatz").' : 'I do not know a stop called "Xy". Please give the name as it appears on the sign, ideally with its town (e.g. "Fulda Bahnhof", "München, Marienplatz").' }], isError: true, _meta: { errorCode: "not_found" } });
     });
   }
 
@@ -1822,7 +1822,7 @@ describe("stations", () => {
   for (const tool of ["check_station_facilities", "describe_station"]) {
     it(`${tool} with no station asks which one, in today's words, and searches nothing`, async () => {
       const de = await call(tool, { language: "de" });
-      expect(de).toEqual({ content: [{ type: "text", text: 'Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {"station": "Hannover Hbf"}.' }], isError: true });
+      expect(de).toEqual({ content: [{ type: "text", text: 'Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {"station": "Hannover Hbf"}.' }], isError: true, _meta: { errorCode: "invalid_input" } });
       const en = await call(tool, { language: "en" });
       expect(textOf(en)).toBe('Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {"station": "Hannover Hbf"}.');
       expect(query("listStations")).toEqual([]);
@@ -1849,9 +1849,9 @@ describe("stations", () => {
     });
     it(`check_station_facilities and describe_station, no such station (${language})`, async () => {
       serve("listStations", []);
-      expect(await call("check_station_facilities", { station: "X", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Einen Bahnhof oder eine Haltestelle "X" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof oder an der Haltestelle steht, mit der Stadt (z. B. "Köln Hbf", "Stuttgart Charlottenplatz").' : 'I do not know a station or stop called "X". Please give the name as it appears at the station or stop, with the city (e.g. "Köln Hbf", "Stuttgart Charlottenplatz").' }], isError: true });
-      expect(await call("describe_station", { station: "X", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Den Bahnhof "X" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Köln Hbf").' : 'I do not know a station called "X". Please give the name as it appears at the station (e.g. "Köln Hbf").' }], isError: true });
-      expect(await call("describe_station", { eva_no: "8000207", language })).toEqual({ content: [{ type: "text", text: language === "de" ? "Zu EVA 8000207 halten wir keinen Bahnhofseintrag. Aufzüge: check_station_facilities; Abfahrten: get_train_departures." : "We hold no station record for EVA 8000207. Lifts: check_station_facilities; departures: get_train_departures." }], isError: true });
+      expect(await call("check_station_facilities", { station: "X", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Einen Bahnhof oder eine Haltestelle "X" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof oder an der Haltestelle steht, mit der Stadt (z. B. "Köln Hbf", "Stuttgart Charlottenplatz").' : 'I do not know a station or stop called "X". Please give the name as it appears at the station or stop, with the city (e.g. "Köln Hbf", "Stuttgart Charlottenplatz").' }], isError: true, _meta: { errorCode: "not_found" } });
+      expect(await call("describe_station", { station: "X", language })).toEqual({ content: [{ type: "text", text: language === "de" ? 'Den Bahnhof "X" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Köln Hbf").' : 'I do not know a station called "X". Please give the name as it appears at the station (e.g. "Köln Hbf").' }], isError: true, _meta: { errorCode: "not_found" } });
+      expect(await call("describe_station", { eva_no: "8000207", language })).toEqual({ content: [{ type: "text", text: language === "de" ? "Zu EVA 8000207 halten wir keinen Bahnhofseintrag. Aufzüge: check_station_facilities; Abfahrten: get_train_departures." : "We hold no station record for EVA 8000207. Lifts: check_station_facilities; departures: get_train_departures." }], isError: true, _meta: { errorCode: "not_found" } });
     });
     it(`describe_station (${language}): position, lifts and escalators, the next departures`, async () => {
       mockServer.use(handlerFor("getStationPage", () => problem(404, "not_found"))); // no page: the facilities and the board are read
@@ -2287,7 +2287,7 @@ describe("watch_situation: at most ten open watches a session", () => {
     const before = calls.length;
     const eleventh = await watch("A9");
     await close();
-    expect(eleventh).toEqual({ content: [{ type: "text", text: "This session already has 10 open watches — the limit is 10. End one with stop_watch (viafrei://watches lists them) and try again." }], isError: true });
+    expect(eleventh).toEqual({ content: [{ type: "text", text: "This session already has 10 open watches — the limit is 10. End one with stop_watch (viafrei://watches lists them) and try again." }], isError: true, _meta: { errorCode: "limit_reached" } });
     expect(calls).toHaveLength(before);
   });
 });
@@ -2324,7 +2324,7 @@ describe("motorway numbers no register knows, and the lamp in words", () => {
     register(["A3", "A9"]);
     expect(await call("check_autobahn_traffic", { roads: ["A8"], language: "de" })).toEqual({
       content: [{ type: "text", text: 'Für A8 liegen keine Daten vor — das ist keine mir bekannte Autobahnnummer, also keine Bundesautobahn, über die ich etwas sagen kann. 2 Autobahnen sind erfasst. Nächstliegende Nummern: A3, A9. Bitte prüfen Sie die Nummer (z. B. "A9", "A100").' }],
-      isError: true,
+      isError: true, _meta: { errorCode: "not_found" },
     });
   });
 
@@ -2333,7 +2333,7 @@ describe("motorway numbers no register knows, and the lamp in words", () => {
     register(["A3", "A9"]);
     expect(await call("check_road_status", { road: "a 8", language: "de" })).toEqual({
       content: [{ type: "text", text: "A8 ist keine Bundesautobahn, die ich kenne — weder die Autobahn GmbH noch unser Archiv führen diese Nummer, deshalb kann ich über sie nichts sagen. Nächstliegende Nummern: A3, A9. Bitte prüfen Sie die Nummer." }],
-      isError: true,
+      isError: true, _meta: { errorCode: "not_found" },
     });
     notFound("A8");
     register(["A3", "A9"]);

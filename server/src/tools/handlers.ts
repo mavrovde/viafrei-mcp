@@ -48,14 +48,14 @@ function none(language: Language, metas: readonly DataMeta[], what: string): Cal
 const NOT_KNOWN = {
   facilityStation: (q: string, language: Language) => toolError(L(language,
     `Einen Bahnhof oder eine Haltestelle "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof oder an der Haltestelle steht, mit der Stadt (z. B. "Köln Hbf", "Stuttgart Charlottenplatz").`,
-    `I do not know a station or stop called "${q}". Please give the name as it appears at the station or stop, with the city (e.g. "Köln Hbf", "Stuttgart Charlottenplatz").`)),
+    `I do not know a station or stop called "${q}". Please give the name as it appears at the station or stop, with the city (e.g. "Köln Hbf", "Stuttgart Charlottenplatz").`), "not_found"),
   station: (q: string, language: Language) => toolError(L(language,
     `Den Bahnhof "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Köln Hbf").`,
-    `I do not know a station called "${q}". Please give the name as it appears at the station (e.g. "Köln Hbf").`)),
+    `I do not know a station called "${q}". Please give the name as it appears at the station (e.g. "Köln Hbf").`), "not_found"),
   eva: (eva: string, language: Language) => toolError(L(language,
     `Zu EVA ${eva} halten wir keinen Bahnhofseintrag. Aufzüge: check_station_facilities; Abfahrten: get_train_departures.`,
-    `We hold no station record for EVA ${eva}. Lifts: check_station_facilities; departures: get_train_departures.`)),
-  stop: (q: string, language: Language) => toolError(stopUnknown(q, language)),
+    `We hold no station record for EVA ${eva}. Lifts: check_station_facilities; departures: get_train_departures.`), "not_found"),
+  stop: (q: string, language: Language) => toolError(stopUnknown(q, language), "not_found"),
 };
 
 function stopUnknown(q: string, language: Language): string {
@@ -459,7 +459,7 @@ const checkAutobahnTraffic: Handler = async (args, ctx) => {
     const registered = all.includes(null) ? (await ctx.api.get<{ road: string }[]>("listMotorways", {})).data.map((m) => m.road) : [];
     const known = all.filter((r): r is NonNullable<typeof r> => r !== null);
     if (known.length === 0) {
-      return toolError(UNKNOWN_ROAD.all(asked.join(", "), registered.length, asked.length === 1 ? nearestMotorways(asked[0]!, registered).join(", ") : "", language));
+      return toolError(UNKNOWN_ROAD.all(asked.join(", "), registered.length, asked.length === 1 ? nearestMotorways(asked[0]!, registered).join(", ") : "", language), "not_found");
     }
     const body = all.map((r, i) => (r === null ? UNKNOWN_ROAD.one(asked[i]!, nearestMotorways(asked[i]!, registered).join(", "), language) : `${asked[i]} — ${autobahnBody(r.data, language, limit, asked[i], all.length === 1 && (r.meta.page?.nextCursor ?? null) !== null)}`)).join("\n\n");
     return toolResult(body, known.flatMap((r) => roadWeatherCredits([r.meta], r.data)), language, { nextCursor: all.length === 1 ? (known[0]!.meta.page?.nextCursor ?? null) : null });
@@ -493,7 +493,7 @@ const checkRoadStatus: Handler = async (args, ctx) => {
       .catch((err: unknown) => { if (err instanceof ApiError && err.kind === "not_found") return null; throw err; });
     if (r === null) {
       const registered = (await ctx.api.get<{ road: string }[]>("listMotorways", {})).data.map((m) => m.road);
-      return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)));
+      return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)), "not_found");
     }
     metas.push(r.meta);
     const status = r.data.roadStatus ?? null;
@@ -515,7 +515,7 @@ const checkRoadStatus: Handler = async (args, ctx) => {
     // in its own sentence.
     const pos = await position(args, ctx, "place", vehicle === undefined ? undefined : (q) => toolError(L(language,
       `Ort "${q}" nicht gefunden. Bitte genauer angeben, z. B. mit Postleitzahl.`,
-      `Place "${q}" not found. Please be more specific, e.g. with a postcode.`)));
+      `Place "${q}" not found. Please be more specific, e.g. with a postcode.`), "not_found"));
     if (isResult(pos)) return pos;
     at = atParam(pos.at);
     const r = await ctx.api.get<T.RoadConditionsData>("listRoadConditions", { at, horizon_days: horizon, limit });
@@ -549,7 +549,7 @@ const findRoadworksAhead: Handler = async (args, ctx) => {
     // A number no register knows: today's refusal, with the nearest real numbers (as check_road_status).
     if (r === null) {
       const registered = (await ctx.api.get<{ road: string }[]>("listMotorways", {})).data.map((m) => m.road);
-      return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)));
+      return toolError(unknownMotorwaySentence(language, code, nearestMotorways(code, registered)), "not_found");
     }
     return toolResult(situationsBody(r.data, language, limit), [r.meta], language);
   }
@@ -996,7 +996,7 @@ const getDepartures: Handler = async (args, ctx) => {
     if (asked === undefined) return none(language, [stations.meta], L(language, "Haltestellen", "stops"));
     // Today's server reads a town out of the stop's name and says the stop is not in THAT town.
     const town = str(args["stop"]) === undefined ? undefined : await townIn(asked, ctx);
-    return town === undefined ? NOT_KNOWN.stop(asked, language) : toolError(STOP_IN_TOWN[language](asked, town));
+    return town === undefined ? NOT_KNOWN.stop(asked, language) : toolError(STOP_IN_TOWN[language](asked, town), "not_found");
   }
   const r = await ctx.api.get<T.Board>("listStationDepartures", { stationId: station.id, from: str(args["when"]), duration_min: num(args["duration_min"]), modes: strs(args["modes"]), limit: num(args["limit"]) });
   return boardAnswer(r, [stations.meta, r.meta], language);
@@ -1026,7 +1026,7 @@ function boardAnswer(r: Envelope<T.Board>, metas: DataMeta[], language: Language
 /** Today's words when a station tool is called with no station at all: ask, never search for nothing. */
 const NEED_STATION = (language: Language): CallToolResult => toolError(L(language,
   'Bitte station (Bahnhofsname als Freitext) oder eva_no angeben. Hat die Person keinen Bahnhof genannt, bitte fragen, welchen. Zum Beispiel {"station": "Hannover Hbf"}.',
-  'Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {"station": "Hannover Hbf"}.'));
+  'Give a station name (free text) or an eva_no. If the person named no station, ask which one. For example {"station": "Hannover Hbf"}.'), "invalid_input");
 const noStation = (args: Args): boolean => str(args["station"]) === undefined && str(args["eva_no"]) === undefined;
 
 /** check_station_facilities' default list length (today's schema). */
@@ -1154,7 +1154,7 @@ const NOT_OPENED: Record<Language, string> = { de: "Es wurde keine Beobachtung g
 
 async function stopNotFound(key: string, ctx: ToolContext): Promise<CallToolResult> {
   const town = await townIn(key, ctx);
-  return toolError(`${town === undefined ? stopUnknown(key, ctx.language) : STOP_IN_TOWN[ctx.language](key, town)} ${NOT_OPENED[ctx.language]}`);
+  return toolError(`${town === undefined ? stopUnknown(key, ctx.language) : STOP_IN_TOWN[ctx.language](key, town)} ${NOT_OPENED[ctx.language]}`, "not_found");
 }
 
 /** watchTarget, with what a station or a region named in words became, for the answer to say it. */
@@ -1174,7 +1174,7 @@ async function resolveWatch(kind: string, key: string, ctx: ToolContext): Promis
   if (kind === "charger" && !(/\d/u.test(key) && !/\s/u.test(key))) return chargerByPlace(key, ctx);
   if (kind === "region") {
     const { code, metas } = await areaCode({ region: key }, ctx);
-    if (code === undefined) return toolError(L(ctx.language, `Die Region „${key}“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet.`, `I could not find the region "${key}". No watch was opened.`));
+    if (code === undefined) return toolError(L(ctx.language, `Die Region „${key}“ habe ich nicht gefunden. Es wurde keine Beobachtung geöffnet.`, `I could not find the region "${key}". No watch was opened.`), "not_found");
     if (/^[0-9]{2,12}$/u.test(key)) return { target: code };
     for (const m of metas) creditPlace(m.attribution ?? []);
     return { target: code, resolved: { from: key, label: key, what: { de: `Region ${key}, AGS ${code}`, en: `the region ${key}, AGS ${code}` } } };
@@ -1186,13 +1186,13 @@ const watchSituation: Handler = async (args, ctx) => {
   const { language } = ctx;
   const kind = str(args["kind"]);
   const key = str(args["key"]);
-  if (kind === undefined || key === undefined) return toolError(L(language, "kind und key sind nötig.", "kind and key are required."));
+  if (kind === undefined || key === undefined) return toolError(L(language, "kind und key sind nötig.", "kind and key are required."), "invalid_input");
   const keyError = watchKeyError(kind, key, args["condition"], language);
-  if (keyError !== null) return { ...toolError(keyError), _meta: { errorCode: "invalid_input" } };
+  if (keyError !== null) return toolError(keyError, "invalid_input");
   if (ctx.watches.list().length >= MAX_WATCHES) {
     return toolError(L(language,
       `Diese Sitzung hat bereits ${MAX_WATCHES} offene Beobachtungen — das Maximum ist ${MAX_WATCHES}. Beende eine mit stop_watch (die Liste steht in viafrei://watches) und versuche es dann noch einmal.`,
-      `This session already has ${MAX_WATCHES} open watches — the limit is ${MAX_WATCHES}. End one with stop_watch (viafrei://watches lists them) and try again.`));
+      `This session already has ${MAX_WATCHES} open watches — the limit is ${MAX_WATCHES}. End one with stop_watch (viafrei://watches lists them) and try again.`), "limit_reached");
   }
   const resolved = await resolveWatch(kind, key, ctx);
   if (isResult(resolved)) return resolved;

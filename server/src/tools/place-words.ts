@@ -10,8 +10,6 @@ export type PlaceWords = {
   readonly missing: Readonly<Record<Language, string>>;
   readonly unknown?: Readonly<Record<Language, (q: string) => string>>;
   readonly ignorePlace?: true;
-  /** Today's server answers this tool's unknown place with no error code in `_meta`. */
-  readonly uncoded?: true;
 };
 
 /** Built per call, never held at module level, so Stryker mutates the words per test, not statically. */
@@ -24,7 +22,6 @@ export function placeWords(): Readonly<Record<string, PlaceWords>> {
         de: (q) => `„${q}“ habe ich als Ort nicht gefunden.`,
         en: (q) => `I could not find "${q}" as a place.`,
       },
-      uncoded: true,
     },
     check_autobahn_traffic: {
       missing: {

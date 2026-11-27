@@ -73,16 +73,15 @@ const NO_PLACE: Record<Language, (q: string) => string> = {
 /** A missing place in the tool's own words, coded as today's server codes it. */
 export function placeMissing(ctx: ToolContext): CallToolResult {
   const words = ctx.tool === undefined ? undefined : placeWords()[ctx.tool];
-  if (words === undefined) return toolError(NEED_PLACE[ctx.language]);
-  return { ...toolError(words.missing[ctx.language]), _meta: { errorCode: "invalid_input", errorReason: "place_missing" } };
+  if (words === undefined) return toolError(NEED_PLACE[ctx.language], "invalid_input", "place_missing");
+  return toolError(words.missing[ctx.language], "invalid_input", "place_missing");
 }
 
 export function placeUnknown(ctx: ToolContext, q: string): CallToolResult {
   const words = ctx.tool === undefined ? undefined : placeWords()[ctx.tool];
   const unknown = words?.unknown;
-  if (unknown === undefined) return toolError(NO_PLACE[ctx.language](q));
-  if (words?.uncoded === true) return toolError(unknown[ctx.language](q));
-  return { ...toolError(unknown[ctx.language](q)), _meta: { errorCode: "not_found" } };
+  if (unknown === undefined) return toolError(NO_PLACE[ctx.language](q), "not_found");
+  return toolError(unknown[ctx.language](q), "not_found");
 }
 
 /** Verbatim from today's server (geo/place.ts HOUSE_NUMBER_COPY). */
@@ -145,7 +144,7 @@ export async function position(args: Args, ctx: ToolContext, placeKey = "place",
   // Today's resolver (geo/place.ts looksLikeHouseNumber) refuses a street and house number in one sentence where
   // no address data is held, rather than calling the place unknown; where addresses are loaded, the search goes on.
   if (looksLikeHouseNumber(q) && (await ctx.api.get<PlacesCoverageData>("getPlacesCoverage", {})).data.addresses.length === 0) {
-    return toolError(HOUSE_NUMBER_COPY[ctx.language]);
+    return toolError(HOUSE_NUMBER_COPY[ctx.language], "invalid_input");
   }
   const resolved = await resolvePlace(q, ctx);
   if (resolved !== undefined) return resolved;

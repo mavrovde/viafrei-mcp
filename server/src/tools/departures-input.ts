@@ -5,12 +5,13 @@
  */
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { toolError, type Language } from "../presentation.js";
+import type { ToolErrorReason } from "../usage-names.js";
 
 /** The catalogue's defaults: a default the client fills in is not the caller's own. */
 const DEFAULT_DURATION_MIN = 60;
 const DEFAULT_LIMIT = 10;
 
-const refused = (text: string, reason?: string): CallToolResult => ({ ...toolError(text), _meta: { errorCode: "invalid_input", ...(reason === undefined ? {} : { errorReason: reason }) } });
+const refused = (text: string, reason?: ToolErrorReason): CallToolResult => toolError(text, "invalid_input", reason);
 
 export function departuresRefusal(args: Record<string, unknown>, language: Language): CallToolResult | null {
   const en = language === "en";

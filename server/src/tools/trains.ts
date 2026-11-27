@@ -186,7 +186,7 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
   const categories = strs(args["categories"]);
   const when = str(args["when"]);
   const from = when === undefined ? new Date() : new Date(when);
-  if (Number.isNaN(from.getTime())) return toolError(L(language, "when ist keine gültige Zeit.", "when is not a valid time."));
+  if (Number.isNaN(from.getTime())) return toolError(L(language, "when ist keine gültige Zeit.", "when is not a valid time."), "invalid_input");
   const windowMin = num(args["duration_min"]) ?? 60;
   const until = from.getTime() + windowMin * 60_000;
   const asked = evas.slice(0, MAX_BOARD_PARTS);
@@ -198,7 +198,7 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
     parts = await Promise.all(asked.map((eva) => part(ctx, eva)));
   } catch (err) {
     if (err instanceof ApiError && err.kind === "invalid") {
-      return toolError(L(language, `Die DB-Fahrplanschnittstelle kennt keinen Bahnhof mit der Nummer ${asked.join(", ")}. Bitte den Bahnhofsnamen nennen.`, `The DB timetable interface knows no station with the number ${asked.join(", ")}. Please give the station's name.`));
+      return toolError(L(language, `Die DB-Fahrplanschnittstelle kennt keinen Bahnhof mit der Nummer ${asked.join(", ")}. Bitte den Bahnhofsnamen nennen.`, `The DB timetable interface knows no station with the number ${asked.join(", ")}. Please give the station's name.`), "not_found");
     }
     throw err;
   }
@@ -208,7 +208,7 @@ async function liveBoard(evas: readonly string[], stationName: string | null, ar
     const newest = parts.reduce((a, b) => ((b.board.data.fetchedAt ?? "") > (a.board.data.fetchedAt ?? "") ? b : a));
     const outcome: Outcome = parts.some((p) => p.outcome === "timed_out") ? "timed_out" : parts.every((p) => p.outcome === "failed") ? "failed" : newest.outcome;
     const text = staleLine(station, newest.board.data, outcome, language);
-    if (outcome === "failed") return toolError(text);
+    if (outcome === "failed") return toolError(text, "unavailable");
     return toolResult(text, [...metas, { ...newest.board.meta, asOf: newest.board.data.fetchedAt }], language, {
       structured: { ...head, departures: [], dbTimetables: { answered: false, reason: "unavailable" } },
     });
@@ -257,14 +257,14 @@ export const getTrainDepartures: Handler = async (args, ctx) => {
   const { language } = ctx;
   const eva = str(args["eva_no"]);
   const name = str(args["station"]);
-  if (eva === undefined && name === undefined) return toolError(COPY[language].needStation);
+  if (eva === undefined && name === undefined) return toolError(COPY[language].needStation, "invalid_input");
   // Only the DB stations of a name, as today's server resolves a train station (the API's railway).
   const stations = await ctx.api.get<T.Station[]>("listStations", { code: eva, q: eva === undefined ? name : undefined, limit: 1, railway: "true" });
   const station = stations.data[0];
   if (eva !== undefined) return liveBoard([eva], station?.name ?? null, args, ctx, [stations.meta]);
   if (station === undefined) {
     const q = name ?? "";
-    return toolError(L(language, `Den Bahnhof "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Hamburg Hbf", "Köln Hbf").`, `I do not know a station called "${q}". Please give the name as it appears at the station (e.g. "Hamburg Hbf", "Köln Hbf").`));
+    return toolError(L(language, `Den Bahnhof "${q}" kenne ich nicht. Bitte den Namen so nennen, wie er am Bahnhof steht (z. B. "Hamburg Hbf", "Köln Hbf").`, `I do not know a station called "${q}". Please give the name as it appears at the station (e.g. "Hamburg Hbf", "Köln Hbf").`), "not_found");
   }
   const evas = station.evaNumbers.length > 0 ? station.evaNumbers : station.eva === null ? [] : [station.eva];
   if (evas.length > 0) return liveBoard(evas, station.name, args, ctx, [stations.meta]);

@@ -41,7 +41,7 @@ export const checkTransitDisruption: Handler = async (args, ctx): Promise<CallTo
   const where = await regionOf(args, ctx);
   if (where.code === undefined && line === undefined) {
     const region = str(args["region"]);
-    return region === undefined ? toolResult(L(language, "Diese Region kenne ich nicht.", "I do not know this region."), where.metas, language) : toolError(TRANSIT_WORDS.unknownRegion(language, region));
+    return region === undefined ? toolResult(L(language, "Diese Region kenne ich nicht.", "I do not know this region."), where.metas, language) : toolError(TRANSIT_WORDS.unknownRegion(language, region), "not_found", "region");
   }
   const r = await ctx.api.get<T.DisruptionData>("listTransitDisruptions", { area: where.code, line, window_min: num(args["window_min"]) });
   const metas = [r.meta, ...where.metas];
