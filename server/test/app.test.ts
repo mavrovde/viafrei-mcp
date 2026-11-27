@@ -1,7 +1,7 @@
 /**
  * The HTTP app through real requests, in process: health and readiness, Streamable HTTP on /mcp (a session
  * from initialize to DELETE, the refusals before one exists, the idle sweep), the legacy HTTP+SSE pair, and
- * the body parser's JSON-RPC answers. The API behind it is the contract mock; requests to the app itself go through undici's own
+ * the body parser's JSON-RPC answers, the `/sse` URL's Streamable HTTP door and the ended-session warn line. The API behind it is the contract mock; requests to the app itself go through undici's own
  * fetch, which the mock does not intercept, so a streamed answer streams.
  */
 import type { AddressInfo } from "node:net";
@@ -35,9 +35,9 @@ afterAll(() => mockServer.close());
 const appFetch = undiciFetch as unknown as typeof fetch;
 const deps = () => ({ api: new ApiClient({ baseUrl: API_BASE, key: TEST_KEY }), catalogue: loadCatalogue() });
 
-async function serve(): Promise<{ base: string; stop: () => Promise<void> }> {
+async function serve(extra: Pick<Parameters<typeof createMcpApp>[0], "warn"> = {}): Promise<{ base: string; stop: () => Promise<void> }> {
   const d = deps();
-  const { app } = createMcpApp({ deps: d, allowedOrigins: [], allowedHosts: [], maxBodyKb: 64, sessionTtlMs: SESSION_IDLE_MS, sessionSweepMs: 60_000, health: () => ({ ok: true }), ready: apiReadiness(API_BASE) });
+  const { app } = createMcpApp({ deps: d, allowedOrigins: [], allowedHosts: [], maxBodyKb: 64, sessionTtlMs: SESSION_IDLE_MS, sessionSweepMs: 60_000, health: () => ({ ok: true }), ready: apiReadiness(API_BASE), ...extra });
   const server: Server = app.listen(0, "127.0.0.1");
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
   const { port } = server.address() as AddressInfo;
@@ -197,6 +197,76 @@ describe("the legacy HTTP+SSE pair", () => {
         const m = await appFetch(`${base}/messages${q}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(LIST) });
         expect([m.status, await m.text()]).toEqual([400, "Missing or unknown sessionId"]);
       }
+    } finally {
+      await stop();
+    }
+  });
+});
+
+describe("the /sse URL also speaks Streamable HTTP", () => {
+  it("a Streamable HTTP client given the /sse URL gets a session: listed, called, its stream reached, ended by DELETE", async () => {
+    const { base, stop } = await serve();
+    try {
+      const transport = new StreamableHTTPClientTransport(new URL(`${base}/sse`), { fetch: appFetch });
+      const client = new Client({ name: "t", version: "0" });
+      await client.connect(transport);
+      const id = transport.sessionId!;
+      expect(id).toMatch(/^[0-9a-f-]{36}$/);
+      expect((await client.listTools()).tools).toHaveLength(loadCatalogue().tools.length);
+      const r = await client.callTool({ name: "find_place", arguments: { query: "Köln", language: "en" } });
+      expect(textOf(r)).toContain("1. Matfienland — state");
+      // A GET naming the session is the session's stream, not a legacy one: the client holds the one standalone
+      // stream already, so the session's transport refuses a second with 409.
+      const stream = await appFetch(`${base}/sse`, { headers: { "mcp-session-id": id, accept: "text/event-stream" } });
+      expect(stream.status).toBe(409);
+      await stream.body?.cancel();
+      const end = await appFetch(`${base}/sse`, { method: "DELETE", headers: { "mcp-session-id": id } });
+      expect(end.status).toBe(200);
+      await end.text();
+      const after = await appFetch(`${base}/sse`, { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream", "mcp-session-id": id }, body: JSON.stringify(LIST) });
+      expect([after.status, await after.json()]).toEqual([404, SESSION_NOT_FOUND]);
+      await client.close();
+    } finally {
+      await stop();
+    }
+  });
+
+  it("a GET of /sse naming an unknown session is the spec's 404, never a legacy stream", async () => {
+    const { base, stop } = await serve();
+    try {
+      const r = await appFetch(`${base}/sse`, { headers: { "mcp-session-id": "nope", accept: "text/event-stream" } });
+      expect([r.status, r.headers.get("content-type"), await r.json()]).toEqual([404, "application/json; charset=utf-8", SESSION_NOT_FOUND]);
+    } finally {
+      await stop();
+    }
+  });
+});
+
+describe("an ended session is said in the log", () => {
+  it("each 404 for a session id we do not hold writes one warn line, without the id; no id writes none", async () => {
+    const warn = vi.fn();
+    const { base, stop } = await serve({ warn });
+    try {
+      for (const [method, path] of [["POST", "/mcp"], ["GET", "/mcp"], ["DELETE", "/mcp"], ["GET", "/sse"], ["DELETE", "/sse"]] as const) {
+        const r = await appFetch(`${base}${path}`, { method, headers: { "mcp-session-id": "dead-session-id", "content-type": "application/json", accept: "application/json, text/event-stream" }, ...(method === "POST" ? { body: JSON.stringify(LIST) } : {}) });
+        expect([method, path, r.status]).toEqual([method, path, 404]);
+        await r.text();
+      }
+      expect(warn.mock.calls.map(([fields]) => fields)).toEqual([
+        { kind: "session_not_found", method: "POST", path: "/mcp" },
+        { kind: "session_not_found", method: "GET", path: "/mcp" },
+        { kind: "session_not_found", method: "DELETE", path: "/mcp" },
+        { kind: "session_not_found", method: "GET", path: "/sse" },
+        { kind: "session_not_found", method: "DELETE", path: "/sse" },
+      ]);
+      expect(JSON.stringify(warn.mock.calls)).not.toContain("dead-session-id");
+      expect(warn.mock.calls[0]?.[1]).toBe("an MCP request named a session this server does not hold (ended by a restart, the idle limit or an eviction); answered 404 so the client re-initialises");
+      warn.mockClear();
+      for (const method of ["GET", "DELETE"]) {
+        const r = await appFetch(`${base}/mcp`, { method });
+        await r.text();
+      }
+      expect(warn).not.toHaveBeenCalled();
     } finally {
       await stop();
     }

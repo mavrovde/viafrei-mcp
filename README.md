@@ -2296,6 +2296,8 @@ when you can:
 ```bash
 claude mcp add --transport sse viafrei https://mcp.viafrei.de/sse
 ```
+A client that speaks Streamable HTTP but was given the `/sse` address works
+there too: its POST opens a Streamable HTTP session, as on `/mcp`.
 
 Restart the client and ask one of the questions above.
 
