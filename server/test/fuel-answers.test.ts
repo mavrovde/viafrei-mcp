@@ -64,13 +64,31 @@ describe("find_cheapest_fuel, current and stale prices mixed", () => {
       mixed();
       const r = await call("find_cheapest_fuel", { ...at, language });
       const de = language === "de";
-      expect(lines(r)[0]).toBe(de ? "Super E10 um 52.520, 13.405 (Umkreis 5 km), aktuelle Preise günstigste zuerst, danach ältere:" : "Super E10 around 52.520, 13.405 (within 5 km), current prices cheapest first, then older prices:");
+      expect(lines(r)[0]).toBe(de ? "Super E10 um 52.520, 13.405 (Umkreis 5 km), aktuelle Preise günstigste zuerst, danach ältere oder keine Preise:" : "Super E10 around 52.520, 13.405 (within 5 km), current prices cheapest first, then older or no prices:");
       expect(lines(r)[1]).toBe(de ? "1. C — 1,649 €/l, 0,9 km, zuletzt offen (Stand 30.03. 02:00)" : "1. C — 1.649 €/l, 0.9 km, open when last seen (as of 2026-03-30 02:00)");
       expect(lines(r)[4]).toBe(de ? "4. B — 1,599 €/l (nicht aktuell), 0,5 km, zuletzt offen (Stand 23.03. 09:00)" : "4. B — 1.599 €/l (not current), 0.5 km, open when last seen (as of 2026-03-23 09:00)");
       expect(lines(r)[5]).toBe(de ? "5. D — –, 0,1 km, zuletzt offen" : "5. D — –, 0.1 km, open when last seen");
       expect(lines(r).at(-1)).toBe(de
         ? "3 der 9 Tankstellen im Umkreis haben keinen Super E10-Preis aus den letzten 30 Minuten (älter oder noch keiner) und stehen nicht in der Rangfolge."
         : "3 of the 9 stations within the radius have no Super E10 price from the last 30 minutes (older, or none yet) and are not in the ranking.");
+    });
+  }
+});
+
+describe("find_cheapest_fuel, the head names what stands below the current prices", () => {
+  const HEAD = { de: "Super E10 um 52.520, 13.405 (Umkreis 5 km), aktuelle Preise günstigste zuerst, ", en: "Super E10 around 52.520, 13.405 (within 5 km), current prices cheapest first, " };
+  for (const language of LANGS) {
+    it(`a stale row, no unpriced one: then older prices (${language})`, async () => {
+      serve("listFuelOptions", [row("B", 500, 1.599, false, OLD), row("C", 900, 1.649, true)]);
+      expect(lines(await call("find_cheapest_fuel", { ...at, language }))[0]).toBe(HEAD[language] + (language === "de" ? "danach ältere:" : "then older prices:"));
+    });
+    it(`an unpriced row, no stale one: then stations without a price (${language})`, async () => {
+      serve("listFuelOptions", [row("D", 100, null, false), row("C", 900, 1.649, true)]);
+      expect(lines(await call("find_cheapest_fuel", { ...at, language }))[0]).toBe(HEAD[language] + (language === "de" ? "danach Stationen ohne Preis:" : "then stations without a price:"));
+    });
+    it(`both: then older or no prices (${language})`, async () => {
+      serve("listFuelOptions", [row("D", 100, null, false), row("B", 500, 1.599, false, OLD), row("C", 900, 1.649, true)]);
+      expect(lines(await call("find_cheapest_fuel", { ...at, language }))[0]).toBe(HEAD[language] + (language === "de" ? "danach ältere oder keine Preise:" : "then older or no prices:"));
     });
   }
 });

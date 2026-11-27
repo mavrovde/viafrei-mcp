@@ -255,12 +255,19 @@ export const findCheapestFuel: Handler = async (args, ctx): Promise<CallToolResu
   // Listed rows without a current price (stale or unpriced) stand below current ones, so a plain "cheapest first"
   // would be false once one of them is cheaper (#299).
   const listedNotCurrent = rows.filter((s) => !isCurrent(s)).length;
+  const priced = (s: T.FuelStation): boolean => s.prices.some((x) => x.fuel === fuel);
+  const hasStale = rows.some((s) => priced(s) && !isCurrent(s));
+  const hasUnpriced = rows.some((s) => !priced(s));
+  // What stands below the current prices: older prices, stations without one, or both.
+  const after = hasStale && hasUnpriced
+    ? de ? "danach ältere oder keine Preise" : "then older or no prices"
+    : hasStale ? (de ? "danach ältere" : "then older prices") : de ? "danach Stationen ohne Preis" : "then stations without a price";
   const head = noneCurrent
     ? de
       ? `${grade} um ${around} (Umkreis ${radiusKm} km): Keine Tankstelle hat einen aktuellen ${grade}-Preis. Hier die zuletzt gemeldeten Preise, günstigste zuerst; sie können sich seitdem geändert haben:`
       : `${grade} around ${around} (within ${radiusKm} km): no station has a current ${grade} price. These are the last prices reported, cheapest first; they may have changed since:`
     : listedNotCurrent > 0
-      ? de ? `${grade} um ${around} (Umkreis ${radiusKm} km), aktuelle Preise günstigste zuerst, danach ältere:` : `${grade} around ${around} (within ${radiusKm} km), current prices cheapest first, then older prices:`
+      ? de ? `${grade} um ${around} (Umkreis ${radiusKm} km), aktuelle Preise günstigste zuerst, ${after}:` : `${grade} around ${around} (within ${radiusKm} km), current prices cheapest first, ${after}:`
       : de ? `${grade} um ${around} (Umkreis ${radiusKm} km), günstigste zuerst:` : `${grade} around ${around} (within ${radiusKm} km), cheapest first:`;
   const lines = rows.map((s, i) => {
     const p = s.prices.find((x) => x.fuel === fuel);
