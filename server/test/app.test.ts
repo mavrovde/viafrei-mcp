@@ -271,4 +271,27 @@ describe("an ended session is said in the log", () => {
       await stop();
     }
   });
+
+  it("a POST naming a LEGACY session's id, on /mcp or /sse, is the ended-session 404 with its warn line, never a 500", async () => {
+    const warn = vi.fn();
+    const { base, stop } = await serve({ warn });
+    const legacy = await appFetch(`${base}/sse`, { headers: { accept: "text/event-stream" } });
+    try {
+      const reader = legacy.body!.getReader();
+      let frame = "";
+      while (!frame.includes("sessionId=")) frame += new TextDecoder().decode((await reader.read()).value);
+      const id = /sessionId=([0-9a-f-]+)/.exec(frame)![1]!;
+      for (const path of ["/mcp", "/sse"]) {
+        const r = await appFetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream", "mcp-session-id": id }, body: JSON.stringify(LIST) });
+        expect([path, r.status, await r.json()]).toEqual([path, 404, SESSION_NOT_FOUND]);
+      }
+      expect(warn.mock.calls.map(([fields]) => fields)).toEqual([
+        { kind: "session_not_found", method: "POST", path: "/mcp" },
+        { kind: "session_not_found", method: "POST", path: "/sse" },
+      ]);
+      await reader.cancel();
+    } finally {
+      await stop();
+    }
+  });
 });

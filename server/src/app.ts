@@ -862,7 +862,7 @@ export function createMcpApp(o: McpAppOptions): McpApp {
       answers.set(rpcId, line.outcome);
       res.on("close", () => { if (answers.get(rpcId) === line.outcome) answers.delete(rpcId); });
     };
-    if (!s) {
+    if (!s || s.transportKind !== "streamable") {
       // A session id we do not hold is a session that ENDED — a restart (every
       // deploy), the idle TTL or an eviction — and the spec's answer to it is
       // 404, the one status on which a client MUST open a new session
@@ -872,6 +872,9 @@ export function createMcpApp(o: McpAppOptions): McpApp {
       // connector after each deploy. An `initialize` that still carries
       // the dead id is that re-initialisation and opens a session; a request
       // with no id at all is still the no-session 400.
+      // A LEGACY session's id (`GET /sse` + `/messages`) names no Streamable HTTP
+      // session either, so it takes this same 404: its transport has no
+      // `handleRequest`, and handing it on was a 500.
       if (!isInitializeRequest(req.body)) {
         if (sid !== "") { noteEndedSession(req, sid); res.status(404).json(SESSION_NOT_FOUND); return; }
         res.status(400).json({ jsonrpc: "2.0", error: { code: -32000, message: "No valid session; send initialize first" }, id: null });
