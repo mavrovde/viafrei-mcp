@@ -7,7 +7,8 @@
 import type { Language } from "../presentation.js";
 import { berlinTime } from "../presentation.js";
 import type * as T from "../api/types.js";
-import { factWords } from "./handlers.js";
+import { excerpt, factWords, KIND } from "./handlers.js";
+import type { DataMeta } from "../api/client.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 /** Today's MAX_LIMIT: one answer holds at most this many entries. */
@@ -90,4 +91,52 @@ export function roadStatusText(road: string, s: T.RoadStatus, language: Language
 function standOf(iso: string, language: Language, now: Date): string {
   const same = dayText(iso, "en") === dayText(now.toISOString(), "en");
   return same ? berlinTime(iso) : `${language === "de" ? dayText(iso, "de").slice(0, 6) : dayText(iso, "en")} ${berlinTime(iso)}`;
+}
+
+/** A planned or current works entry is named by its bucket; any other by the term the API calls it. */
+const BUCKET: Record<Language, Record<string, string>> = {
+  de: { planned: "Geplante Arbeitsstelle", current: "Laufende Arbeitsstelle", programme: "Arbeitsstelle eines Bauprogramms" },
+  en: { planned: "Planned roadworks (geplante Arbeitsstelle)", current: "Current roadworks (laufende Arbeitsstelle)", programme: "Works programme site (Bauprogramm)" },
+};
+
+/** A source's name as its attribution line opens ("Arbeitsstellen: Bundesanstalt für Straßen- und Verkehrswesen (BASt)"), its family when none. */
+export function sourceName(family: string, meta: DataMeta): string {
+  const text = meta.attribution?.find((a) => a.family === family)?.text;
+  if (text === undefined) return family;
+  const cut = [" via ", " | ", ", ", " — "].map((m) => text.indexOf(m)).filter((i) => i > 0);
+  return (cut.length === 0 ? text : text.slice(0, Math.min(...cut))).trim();
+}
+
+/** The publisher a source's name holds ("Arbeitsstellen: Bundesanstalt … (BASt)" → "Bundesanstalt … (BASt)"): the tally names who counted, not the dataset. */
+export function publisherOf(name: string): string {
+  const colon = name.indexOf(": ");
+  // "Die Autobahn GmbH des Bundes" and "Autobahn GmbH des Bundes" are one publisher: a leading article is not its name.
+  return (colon < 0 ? name : name.slice(colon + 2)).trim().replace(/^(?:Die|Der|Das)\s+/u, "");
+}
+
+/** A source named in the "answered" line, quoted: its name carries a colon of its own. */
+const quoted = (name: string, language: Language): string => (language === "de" ? `„${name}“` : `"${name}"`);
+
+/** API 2.0.4's roadStatus read into the answer's words: the publishers named, each entry's label and provider text. */
+export function roadStatusOf(s: T.ApiRoadStatus, meta: DataMeta, language: Language): T.RoadStatus {
+  const item = (i: T.ApiRoadStatusItem): T.RoadStatusItem => {
+    // The road operator's entry: its title, the junction, its description; another publisher's: its message as published.
+    const words = i.sourceFamily === "autobahn"
+      ? [[i.title, i.subtitle].filter((x): x is string => x !== null && x.trim() !== "").join(" · "), i.description.join(" ")].filter((x) => x.trim() !== "").join(" — ")
+      : i.detail ?? i.place ?? i.title ?? "";
+    return {
+      label: BUCKET[language][i.status] ?? KIND[language][i.term] ?? i.term,
+      road: i.road, namedRoad: i.sourceFamily !== "autobahn", shown: words.trim() === "" ? "" : excerpt(words),
+      facts: null, from: i.from, to: i.to, measureTo: i.measureTo,
+    };
+  };
+  return {
+    counts: { closed: s.counts.closed, restricted: s.counts.restricted, planned: s.counts.planned, current: s.counts.current, currentBy: [...new Set(s.counts.currentFamilies.map((f) => publisherOf(sourceName(f, meta))))] },
+    windowEnd: s.windowEnd,
+    items: s.items.map(item),
+    hidden: s.hidden, hiddenClosures: s.hiddenClosures, canRaise: s.canRaise,
+    sourcesAnswered: s.sourcesAnswered.map((x) => ({ label: quoted(sourceName(x.sourceFamily, meta), language), asOf: x.asOf })),
+    guidance: s.guidance.map((g) => ({ title: g.title, titleEn: g.titleEnglish, words: g.words, wordsEn: g.wordsEnglish, from: g.from, to: g.to, via: g.via, until: g.until })),
+    plannedByRoad: s.plannedWorksHaveNoCoordinates,
+  };
 }

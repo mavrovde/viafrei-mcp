@@ -5,13 +5,13 @@ A1: 1× traffic report, 1× roadworks narrowing the carriageway.
 … more entries beyond this read — narrow it with a place (road and place together) or a shorter window.
 
 Lorry rules:
-- A1, Hauptstraße, Köln: Durchfahrt verboten
-- : weight
-- A100: long_lorry
-- A10: long_lorry
-- A11: long_lorry
-- A12: long_lorry
-- A13: long_lorry
-- A14: long_lorry
-- A15: long_lorry
-- A16: long_lorry
+- A1, Hauptstraße, Köln: long-lorry positive network (Lang-Lkw-Positivnetz): Durchfahrt verboten
+- long-lorry positive network (Lang-Lkw-Positivnetz): weight limit
+- A100: long-lorry positive network (Lang-Lkw-Positivnetz)
+- A10: long-lorry positive network (Lang-Lkw-Positivnetz)
+- A11: long-lorry positive network (Lang-Lkw-Positivnetz)
+- A12: long-lorry positive network (Lang-Lkw-Positivnetz)
+- A13: long-lorry positive network (Lang-Lkw-Positivnetz)
+- A14: long-lorry positive network (Lang-Lkw-Positivnetz)
+- A15: long-lorry positive network (Lang-Lkw-Positivnetz)
+- A16: long-lorry positive network (Lang-Lkw-Positivnetz)

@@ -5,13 +5,13 @@ A1: 1× Verkehrsmeldung, 1× Baustelle, Fahrbahn eingeengt.
 … weitere Meldungen über diese Lesung hinaus — mit einem Ort (Straße und Ort zusammen) oder einem kürzeren Zeitfenster eingrenzen.
 
 Lkw-Regeln:
-- A1, Hauptstraße, Köln: Durchfahrt verboten
-- : weight
-- A100: long_lorry
-- A10: long_lorry
-- A11: long_lorry
-- A12: long_lorry
-- A13: long_lorry
-- A14: long_lorry
-- A15: long_lorry
-- A16: long_lorry
+- A1, Hauptstraße, Köln: Lang-Lkw-Positivnetz: Durchfahrt verboten
+- Lang-Lkw-Positivnetz: Gewicht
+- A100: Lang-Lkw-Positivnetz
+- A10: Lang-Lkw-Positivnetz
+- A11: Lang-Lkw-Positivnetz
+- A12: Lang-Lkw-Positivnetz
+- A13: Lang-Lkw-Positivnetz
+- A14: Lang-Lkw-Positivnetz
+- A15: Lang-Lkw-Positivnetz
+- A16: Lang-Lkw-Positivnetz

@@ -155,6 +155,22 @@ export type RoadStatus = {
   /** Planned or current roadworks are among the tally: they carry no coordinates, so the answer is by road. */
   plannedByRoad: boolean;
 };
+/** API 2.0.4's MotorwayData.roadStatus, as the contract sends it; check_road_status reads it into RoadStatus. */
+export type ApiRoadStatus = {
+  windowEnd: string;
+  counts: { closed: number; restricted: number; planned: number; programme: number; current: number; total: number; currentFamilies: string[] };
+  items: ApiRoadStatusItem[];
+  hidden: number; hiddenClosures: number; canRaise: boolean;
+  sourcesAnswered: { sourceFamily: string; asOf: string | null }[];
+  guidance: { title: string | null; titleEnglish: string | null; words: string | null; wordsEnglish: string | null; from: string | null; to: string | null; via: string | null; until: string | null }[];
+  plannedWorksHaveNoCoordinates: boolean;
+};
+/** API 2.0.4's RoadStatusItem: the fields check_road_status says. */
+export type ApiRoadStatusItem = {
+  status: string; term: string; sourceFamily: string; road: string; kind: string | null;
+  title: string | null; subtitle: string | null; description: string[]; place: string | null; detail: string | null;
+  from: string | null; to: string | null; measureTo: string | null;
+};
 /** One entry of a road's page: today's label, whether the road is named (a Land or local publisher), the publisher's words, the facts, the span. */
 export type RoadStatusItem = { label: string; road: string; namedRoad: boolean; shown: string; facts: RoadFacts | null; from: string | null; to: string | null; measureTo: string | null };
 /** The Autobahn GmbH's traffic guidance (strategic routing) switched on for the road. */
@@ -183,8 +199,8 @@ export type RoadConditionsData = {
   roadWide?: RoadWide | null;
   /** Proposed (today's planned-now lines): the short-duration roadworks the Autobahn GmbH plans in force now, in the publisher's words. */
   plannedNow?: { where: string | null; window: { from: string | null; to: string | null } }[];
-  /** Proposed: check_road_status's answer for the road asked by number, as today. */
-  roadStatus?: RoadStatus | null;
+  /** API 2.0.4: the road status by road number (MotorwayData.roadStatus); null when the key may read none of its sources. */
+  roadStatus?: ApiRoadStatus | null;
 };
 /** Proposed: today's road-wide figures (check_autobahn_traffic's Counts, policeCountsText and the NRW traffic state). */
 export type RoadWide = {
@@ -196,7 +212,7 @@ export type RoadWide = {
   measured: { sites: number; standstill: number; slow: number; heavy: number; free: number; laneSites: number; near: string[]; measuredAt: string | null } | null;
 };
 /** LorryRule */
-export type LorryRule = { layer: string; kind: string | null; road: string | null; street: string | null; municipality: string | null; publishedText: string | null; value: number | null; unit: string | null };
+export type LorryRule = { layer: string; kind: string | null; road: string | null; street: string | null; municipality: string | null; publishedText: string | null; value: number | null; unit: string | null; direction?: string | null };
 /** DrivingRulesData */
 export type DrivingRule = { id: string; text: string; legalBasis: string | null; sourceUrl: string | null; reviewedOn: string; unconfirmed: string | null };
 /** With topic lez and a city: the curated list's entry, or the asked city uncovered (zone null). */
@@ -261,7 +277,7 @@ export type LocationData = {
   junction?: { name: string; road: string | null; location: LatLon; from: "osm" | "gazetteer" } | null;
 };
 /** Station */
-export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; eva: string | null; evaNumbers: string[]; distanceM?: number | null; districtCode?: string | null };
+export type Station = { id: string; name: string; location: LatLon; stopCode: string | null; eva: string | null; evaNumbers: string[]; modes?: string[]; distanceM?: number | null; districtCode?: string | null };
 /** Board */
 export type Departure = {
   line: string | null; category: string | null; destination: string | null; plannedAt: string; expectedAt: string | null; delayMin: number | null;

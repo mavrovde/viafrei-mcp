@@ -5,6 +5,23 @@ a Changelog and the versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+### Fixed
+- **`check_road_status` answers a motorway asked by number again.** On API 2.0.4 `{road: "A7"}`, `{road: "A1", place: "Bremen"}` and `{road: "A7", vehicle: "long_lorry"}` answered "internal". The words were written for a proposed `roadStatus` shape. API 2.0.4 sends a different one (`counts.currentFamilies`, `sourcesAnswered[].sourceFamily`, entries with `term`, `title`, `subtitle`, `description`, `detail`), and reading `currentBy.length` threw a TypeError. The contract's example sends `roadStatus: null`, so no test met the real shape. The answer now reads API 2.0.4's `roadStatus` (`roadStatusOf`):
+  - the tally names the publishers that counted, each once (the holder part of its attribution line);
+  - the "Sources that answered" line quotes each source's name, which carries a colon of its own;
+  - an Autobahn GmbH entry is said as title · junction — description, and another publisher's entry as its message, with the road named;
+  - planned, current and works-programme entries are named by their bucket; every status and term has words in both languages.
+
+  The test is built from prod's A7 answer, trimmed (`server/test/fixtures/road-status-a7.json`).
+- **A motorway asked together with a place is that place's situations on it.** The answer already offered this narrowing ("narrow it with a place (road and place together)"), but the motorway path ignored the place.
+- **The "tool call failed" log line names a crash.** It now carries the crash's `message` (cut at 200 characters) and a stack `frame`: the first one in the package's own `src/` or `dist/` (not a dependency's), its path cut at the last of them, else the first frame there is. Before, a prod "internal" answer left only `TypeError`. An API failure still logs its kind and no message, because its words may repeat the request's.
+- **`describe_station` with `departures: 0` no longer answers invalid_input.** API 2.0.4's `getStationPage` lists at least one departure (minimum 1). The server now asks for one and leaves the departures section out.
+- **`describe_station` describes the DB station of the name first.** "Leipzig Hbf" had answered with the tram stop in front of the station. A stop of that name, or of that code (`eva_no`), is described only when DB's register has no station of it.
+- **`find_address` with a street and number alone asks for the town.** Before, it answered with the API's generic 400 sentence ("One or more parameters are invalid."). When the query reads as a street and house number with no town or postcode, the answer says which street and number it read and that the town or postcode is missing (`invalid_input`, reason `place_missing`). Any other refusal (a town alone, a query with a town or postcode) is still the API's own.
+- **`check_station_facilities` on a stop that is no DB station.** "Stuttgart Charlottenplatz" answered "I do not know a station or stop called …", although the stop search knows the stop. The answer now gives the stop's lifts and escalators where the API publishes them for it. Otherwise it says that the stop, named as asked, is known but is no DB station and has no published lift or escalator status, and points to `describe_station` for the step-free platforms (`out_of_coverage`).
+- **Lorry rules are said in words, once each.** Near Haan the answer listed "Kaiserstraße, Haan: priority_route" ten times, once per published segment. Each rule is now one line: the layer in words (Lkw-Vorrangroute, Lang-Lkw-Positivnetz, Beschränkung, Lkw-Zone), the publisher's words or what is limited in words (Höhe, Gewicht, Breite, Länge, Achslast, Durchfahrtverbot; a kind added later is said as published) with the published figure, and the direction where one is stated.
+- **A situation line never reads out a provider code or an empty road.** The city of Köln's closure read "- : Straßensperrung", and roadworks read "A7: constructionWorks". A DATEX code is now said by its kind, as the motorway list already did. A situation with no road starts with its words.
+
 ## [2.7.6] - 2026-11-27
 
 **The server runs on API 2.0.4 and its answers say what the API gives.** The server's tools, prompts and resources are those of 2.7.5; no tool name or input schema changes, and the reason codes and fields below are additive.
