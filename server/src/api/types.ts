@@ -206,15 +206,18 @@ export type ZoneVerdict = { kind: "inside" | "transfer" | "outside" | "unknown";
 export type DrivingRulesData = { topic: string; title: string; rules: DrivingRule[]; reviewedOn: string; disclaimer: string; zoneCity?: ZoneCity; zoneVerdict?: ZoneVerdict };
 /** DisruptionData */
 export type DisruptionAlert = { header: string | null; lines: string[]; inForceFrom: string | null; inForceUntil: string | null };
+/** DisruptionPunctuality (API 2.0.4): the trips with a delay report in the source's own window, those late at least once. */
+export type DisruptionPunctuality = {
+  code?: string; name: string | null; level: string; windowMin: number; observed: number; late: number; tripsSkippingStops: number; untimed: number;
+  medianWorstDelaySeconds: number | null; stopsReporting: number; observedAt: string | null; sourceFamily: string;
+};
 export type DisruptionData = {
   alerts: DisruptionAlert[]; alertsTotal: number; alertsChecked?: boolean; windowMin: number;
-  punctuality: {
-    name: string | null; level: string; late: number; observed: number; stopsReporting?: number; untimed?: number; tripsSkippingStops?: number; sourceFamily?: string;
-    /** Proposed (today's aggregate): the counted trips' delay reports, the trips cancelled here, the window before and its trend, thin. */
-    reports?: number; tripsCancelled?: number; previous?: { observed: number; late: number } | null; trend?: "better" | "worse" | "unchanged" | "unknown"; thin?: "few_trips" | "low_coverage" | null;
-  } | null;
-  /** Proposed (today's alertsCoverage): whether any alert source covers the area, and when each of its Länder last published. */
-  alertsCoverage?: { covered: boolean; lookbackDays: number; lastSeenAt: (string | null)[] };
+  punctuality: DisruptionPunctuality | null;
+  /** Whether any alert source read covers the area's Länder, and when each last published one; null without an area. */
+  alertsCoverage?: { covered: boolean; lookbackDays: number; lands: { land: string; alertsSeen: number; newestAlertSeenAt: string | null }[] } | null;
+  /** What the static timetable says of the line asked; null without line. */
+  line?: { key: string; checked: boolean; inTimetable: boolean } | null;
 };
 /** WeatherRiskData */
 /** The issuer's own English text of a warning (the next API release; absent before it). */

@@ -1,8 +1,7 @@
 /**
- * check_transit_disruption: a region's realtime window and its service alerts, in today's server's words
- * (packages/mcp check_transit_disruption.ts, verbatim). The window with no report at all and no current
- * alert feed is rendered here as today; any other answer keeps the short form until the API carries the
- * figures it is built from (the trend, the alert coverage, the regional feeds).
+ * check_transit_disruption: a region's realtime window and its service alerts (transit-words.ts), from what
+ * API 2.0.4 carries; a line asked alone, its alerts anywhere. Never a bare "no disruptions" where trips are late
+ * or where the alert feeds could not be asked.
  */
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type * as T from "../api/types.js";
@@ -10,7 +9,7 @@ import { toolError, toolResult, type Language } from "../presentation.js";
 import { num, placeMissing, str, type Handler } from "./context.js";
 import { kmText } from "./nearby.js";
 import { regionOf, type Region } from "./region.js";
-import { windowAnswer } from "./transit-words.js";
+import { alertLines, regionAnswer } from "./transit-words.js";
 
 const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 
@@ -35,18 +34,6 @@ export const TRANSIT_WORDS = {
     `I do not know "${q}" as a region. The data is filed at Kreis level — name a Bundesland, a city or the Kreis (for example "Bayern", "Köln", "Landkreis Fulda").`),
 } as const;
 
-/** The window held no report at all: no counted trip, no reporting stop, no untimed trip. */
-const emptyWindow = (p: T.DisruptionData["punctuality"]): boolean => p === null || (p.observed === 0 && (p.stopsReporting ?? 0) === 0 && (p.untimed ?? 0) === 0);
-
-function emptyAnswer(language: Language, where: Region & { label: string }, windowMin: number): string {
-  const label = `${where.label}${where.distanceM === undefined ? "" : TRANSIT_WORDS.placed(language, where.distanceM)}${where.town === undefined ? "" : TRANSIT_WORDS.town(language, where.town)}`;
-  const window = TRANSIT_WORDS.window(language, windowMin);
-  const head = L(language,
-    `${label}: ${window} keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.`,
-    `${label}: no public-transport realtime reports from this region ${window}.`);
-  return `${head}\n${TRANSIT_WORDS.changeOnly[language]}\n${TRANSIT_WORDS.perLine[language]}\n\n${TRANSIT_WORDS.alertsNotCurrent(language, label)}`;
-}
-
 export const checkTransitDisruption: Handler = async (args, ctx): Promise<CallToolResult> => {
   const { language } = ctx;
   const line = str(args["line"]);
@@ -58,15 +45,24 @@ export const checkTransitDisruption: Handler = async (args, ctx): Promise<CallTo
   }
   const r = await ctx.api.get<T.DisruptionData>("listTransitDisruptions", { area: where.code, line, window_min: num(args["window_min"]) });
   const metas = [r.meta, ...where.metas];
-  // Today's words for a window with nothing in it; a point's region is said with its centre's distance.
-  if (line === undefined && where.label !== undefined && emptyWindow(r.data.punctuality) && r.data.alerts.length === 0 && r.data.alertsChecked === false) {
-    return toolResult(emptyAnswer(language, { ...where, label: where.label }, r.data.windowMin), metas, language);
-  }
-  // Today's full answer for a region's window, when the API carries the figures it is built from.
-  const full = line === undefined && where.label !== undefined ? windowAnswer(language, where.distanceM === undefined && where.town === undefined ? where.label : `${where.label}${where.distanceM === undefined ? "" : TRANSIT_WORDS.placed(language, where.distanceM)}${where.town === undefined ? "" : TRANSIT_WORDS.town(language, where.town)}`, r.data) : undefined;
-  if (full !== undefined) return toolResult(full, metas, language);
-  const lines = r.data.alerts.map((a) => `- ${a.lines.length > 0 ? `${a.lines.join(", ")}: ` : ""}${a.header ?? ""}`);
-  if (r.data.punctuality !== null) lines.unshift(L(language, `Pünktlichkeit ${r.data.punctuality.name ?? ""}: ${r.data.punctuality.level} (${r.data.punctuality.late} von ${r.data.punctuality.observed} verspätet)`, `Punctuality ${r.data.punctuality.name ?? ""}: ${r.data.punctuality.level} (${r.data.punctuality.late} of ${r.data.punctuality.observed} late)`));
-  if (lines.length === 0) return toolResult(L(language, "Keine Störungen gefunden.", "No disruptions found."), metas, language);
-  return toolResult(lines.join("\n"), metas, language);
+  const lineLabel = line === undefined ? undefined : L(language, `Linie ${line}`, `line ${line}`);
+  if (where.code === undefined) return toolResult(lineAnswer(language, lineLabel ?? "", r.data).join("\n"), metas, language);
+  // A region asked by its bare code is said by the name the API gives it; a point's region with its centre's distance.
+  const name = where.label === undefined || /^[0-9]+$/u.test(where.label) ? r.data.punctuality?.name ?? where.label ?? where.code : where.label;
+  const label = `${name}${where.distanceM === undefined ? "" : TRANSIT_WORDS.placed(language, where.distanceM)}${where.town === undefined ? "" : TRANSIT_WORDS.town(language, where.town)}`;
+  const alertsLabel = lineLabel === undefined ? label : `${name}, ${lineLabel}`;
+  const answer = regionAnswer(language, label, alertsLabel, r.data);
+  return toolResult(lineLabel === undefined ? answer : [answer, ...timetableNote(language, lineLabel, r.data)].join("\n"), metas, language);
 };
+
+/** A line asked with no area: its alerts anywhere, or why none is said, and whether the timetable knows it. */
+function lineAnswer(language: Language, label: string, data: T.DisruptionData): string[] {
+  return [...alertLines(language, label, data), ...timetableNote(language, label, data)];
+}
+
+/** The timetable's word on the line asked, only when it was there to ask and knows no such line. */
+function timetableNote(language: Language, label: string, data: T.DisruptionData): string[] {
+  const t = data.line ?? null;
+  if (t === null || !t.checked || t.inTimetable) return [];
+  return [L(language, `Eine ${label} steht in keinem Fahrplan, den ich lese — bitte den Liniennamen prüfen.`, `No ${label} is in any timetable I read — check the line name.`)];
+}

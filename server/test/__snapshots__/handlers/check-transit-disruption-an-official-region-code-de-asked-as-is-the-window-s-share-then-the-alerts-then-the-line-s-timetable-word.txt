@@ -1,0 +1,10 @@
+Berlin: 23 % der beobachteten Fahrten mindestens einmal verspätet (1.007 von 4.437 Fahrten in den letzten 60 Minuten, Meldungen von 672 Haltestellen); außerdem 512 Fahrten lassen mindestens einen Halt aus (Umleitung, gesperrte Haltestelle oder vorzeitiges Ende).
+Median der größten Verspätung je Fahrt: 3 min.
+Gezählt werden Fahrten, nicht Meldungen: eine Fahrt zählt als verspätet, wenn sie im Zeitfenster mindestens einmal verspätet gemeldet wurde — auch wenn sie danach wieder aufgeholt hat.
+Die Quelle meldet nur Änderungen: die Zahlen beruhen auf den Fahrten, deren Verspätung sich im Zeitfenster bewegt hat, nicht auf allen Fahrten. Wenig Meldungen heißt daher nicht automatisch "alles pünktlich".
+Einzelne Linien, Fahrten oder Haltestellen kann ich mit diesen Verspätungszahlen nicht beurteilen — die Echtzeitdaten kommen ohne Linienbezug, und ihre Lizenz erlaubt nur Summen über die Region.
+
+2 Störungsmeldungen in Kraft für Berlin, Linie RE 1:
+- RE 1, RB 2: Bauarbeiten
+- (ohne veröffentlichte Überschrift)
+Eine Linie RE 1 steht in keinem Fahrplan, den ich lese — bitte den Liniennamen prüfen.

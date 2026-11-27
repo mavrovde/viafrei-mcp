@@ -1262,17 +1262,27 @@ describe("check_transit_disruption", () => {
     { header: "Bauarbeiten", lines: ["RE 1", "RB 2"], inForceFrom: null, inForceUntil: null },
     { header: null, lines: [], inForceFrom: null, inForceUntil: null },
   ];
+  const punct = { code: "11", name: "Berlin", level: "state", windowMin: 60, observed: 4_437, late: 1_007, stopsReporting: 672, untimed: 0, tripsSkippingStops: 512, medianWorstDelaySeconds: 150, observedAt: null, sourceFamily: "delfi_rt_tu" };
   for (const language of LANGS) {
-    it(`an official region code (${language}): asked as is; punctuality first, then the alerts`, async () => {
-      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts, punctuality: { name: "VBB", level: "amber", late: 12, observed: 80 } });
+    it(`an official region code (${language}): asked as is; the window's share, then the alerts, then the line's timetable word`, async () => {
+      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts, alertsTotal: 2, alertsChecked: true, punctuality: punct, line: { key: "RE1", checked: true, inTimetable: false } });
       const r = await call("check_transit_disruption", { region: "05315", line: "RE 1", window_min: 30, language });
       expect(ops()).toEqual(["listTransitDisruptions"]);
       expect(query("listTransitDisruptions")).toEqual([{ area: "05315", line: "RE 1", window_min: "30", lang: language }]);
       await pinned("handlers", body(r));
     });
-    it(`nothing to report (${language})`, async () => {
-      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], punctuality: null });
-      expect(body(await call("check_transit_disruption", { region: "11", language }))).toBe(language === "de" ? "Keine Störungen gefunden." : "No disruptions found.");
+    it(`no counted trip, no alert, the feeds alive (${language}): says both, never a bare "no disruptions"`, async () => {
+      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], alertsTotal: 0, alertsChecked: true, punctuality: null, alertsCoverage: null });
+      const lines = body(await call("check_transit_disruption", { region: "11", language })).split("\n");
+      expect(lines[0]).toBe(language === "de" ? "11: in den letzten 60 Minuten keine Echtzeitmeldungen aus dem Nahverkehr dieser Region." : "11: no public-transport realtime reports from this region in the last 60 minutes.");
+      expect(lines.at(-1)).toBe(language === "de" ? "Veröffentlichte Störungsmeldungen für 11 (Umleitungen, gesperrte Haltestellen): derzeit keine in Kraft." : "Published service alerts for 11 (diversions, closed stops): none in force now.");
+    });
+    it(`a line alone (${language}): its alerts anywhere, or that the feeds are not current`, async () => {
+      serve("listPlaces", []);
+      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [alerts[0]], alertsTotal: 1, alertsChecked: true, punctuality: null, alertsCoverage: null, line: { key: "S1", checked: true, inTimetable: true } });
+      expect(body(await call("check_transit_disruption", { line: "S1", language }))).toBe(language === "de" ? "1 Störungsmeldung in Kraft für Linie S1:\n- RE 1, RB 2: Bauarbeiten" : "1 service alert in force for line S1:\n- RE 1, RB 2: Bauarbeiten");
+      serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], alertsTotal: 0, alertsChecked: false, punctuality: null, alertsCoverage: null, line: null });
+      expect(body(await call("check_transit_disruption", { line: "S1", language }))).toContain(language === "de" ? "Störungsmeldungen für Linie S1: Die Meldungsquellen sind gerade nicht aktuell" : "Service alerts for line S1: the alert feeds are not current right now");
     });
     it(`an unknown region (${language})`, async () => {
       serve("listPlaces", []);
@@ -1281,9 +1291,11 @@ describe("check_transit_disruption", () => {
       expect(ops()).toEqual(["listPlaces", "listPlaces"]);
     });
   }
-  it("a punctuality without a name", async () => {
-    serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], punctuality: { name: null, level: "green", late: 0, observed: 5 } });
-    expect(body(await call("check_transit_disruption", { region: "11", language: "en" }))).toBe("Punctuality : green (0 of 5 late)");
+  it("a region asked by its code is said by the API's name for it; a nameless one keeps the code", async () => {
+    serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], alertsChecked: true, alertsCoverage: null, punctuality: punct });
+    expect(body(await call("check_transit_disruption", { region: "11", language: "en" })).split("\n")[0]).toMatch(/^Berlin: 23% of observed trips late at least once \(1,007 of 4,437 trips in the last 60 minutes/u);
+    serve("listTransitDisruptions", { ...ex<object>("listTransitDisruptions"), alerts: [], alertsChecked: true, alertsCoverage: null, punctuality: { ...punct, name: null } });
+    expect(body(await call("check_transit_disruption", { region: "11", language: "en" })).split("\n")[0]).toMatch(/^11: 23% of observed/u);
   });
   it("a region name: its district code through the place search", async () => {
     await call("check_transit_disruption", { region: "VBB", language: "en" });

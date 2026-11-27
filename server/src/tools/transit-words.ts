@@ -1,71 +1,102 @@
 /**
- * A region's realtime window in today's server's words (headlineSentence,
- * countedNote, trendSentence, changeOnlyNote, cancellationNote, perLineNote, alertBlock), built from the
- * figures the API change list proposes for DisruptionPunctuality (reports, tripsCancelled, previous, trend)
- * and DisruptionData.alertsCoverage. Without them, or for a thin window, the answer keeps its short form.
+ * A region's realtime window and its service alerts, said from what API 2.0.4 carries (DisruptionData): the
+ * share of observed trips late at least once with its counts and the source's own window, the trips skipping a
+ * stop, the median worst delay, the untimed trips, the newest report, the counting and change-only notes, then
+ * the alerts in force or why none can be said. Not said, because the contract does not carry it: a trend
+ * against the window before, the delay reports behind the counts, the trips cancelled here, and the minutes a
+ * trip must be late to count (the API counts "late" by its own rule).
  */
 import type * as T from "../api/types.js";
-import type { Language } from "../presentation.js";
+import { standTime, type Language } from "../presentation.js";
 import { TRANSIT_WORDS } from "./transit.js";
 
-/** Today's LATE_AFTER_S / 60. */
-const LATE_MINUTES = 5;
-
+const L = (language: Language, de: string, en: string): string => (language === "de" ? de : en);
 const count = (language: Language, n: number): string => Math.trunc(n).toString().replace(/\B(?=(\d{3})+(?!\d))/gu, language === "de" ? "." : ",");
 const percent = (language: Language, f: number): string => `${Math.round(f * 100)}${language === "de" ? " %" : "%"}`;
 const counted = (language: Language, n: number, one: string, many: string): string => `${count(language, n)} ${n === 1 ? one : many}`;
 
-/** Today's skippedNote: the trips skipping a stop and the trips cancelled here, after the head's parenthesis. */
-export function skippedNote(language: Language, skipping: number, cancelled: number): string {
-  const de = language === "de";
-  const parts: string[] = [];
-  if (skipping > 0) parts.push(de
-    ? `${count(language, skipping)} ${skipping === 1 ? "Fahrt lässt" : "Fahrten lassen"} mindestens einen Halt aus (Umleitung, gesperrte Haltestelle oder vorzeitiges Ende)`
-    : `${count(language, skipping)} ${skipping === 1 ? "trip skips" : "trips skip"} at least one stop (a detour, a closed stop or a trip ending early)`);
-  if (cancelled > 0) parts.push(de
-    ? `${count(language, cancelled)} ${cancelled === 1 ? "Fahrt fällt" : "Fahrten fallen"} hier ganz aus (kein gemeldeter Halt in der Region bedient)`
-    : `${count(language, cancelled)} ${cancelled === 1 ? "trip is" : "trips are"} cancelled here (none of the stops reported in the region served)`);
-  if (parts.length === 0) return "";
-  return de ? `; außerdem ${parts.join("; ")}` : `; in addition, ${parts.join("; ")}`;
+/** The trips skipping a stop, after the head's parenthesis; "" for none. */
+export function skippedNote(language: Language, skipping: number): string {
+  if (skipping <= 0) return "";
+  return L(language,
+    `; außerdem ${count(language, skipping)} ${skipping === 1 ? "Fahrt lässt" : "Fahrten lassen"} mindestens einen Halt aus (Umleitung, gesperrte Haltestelle oder vorzeitiges Ende)`,
+    `; in addition, ${count(language, skipping)} ${skipping === 1 ? "trip skips" : "trips skip"} at least one stop (a detour, a closed stop or a trip ending early)`);
 }
 
-/** Today's trendSentence, one sentence per trend. */
-export function trendSentence(trend: string, language: Language, windowMin: number, before: string): string {
-  const de = language === "de";
-  if (trend === "better") return de ? `Trend: besser als in den ${windowMin} Minuten davor (${before}).` : `Trend: better than the ${windowMin} minutes before (${before}).`;
-  if (trend === "worse") return de ? `Trend: schlechter als in den ${windowMin} Minuten davor (${before}).` : `Trend: worse than the ${windowMin} minutes before (${before}).`;
-  if (trend === "unchanged") return de ? `Trend: etwa wie in den ${windowMin} Minuten davor (${before}).` : `Trend: about the same as the ${windowMin} minutes before (${before}).`;
-  return de ? `Trend: nicht vergleichbar — für die ${windowMin} Minuten davor liegen zu wenige Fahrten vor.` : `Trend: not comparable — too few trips for the ${windowMin} minutes before.`;
-}
-
-/** Today's perLineNote: the licence half is DELFI's alone; any other realtime source counts trips over the region. */
+/** The licence half is DELFI's alone; any other realtime source counts trips over the region. */
 export function perLineNote(language: Language, source: string): string {
   if (source === "delfi_rt_tu" || source === "tripupdates") return TRANSIT_WORDS.perLine[language];
-  return language === "de"
-    ? "Einzelne Linien, Fahrten oder Haltestellen beurteile ich mit diesen Verspätungszahlen nicht — sie werden nur als Summe über die Region ausgewertet."
-    : "Individual lines, trips or stops are not judged from these delay figures — they are evaluated as a region-wide total only.";
+  return L(language,
+    "Einzelne Linien, Fahrten oder Haltestellen beurteile ich mit diesen Verspätungszahlen nicht — sie werden nur als Summe über die Region ausgewertet.",
+    "Individual lines, trips or stops are not judged from these delay figures — they are evaluated as a region-wide total only.");
 }
 
-/** Today's cancellationNote: SIRI ET (VBN) names cancelled journeys' stops; every other source reports them stopless. */
-export function cancellationNote(language: Language, source: string): string {
-  if (source === "vbn_siri_et") {
-    return language === "de"
-      ? "Komplett gestrichene Fahrten nennt diese Quelle mit ihren Haltestellen, aber ohne Prognose; sie fehlen in der Quote und sind als ganz ausgefallen gezählt."
-      : "This source names fully cancelled trips with their stops but without a prediction; they are not in the share and are counted as cancelled.";
+/** "2 min", "less than a minute": the median of each trip's worst delay. */
+function delayText(language: Language, s: number): string {
+  if (s < 60) return L(language, "unter einer Minute", "less than a minute");
+  return `${Math.round(s / 60)} min`;
+}
+
+/** The window's figures: the share with its counts, or that the window holds no counted trip. */
+function windowLines(language: Language, label: string, data: T.DisruptionData): string[] {
+  const p = data.punctuality;
+  if (p === null || p.observed === 0) {
+    const window = TRANSIT_WORDS.window(language, p?.windowMin ?? data.windowMin);
+    const untimed = p === null || p.untimed === 0 ? "" : L(language,
+      ` ${counted(language, p.untimed, "Fahrt wurde", "Fahrten wurden")} ohne zählbare Verspätung gemeldet.`,
+      ` ${counted(language, p.untimed, "trip was", "trips were")} reported without a delay to count.`);
+    return [L(language,
+      `${label}: ${window} keine Echtzeitmeldungen aus dem Nahverkehr dieser Region.${untimed}`,
+      `${label}: no public-transport realtime reports from this region ${window}.${untimed}`),
+    TRANSIT_WORDS.changeOnly[language], TRANSIT_WORDS.perLine[language]];
   }
-  return language === "de"
-    ? "Fahrten, die die Quelle als Ganzes streicht, meldet sie ohne Haltestelle; sie lassen sich keiner Region zuordnen und fehlen in dieser Zahl. Als ganz ausgefallen gezählt sind nur Fahrten, deren gemeldete Halte hier alle ausgelassen werden."
-    : "Trips the source cancels as a whole are reported without a stop, cannot be placed in a region and are not in this figure. Counted as cancelled are only trips all of whose reported stops here are skipped.";
+  const window = TRANSIT_WORDS.window(language, p.windowMin);
+  const late = count(language, p.late), observed = count(language, p.observed), pct = percent(language, p.late / p.observed);
+  const stops = p.stopsReporting > 0 ? L(language, `, Meldungen von ${counted(language, p.stopsReporting, "Haltestelle", "Haltestellen")}`, `, reports from ${counted(language, p.stopsReporting, "stop", "stops")}`) : "";
+  const out = [L(language,
+    `${label}: ${pct} der beobachteten Fahrten mindestens einmal verspätet (${late} von ${observed} Fahrten ${window}${stops})${skippedNote(language, p.tripsSkippingStops)}.`,
+    `${label}: ${pct} of observed trips late at least once (${late} of ${observed} trips ${window}${stops})${skippedNote(language, p.tripsSkippingStops)}.`)];
+  const facts: string[] = [];
+  if (p.medianWorstDelaySeconds !== null) facts.push(L(language, `Median der größten Verspätung je Fahrt: ${delayText(language, p.medianWorstDelaySeconds)}`, `Median of each trip's worst delay: ${delayText(language, p.medianWorstDelaySeconds)}`));
+  if (p.untimed > 0) facts.push(L(language, `${counted(language, p.untimed, "weitere Fahrt", "weitere Fahrten")} ohne zählbare Verspätung gemeldet`, `${counted(language, p.untimed, "further trip", "further trips")} reported without a delay to count`));
+  if (p.observedAt !== null) facts.push(L(language, `neueste gezählte Meldung ${standTime(p.observedAt, language)}`, `newest report counted ${standTime(p.observedAt, language)}`));
+  if (facts.length > 0) out.push(`${facts.join("; ").replace(/^./u, (c) => c.toUpperCase())}.`);
+  out.push(L(language,
+    "Gezählt werden Fahrten, nicht Meldungen: eine Fahrt zählt als verspätet, wenn sie im Zeitfenster mindestens einmal verspätet gemeldet wurde — auch wenn sie danach wieder aufgeholt hat.",
+    "Trips are counted, not reports: a trip counts as late if it was reported late at least once during the window, even if it caught up afterwards."));
+  out.push(TRANSIT_WORDS.changeOnly[language], perLineNote(language, p.sourceFamily));
+  return out;
 }
 
-/** Today's alertBlock for a region with no alert in force; undefined when alerts are shown (the list keeps its form). */
+/** "- RE 1, RB 2: Bauarbeiten (until 12.12., 18:00)": an alert's lines, its headline and when it ends. */
+function alertLine(language: Language, a: T.DisruptionAlert): string {
+  const head = a.header?.trim() || L(language, "(ohne veröffentlichte Überschrift)", "(no headline published)");
+  const until = a.inForceUntil === null ? "" : L(language, ` (bis ${standTime(a.inForceUntil, language)})`, ` (until ${standTime(a.inForceUntil, language)})`);
+  return `- ${a.lines.length > 0 ? `${a.lines.join(", ")}: ` : ""}${head}${until}`;
+}
+
+/** The alerts in force, with how many there are when the list is cut; or why none is said. */
+export function alertLines(language: Language, label: string, data: T.DisruptionData): string[] {
+  const none = noAlertBlock(language, label, data);
+  if (none !== undefined) return [none];
+  const total = Math.max(data.alertsTotal, data.alerts.length);
+  const cut = total > data.alerts.length ? L(language, `, ${data.alerts.length} davon hier`, `, ${data.alerts.length} of them here`) : "";
+  return [L(language, `${counted(language, total, "Störungsmeldung", "Störungsmeldungen")} in Kraft für ${label}${cut}:`, `${counted(language, total, "service alert", "service alerts")} in force for ${label}${cut}:`), ...data.alerts.map((a) => alertLine(language, a))];
+}
+
+/** A region's answer: the window's figures, a blank line, then the alerts. */
+export function regionAnswer(language: Language, label: string, alertsLabel: string, data: T.DisruptionData): string {
+  return [...windowLines(language, label, data), "", ...alertLines(language, alertsLabel, data)].join("\n");
+}
+
+/** No alert in force: the feeds not current, no source covering the area (with its last day), or none in force; undefined when alerts are listed. */
 export function noAlertBlock(language: Language, label: string, data: T.DisruptionData): string | undefined {
   if (data.alerts.length > 0) return undefined;
   const de = language === "de";
   if (data.alertsChecked !== true) return TRANSIT_WORDS.alertsNotCurrent(language, label);
-  const cov = data.alertsCoverage;
-  if (cov !== undefined && !cov.covered) {
-    const times = cov.lastSeenAt.filter((t): t is string => t !== null).sort();
+  const cov = data.alertsCoverage ?? null;
+  if (cov !== null && !cov.covered) {
+    const times = cov.lands.map((l) => l.newestAlertSeenAt).filter((t): t is string => t !== null).sort();
     const newest = times.at(-1);
     const day = newest === undefined ? null : new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(newest));
     const since = day === null
@@ -78,34 +109,4 @@ export function noAlertBlock(language: Language, label: string, data: T.Disrupti
   return de
     ? `Veröffentlichte Störungsmeldungen für ${label} (Umleitungen, gesperrte Haltestellen): derzeit keine in Kraft.`
     : `Published service alerts for ${label} (diversions, closed stops): none in force now.`;
-}
-
-/**
- * Today's answer for a region's window with a reliable share: head, the counting rule, the trend, the change-only
- * and cancellation caveats, the per-line note, then the alerts. Undefined when the API does not carry the
- * proposed figures, or the window is thin (too few trips, too little coverage) or has untimed trips.
- */
-export function windowAnswer(language: Language, label: string, data: T.DisruptionData): string | undefined {
-  const p = data.punctuality;
-  if (p === null || p.reports === undefined || p.trend === undefined || p.thin !== null && p.thin !== undefined || (p.untimed ?? 0) > 0 || p.observed === 0) return undefined;
-  const alerts = noAlertBlock(language, label, data);
-  if (alerts === undefined) return undefined;
-  const de = language === "de";
-  const window = TRANSIT_WORDS.window(language, data.windowMin);
-  const cancelled = skippedNote(language, p.tripsSkippingStops ?? 0, p.tripsCancelled ?? 0);
-  const late = count(language, p.late), observed = count(language, p.observed), pct = percent(language, p.late / p.observed);
-  const stops = p.stopsReporting ?? 0;
-  const basis = de
-    ? `${counted(language, p.reports, "Verspätungsmeldung", "Verspätungsmeldungen")} zu diesen Fahrten; Meldungen im Zeitraum insgesamt von ${counted(language, stops, "Haltestelle", "Haltestellen")}`
-    : `${counted(language, p.reports, "delay report", "delay reports")} on these trips; reports in the window from ${counted(language, stops, "stop", "stops")} in all`;
-  const head = de
-    ? `${label}: ${pct} der beobachteten Fahrten mehr als ${LATE_MINUTES} Minuten zu spät (${late} von ${observed} Fahrten ${window}, gestützt auf ${basis})${cancelled}.`
-    : `${label}: ${pct} of observed trips more than ${LATE_MINUTES} minutes late (${late} of ${observed} trips ${window}, from ${basis})${cancelled}.`;
-  const rule = de
-    ? `Gezählt werden Fahrten, nicht Meldungen: eine Fahrt zählt als verspätet, wenn sie im Zeitfenster mindestens einmal mehr als ${LATE_MINUTES} Minuten zu spät gemeldet wurde — auch wenn sie danach wieder aufgeholt hat.`
-    : `Trips are counted, not reports: a trip counts as late if it was reported more than ${LATE_MINUTES} minutes late at least once during the window, even if it caught up afterwards.`;
-  const prev = p.previous;
-  const before = prev === null || prev === undefined || prev.observed === 0 ? percent(language, 0) : percent(language, prev.late / prev.observed);
-  const source = p.sourceFamily ?? "";
-  return [head, rule, trendSentence(p.trend, language, data.windowMin, before), TRANSIT_WORDS.changeOnly[language], cancellationNote(language, source), perLineNote(language, source), "", alerts].join("\n");
 }
